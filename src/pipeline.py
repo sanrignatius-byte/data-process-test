@@ -41,6 +41,8 @@ class PipelineStats:
     total_queries: int = 0
     total_triplets: int = 0
     modal_distribution: Dict[str, int] = None
+    query_type_distribution: Dict[str, int] = None
+    query_modality_distribution: Dict[str, int] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -55,7 +57,9 @@ class PipelineStats:
             "total_passages": self.total_passages,
             "total_queries": self.total_queries,
             "total_triplets": self.total_triplets,
-            "modal_distribution": self.modal_distribution or {}
+            "modal_distribution": self.modal_distribution or {},
+            "query_type_distribution": self.query_type_distribution or {},
+            "query_modality_distribution": self.query_modality_distribution or {}
         }
 
 
@@ -385,9 +389,41 @@ class ContrastiveDataPipeline:
                 except Exception as e:
                     self.logger.error(f"Cross-modal query generation failed for {doc_id}: {e}")
 
+        type_distribution, modality_distribution = self._summarize_queries(all_query_data)
+        if type_distribution:
+            self.logger.info(f"Query type distribution: {type_distribution}")
+        if modality_distribution:
+            self.logger.info(f"Query modality distribution: {modality_distribution}")
+
         self.logger.info(f"Generated {sum(len(qs) for qs in all_query_data.values())} queries")
 
         return all_query_data
+
+    def _summarize_queries(
+        self,
+        query_data: Dict[str, List[GeneratedQuery]]
+    ) -> Tuple[Dict[str, int], Dict[str, int]]:
+        """Summarize query counts by type and target modality."""
+        type_distribution: Dict[str, int] = {}
+        modality_distribution: Dict[str, int] = {}
+
+        for queries in query_data.values():
+            for query in queries:
+                query_type = getattr(query, "query_type", None)
+                if query_type is None and isinstance(query, dict):
+                    query_type = query.get("query_type", "unknown")
+                query_type = query_type or "unknown"
+                type_distribution[query_type] = type_distribution.get(query_type, 0) + 1
+
+                target_modality = getattr(query, "target_modality", None)
+                if target_modality is None and isinstance(query, dict):
+                    target_modality = query.get("target_modality", "unknown")
+                target_modality = target_modality or "unknown"
+                modality_distribution[target_modality] = (
+                    modality_distribution.get(target_modality, 0) + 1
+                )
+
+        return type_distribution, modality_distribution
 
     # =========================================================================
     # Stage 5: Triplet Construction
@@ -565,6 +601,10 @@ class ContrastiveDataPipeline:
             query_data = self.generate_queries(all_passages, passages_by_doc)
 
             stats.total_queries = sum(len(qs) for qs in query_data.values())
+            (
+                stats.query_type_distribution,
+                stats.query_modality_distribution
+            ) = self._summarize_queries(query_data)
 
             # Stage 5: Construct Triplets
             triplets = self.construct_triplets(query_data, all_passages)
