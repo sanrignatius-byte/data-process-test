@@ -1,0 +1,133 @@
+# MinerU Multimodal Contrastive Learning Data Factory Configuration
+# Optimized for NTU EEE Cluster with 4x A2000 GPUs
+
+# MinerU Parser Settings
+mineru:
+  # Backend options: "auto", "pipeline" (CPU), "hybrid", "vlm"
+  backend: "auto"
+  # Device allocation for 4x A2000
+  devices: ["cuda:0", "cuda:1", "cuda:2", "cuda:3"]
+  # Number of parallel workers (one per GPU)
+  num_workers: 4
+  # Output format: markdown with images
+  output_format: "md"
+  # Language settings
+  language: "en"  # "en", "ch", "multi"
+  # Timeout per document (seconds)
+  timeout: 300
+
+# Modal Type Definitions
+modal_types:
+  table:
+    enabled: true
+    min_rows: 3
+    min_cols: 2
+  figure:
+    enabled: true
+    min_width: 100
+    min_height: 100
+    include_charts: true
+    include_diagrams: true
+  formula:
+    enabled: true
+    include_inline: false  # Only block equations
+  infographic:
+    enabled: true
+  text:
+    enabled: true
+    min_length: 50
+    max_length: 2000
+
+# Query Generation Settings
+query_generation:
+  # LLM provider: "openai", "anthropic", "local"
+  provider: "openai"
+  model: "gpt-4o-mini"
+  # For local deployment, use vLLM or similar
+  local_model_path: null
+  temperature: 0.7
+  max_tokens: 200
+  # Queries per element
+  queries_per_element: 3
+  # Batch size for API calls
+  batch_size: 10
+  # Rate limiting (requests per minute)
+  rate_limit: 60
+  # Retry settings
+  max_retries: 3
+  retry_delay: 2
+
+# Negative Sampling Strategy
+negative_sampling:
+  # Strategy: "random", "modal_same", "modal_mixed", "semantic_hard"
+  strategy: "modal_mixed"
+  # Number of negatives per query
+  num_negatives: 3
+  # Distribution for modal_mixed strategy
+  distribution:
+    hard_same_modal: 0.6
+    cross_modal: 0.3
+    random: 0.1
+  # Use embedding similarity for hard negatives
+  use_embeddings: true
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+# Data Paths
+paths:
+  pdf_input: "./data/raw_pdfs"
+  mineru_output: "./data/mineru_output"
+  dataset_output: "./data/contrastive_data"
+  checkpoint_dir: "./data/checkpoints"
+  log_dir: "./logs"
+
+# PDF Download Settings
+download:
+  # Sources: "arxiv", "semantic_scholar", "local"
+  sources:
+    - "arxiv"
+  # arXiv categories for scientific papers
+  arxiv_categories:
+    - "cs.CL"    # Computation and Language
+    - "cs.CV"    # Computer Vision
+    - "cs.LG"    # Machine Learning
+    - "cs.AI"    # Artificial Intelligence
+  # Maximum papers per category
+  max_per_category: 50
+  # Date range (YYYY-MM-DD)
+  date_from: "2024-01-01"
+  date_to: "2025-01-31"
+  # Concurrent downloads
+  concurrent_downloads: 5
+  # Retry settings
+  max_retries: 3
+
+# Processing Constraints
+constraints:
+  # Target number of documents
+  target_docs: 200
+  # Maximum elements per document
+  max_elements_per_doc: 50
+  # Minimum elements to keep document
+  min_elements_per_doc: 5
+  # Skip documents with errors
+  skip_on_error: true
+  # Checkpoint interval (documents)
+  checkpoint_interval: 10
+
+# Output Format
+output:
+  # Format: "jsonl", "json", "parquet", "huggingface"
+  format: "jsonl"
+  # Train/validation split ratio
+  train_ratio: 0.9
+  # Include raw images in output
+  include_images: true
+  # Compression
+  compress: false
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/pipeline.log"
+  console: true
