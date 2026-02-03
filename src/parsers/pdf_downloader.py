@@ -12,6 +12,7 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import math
 
 
 @dataclass
@@ -93,10 +94,11 @@ class PDFDownloader:
 
             query = " AND ".join(query_parts)
 
+            per_category_limit = max(1, math.ceil(max_results / max(1, len(categories))))
             params = {
                 "search_query": query,
                 "start": 0,
-                "max_results": max_results // len(categories),
+                "max_results": per_category_limit,
                 "sortBy": "submittedDate",
                 "sortOrder": "descending"
             }
@@ -164,6 +166,94 @@ class PDFDownloader:
                 continue
 
         return papers[:max_results]
+
+    def download_arxiv_papers(
+        self,
+        categories: List[str],
+        target_count: int,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        search_query: Optional[str] = None,
+        initial_buffer: int = 50,
+        buffer_step: int = 50,
+        max_rounds: int = 6,
+        max_results_cap: int = 2000,
+        use_async: bool = True
+    ) -> List[PaperMetadata]:
+        """
+        Search arXiv and download PDFs until the target count is reached (best effort).
+
+        Args:
+            categories: List of arXiv categories
+            target_count: Target number of PDFs to download
+            date_from: Start date (YYYY-MM-DD)
+            date_to: End date (YYYY-MM-DD)
+            search_query: Additional search query
+            initial_buffer: Extra papers to fetch beyond the target
+            buffer_step: How many more results to add per search expansion
+            max_rounds: Maximum number of search expansions
+            max_results_cap: Maximum total results to request from arXiv
+            use_async: Use async downloads for better performance
+
+        Returns:
+            List of successfully downloaded paper metadata
+        """
+        if target_count <= 0:
+            return []
+
+        seen_ids: Set[str] = set(self._downloaded_ids)
+        successful: List[PaperMetadata] = []
+        candidate_queue: List[PaperMetadata] = []
+
+        max_results = min(max_results_cap, target_count + initial_buffer)
+        rounds = 0
+        exhausted = False
+
+        while len(successful) < target_count:
+            needed = target_count - len(successful)
+
+            while len(candidate_queue) < needed + buffer_step and not exhausted:
+                papers = self.search_arxiv(
+                    categories=categories,
+                    max_results=max_results,
+                    date_from=date_from,
+                    date_to=date_to,
+                    search_query=search_query
+                )
+
+                added = 0
+                for paper in papers:
+                    if paper.paper_id in seen_ids:
+                        continue
+                    seen_ids.add(paper.paper_id)
+                    candidate_queue.append(paper)
+                    added += 1
+
+                if added == 0:
+                    exhausted = True
+                    break
+
+                if max_results >= max_results_cap:
+                    exhausted = True
+                    break
+
+                max_results = min(max_results_cap, max_results + buffer_step)
+                rounds += 1
+                if rounds >= max_rounds:
+                    exhausted = True
+                    break
+
+            if not candidate_queue:
+                break
+
+            batch_size = min(len(candidate_queue), needed + buffer_step)
+            batch = candidate_queue[:batch_size]
+            candidate_queue = candidate_queue[batch_size:]
+
+            downloaded = self.download_batch(batch, use_async=use_async)
+            successful.extend(downloaded)
+
+        return successful[:target_count]
 
     def download_pdf(
         self,
@@ -379,16 +469,18 @@ def download_papers_for_training(
     downloader = PDFDownloader(output_dir)
 
     print(f"Searching arXiv for papers in categories: {categories}")
-    papers = downloader.search_arxiv(
+    successful = downloader.download_arxiv_papers(
         categories=categories,
-        max_results=target_count + 50,  # Extra buffer for failures
+        target_count=target_count,
         date_from="2024-01-01"
     )
 
-    print(f"Found {len(papers)} papers, downloading...")
-    successful = downloader.download_batch(papers[:target_count])
-
     print(f"Successfully downloaded {len(successful)} papers")
+    if len(successful) < target_count:
+        print(
+            f"Warning: Only downloaded {len(successful)} / {target_count} papers. "
+            "You may need to widen date range or categories."
+        )
 
     # Save metadata
     metadata_path = Path(output_dir) / "paper_metadata.json"

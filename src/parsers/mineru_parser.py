@@ -18,6 +18,8 @@ import multiprocessing
 import time
 import re
 
+from src.utils.file_utils import safe_json_dump
+
 
 @dataclass
 class ParsedElement:
@@ -62,7 +64,8 @@ class MinerUParser:
         devices: List[str] = None,
         num_workers: int = 4,
         language: str = "en",
-        timeout: int = 300
+        timeout: int = 300,
+        verify_installation: bool = True
     ):
         """
         Initialize MinerU parser.
@@ -84,7 +87,8 @@ class MinerUParser:
         self.timeout = timeout
 
         # Verify mineru is available
-        self._verify_installation()
+        if verify_installation:
+            self._verify_installation()
 
     def _verify_installation(self) -> None:
         """Verify MinerU CLI is installed and accessible."""
@@ -138,6 +142,76 @@ class MinerUParser:
 
         return cmd
 
+    def _collect_output_files(self, output_dir: Path) -> List[Path]:
+        """Collect expected MinerU output files."""
+        if not output_dir.exists():
+            return []
+
+        valid_suffixes = {
+            ".md",
+            ".json",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".bmp",
+            ".webp",
+            ".svg"
+        }
+
+        return [
+            p for p in output_dir.rglob("*")
+            if p.is_file() and p.suffix.lower() in valid_suffixes
+        ]
+
+    def _extract_text_from_rich_content(self, content: Any) -> str:
+        """Extract plain text from nested MinerU content structures."""
+        if content is None:
+            return ""
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    parts.append(
+                        self._extract_text_from_rich_content(
+                            item.get("content") or item.get("text")
+                        )
+                    )
+                else:
+                    parts.append(self._extract_text_from_rich_content(item))
+            return " ".join(p for p in parts if p)
+        if isinstance(content, dict):
+            if "text" in content and isinstance(content["text"], str):
+                return content["text"]
+            if "content" in content:
+                return self._extract_text_from_rich_content(content["content"])
+            if "title_content" in content:
+                return self._extract_text_from_rich_content(content["title_content"])
+            if "image_caption" in content:
+                return self._extract_text_from_rich_content(content["image_caption"])
+            if "table_caption" in content:
+                return self._extract_text_from_rich_content(content["table_caption"])
+        return ""
+
+    def _normalize_latex(self, latex: Optional[str]) -> str:
+        """Normalize LaTeX by stripping common block delimiters."""
+        if not latex:
+            return ""
+
+        text = latex.strip()
+        if text.startswith("$$"):
+            text = text[2:]
+        if text.endswith("$$"):
+            text = text[:-2]
+        if text.startswith("\\["):
+            text = text[2:]
+        if text.endswith("\\]"):
+            text = text[:-2]
+
+        return text.strip()
+
     def parse_single(
         self,
         pdf_path: str,
@@ -170,6 +244,7 @@ class MinerUParser:
 
         doc_id = doc_id or pdf_path.stem
         doc_output_dir = self.output_dir / doc_id
+        doc_output_dir.mkdir(parents=True, exist_ok=True)
 
         start_time = time.time()
 
@@ -193,6 +268,11 @@ class MinerUParser:
                 env=env
             )
 
+            if result.stdout:
+                (doc_output_dir / "mineru_stdout.log").write_text(result.stdout, encoding="utf-8")
+            if result.stderr:
+                (doc_output_dir / "mineru_stderr.log").write_text(result.stderr, encoding="utf-8")
+
             if result.returncode != 0:
                 return ParsedDocument(
                     doc_id=doc_id,
@@ -203,6 +283,19 @@ class MinerUParser:
                     parse_time=time.time() - start_time,
                     success=False,
                     error_message=f"MinerU error: {result.stderr}"
+                )
+
+            output_files = self._collect_output_files(doc_output_dir)
+            if not output_files:
+                return ParsedDocument(
+                    doc_id=doc_id,
+                    pdf_path=str(pdf_path),
+                    output_path=str(doc_output_dir),
+                    total_pages=0,
+                    elements=[],
+                    parse_time=time.time() - start_time,
+                    success=False,
+                    error_message="MinerU produced no output files. Check mineru_stderr.log."
                 )
 
             # Parse output files
@@ -319,6 +412,8 @@ class MinerUParser:
         json_paths = [
             actual_output / "auto" / "content_list.json",
             actual_output / "content_list.json",
+            actual_output / "auto" / "content_list_v2.json",
+            actual_output / "content_list_v2.json",
             actual_output / "auto" / "middle.json",
             actual_output / "middle.json",
         ]
@@ -328,7 +423,12 @@ class MinerUParser:
                 try:
                     with open(json_path, 'r', encoding='utf-8') as f:
                         structure = json.load(f)
-                    additional = self._parse_json_structure(structure, doc_id, element_counter)
+                    additional = self._parse_json_structure(
+                        structure,
+                        doc_id,
+                        element_counter,
+                        base_dir=actual_output
+                    )
                     # Only add elements not already captured
                     existing_types = {e.element_type for e in elements}
                     for elem in additional:
@@ -413,13 +513,14 @@ class MinerUParser:
                 else:
                     formula_content.append(line)
                     formula_text = '\n'.join(formula_content).strip()
+                    normalized = self._normalize_latex(formula_text)
                     elements.append(ParsedElement(
                         element_id=f"{doc_id}_formula_{element_counter}",
                         doc_id=doc_id,
                         page_idx=current_page,
                         element_type="formula",
-                        content=formula_text,
-                        metadata={"latex": formula_text}
+                        content=normalized or formula_text,
+                        metadata={"latex": normalized or formula_text}
                     ))
                     element_counter += 1
                     in_formula = False
@@ -430,13 +531,14 @@ class MinerUParser:
                 formula_content.append(line)
                 if line.strip().endswith('$$') or line.strip().endswith('\\]'):
                     formula_text = '\n'.join(formula_content).strip()
+                    normalized = self._normalize_latex(formula_text)
                     elements.append(ParsedElement(
                         element_id=f"{doc_id}_formula_{element_counter}",
                         doc_id=doc_id,
                         page_idx=current_page,
                         element_type="formula",
-                        content=formula_text,
-                        metadata={"latex": formula_text}
+                        content=normalized or formula_text,
+                        metadata={"latex": normalized or formula_text}
                     ))
                     element_counter += 1
                     in_formula = False
@@ -482,20 +584,43 @@ class MinerUParser:
         self,
         structure: Any,
         doc_id: str,
-        start_idx: int = 0
+        start_idx: int = 0,
+        base_dir: Optional[Path] = None
     ) -> List[ParsedElement]:
         """Parse MinerU JSON structure output."""
         elements = []
         element_counter = start_idx
 
+        def normalize_path(path_value: Optional[str]) -> Optional[str]:
+            if not path_value:
+                return None
+            path = Path(path_value)
+            if path.is_absolute():
+                return str(path)
+            if base_dir:
+                return str(base_dir / path_value)
+            return path_value
+
         def process_item(item: Dict, page_idx: int = 0):
             nonlocal element_counter
 
             item_type = item.get("type", "").lower()
-            content = item.get("text", "") or item.get("content", "")
+            raw_content = item.get("text", "") or item.get("content", "")
+            content = self._extract_text_from_rich_content(raw_content)
             bbox = item.get("bbox")
 
             if item_type in ["table", "表格"]:
+                html = None
+                caption = None
+                image_path = item.get("img_path")
+                if isinstance(raw_content, dict):
+                    html = raw_content.get("html")
+                    caption = self._extract_text_from_rich_content(raw_content.get("table_caption"))
+                    image_path = image_path or (raw_content.get("image_source") or {}).get("path")
+                if not html:
+                    html = item.get("html")
+                if html:
+                    content = html
                 elements.append(ParsedElement(
                     element_id=f"{doc_id}_table_{element_counter}",
                     doc_id=doc_id,
@@ -503,45 +628,79 @@ class MinerUParser:
                     element_type="table",
                     content=content,
                     bbox=bbox,
+                    image_path=normalize_path(image_path),
                     metadata={
-                        "html": item.get("html"),
-                        "rows": item.get("rows"),
-                        "cols": item.get("cols")
+                        "html": html,
+                        "rows": item.get("rows") or (raw_content.get("rows") if isinstance(raw_content, dict) else None),
+                        "cols": item.get("cols") or (raw_content.get("cols") if isinstance(raw_content, dict) else None),
+                        "caption": caption
                     }
                 ))
                 element_counter += 1
 
             elif item_type in ["image", "figure", "图片", "图"]:
+                image_path = item.get("img_path")
+                caption = None
+                if isinstance(raw_content, dict):
+                    image_path = image_path or (raw_content.get("image_source") or {}).get("path")
+                    caption = self._extract_text_from_rich_content(raw_content.get("image_caption"))
                 elements.append(ParsedElement(
                     element_id=f"{doc_id}_fig_{element_counter}",
                     doc_id=doc_id,
                     page_idx=page_idx,
                     element_type="figure",
-                    content=content,
+                    content=caption or content,
                     bbox=bbox,
-                    image_path=item.get("img_path"),
-                    metadata={"caption": item.get("caption")}
+                    image_path=normalize_path(image_path),
+                    metadata={"caption": caption or item.get("caption")}
                 ))
                 element_counter += 1
 
             elif item_type in ["equation", "formula", "公式"]:
+                normalized = self._normalize_latex(item.get("latex", content))
                 elements.append(ParsedElement(
                     element_id=f"{doc_id}_formula_{element_counter}",
                     doc_id=doc_id,
                     page_idx=page_idx,
                     element_type="formula",
-                    content=content,
+                    content=normalized or content,
                     bbox=bbox,
-                    metadata={"latex": item.get("latex", content)}
+                    metadata={"latex": normalized or content}
                 ))
                 element_counter += 1
+            elif item_type in [
+                "text",
+                "title",
+                "header",
+                "footer",
+                "page_footnote",
+                "aside_text",
+                "list",
+                "paragraph"
+            ]:
+                if content:
+                    elements.append(ParsedElement(
+                        element_id=f"{doc_id}_text_{element_counter}",
+                        doc_id=doc_id,
+                        page_idx=page_idx,
+                        element_type="text",
+                        content=content,
+                        bbox=bbox
+                    ))
+                    element_counter += 1
 
         # Handle different JSON structures
         if isinstance(structure, list):
-            for idx, item in enumerate(structure):
-                if isinstance(item, dict):
-                    page_idx = item.get("page_idx", item.get("page", idx))
-                    process_item(item, page_idx)
+            if structure and isinstance(structure[0], list):
+                for page_idx, page in enumerate(structure):
+                    for item in page:
+                        if isinstance(item, dict):
+                            process_item(item, page_idx)
+            else:
+                for idx, item in enumerate(structure):
+                    if isinstance(item, dict):
+                        page_idx = item.get("page_idx", item.get("page", idx))
+                        process_item(item, page_idx)
         elif isinstance(structure, dict):
             # Handle pages structure
             pages = structure.get("pages", structure.get("content", []))
@@ -629,6 +788,84 @@ class MinerUParser:
                     ))
 
         return results
+
+    def save_structure(self, parsed_doc: ParsedDocument) -> Optional[Path]:
+        """
+        Save parsed document structure for reuse by other stages.
+
+        Generates:
+        - structure.json: serialized elements
+        - formulas.md: LaTeX blocks (if formulas exist)
+        - formulas.jsonl: structured LaTeX entries (if formulas exist)
+        """
+        if not parsed_doc.success:
+            return None
+
+        doc_dir = Path(parsed_doc.output_path) if parsed_doc.output_path else (self.output_dir / parsed_doc.doc_id)
+        doc_dir.mkdir(parents=True, exist_ok=True)
+
+        data = {
+            "doc_id": parsed_doc.doc_id,
+            "pdf_path": parsed_doc.pdf_path,
+            "output_path": parsed_doc.output_path,
+            "total_pages": parsed_doc.total_pages,
+            "elements": [
+                {
+                    "element_id": e.element_id,
+                    "page_idx": e.page_idx,
+                    "type": e.element_type,
+                    "content": e.content,
+                    "bbox": e.bbox,
+                    "image_path": e.image_path,
+                    "metadata": e.metadata
+                }
+                for e in parsed_doc.elements
+            ]
+        }
+
+        structure_path = doc_dir / "structure.json"
+        safe_json_dump(data, structure_path)
+
+        self._save_formula_blocks(doc_dir, parsed_doc.elements)
+
+        return structure_path
+
+    def _save_formula_blocks(self, doc_dir: Path, elements: List[ParsedElement]) -> None:
+        """Save formula elements as standalone LaTeX blocks."""
+        formulas = []
+
+        for elem in elements:
+            if elem.element_type not in ["formula", "equation"]:
+                continue
+
+            latex = elem.metadata.get("latex") if elem.metadata else None
+            latex = self._normalize_latex(latex or elem.content)
+            if not latex:
+                continue
+
+            formulas.append({
+                "doc_id": elem.doc_id,
+                "page_idx": elem.page_idx,
+                "element_id": elem.element_id,
+                "latex": latex
+            })
+
+        if not formulas:
+            return
+
+        md_lines = []
+        for item in formulas:
+            md_lines.append("$$")
+            md_lines.append(item["latex"])
+            md_lines.append("$$")
+            md_lines.append("")
+
+        (doc_dir / "formulas.md").write_text("\n".join(md_lines).strip() + "\n", encoding="utf-8")
+
+        jsonl_path = doc_dir / "formulas.jsonl"
+        with open(jsonl_path, "w", encoding="utf-8") as f:
+            for item in formulas:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
     def get_parser_stats(self) -> Dict:
         """Get parser statistics."""

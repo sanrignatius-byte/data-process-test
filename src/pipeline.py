@@ -184,23 +184,23 @@ class ContrastiveDataPipeline:
             max_retries=download_config.get("max_retries", 3)
         )
 
-        # Search and download
-        papers = downloader.search_arxiv(
+        successful = downloader.download_arxiv_papers(
             categories=categories,
-            max_results=target_count + 20,  # Buffer for failures
+            target_count=target_count,
             date_from=download_config.get("date_from"),
-            date_to=download_config.get("date_to")
+            date_to=download_config.get("date_to"),
+            search_query=download_config.get("search_query")
         )
-
-        self.logger.info(f"Found {len(papers)} papers, downloading...")
-
-        successful = downloader.download_batch(papers[:target_count])
 
         # Save metadata
         metadata_path = Path(self.config.paths["pdf_input"]) / "metadata.json"
         downloader.save_metadata(successful, str(metadata_path))
 
-        self.logger.info(f"Downloaded {len(successful)} PDFs")
+        self.logger.info(f"Downloaded {len(successful)} PDFs (target {target_count})")
+        if len(successful) < target_count:
+            self.logger.warning(
+                "PDF download target not reached. Consider widening date range or categories."
+            )
         self.logger.update_metric("docs_processed", len(successful), increment=False)
 
         return [Path(p.local_path) for p in successful if p.local_path]
@@ -263,8 +263,16 @@ class ContrastiveDataPipeline:
             progress_callback=progress_callback
         )
 
+        saved = 0
+        for result in results:
+            if result.success:
+                if self.parser.save_structure(result):
+                    saved += 1
+
         successful = [r for r in results if r.success]
         self.logger.info(f"Successfully parsed {len(successful)}/{len(results)} documents")
+        if saved:
+            self.logger.info(f"Saved {saved} structure.json files for resume")
 
         return results
 

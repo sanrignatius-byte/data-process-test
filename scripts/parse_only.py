@@ -101,10 +101,18 @@ def main():
         progress_callback=progress_callback
     )
 
+    # Save parsed structures for downstream stages
+    saved = 0
+    for result in results:
+        if result.success:
+            if mineru_parser.save_structure(result):
+                saved += 1
+
     print(f"\n{'='*60}")
     print(f"Parsing complete!")
     print(f"Success: {success_count}/{len(pdf_paths)}")
     print(f"Failed: {fail_count}/{len(pdf_paths)}")
+    print(f"Structure saved: {saved}/{success_count}")
     print(f"Output: {args.output}")
     print(f"{'='*60}")
 
