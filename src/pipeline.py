@@ -25,6 +25,12 @@ from .parsers.pdf_downloader import PDFDownloader, download_papers_for_training
 from .parsers.mineru_parser import MinerUParser, ParsedDocument
 from .parsers.modal_extractor import ModalExtractor, Passage, ModalityType
 from .generators.query_generator import MultimodalQueryGenerator, GeneratedQuery
+from .generators.vlm_query_generator import (
+    MultimodalQueryGenerator as VLMQueryGenerator,
+    VLMGeneratedQuery,
+    QueryModalityType,
+    create_vlm_generator
+)
 from .samplers.negative_sampler import HardNegativeSampler, ContrastiveTriplet
 
 
@@ -111,6 +117,10 @@ class ContrastiveDataPipeline:
 
         # Query Generator (lazy initialization - requires API key)
         self._query_gen = None
+        self._vlm_query_gen = None
+
+        # Check if VLM query generation is enabled
+        self.use_vlm = self.config.get("vlm_query_generation", {}).get("enabled", False)
 
         # Negative Sampler
         neg_config = self.config.negative_sampling
@@ -124,7 +134,7 @@ class ContrastiveDataPipeline:
 
     @property
     def query_generator(self) -> MultimodalQueryGenerator:
-        """Lazy-load query generator."""
+        """Lazy-load text-only query generator."""
         if self._query_gen is None:
             qg_config = self.config.query_generation
             self._query_gen = MultimodalQueryGenerator(
@@ -137,6 +147,30 @@ class ContrastiveDataPipeline:
                 retry_delay=qg_config.retry_delay
             )
         return self._query_gen
+
+    @property
+    def vlm_query_generator(self) -> VLMQueryGenerator:
+        """Lazy-load VLM query generator (supports Qwen3-VL, GPT-4V, Claude)."""
+        if self._vlm_query_gen is None:
+            vlm_config = self.config.get("vlm_query_generation", {})
+            backend = vlm_config.get("backend", "qwen_vllm")
+            models_config = vlm_config.get("models", {})
+            model_config = models_config.get(backend, {})
+
+            self._vlm_query_gen = VLMQueryGenerator(
+                backend=backend,
+                model=model_config.get("model", "Qwen/Qwen2.5-VL-7B-Instruct"),
+                api_base=model_config.get("api_base"),
+                api_key=model_config.get("api_key"),
+                device=model_config.get("device", "cuda:0"),
+                temperature=vlm_config.get("temperature", 0.7),
+                max_tokens=vlm_config.get("max_tokens", 1024),
+                rate_limit=vlm_config.get("rate_limit", 30),
+                max_retries=vlm_config.get("max_retries", 3),
+                retry_delay=vlm_config.get("retry_delay", 2.0),
+                max_image_size=vlm_config.get("max_image_size", 1024)
+            )
+        return self._vlm_query_gen
 
     def _setup_directories(self) -> None:
         """Create necessary directories."""
@@ -330,6 +364,13 @@ class ContrastiveDataPipeline:
         """
         Generate queries for passages.
 
+        Supports two modes:
+        1. VLM mode (recommended): Uses Vision-Language Model (Qwen3-VL, GPT-4V, etc.)
+           - Can process actual images for visual queries
+           - Generates image-grounded questions
+        2. Text-only mode (fallback): Uses text-only LLM
+           - Only uses text descriptions
+
         Args:
             passages: List of all passages
             passages_by_doc: Passages grouped by document
@@ -338,6 +379,121 @@ class ContrastiveDataPipeline:
             Dict mapping passage_id to list of queries
         """
         self.logger.info("Starting query generation stage")
+
+        # Check if VLM mode is enabled
+        if self.use_vlm:
+            return self._generate_queries_vlm(passages, passages_by_doc)
+        else:
+            return self._generate_queries_text(passages, passages_by_doc)
+
+    def _generate_queries_vlm(
+        self,
+        passages: List[Passage],
+        passages_by_doc: Dict[str, List[Passage]]
+    ) -> Dict[str, List[GeneratedQuery]]:
+        """Generate queries using VLM (Vision-Language Model)."""
+        self.logger.info("Using VLM query generation (Qwen3-VL/GPT-4V/Claude)")
+
+        vlm_config = self.config.get("vlm_query_generation", {})
+        queries_per_modality = vlm_config.get("queries_per_modality", {})
+
+        # Default queries per modality
+        default_queries = {
+            "table": 4,
+            "figure": 4,
+            "formula": 3,
+            "infographic": 4,
+            "text": 2
+        }
+
+        all_query_data = {}
+        batch_size = self.config.query_generation.batch_size
+
+        for i in tqdm(range(0, len(passages), batch_size), desc="VLM Query Generation"):
+            batch = passages[i:i + batch_size]
+
+            for passage in batch:
+                try:
+                    modal_type = passage.modal_type.value if hasattr(passage.modal_type, 'value') else passage.modal_type
+                    num_queries = queries_per_modality.get(modal_type, default_queries.get(modal_type, 3))
+
+                    # Use VLM generator
+                    vlm_queries = self.vlm_query_generator.generate(
+                        passage,
+                        num_queries=num_queries
+                    )
+
+                    # Convert VLMGeneratedQuery to GeneratedQuery format for compatibility
+                    converted_queries = []
+                    for vq in vlm_queries:
+                        converted_queries.append(GeneratedQuery(
+                            query_id=vq.query_id,
+                            query_text=vq.query_text,
+                            query_type=vq.query_type,
+                            target_modality=vq.target_modality,
+                            passage_id=vq.passage_id,
+                            difficulty=vq.difficulty,
+                            metadata={
+                                "query_modality": vq.query_modality.value,
+                                "requires_image": vq.requires_image,
+                                "visual_grounding": vq.visual_grounding,
+                                **vq.metadata
+                            }
+                        ))
+
+                    all_query_data[passage.passage_id] = converted_queries
+                    self.logger.update_metric("queries_generated", len(converted_queries))
+
+                except Exception as e:
+                    self.logger.error(f"VLM query generation failed for {passage.passage_id}: {e}")
+                    all_query_data[passage.passage_id] = []
+
+            # Checkpoint
+            if (i // batch_size) % 10 == 0:
+                self._save_checkpoint({
+                    "stage": "vlm_query_generation",
+                    "processed_passages": i + len(batch),
+                    "total_queries": sum(len(qs) for qs in all_query_data.values())
+                })
+
+        # Generate cross-modal queries for each document
+        self.logger.info("Generating cross-modal queries with VLM")
+        for doc_id, doc_passages in passages_by_doc.items():
+            if len(doc_passages) >= 2:
+                try:
+                    cross_queries = self.vlm_query_generator.generate_cross_modal_queries(
+                        doc_passages, num_queries=2
+                    )
+                    # Add cross-modal queries to a special entry
+                    cross_key = f"{doc_id}_cross_modal"
+                    converted_cross = []
+                    for vq in cross_queries:
+                        converted_cross.append(GeneratedQuery(
+                            query_id=vq.query_id,
+                            query_text=vq.query_text,
+                            query_type="cross_modal_reasoning",
+                            target_modality="cross_modal",
+                            passage_id=cross_key,
+                            difficulty=vq.difficulty,
+                            metadata={
+                                "query_modality": vq.query_modality.value,
+                                "requires_image": vq.requires_image,
+                                **vq.metadata
+                            }
+                        ))
+                    all_query_data[cross_key] = converted_cross
+                except Exception as e:
+                    self.logger.error(f"Cross-modal query generation failed for {doc_id}: {e}")
+
+        return all_query_data
+
+    def _generate_queries_text(
+        self,
+        passages: List[Passage],
+        passages_by_doc: Dict[str, List[Passage]]
+    ) -> Dict[str, List[GeneratedQuery]]:
+        """Generate queries using text-only LLM (fallback mode)."""
+        self.logger.info("Using text-only query generation (GPT-4o-mini/Claude)")
 
         num_queries = self.config.query_generation.queries_per_element
 
