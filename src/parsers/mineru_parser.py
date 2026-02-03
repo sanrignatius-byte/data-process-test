@@ -316,11 +316,19 @@ class MinerUParser:
                 break  # Only process first found image directory
 
         # Parse JSON structure if available
+        # Support both old format (content_list.json, middle.json) and new format (structure.json)
         json_paths = [
+            # MinerU 新版格式 (优先)
+            actual_output / "auto" / "structure.json",
+            actual_output / "structure.json",
+            # MinerU 旧版格式
             actual_output / "auto" / "content_list.json",
             actual_output / "content_list.json",
             actual_output / "auto" / "middle.json",
             actual_output / "middle.json",
+            # model.json 也可能包含结构信息
+            actual_output / "auto" / "model.json",
+            actual_output / "model.json",
         ]
 
         for json_path in json_paths:
@@ -328,16 +336,248 @@ class MinerUParser:
                 try:
                     with open(json_path, 'r', encoding='utf-8') as f:
                         structure = json.load(f)
-                    additional = self._parse_json_structure(structure, doc_id, element_counter)
+
+                    # 根据文件名选择解析方法
+                    if "structure" in json_path.name:
+                        additional = self._parse_structure_json(structure, doc_id, element_counter, actual_output)
+                    else:
+                        additional = self._parse_json_structure(structure, doc_id, element_counter)
+
                     # Only add elements not already captured
-                    existing_types = {e.element_type for e in elements}
+                    existing_ids = {e.element_id for e in elements}
                     for elem in additional:
-                        if elem.element_type not in existing_types or elem.element_type == "table":
+                        if elem.element_id not in existing_ids:
                             elements.append(elem)
                             element_counter += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Warning: Failed to parse {json_path}: {e}")
                 break
+
+        # 解析 formula.md 文件 (MinerU 新版单独的公式文件)
+        formula_md_paths = [
+            actual_output / "auto" / "formula.md",
+            actual_output / "formula.md",
+        ]
+        for formula_path in formula_md_paths:
+            if formula_path.exists():
+                try:
+                    formula_elements = self._parse_formula_md(formula_path, doc_id, element_counter)
+                    existing_formulas = {e.content for e in elements if e.element_type == "formula"}
+                    for elem in formula_elements:
+                        if elem.content not in existing_formulas:
+                            elements.append(elem)
+                            element_counter += 1
+                except Exception as e:
+                    print(f"Warning: Failed to parse formula.md: {e}")
+                break
+
+        return elements
+
+    def _parse_structure_json(
+        self,
+        structure: Any,
+        doc_id: str,
+        start_idx: int = 0,
+        output_dir: Optional[Path] = None
+    ) -> List[ParsedElement]:
+        """
+        Parse MinerU 新版 structure.json 格式.
+
+        新版格式通常包含:
+        - pdf_info: PDF元信息
+        - pages: 按页面组织的内容块列表
+        每个块包含: type, bbox, text/content, img_path 等
+        """
+        elements = []
+        element_counter = start_idx
+
+        def get_content(block: Dict) -> str:
+            """从块中提取内容"""
+            return block.get("text", "") or block.get("content", "") or block.get("latex", "") or ""
+
+        def process_block(block: Dict, page_idx: int = 0):
+            nonlocal element_counter
+
+            block_type = block.get("type", "").lower()
+            category = block.get("category", "").lower()
+
+            # 统一类型判断
+            effective_type = block_type or category
+
+            content = get_content(block)
+            bbox = block.get("bbox") or block.get("poly")
+
+            # 处理表格
+            if effective_type in ["table", "表格"] or block.get("is_table"):
+                html_content = block.get("html", "")
+                latex_content = block.get("latex", "")
+                elements.append(ParsedElement(
+                    element_id=f"{doc_id}_table_{element_counter}",
+                    doc_id=doc_id,
+                    page_idx=page_idx,
+                    element_type="table",
+                    content=content or html_content or latex_content,
+                    bbox=bbox,
+                    metadata={
+                        "html": html_content,
+                        "latex": latex_content,
+                        "rows": block.get("rows"),
+                        "cols": block.get("cols"),
+                        "table_body": block.get("table_body")
+                    }
+                ))
+                element_counter += 1
+
+            # 处理图片/图表
+            elif effective_type in ["image", "figure", "图片", "图", "image_body"]:
+                img_path = block.get("img_path") or block.get("image_path")
+                if img_path and output_dir:
+                    # 转换为绝对路径
+                    if not Path(img_path).is_absolute():
+                        img_path = str(output_dir / img_path)
+
+                elements.append(ParsedElement(
+                    element_id=f"{doc_id}_fig_{element_counter}",
+                    doc_id=doc_id,
+                    page_idx=page_idx,
+                    element_type="figure",
+                    content=content or f"[Image: {img_path}]",
+                    bbox=bbox,
+                    image_path=img_path,
+                    metadata={
+                        "caption": block.get("caption"),
+                        "img_caption": block.get("img_caption"),
+                    }
+                ))
+                element_counter += 1
+
+            # 处理公式 (行间公式)
+            elif effective_type in ["equation", "formula", "公式", "interline_equation"]:
+                latex = block.get("latex", "") or content
+                elements.append(ParsedElement(
+                    element_id=f"{doc_id}_formula_{element_counter}",
+                    doc_id=doc_id,
+                    page_idx=page_idx,
+                    element_type="formula",
+                    content=latex,
+                    bbox=bbox,
+                    metadata={
+                        "latex": latex,
+                        "equation_type": "block"
+                    }
+                ))
+                element_counter += 1
+
+            # 处理文本块
+            elif effective_type in ["text", "paragraph", "文本", "text_block"] and content:
+                if len(content.strip()) > 30:
+                    elements.append(ParsedElement(
+                        element_id=f"{doc_id}_text_{element_counter}",
+                        doc_id=doc_id,
+                        page_idx=page_idx,
+                        element_type="text",
+                        content=content,
+                        bbox=bbox
+                    ))
+                    element_counter += 1
+
+            # 处理标题 (也作为文本)
+            elif effective_type in ["title", "heading", "标题"] and content:
+                elements.append(ParsedElement(
+                    element_id=f"{doc_id}_text_{element_counter}",
+                    doc_id=doc_id,
+                    page_idx=page_idx,
+                    element_type="text",
+                    content=content,
+                    bbox=bbox,
+                    metadata={"is_title": True}
+                ))
+                element_counter += 1
+
+        # 处理不同的JSON结构
+        if isinstance(structure, dict):
+            # 检查是否有 pages 结构 (新版常见)
+            if "pages" in structure:
+                for page_idx, page in enumerate(structure["pages"]):
+                    blocks = page.get("blocks", []) or page.get("items", []) or page.get("elements", [])
+                    for block in blocks:
+                        process_block(block, page_idx)
+
+            # 检查是否有 pdf_info (另一种新版结构)
+            elif "pdf_info" in structure:
+                pdf_info = structure["pdf_info"]
+                for page_idx, page in enumerate(pdf_info):
+                    if isinstance(page, dict):
+                        # 处理各种类型的预排序块
+                        for key in ["preproc_blocks", "blocks", "layout_dets"]:
+                            if key in page:
+                                for block in page[key]:
+                                    process_block(block, page_idx)
+
+            # 直接是块列表
+            elif "blocks" in structure:
+                for block in structure["blocks"]:
+                    page_idx = block.get("page_idx", block.get("page", 0))
+                    process_block(block, page_idx)
+
+            # 其他顶层键可能直接包含元素
+            else:
+                for key, value in structure.items():
+                    if isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, dict):
+                                page_idx = item.get("page_idx", item.get("page", 0))
+                                process_block(item, page_idx)
+
+        elif isinstance(structure, list):
+            for idx, item in enumerate(structure):
+                if isinstance(item, dict):
+                    page_idx = item.get("page_idx", item.get("page", 0))
+                    process_block(item, page_idx)
+
+        return elements
+
+    def _parse_formula_md(
+        self,
+        formula_path: Path,
+        doc_id: str,
+        start_idx: int = 0
+    ) -> List[ParsedElement]:
+        """
+        解析 MinerU 新版生成的 formula.md 文件.
+
+        该文件通常包含文档中所有提取的公式，格式为 LaTeX。
+        """
+        elements = []
+        element_counter = start_idx
+
+        with open(formula_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # 提取所有公式块
+        # 模式1: $$ ... $$
+        block_formulas = re.findall(r'\$\$(.*?)\$\$', content, re.DOTALL)
+
+        # 模式2: \[ ... \]
+        bracket_formulas = re.findall(r'\\\[(.*?)\\\]', content, re.DOTALL)
+
+        all_formulas = block_formulas + bracket_formulas
+
+        for formula in all_formulas:
+            formula = formula.strip()
+            if formula and len(formula) > 5:  # 过滤太短的公式
+                elements.append(ParsedElement(
+                    element_id=f"{doc_id}_formula_{element_counter}",
+                    doc_id=doc_id,
+                    page_idx=0,  # formula.md 通常不包含页码信息
+                    element_type="formula",
+                    content=f"$${formula}$$",
+                    metadata={
+                        "latex": formula,
+                        "source": "formula.md"
+                    }
+                ))
+                element_counter += 1
 
         return elements
 
