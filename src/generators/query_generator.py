@@ -517,6 +517,7 @@ class MultimodalQueryGenerator(QueryGenerator):
             modal_type = passage.modal_type.value if hasattr(passage.modal_type, 'value') else passage.modal_type
 
             for idx, q in enumerate(questions):
+                q_dict = q if isinstance(q, dict) else {}
                 if isinstance(q, dict):
                     turns = q.get("turns")
                     if turns:
@@ -532,10 +533,16 @@ class MultimodalQueryGenerator(QueryGenerator):
 
                 if not query_text:
                     continue
-                if modal_type == "m4" and not self._validate_m4_question(q):
-                    continue
-                if modal_type == "m4_training" and not self._validate_m4_training_question(q):
-                    continue
+                if modal_type == "m4":
+                    if not isinstance(q, dict):
+                        continue
+                    if not self._validate_m4_question(q_dict):
+                        continue
+                if modal_type == "m4_training":
+                    if not isinstance(q, dict):
+                        continue
+                    if not self._validate_m4_training_question(q_dict):
+                        continue
 
                 # Generate unique query ID
                 query_hash = hashlib.md5(query_text.encode()).hexdigest()[:8]
@@ -549,15 +556,15 @@ class MultimodalQueryGenerator(QueryGenerator):
                     passage_id=passage.passage_id,
                     difficulty=self._estimate_difficulty(query_text, query_type),
                     metadata={
-                        "modalities_required": q.get("modalities_required", [modal_type]),
-                        "doc_ids": q.get("doc_ids"),
-                        "evidence_passage_ids": q.get("evidence_passage_ids"),
-                        "turns": q.get("turns"),
-                        "reasoning_steps": q.get("reasoning_steps"),
-                        "gold_answer": q.get("gold_answer"),
-                        "evidence": q.get("evidence"),
-                        "difficulty_label": q.get("difficulty"),
-                        "estimated_tokens": q.get("estimated_tokens")
+                        "modalities_required": q_dict.get("modalities_required", [modal_type]),
+                        "doc_ids": q_dict.get("doc_ids"),
+                        "evidence_passage_ids": q_dict.get("evidence_passage_ids"),
+                        "turns": q_dict.get("turns"),
+                        "reasoning_steps": q_dict.get("reasoning_steps"),
+                        "gold_answer": q_dict.get("gold_answer"),
+                        "evidence": q_dict.get("evidence"),
+                        "difficulty_label": q_dict.get("difficulty"),
+                        "estimated_tokens": q_dict.get("estimated_tokens")
                     }
                 ))
 
