@@ -198,6 +198,32 @@ Generate exactly {num_queries} questions in the following JSON format:
 
 Output only valid JSON, no additional text."""
 
+    M4 = """You are an expert at crafting complex research questions for multimodal AI training.
+
+You will be given content excerpts from multiple documents and multiple modalities.
+Generate {num_queries} questions that satisfy M4 requirements:
+
+1) Multi-hop reasoning: questions require at least two distinct evidence points.
+2) Multi-modal integration: questions require at least two different modalities.
+3) Multi-document synthesis: questions require evidence from at least two documents.
+4) Multi-turn interaction: questions must be phrased as a short multi-turn dialogue.
+
+Content (each block includes document id, modality, passage id, and excerpt):
+{content}
+
+Return exactly {num_queries} items in the following JSON format:
+{{"questions": [
+  {{
+    "turns": ["question turn 1", "question turn 2", "..."],
+    "type": "multi_hop_reasoning|multi_modal_integration|multi_doc_synthesis|multi_turn_interaction",
+    "modalities_required": ["text", "table", "figure", "formula"],
+    "doc_ids": ["doc_a", "doc_b"],
+    "evidence_passage_ids": ["passage_id_1", "passage_id_2"]
+  }}
+]}}
+
+Output only valid JSON, no additional text."""
+
 
 class QueryGenerator(ABC):
     """Abstract base class for query generators."""
@@ -287,7 +313,8 @@ class MultimodalQueryGenerator(QueryGenerator):
             "formula": self.templates.FORMULA,
             "infographic": self.templates.INFOGRAPHIC,
             "text": self.templates.TEXT,
-            "cross_modal": self.templates.CROSS_MODAL
+            "cross_modal": self.templates.CROSS_MODAL,
+            "m4": self.templates.M4
         }
         return templates.get(modal_type, self.templates.TEXT)
 
@@ -315,6 +342,43 @@ class MultimodalQueryGenerator(QueryGenerator):
             context_section=context_section,
             num_queries=num_queries
         )
+
+    def _build_m4_prompt(
+        self,
+        passages: List[Any],
+        num_queries: int = 4,
+        max_docs: int = 3,
+        max_passages_per_doc: int = 4
+    ) -> Tuple[str, List[str]]:
+        """Build M4 prompt from multiple documents and modalities."""
+        docs = {}
+        for passage in passages:
+            doc_id = getattr(passage, "doc_id", None) or "unknown_doc"
+            docs.setdefault(doc_id, []).append(passage)
+
+        selected_doc_ids = list(docs.keys())[:max_docs]
+        content_blocks = []
+        for doc_id in selected_doc_ids:
+            doc_passages = docs[doc_id]
+            by_modality = {}
+            for p in doc_passages:
+                modal = p.modal_type.value if hasattr(p.modal_type, "value") else p.modal_type
+                by_modality.setdefault(modal, []).append(p)
+
+            used = 0
+            for modal_type, modal_passages in by_modality.items():
+                if used >= max_passages_per_doc:
+                    break
+                p = modal_passages[0]
+                snippet = p.content[:500] + ("...[truncated]" if len(p.content) > 500 else "")
+                content_blocks.append(
+                    f"[DOC {doc_id} | {modal_type.upper()} | {p.passage_id}]\n{snippet}"
+                )
+                used += 1
+
+        template = self._get_template("m4")
+        content = "\n\n".join(content_blocks)
+        return template.format(content=content, num_queries=num_queries), selected_doc_ids
 
     def _rate_limit_wait(self) -> None:
         """Wait if needed to respect rate limit."""
@@ -385,7 +449,11 @@ class MultimodalQueryGenerator(QueryGenerator):
 
             for idx, q in enumerate(questions):
                 if isinstance(q, dict):
-                    query_text = q.get("text", q.get("question", ""))
+                    turns = q.get("turns")
+                    if turns:
+                        query_text = " / ".join([t for t in turns if t])
+                    else:
+                        query_text = q.get("text", q.get("question", ""))
                     query_type = q.get("type", "factual")
                 elif isinstance(q, str):
                     query_text = q
@@ -407,7 +475,12 @@ class MultimodalQueryGenerator(QueryGenerator):
                     target_modality=modal_type,
                     passage_id=passage.passage_id,
                     difficulty=self._estimate_difficulty(query_text, query_type),
-                    metadata={"modalities_required": q.get("modalities_required", [modal_type])}
+                    metadata={
+                        "modalities_required": q.get("modalities_required", [modal_type]),
+                        "doc_ids": q.get("doc_ids"),
+                        "evidence_passage_ids": q.get("evidence_passage_ids"),
+                        "turns": q.get("turns")
+                    }
                 ))
 
         except json.JSONDecodeError as e:
@@ -444,7 +517,11 @@ class MultimodalQueryGenerator(QueryGenerator):
             "process": 0.3,
             "relationship": 0.3,
             "inferential": 0.3,
-            "cross_modal_reasoning": 0.4
+            "cross_modal_reasoning": 0.4,
+            "multi_hop_reasoning": 0.5,
+            "multi_modal_integration": 0.5,
+            "multi_doc_synthesis": 0.5,
+            "multi_turn_interaction": 0.5
         }
         difficulty += type_difficulty.get(query_type, 0.0)
 
@@ -570,3 +647,46 @@ class MultimodalQueryGenerator(QueryGenerator):
 
         pseudo = PseudoPassage()
         return self.generate(pseudo, num_queries)
+
+    def generate_m4_queries(
+        self,
+        passages: List[Any],
+        num_queries: int = 4,
+        max_docs: int = 3,
+        max_passages_per_doc: int = 4
+    ) -> List[GeneratedQuery]:
+        """
+        Generate M4 queries requiring multi-hop, multi-modal, multi-document,
+        and multi-turn reasoning.
+
+        Args:
+            passages: List of passages from multiple documents
+            num_queries: Number of M4 queries
+            max_docs: Max documents to include in the prompt
+            max_passages_per_doc: Max passages per document in the prompt
+
+        Returns:
+            List of GeneratedQuery objects
+        """
+        if not passages:
+            return []
+
+        prompt, selected_doc_ids = self._build_m4_prompt(
+            passages,
+            num_queries=num_queries,
+            max_docs=max_docs,
+            max_passages_per_doc=max_passages_per_doc
+        )
+        response = self._call_llm(prompt)
+
+        class PseudoPassage:
+            def __init__(self, doc_ids):
+                self.modal_type = "m4"
+                self.content = ""
+                self.context = None
+                self.passage_id = f"m4_{'_'.join(doc_ids)}"
+
+        pseudo = PseudoPassage(selected_doc_ids)
+        if response:
+            return self._parse_response(response, pseudo)
+        return []

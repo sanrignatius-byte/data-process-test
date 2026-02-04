@@ -551,7 +551,8 @@ class ContrastiveDataPipeline:
         target_docs: int = None,
         skip_download: bool = False,
         skip_parse: bool = False,
-        resume: bool = True
+        resume: bool = True,
+        output_name: str = "contrastive_dataset"
     ) -> PipelineStats:
         """
         Run the full pipeline.
@@ -561,6 +562,7 @@ class ContrastiveDataPipeline:
             skip_download: Skip download stage (use existing PDFs)
             skip_parse: Skip parse stage (use existing parsed data)
             resume: Resume from checkpoint if available
+            output_name: Output dataset name (without extension)
 
         Returns:
             Pipeline execution statistics
@@ -621,7 +623,7 @@ class ContrastiveDataPipeline:
             stats.total_triplets = len(triplets)
 
             # Stage 6: Save
-            output_paths = self.save_dataset(triplets)
+            output_paths = self.save_dataset(triplets, output_name=output_name)
 
             # Save statistics
             stats.end_time = datetime.now()
@@ -687,7 +689,9 @@ def run_pipeline(
     config_path: str = "configs/config.yaml",
     target_docs: int = 200,
     skip_download: bool = False,
-    skip_parse: bool = False
+    skip_parse: bool = False,
+    resume: bool = True,
+    output_name: str = "contrastive_dataset"
 ) -> PipelineStats:
     """
     Convenience function to run the pipeline.
@@ -697,6 +701,8 @@ def run_pipeline(
         target_docs: Target number of documents
         skip_download: Skip download stage
         skip_parse: Skip parse stage
+        resume: Resume from checkpoint if available
+        output_name: Output dataset name (without extension)
 
     Returns:
         Pipeline statistics
@@ -705,5 +711,7 @@ def run_pipeline(
     return pipeline.run(
         target_docs=target_docs,
         skip_download=skip_download,
-        skip_parse=skip_parse
+        skip_parse=skip_parse,
+        resume=resume,
+        output_name=output_name
     )
