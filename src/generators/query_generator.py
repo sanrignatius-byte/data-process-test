@@ -198,6 +198,84 @@ Generate exactly {num_queries} questions in the following JSON format:
 
 Output only valid JSON, no additional text."""
 
+    M4 = """You are an expert at crafting complex research questions for multimodal AI training.
+
+You will be given content excerpts from multiple documents and multiple modalities.
+Generate {num_queries} questions that satisfy M4 requirements:
+
+1) Multi-hop reasoning: questions require at least two distinct evidence points.
+2) Multi-modal integration: questions require at least two different modalities.
+3) Multi-document synthesis: questions require evidence from at least two documents.
+4) Multi-turn interaction: questions must be phrased as a short multi-turn dialogue.
+
+Key design logic (Why this works):
+- Bridge Logic (multi-hop): enforce explicit reasoning_steps that connect evidence from Chunk A -> Chunk B -> Answer.
+  If reasoning_steps cannot be written, the question is invalid.
+- Dependency Check (multi-modal): reject questions answerable from only text or only visual.
+  Require evidence from at least two modalities, otherwise REJECT.
+- Coreference Injection (multi-turn): follow-up turns must use coreferences like "it", "they", "that"
+  instead of repeating entity names.
+
+Content (each block includes document id, modality, passage id, and excerpt):
+{content}
+
+Return exactly {num_queries} items in the following JSON format:
+{{"questions": [
+  {{
+    "turns": ["question turn 1", "question turn 2", "..."],
+    "type": "multi_hop_reasoning|multi_modal_integration|multi_doc_synthesis|multi_turn_interaction",
+    "modalities_required": ["text", "table", "figure", "formula"],
+    "doc_ids": ["doc_a", "doc_b"],
+    "evidence_passage_ids": ["passage_id_1", "passage_id_2"],
+    "reasoning_steps": ["step 1", "step 2"],
+    "gold_answer": "concise answer"
+  }}
+]}}
+
+Output only valid JSON, no additional text."""
+
+    M4_TRAINING = """You are a scholarly query generation expert. Generate high-quality training queries
+from parsed paper content with precise evidence references.
+
+Input data:
+- arXiv ID: {arxiv_id}
+- Markdown text: {text_content}
+- JSONL structure: {structure_content}
+- Assets folder: {assets_dir}
+
+Generate:
+1) Single-hop factual queries (5)
+2) Multi-hop reasoning queries (3)
+3) Multi-modal understanding queries (2)
+
+Requirements:
+- Each query must include evidence with page + section + bbox + text span.
+- Multi-hop queries must list secondary evidence sources.
+- Multi-modal queries must reference required_images and text evidence.
+
+Return JSON only, following this schema:
+{{"arxiv_id": "{arxiv_id}", "queries": [
+  {{
+    "id": "q1",
+    "text": "query text",
+    "type": "single_hop|multi_hop|multi_modal",
+    "difficulty": "easy|medium|hard",
+    "evidence": {{
+      "primary_source": {{
+        "page": 1,
+        "section": "2.1",
+        "bbox": [0, 0, 100, 100],
+        "text_span": "evidence excerpt"
+      }},
+      "secondary_sources": [],
+      "required_images": ["fig_2_b.png"],
+      "answer_span": "exact answer"
+    }},
+    "estimated_tokens": 150
+  }}
+]}}
+Output only valid JSON, no additional text."""
+
 
 class QueryGenerator(ABC):
     """Abstract base class for query generators."""
@@ -287,7 +365,9 @@ class MultimodalQueryGenerator(QueryGenerator):
             "formula": self.templates.FORMULA,
             "infographic": self.templates.INFOGRAPHIC,
             "text": self.templates.TEXT,
-            "cross_modal": self.templates.CROSS_MODAL
+            "cross_modal": self.templates.CROSS_MODAL,
+            "m4": self.templates.M4,
+            "m4_training": self.templates.M4_TRAINING
         }
         return templates.get(modal_type, self.templates.TEXT)
 
@@ -314,6 +394,59 @@ class MultimodalQueryGenerator(QueryGenerator):
             content=content,
             context_section=context_section,
             num_queries=num_queries
+        )
+
+    def _build_m4_prompt(
+        self,
+        passages: List[Any],
+        num_queries: int = 4,
+        max_docs: int = 3,
+        max_passages_per_doc: int = 4
+    ) -> Tuple[str, List[str]]:
+        """Build M4 prompt from multiple documents and modalities."""
+        docs = {}
+        for passage in passages:
+            doc_id = getattr(passage, "doc_id", None) or "unknown_doc"
+            docs.setdefault(doc_id, []).append(passage)
+
+        selected_doc_ids = list(docs.keys())[:max_docs]
+        content_blocks = []
+        for doc_id in selected_doc_ids:
+            doc_passages = docs[doc_id]
+            by_modality = {}
+            for p in doc_passages:
+                modal = p.modal_type.value if hasattr(p.modal_type, "value") else p.modal_type
+                by_modality.setdefault(modal, []).append(p)
+
+            used = 0
+            for modal_type, modal_passages in by_modality.items():
+                if used >= max_passages_per_doc:
+                    break
+                p = modal_passages[0]
+                snippet = p.content[:500] + ("...[truncated]" if len(p.content) > 500 else "")
+                content_blocks.append(
+                    f"[DOC {doc_id} | {modal_type.upper()} | {p.passage_id}]\n{snippet}"
+                )
+                used += 1
+
+        template = self._get_template("m4")
+        content = "\n\n".join(content_blocks)
+        return template.format(content=content, num_queries=num_queries), selected_doc_ids
+
+    def _build_m4_training_prompt(
+        self,
+        arxiv_id: str,
+        text_content: str,
+        structure_content: str,
+        assets_dir: str
+    ) -> str:
+        """Build M4 training prompt for evidence-rich query generation."""
+        template = self._get_template("m4_training")
+        return template.format(
+            arxiv_id=arxiv_id,
+            text_content=text_content,
+            structure_content=structure_content,
+            assets_dir=assets_dir
         )
 
     def _rate_limit_wait(self) -> None:
@@ -379,13 +512,17 @@ class MultimodalQueryGenerator(QueryGenerator):
                     response = match.group(1).strip()
 
             data = json.loads(response)
-            questions = data.get("questions", [])
+            questions = data.get("questions", data.get("queries", []))
 
             modal_type = passage.modal_type.value if hasattr(passage.modal_type, 'value') else passage.modal_type
 
             for idx, q in enumerate(questions):
                 if isinstance(q, dict):
-                    query_text = q.get("text", q.get("question", ""))
+                    turns = q.get("turns")
+                    if turns:
+                        query_text = " / ".join([t for t in turns if t])
+                    else:
+                        query_text = q.get("text", q.get("question", ""))
                     query_type = q.get("type", "factual")
                 elif isinstance(q, str):
                     query_text = q
@@ -394,6 +531,10 @@ class MultimodalQueryGenerator(QueryGenerator):
                     continue
 
                 if not query_text:
+                    continue
+                if modal_type == "m4" and not self._validate_m4_question(q):
+                    continue
+                if modal_type == "m4_training" and not self._validate_m4_training_question(q):
                     continue
 
                 # Generate unique query ID
@@ -407,7 +548,17 @@ class MultimodalQueryGenerator(QueryGenerator):
                     target_modality=modal_type,
                     passage_id=passage.passage_id,
                     difficulty=self._estimate_difficulty(query_text, query_type),
-                    metadata={"modalities_required": q.get("modalities_required", [modal_type])}
+                    metadata={
+                        "modalities_required": q.get("modalities_required", [modal_type]),
+                        "doc_ids": q.get("doc_ids"),
+                        "evidence_passage_ids": q.get("evidence_passage_ids"),
+                        "turns": q.get("turns"),
+                        "reasoning_steps": q.get("reasoning_steps"),
+                        "gold_answer": q.get("gold_answer"),
+                        "evidence": q.get("evidence"),
+                        "difficulty_label": q.get("difficulty"),
+                        "estimated_tokens": q.get("estimated_tokens")
+                    }
                 ))
 
         except json.JSONDecodeError as e:
@@ -415,6 +566,46 @@ class MultimodalQueryGenerator(QueryGenerator):
             print(f"Response: {response[:200]}...")
 
         return queries
+
+    def _validate_m4_question(self, question: Dict[str, Any]) -> bool:
+        """Validate M4 question structure and coreference constraints."""
+        turns = question.get("turns") or []
+        if len(turns) < 2:
+            return False
+        reasoning_steps = question.get("reasoning_steps") or []
+        if len(reasoning_steps) < 2:
+            return False
+        if not question.get("gold_answer"):
+            return False
+        if not question.get("doc_ids") or len(question.get("doc_ids")) < 2:
+            return False
+        modalities = question.get("modalities_required") or []
+        if len(set(modalities)) < 2:
+            return False
+        # Coreference injection: require pronouns in follow-up turns.
+        pronouns = {"it", "they", "that", "those", "these", "its", "their"}
+        followups = " ".join(turns[1:]).lower()
+        if not any(p in followups.split() for p in pronouns):
+            return False
+        return True
+
+    def _validate_m4_training_question(self, question: Dict[str, Any]) -> bool:
+        """Validate evidence-rich M4 training queries."""
+        if not question.get("text"):
+            return False
+        evidence = question.get("evidence") or {}
+        primary = evidence.get("primary_source") or {}
+        if not primary.get("page") or not primary.get("section"):
+            return False
+        if not primary.get("bbox") or not primary.get("text_span"):
+            return False
+        if question.get("type") == "multi_hop":
+            if not evidence.get("secondary_sources"):
+                return False
+        if question.get("type") == "multi_modal":
+            if not evidence.get("required_images"):
+                return False
+        return True
 
     def _estimate_difficulty(self, query_text: str, query_type: str) -> float:
         """Estimate query difficulty (0.0 to 1.0)."""
@@ -444,7 +635,11 @@ class MultimodalQueryGenerator(QueryGenerator):
             "process": 0.3,
             "relationship": 0.3,
             "inferential": 0.3,
-            "cross_modal_reasoning": 0.4
+            "cross_modal_reasoning": 0.4,
+            "multi_hop_reasoning": 0.5,
+            "multi_modal_integration": 0.5,
+            "multi_doc_synthesis": 0.5,
+            "multi_turn_interaction": 0.5
         }
         difficulty += type_difficulty.get(query_type, 0.0)
 
@@ -570,3 +765,85 @@ class MultimodalQueryGenerator(QueryGenerator):
 
         pseudo = PseudoPassage()
         return self.generate(pseudo, num_queries)
+
+    def generate_m4_queries(
+        self,
+        passages: List[Any],
+        num_queries: int = 4,
+        max_docs: int = 3,
+        max_passages_per_doc: int = 4
+    ) -> List[GeneratedQuery]:
+        """
+        Generate M4 queries requiring multi-hop, multi-modal, multi-document,
+        and multi-turn reasoning.
+
+        Args:
+            passages: List of passages from multiple documents
+            num_queries: Number of M4 queries
+            max_docs: Max documents to include in the prompt
+            max_passages_per_doc: Max passages per document in the prompt
+
+        Returns:
+            List of GeneratedQuery objects
+        """
+        if not passages:
+            return []
+
+        prompt, selected_doc_ids = self._build_m4_prompt(
+            passages,
+            num_queries=num_queries,
+            max_docs=max_docs,
+            max_passages_per_doc=max_passages_per_doc
+        )
+        response = self._call_llm(prompt)
+
+        class PseudoPassage:
+            def __init__(self, doc_ids):
+                self.modal_type = "m4"
+                self.content = ""
+                self.context = None
+                self.passage_id = f"m4_{'_'.join(doc_ids)}"
+
+        pseudo = PseudoPassage(selected_doc_ids)
+        if response:
+            return self._parse_response(response, pseudo)
+        return []
+
+    def generate_m4_training_queries(
+        self,
+        arxiv_id: str,
+        text_content: str,
+        structure_content: str,
+        assets_dir: str
+    ) -> List[GeneratedQuery]:
+        """
+        Generate evidence-rich training queries from parsed paper assets.
+
+        Args:
+            arxiv_id: Paper arXiv ID
+            text_content: Parsed markdown content
+            structure_content: JSONL structure content
+            assets_dir: Assets directory path string
+
+        Returns:
+            List of GeneratedQuery objects
+        """
+        prompt = self._build_m4_training_prompt(
+            arxiv_id=arxiv_id,
+            text_content=text_content,
+            structure_content=structure_content,
+            assets_dir=assets_dir
+        )
+        response = self._call_llm(prompt)
+
+        class PseudoPassage:
+            def __init__(self, doc_id):
+                self.modal_type = "m4_training"
+                self.content = ""
+                self.context = None
+                self.passage_id = f"m4_training_{doc_id}"
+
+        pseudo = PseudoPassage(arxiv_id)
+        if response:
+            return self._parse_response(response, pseudo)
+        return []
