@@ -15,6 +15,7 @@ class MinerUConfig:
     output_format: str = "md"
     language: str = "en"
     timeout: int = 300
+    standardize_image_names: bool = True  # Rename hash-based image names to readable format
 
 
 @dataclass
@@ -77,7 +78,8 @@ class Config:
             num_workers=cfg.get("num_workers", 4),
             output_format=cfg.get("output_format", "md"),
             language=cfg.get("language", "en"),
-            timeout=cfg.get("timeout", 300)
+            timeout=cfg.get("timeout", 300),
+            standardize_image_names=cfg.get("standardize_image_names", True)
         )
 
     @property
