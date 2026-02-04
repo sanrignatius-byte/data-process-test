@@ -17,8 +17,19 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_compl
 import multiprocessing
 import time
 import re
+import hashlib
 
 from src.utils.file_utils import safe_json_dump
+
+
+# Image name standardization mapping for element types
+IMAGE_TYPE_PREFIX = {
+    "figure": "fig",
+    "table": "tbl",
+    "infographic": "info",
+    "chart": "chart",
+    "diagram": "diag",
+}
 
 
 @dataclass
@@ -65,7 +76,8 @@ class MinerUParser:
         num_workers: int = 4,
         language: str = "en",
         timeout: int = 300,
-        verify_installation: bool = True
+        verify_installation: bool = True,
+        standardize_image_names: bool = True
     ):
         """
         Initialize MinerU parser.
@@ -77,6 +89,8 @@ class MinerUParser:
             num_workers: Number of parallel workers
             language: Document language ("en", "ch", "multi")
             timeout: Timeout per document in seconds
+            standardize_image_names: If True, rename hash-based image names to
+                                     readable format like {doc_id}_page{N}_{type}{M}.ext
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -85,6 +99,7 @@ class MinerUParser:
         self.num_workers = min(num_workers, len(self.devices))
         self.language = language
         self.timeout = timeout
+        self.standardize_image_names = standardize_image_names
 
         # Verify mineru is available
         if verify_installation:
@@ -301,6 +316,16 @@ class MinerUParser:
             # Parse output files
             elements = self._extract_elements_from_output(doc_output_dir, doc_id)
             total_pages = self._count_pages(doc_output_dir)
+
+            # Standardize image names if enabled
+            rename_map = {}
+            if self.standardize_image_names:
+                elements, rename_map = self._standardize_image_names(
+                    doc_output_dir, doc_id, elements
+                )
+                # Update markdown files with new image references
+                for md_file in doc_output_dir.rglob("*.md"):
+                    self._update_markdown_image_refs(md_file, rename_map)
 
             return ParsedDocument(
                 doc_id=doc_id,
@@ -737,6 +762,160 @@ class MinerUParser:
         if match:
             return int(match.group(1))
         return 0
+
+    def _is_hash_filename(self, filename: str) -> bool:
+        """Check if filename appears to be a hash (e.g., SHA256)."""
+        name = Path(filename).stem
+        # SHA256 produces 64 hex characters
+        if len(name) == 64 and all(c in '0123456789abcdef' for c in name.lower()):
+            return True
+        # Also check for shorter hashes (MD5 = 32, SHA1 = 40)
+        if len(name) in [32, 40] and all(c in '0123456789abcdef' for c in name.lower()):
+            return True
+        return False
+
+    def _standardize_image_names(
+        self,
+        output_dir: Path,
+        doc_id: str,
+        elements: List[ParsedElement]
+    ) -> Tuple[List[ParsedElement], Dict[str, str]]:
+        """
+        Rename hash-based image files to standardized, readable names.
+
+        Naming convention:
+            {doc_id}_page{page_idx}_{type_prefix}{counter}.{ext}
+
+        Examples:
+            - 2602_01068_page0_fig0.jpg
+            - 2602_01068_page1_tbl0.jpg
+            - 2602_01068_page2_fig1.png
+
+        Args:
+            output_dir: Base output directory for the document
+            doc_id: Document identifier
+            elements: List of parsed elements
+
+        Returns:
+            Tuple of (updated elements list, rename mapping dict)
+        """
+        # Track counters per (page, type) combination
+        counters: Dict[Tuple[int, str], int] = {}
+        # Mapping from old path to new path
+        rename_map: Dict[str, str] = {}
+        # Track which files we've already renamed to avoid duplicates
+        renamed_files: set = set()
+
+        for element in elements:
+            if not element.image_path:
+                continue
+
+            old_path = Path(element.image_path)
+
+            # Try to resolve the path
+            if not old_path.is_absolute():
+                # Try relative to output_dir
+                candidate_paths = [
+                    output_dir / element.image_path,
+                    output_dir / doc_id / element.image_path,
+                    output_dir / doc_id / doc_id / "hybrid_auto" / element.image_path,
+                    output_dir / doc_id / "hybrid_auto" / element.image_path,
+                ]
+                for candidate in candidate_paths:
+                    if candidate.exists():
+                        old_path = candidate
+                        break
+
+            # Skip if file doesn't exist or already processed
+            if not old_path.exists() or str(old_path) in renamed_files:
+                continue
+
+            # Check if this is a hash-based filename that needs renaming
+            if not self._is_hash_filename(old_path.name):
+                continue
+
+            # Get the type prefix
+            elem_type = element.element_type
+            type_prefix = IMAGE_TYPE_PREFIX.get(elem_type, elem_type[:3])
+
+            # Get counter for this (page, type) combination
+            page_idx = element.page_idx
+            counter_key = (page_idx, elem_type)
+            counter = counters.get(counter_key, 0)
+
+            # Generate new filename
+            suffix = old_path.suffix.lower()
+            new_name = f"{doc_id}_page{page_idx}_{type_prefix}{counter}{suffix}"
+            new_path = old_path.parent / new_name
+
+            # Handle potential naming conflicts
+            conflict_counter = 0
+            while new_path.exists() and new_path != old_path:
+                conflict_counter += 1
+                new_name = f"{doc_id}_page{page_idx}_{type_prefix}{counter}_{conflict_counter}{suffix}"
+                new_path = old_path.parent / new_name
+
+            # Perform the rename
+            try:
+                if old_path != new_path:
+                    shutil.move(str(old_path), str(new_path))
+                    renamed_files.add(str(old_path))
+
+                    # Store mapping
+                    rename_map[str(old_path)] = str(new_path)
+
+                    # Update element's image_path
+                    # Keep relative path format if original was relative
+                    if not Path(element.image_path).is_absolute():
+                        # Reconstruct relative path
+                        rel_path = new_path.relative_to(output_dir) if output_dir in new_path.parents else new_path.name
+                        element.image_path = str(rel_path)
+                    else:
+                        element.image_path = str(new_path)
+
+                    # Store original name in metadata for reference
+                    if element.metadata is None:
+                        element.metadata = {}
+                    element.metadata["original_hash_name"] = old_path.name
+                    element.metadata["standardized_name"] = new_name
+
+                    # Update content if it references the old filename
+                    if old_path.name in element.content:
+                        element.content = element.content.replace(old_path.name, new_name)
+
+            except (OSError, shutil.Error) as e:
+                # Log but don't fail on rename errors
+                print(f"Warning: Failed to rename {old_path} to {new_path}: {e}")
+
+            # Increment counter
+            counters[counter_key] = counter + 1
+
+        return elements, rename_map
+
+    def _update_markdown_image_refs(
+        self,
+        md_path: Path,
+        rename_map: Dict[str, str]
+    ) -> None:
+        """Update image references in markdown files after renaming."""
+        if not md_path.exists() or not rename_map:
+            return
+
+        try:
+            content = md_path.read_text(encoding='utf-8')
+            updated = False
+
+            for old_path, new_path in rename_map.items():
+                old_name = Path(old_path).name
+                new_name = Path(new_path).name
+                if old_name in content:
+                    content = content.replace(old_name, new_name)
+                    updated = True
+
+            if updated:
+                md_path.write_text(content, encoding='utf-8')
+        except Exception as e:
+            print(f"Warning: Failed to update markdown refs in {md_path}: {e}")
 
     def parse_batch(
         self,

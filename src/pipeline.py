@@ -103,7 +103,8 @@ class ContrastiveDataPipeline:
             devices=self.config.mineru.devices,
             num_workers=self.config.mineru.num_workers,
             language=self.config.mineru.language,
-            timeout=self.config.mineru.timeout
+            timeout=self.config.mineru.timeout,
+            standardize_image_names=getattr(self.config.mineru, 'standardize_image_names', True)
         )
 
         # Modal Extractor
