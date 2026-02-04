@@ -107,7 +107,9 @@ def main():
         config_path=args.config,
         target_docs=args.target_docs,
         skip_download=args.skip_download,
-        skip_parse=args.skip_parse
+        skip_parse=args.skip_parse,
+        resume=not args.no_resume,
+        output_name=args.output_name
     )
 
     # Print summary
