@@ -14,38 +14,46 @@
 # Step 2: 使用MinerU解析PDF
 # ============================================================
 
+set -euo pipefail
+
 module load Miniforge3
 
-cd /projects/myyyx1/data-process-test
+REPO_ROOT=${REPO_ROOT:-/projects/myyyx1/data-process-test}
+CONDA_ENV=${CONDA_ENV:-minerU}
+INPUT_PDF_DIR=${INPUT_PDF_DIR:-data/raw_pdfs}
+MINERU_OUTPUT_DIR=${MINERU_OUTPUT_DIR:-data/mineru_output}
+WORKERS=${WORKERS:-4}
+DEVICES=${DEVICES:-"cuda:0 cuda:1 cuda:2 cuda:3"}
+TIMEOUT=${TIMEOUT:-900}
+
+cd "$REPO_ROOT"
+mkdir -p logs "$MINERU_OUTPUT_DIR"
 
 echo "=========================================="
 echo "Starting MinerU parsing"
 echo "Start time: $(date)"
-echo "Input: data/raw_pdfs"
-echo "Output: data/mineru_output"
+echo "Input: $INPUT_PDF_DIR"
+echo "Output: $MINERU_OUTPUT_DIR"
 echo "=========================================="
 
-# 检查输入文件
-echo "PDF files to parse:"
-ls -la data/raw_pdfs/*.pdf 2>/dev/null | head -20
-PDF_COUNT=$(ls data/raw_pdfs/*.pdf 2>/dev/null | wc -l)
+PDF_COUNT=$(find "$INPUT_PDF_DIR" -maxdepth 1 -name '*.pdf' | wc -l)
 echo "Total: $PDF_COUNT PDFs"
 
 if [ "$PDF_COUNT" -eq 0 ]; then
-    echo "ERROR: No PDF files found in data/raw_pdfs/"
+    echo "ERROR: No PDF files found in $INPUT_PDF_DIR"
     exit 1
 fi
 
-# 运行MinerU解析
-conda run -n minerU python scripts/parse_only.py \
-    --input data/raw_pdfs \
-    --output data/mineru_output \
-    --workers 4 \
-    --devices cuda:0 cuda:1 cuda:2 cuda:3 \
-    --timeout 900
+read -r -a DEVICE_ARR <<< "$DEVICES"
+conda run -n "$CONDA_ENV" python scripts/parse_only.py \
+    --input "$INPUT_PDF_DIR" \
+    --output "$MINERU_OUTPUT_DIR" \
+    --workers "$WORKERS" \
+    --devices "${DEVICE_ARR[@]}" \
+    --timeout "$TIMEOUT"
 
 echo "=========================================="
 echo "Parsing complete: $(date)"
 echo "Parsed documents:"
-ls -d data/mineru_output/*/ 2>/dev/null | wc -l
+find "$MINERU_OUTPUT_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l
 echo "=========================================="

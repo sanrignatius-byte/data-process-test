@@ -109,6 +109,53 @@ python scripts/generate_m4_queries.py \
     --model gpt-4o-mini
 ```
 
+### 方式4：输入arXiv编号，直接下载其引用文献PDF（新）
+
+```bash
+python scripts/download_references_by_arxiv.py \
+    --arxiv-id 2501.09959 \
+    --output data/referenced_pdfs
+```
+
+可选参数：
+
+- `--max-references`: 限制处理的引用数量（默认全部）
+- `--min-citations`: 只保留最小引用数以上的文献
+- `--api-key`: Semantic Scholar API key（可提升速率限制）
+
+脚本会优先尝试 `arXiv PDF`、`openAccessPdf`，并回退到 `doi.org` 跳转链接；最终在输出目录写入 `reference_download_report.json` 记录每篇文献的下载状态。
+
+### 方式5：在 Slurm 上执行完整任务（推荐集群）
+
+```bash
+# 1) 提交完整流程（下载引用 -> 解析 -> 生成M4）
+./slurm_scripts/submit_all.sh --arxiv-id 2501.09959
+
+# 2) 控制下载规模
+./slurm_scripts/submit_all.sh \
+    --arxiv-id 2501.09959 \
+    --max-references 300 \
+    --min-citations 3
+
+# 3) 只跑解析与生成（跳过下载）
+./slurm_scripts/submit_all.sh --skip-download
+```
+
+如果你想单独提交下载任务，也可以直接：
+
+```bash
+sbatch \
+  --export=ALL,ARXIV_ID=2501.09959,MAX_REFERENCES=200,MIN_CITATIONS=0 \
+  slurm_scripts/01_fetch_references.sh
+```
+
+常用检查命令：
+
+```bash
+squeue -u $USER
+sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
+```
+
 ### 方式2：完整Pipeline
 
 ```bash
@@ -134,6 +181,19 @@ python scripts/download_only.py --count 200 --categories cs.CL cs.CV
 # 仅解析PDF
 python scripts/parse_only.py --input ./data/raw_pdfs --output ./data/mineru_output
 ```
+
+
+### Slurm 常见问题排查
+
+- `DependencyNeverSatisfied`：通常是上游作业失败（例如下载或解析失败）。
+  先用：
+  `sacct -j <jobid> --format=JobID,State,ExitCode,Elapsed,NodeList`
+  再看对应日志：`logs/fetch_refs_<jobid>.err` / `logs/parse_<jobid>.err`。
+- `reference_download_report.json` 里 `total_references=0`：
+  1) Semantic Scholar 对该论文未收录引用；
+  2) API限流/无key导致请求不完整；
+  3) 网络代理限制。
+  建议：设置 `SEMANTIC_SCHOLAR_API_KEY` 并重试，或用 `--allow-empty` 仅做流程联通性测试。
 
 ## 配置说明
 
@@ -243,12 +303,14 @@ data-process-test/
 │   ├── generate_m4_queries.py   # M4 Query生成脚本
 │   ├── download_only.py         # PDF下载脚本
 │   ├── parse_only.py            # 解析脚本
+│   ├── download_references_by_arxiv.py  # 按arXiv拉取引用PDF（新）
 │   └── standardize_image_names.py
 ├── src/
 │   ├── parsers/                 # PDF下载和解析
 │   │   ├── mineru_parser.py
 │   │   ├── modal_extractor.py
-│   │   └── pdf_downloader.py
+│   │   ├── pdf_downloader.py
+│   │   └── reference_pdf_collector.py
 │   ├── generators/              # Query生成
 │   │   ├── query_generator.py   # 基础Query生成
 │   │   └── m4_query_generator.py # M4增强生成
