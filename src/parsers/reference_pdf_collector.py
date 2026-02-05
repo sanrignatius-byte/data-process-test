@@ -49,7 +49,7 @@ class ReferencePDFCollector:
         self._last_s2_call = 0.0
 
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "m4-reference-collector/1.1"})
+        self.session.headers.update({"User-Agent": "m4-reference-collector/1.2"})
         if api_key:
             self.session.headers["x-api-key"] = api_key
 
@@ -80,13 +80,12 @@ class ReferencePDFCollector:
         return data.get("paperId")
 
     def _fetch_references(self, paper_id: str, page_size: int = 500) -> List[Dict[str, Any]]:
-        # IMPORTANT:
-        # For /references endpoint, fields for the nested paper must be prefixed with citedPaper.
-        # Otherwise citedPaper can be missing fields (or empty in some API responses).
-        fields = (
+        nested_fields = (
             "citedPaper.paperId,citedPaper.title,citedPaper.authors,citedPaper.year,"
             "citedPaper.venue,citedPaper.externalIds,citedPaper.citationCount,citedPaper.openAccessPdf"
         )
+        fallback_fields = "paperId,title,authors,year,venue,externalIds,citationCount,openAccessPdf"
+
         url = f"{self.SEMANTIC_SCHOLAR_GRAPH}/paper/{paper_id}/references"
         offset = 0
         refs: List[Dict[str, Any]] = []
@@ -94,19 +93,16 @@ class ReferencePDFCollector:
         while True:
             payload = self._s2_get(
                 url,
-                params={"fields": fields, "limit": page_size, "offset": offset},
+                params={"fields": nested_fields, "limit": page_size, "offset": offset},
             )
             if not payload:
                 break
+
+            # Compatibility fallback for deployments that don't return expected nested payload.
             if "data" not in payload:
-                # Fallback: Some deployments may reject nested field prefixes.
                 payload = self._s2_get(
                     url,
-                    params={
-                        "fields": "paperId,title,authors,year,venue,externalIds,citationCount,openAccessPdf",
-                        "limit": page_size,
-                        "offset": offset,
-                    },
+                    params={"fields": fallback_fields, "limit": page_size, "offset": offset},
                 ) or {}
 
             page = payload.get("data", [])
@@ -128,6 +124,22 @@ class ReferencePDFCollector:
         cleaned = raw.replace("arXiv:", "").strip()
         cleaned = re.sub(r"v\d+$", "", cleaned)
         return cleaned
+
+    @staticmethod
+    def _extract_cited_paper(ref_item: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize API variations to a single cited-paper dict."""
+        cited = ref_item.get("citedPaper")
+        if isinstance(cited, dict) and cited:
+            return cited
+
+        # Some responses expose fields directly at top-level reference item.
+        top_level_keys = {
+            "paperId", "title", "authors", "year", "venue", "externalIds", "citationCount", "openAccessPdf"
+        }
+        if any(key in ref_item for key in top_level_keys):
+            return ref_item
+
+        return {}
 
     def _candidate_urls(self, cited: Dict[str, Any]) -> List[str]:
         urls: List[str] = []
@@ -210,7 +222,7 @@ class ReferencePDFCollector:
 
         records: List[ReferenceRecord] = []
         for item in raw_refs:
-            cited = item.get("citedPaper") or {}
+            cited = self._extract_cited_paper(item)
             if not cited:
                 continue
 
