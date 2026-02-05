@@ -69,6 +69,10 @@ done
 cd "$REPO_ROOT"
 mkdir -p logs
 
+if [[ "$PARSE_ONLY" == true ]]; then
+    SKIP_DOWNLOAD=true
+fi
+
 if [[ "$SKIP_DOWNLOAD" == false && -z "$ARXIV_ID" ]]; then
     echo "Error: must provide --arxiv-id when download step is enabled"
     exit 1
@@ -80,6 +84,7 @@ echo "Repo root: $REPO_ROOT"
 echo "Skip download: $SKIP_DOWNLOAD"
 echo "Parse only: $PARSE_ONLY"
 echo "arXiv ID: ${ARXIV_ID:-N/A}"
+echo "Max refs/min cites: ${MAX_REFERENCES}/${MIN_CITATIONS}"
 echo "Output dir: $OUTPUT_DIR"
 echo "=========================================="
 

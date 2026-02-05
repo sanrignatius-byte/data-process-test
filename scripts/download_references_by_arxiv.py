@@ -2,6 +2,7 @@
 """Download referenced papers' PDFs directly from an input arXiv ID."""
 
 import argparse
+import os
 from pathlib import Path
 import sys
 
@@ -50,7 +51,8 @@ def main() -> None:
 
     ensure_dir(args.output)
 
-    collector = ReferencePDFCollector(output_dir=args.output, api_key=args.api_key)
+    api_key = args.api_key or os.getenv("SEMANTIC_SCHOLAR_API_KEY")
+    collector = ReferencePDFCollector(output_dir=args.output, api_key=api_key)
     try:
         records = collector.collect_from_arxiv(
             arxiv_id=args.arxiv_id,
@@ -59,7 +61,7 @@ def main() -> None:
         )
     except ValueError as exc:
         print(f"Error: {exc}")
-        print("Tip: check your network/API access, or pass --api-key for higher Semantic Scholar quota.")
+        print("Tip: check network/API access, or set --api-key / SEMANTIC_SCHOLAR_API_KEY.")
         sys.exit(1)
 
     report_path = args.output / "reference_download_report.json"

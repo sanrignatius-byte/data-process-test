@@ -98,6 +98,16 @@ class ReferencePDFCollector:
             )
             if not payload:
                 break
+            if "data" not in payload:
+                # Fallback: Some deployments may reject nested field prefixes.
+                payload = self._s2_get(
+                    url,
+                    params={
+                        "fields": "paperId,title,authors,year,venue,externalIds,citationCount,openAccessPdf",
+                        "limit": page_size,
+                        "offset": offset,
+                    },
+                ) or {}
 
             page = payload.get("data", [])
             if not page:
