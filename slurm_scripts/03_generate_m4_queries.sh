@@ -21,12 +21,18 @@ REPO_ROOT=${REPO_ROOT:-/projects/myyyx1/data-process-test}
 CONDA_ENV=${CONDA_ENV:-minerU}
 MINERU_INPUT_DIR=${MINERU_INPUT_DIR:-data/mineru_output}
 QUERY_OUTPUT_DIR=${QUERY_OUTPUT_DIR:-data/queries_output/m4_queries}
-MAX_DOCS=${MAX_DOCS:-20}
+MAX_DOCS=${MAX_DOCS:-80}
 NUM_QUERIES=${NUM_QUERIES:-50}
 PROVIDER=${PROVIDER:-anthropic}
 
 cd "$REPO_ROOT"
 mkdir -p logs "$(dirname "$QUERY_OUTPUT_DIR")"
+
+# 加载 .env 文件中的 API 密钥
+if [[ -f .env ]]; then
+    export $(grep -v '^#' .env | xargs)
+    echo "Loaded API keys from .env"
+fi
 
 echo "=========================================="
 echo "Starting M4 Query Generation"
@@ -42,6 +48,7 @@ echo ""
 echo "Running dry-run to check entity statistics..."
 conda run -n "$CONDA_ENV" python scripts/generate_m4_queries.py \
     --input "$MINERU_INPUT_DIR" \
+    --max-docs "$MAX_DOCS" \
     --dry-run
 
 echo ""

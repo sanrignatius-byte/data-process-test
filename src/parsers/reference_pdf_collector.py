@@ -59,17 +59,27 @@ class ReferencePDFCollector:
             time.sleep(self.semantic_scholar_delay - elapsed)
         self._last_s2_call = time.time()
 
-    def _s2_get(self, url: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-        self._rate_limit_s2()
-        try:
-            response = self.session.get(url, params=params, timeout=40)
-            if response.status_code == 200:
-                return response.json()
-            print(f"[SemanticScholar] {response.status_code}: {response.text[:200]}")
-            return None
-        except requests.RequestException as exc:
-            print(f"[SemanticScholar] request failed: {exc}")
-            return None
+    def _s2_get(self, url: str, params: Optional[Dict[str, Any]] = None, max_retries: int = 3) -> Optional[Dict[str, Any]]:
+        for attempt in range(max_retries):
+            self._rate_limit_s2()
+            try:
+                response = self.session.get(url, params=params, timeout=40)
+                if response.status_code == 200:
+                    return response.json()
+                if response.status_code == 429:
+                    wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
+                    print(f"[SemanticScholar] Rate limited (429), waiting {wait_time}s before retry {attempt + 1}/{max_retries}...")
+                    time.sleep(wait_time)
+                    continue
+                print(f"[SemanticScholar] {response.status_code}: {response.text[:200]}")
+                return None
+            except requests.RequestException as exc:
+                print(f"[SemanticScholar] request failed: {exc}")
+                if attempt < max_retries - 1:
+                    time.sleep(5)
+                    continue
+                return None
+        return None
 
     def _resolve_seed_paper_id(self, arxiv_id: str) -> Optional[str]:
         clean_id = arxiv_id.replace("arXiv:", "").strip()
@@ -138,8 +148,19 @@ class ReferencePDFCollector:
                 deduped.append(item)
         return deduped
 
-    def _download_from_candidates(self, record: ReferenceRecord, timeout: int = 60) -> Tuple[bool, Optional[str]]:
-        safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", record.reference_paper_id or record.title)[:120]
+    def _download_from_candidates(
+        self, record: ReferenceRecord, timeout: int = 60, arxiv_only: bool = False
+    ) -> Tuple[bool, Optional[str]]:
+        # 如果启用 arxiv_only 模式，跳过没有 arXiv ID 的论文
+        if arxiv_only and not record.arxiv_id:
+            return False, "Skipped: no arXiv ID (arxiv_only mode)"
+
+        # 使用 arXiv ID 作为文件名（如果有），否则用原来的逻辑
+        if record.arxiv_id:
+            safe_name = record.arxiv_id.replace("/", "_")
+        else:
+            safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", record.reference_paper_id or record.title)[:120]
+
         output_path = self.output_dir / f"{safe_name}.pdf"
         if output_path.exists():
             record.local_path = str(output_path)
@@ -184,6 +205,7 @@ class ReferencePDFCollector:
         arxiv_id: str,
         max_references: Optional[int] = None,
         min_citations: int = 0,
+        arxiv_only: bool = False,
     ) -> List[ReferenceRecord]:
         """Collect and download all available references for an arXiv paper."""
 
@@ -227,7 +249,7 @@ class ReferencePDFCollector:
             records = records[:max_references]
 
         for record in records:
-            success, reason = self._download_from_candidates(record)
+            success, reason = self._download_from_candidates(record, arxiv_only=arxiv_only)
             if not success:
                 record.failure_reason = reason
 

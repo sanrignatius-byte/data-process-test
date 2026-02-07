@@ -159,7 +159,7 @@ def run_m4_generation(
 
     linker = CrossDocumentLinker(
         similarity_threshold=0.7,
-        min_entity_frequency=1
+        min_entity_frequency=3  # 只保留出现>=3次的实体，减少计算量
     )
 
     # Group passages by document
