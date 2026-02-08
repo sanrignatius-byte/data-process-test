@@ -10,8 +10,8 @@
 #SBATCH --mem=64G
 #SBATCH --gpus=4
 
-# Batch figure understanding v2: improved prompt with visual anchors + blindfold test
-# Generates L1 intra-document cross-modal queries with built-in QC
+# Batch figure understanding v3: fused queries, no meta-language, diverse evidence
+# Generates L1 intra-document cross-modal queries with strict QC
 
 set -euo pipefail
 
@@ -39,15 +39,15 @@ conda run -n minerU python scripts/batch_figure_understanding.py \
     --model "${MODEL_PATH}" \
     --tp-size 4 \
     --input "${REPO_ROOT}/data/figure_text_pairs.json" \
-    --output "${REPO_ROOT}/data/figure_descriptions_v2.json" \
-    --max-model-len 8192 \
+    --output "${REPO_ROOT}/data/figure_descriptions_v3.json" \
+    --max-model-len 16384 \
     --min-quality 0.5
 
 echo ""
 echo "Running validation on generated queries..."
 conda run -n minerU python scripts/validate_queries.py \
-    "${REPO_ROOT}/data/l1_cross_modal_queries_v2.jsonl" \
-    --output "${REPO_ROOT}/data/validation_report_v2.json"
+    "${REPO_ROOT}/data/l1_cross_modal_queries_v3.jsonl" \
+    --output "${REPO_ROOT}/data/validation_report_v3.json"
 
 echo ""
 echo "Done: $(date)"

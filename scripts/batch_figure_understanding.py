@@ -17,51 +17,48 @@ from PIL import Image
 from vllm import LLM, SamplingParams
 
 
-FIGURE_UNDERSTANDING_PROMPT = """You are creating cross-modal retrieval training data. Generate queries that are IMPOSSIBLE to answer without BOTH the figure AND the text.
+FIGURE_UNDERSTANDING_PROMPT = """Generate cross-modal retrieval queries for this academic figure.
 
-**Caption**: {caption}
-**Text before figure**: {context_before}
-**Text after figure**: {context_after}
-**Referring paragraphs**: {references}
+Caption: {caption}
+Text before: {context_before}
+Text after: {context_after}
+References: {references}
 
-## Step 1: Inventory visual elements
-List every concrete element visible in the image:
-- Plots: axis labels, units, data series names, key values (peaks/valleys/crossovers), line styles, colors
-- Diagrams: node labels, arrow directions, module names, connection types
-- Tables: headers, specific cell values
-- Photos/examples: objects, text, UI elements, numbers shown
+RULES — read carefully:
 
-## Step 2: Generate 3 cross-modal queries
+1. Each query is ONE question (max 25 words, no "and" joining two sub-questions).
+2. The query must FUSE figure and text: changing the figure must change the answer, AND removing the text must also make it unanswerable.
+3. Include a specific visual anchor (color, position, label, value) in the query itself.
+4. NEVER use meta-words: "text", "caption", "figure", "paper", "section", "according to", "as mentioned". Refer to content directly.
+5. Each of the 3 queries must cite a DIFFERENT text passage as evidence.
+6. Prefer comparison/trend/anomaly queries over pure value-reading.
 
-BLINDFOLD TEST (mandatory): Covering the figure makes the query unanswerable. Covering the text also makes it unanswerable. Both are needed.
+BAD query (concatenated, meta-language):
+"What accuracy does RLR reach at 0.95 in the plot, and what does the text state about algorithm differences?"
 
-EVERY query MUST contain a SPECIFIC visual anchor — a concrete element you can point to:
-- GOOD: "the red dashed curve peaking at y=0.92", "the node labeled Encoder", "the bar reaching 85.3%"
-- BAD: "the figure", "the trend", "the results shown"
+GOOD query (fused, no meta-language):
+"Does RLR's 0.68 accuracy at fairness=0.95 support the claim that repair performance varies across algorithms?"
+→ Must see figure (read RLR's value) AND know the claim (from surrounding discussion) to answer.
 
-BANNED (auto-reject):
-- "According to the text, ..." or "As mentioned in the text, ..."
-- "How does Figure N represent/illustrate/show ..."
-- "What does Figure N depict/display ..."
-- Any query answerable from caption alone or text alone
+GOOD query (comparison):
+"Why does the solid blue curve overtake the dashed red one only after epoch 12, given that both use the same base architecture?"
+→ Must see figure (crossover point) AND know architecture details to answer.
 
-QUERY TYPES (use these):
-1. Value+Context: Read a specific value from the figure, connect to a textual condition. "What accuracy does Method-A reach at k=5 [from figure], and what design choice in Section 3 explains this [from text]?"
-2. Comparison+Explanation: Compare two visual elements, explain via text. "The blue line overtakes the red at epoch 12 [from figure]—what training change in the text causes this crossover?"
-3. Anomaly+Cause: Spot something unexpected in the figure, find cause in text. "The loss spikes at step 5000 [from figure]. What preprocessing issue in Section 4.1 explains this [from text]?"
-4. Visual+Definition: A visual element whose meaning requires textual context. "The shaded region between x=0.2 and x=0.8 [from figure] corresponds to what concept defined in Equation 3 [from text]?"
+GOOD query (anomaly):
+"What causes the sharp spike at step 5000 in the green loss curve, despite the stated constant learning rate?"
+→ Must see figure (spike location) AND know training setup to answer.
 
-## Output: JSON only, no other text
+Output JSON only:
 ```json
 {{
   "figure_type": "plot|diagram|architecture|table|example|photo|other",
-  "visual_elements": ["element1 with value/position", "element2", "..."],
-  "cross_modal_queries": [
+  "visual_elements": ["element with value/position", "..."],
+  "queries": [
     {{
-      "query": "...",
-      "answer": "concise, factual, max 2 sentences",
-      "visual_anchor": "exact visual element referenced (e.g. 'red line peaking at 0.92 around x=50')",
-      "text_evidence": "quote or close paraphrase from the provided text needed to answer",
+      "query": "single fused question, max 25 words, no meta-language",
+      "answer": "factual, max 2 sentences",
+      "visual_anchor": "specific element (e.g. 'red dashed line at y=0.85')",
+      "text_evidence": "direct quote from the provided context, min 50 chars, different per query",
       "query_type": "value_context|comparison_explanation|anomaly_cause|visual_definition"
     }}
   ]
@@ -135,7 +132,7 @@ def process_figures(
         temperature=0.7,
         top_p=0.8,
         top_k=20,
-        max_tokens=4096,  # Thinking mode needs more tokens for <think> + JSON output
+        max_tokens=8192,  # Thinking mode needs ~4K for <think> + ~2K for JSON output
     )
 
     # Build prompts with images (PIL Image loading - required by vLLM)
@@ -199,8 +196,8 @@ def process_figures(
             "parsed": parsed,
         }
 
-        if parsed and "cross_modal_queries" in parsed:
-            result["queries"] = parsed["cross_modal_queries"]
+        if parsed and ("queries" in parsed or "cross_modal_queries" in parsed):
+            result["queries"] = parsed.get("queries", parsed.get("cross_modal_queries", []))
             result["figure_type_mllm"] = parsed.get("figure_type", "unknown")
             result["visual_elements"] = parsed.get("visual_elements", [])
 
@@ -214,7 +211,7 @@ def process_figures(
         json.dump(results, f, indent=2, ensure_ascii=False)
 
     # Also save queries in a flat JSONL format for easy evaluation
-    queries_path = output_path.with_name("l1_cross_modal_queries_v2.jsonl")
+    queries_path = output_path.with_name("l1_cross_modal_queries_v3.jsonl")
     query_count = 0
     dropped = 0
     with open(queries_path, 'w', encoding='utf-8') as f:
@@ -224,24 +221,45 @@ def process_figures(
                 text_evidence = q.get("text_evidence", "")
                 query_text = q.get("query", "")
 
-                # Hard validation: drop queries that fail basic cross-modal checks
-                ban_prefixes = [
-                    "according to the text",
-                    "as mentioned in the text",
-                    "how does figure",
-                    "what does figure",
-                    "what does the figure",
-                ]
+                # Hard validation: drop queries that fail cross-modal checks
                 query_lower = query_text.lower().strip()
+
+                # Ban meta-language anywhere in query
+                meta_words = ["the text", "the caption", "the paper",
+                              "according to", "as mentioned", "as stated",
+                              "as described", "the section", "the paragraph"]
+                if any(mw in query_lower for mw in meta_words):
+                    dropped += 1
+                    continue
+
+                # Ban shallow patterns
+                ban_prefixes = [
+                    "how does figure", "what does figure",
+                    "what does the figure", "what is shown",
+                    "what is depicted",
+                ]
                 if any(query_lower.startswith(bp) for bp in ban_prefixes):
                     dropped += 1
                     continue
+
+                # Require visual anchor (min 5 chars)
                 if not visual_anchor or len(visual_anchor) < 5:
                     dropped += 1
                     continue
-                if not text_evidence or len(text_evidence) < 10:
+
+                # Require substantial text evidence (min 50 chars per feedback)
+                if not text_evidence or len(text_evidence) < 50:
                     dropped += 1
                     continue
+
+                # Normalize image path to relative
+                img_path = result["image_path"]
+                repo_root = "/projects/_hdd/myyyx1/data-process-test/"
+                repo_root_alt = "/projects/myyyx1/data-process-test/"
+                if img_path.startswith(repo_root):
+                    img_path = img_path[len(repo_root):]
+                elif img_path.startswith(repo_root_alt):
+                    img_path = img_path[len(repo_root_alt):]
 
                 entry = {
                     "query_id": f"l1_{result['doc_id']}_{result['figure_id']}_{query_count}",
@@ -250,7 +268,7 @@ def process_figures(
                     "doc_id": result["doc_id"],
                     "figure_id": result["figure_id"],
                     "figure_number": result.get("figure_number"),
-                    "image_path": result["image_path"],
+                    "image_path": img_path,
                     "caption": result["caption"],
                     "figure_type": result.get("figure_type_mllm", "unknown"),
                     "visual_anchor": visual_anchor,
