@@ -40,7 +40,7 @@ conda run -n minerU python scripts/batch_figure_understanding.py \
     --tp-size 4 \
     --input "${REPO_ROOT}/data/figure_text_pairs.json" \
     --output "${REPO_ROOT}/data/figure_descriptions_v3.json" \
-    --max-model-len 16384 \
+    --max-model-len 12288 \
     --min-quality 0.5
 
 echo ""
