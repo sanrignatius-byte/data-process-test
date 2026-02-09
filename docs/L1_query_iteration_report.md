@@ -31,23 +31,23 @@
 
 | 问题 | 严重程度 | 数据 |
 |------|---------|------|
-| 缺少 visual anchor | 🔴 严重 | 63.4% 的 query 没有任何视觉锚点 |
-| "看图说话"而非跨模态推理 | 🔴 严重 | 很多 query 不看文本也能回答 |
-| Meta-language 泛滥 | 🟡 中等 | "According to the text", "the figure shows" |
-| Why/How 占比过高 | 🟡 中等 | 37.3% 是解释型，难以 ground |
-| 类型字段污染 | 🟡 中等 | `requires_figure` 有 2 个非 bool 值 |
-| 绝对路径不可复现 | 🟢 轻微 | image_path 包含服务器绝对路径 |
+| 缺少 visual anchor | 严重 | 63.4% 的 query 没有任何视觉锚点 |
+| "看图说话"而非跨模态推理 | 严重 | 很多 query 不看文本也能回答 |
+| Meta-language 泛滥 | 中等 | "According to the text", "the figure shows" |
+| Why/How 占比过高 | 中等 | 37.3% 是解释型，难以 ground |
+| 类型字段污染 | 中等 | `requires_figure` 有 2 个非 bool 值 |
+| 绝对路径不可复现 | 轻微 | image_path 包含服务器绝对路径 |
 
 **Reviewer 评价**：*"这些是看图说话，不是真正的 cross-modal reasoning"*
 
 ### v2：Prompt 重设计（仍用 Qwen3-VL）
 
 **改进措施**：
-- ✅ 添加 Blindfold Test 要求（遮住图/文任一都不能答）
-- ✅ 要求明确 `visual_anchor` 和 `text_evidence` 字段
-- ✅ 添加 banned patterns 列表
-- ✅ 新增 `validate_queries.py` QC 脚本
-- ✅ 定义 4 种 query type（value_context / comparison_explanation / anomaly_cause / visual_definition）
+- 添加 Blindfold Test 要求（遮住图/文任一都不能答）
+- 要求明确 `visual_anchor` 和 `text_evidence` 字段
+- 添加 banned patterns 列表
+- 新增 `validate_queries.py` QC 脚本
+- 定义 4 种 query type（value_context / comparison_explanation / anomaly_cause / visual_definition）
 
 **结果**：Thinking 模式的 `<think>` 块消耗了大量 output token，导致只有 21/335 成功解析。但成功的 33 条质量确实提升：
 
@@ -145,10 +145,24 @@ table           6  ( 0.6%)
 
 | 问题 | 状态 | 计划 |
 |------|------|------|
-| 74.8% visual anchor（非100%） | 🟡 可改进 | validation 已标注，可人工审核剩余 25% |
-| Figure type 偏 plot (71.3%) | 🟡 数据限制 | 受限于 arXiv 论文本身图片类型分布 |
-| Table 模态几乎没有 (0.6%) | 🟡 数据限制 | Table 在 MinerU 中多解析为文本而非图片 |
-| 数值答案可靠性 | ⚪ 待验证 | MLLM 生成的数值可能有幻觉，可抽样验证 |
+| 74.8% visual anchor（非100%） | 可改进 | validation 已标注，可人工审核剩余 25% |
+| Figure type 偏 plot (71.3%) | 数据限制 | 受限于 arXiv 论文本身图片类型分布 |
+| Table 模态几乎没有 (0.6%) | 数据限制 | Table 在 MinerU 中多解析为文本而非图片 |
+| 数值答案可靠性 | 待验证 | MLLM 生成的数值可能有幻觉，可抽样验证 |
+
+### 5.1 当前诊断（2026-02-09 扫描）
+
+基于 `data/l1_cross_modal_queries_v3.jsonl` 的快速审计：
+
+| 诊断项 | 数量 | 占比 |
+|------|------|------|
+| **Warning 总数** | 153 | 15.7% |
+| `no_visual_anchor` | 94 | 9.7% |
+| `ungrounded_why` | 81 | 8.3% |
+| `text_evidence` 提到 **Table #** | 36 | 3.7% |
+| 任意位置提到 table（evidence/query/answer） | 38 | 3.9% |
+
+**解读**：剩余问题主要来自“视觉锚点不落地 + why 问句悬空”。表格信息更多体现在 **文本证据引用**，而非 query 自身显式点名表格。
 
 ---
 
@@ -165,7 +179,68 @@ table           6  ( 0.6%)
 
 ---
 
-## 7. 文件清单
+## 7. 代码解析与当前使用模块（重点）
+
+**当前在用的生成链路（v3）**：
+1. **图文对齐（上游）**  
+   - 入口：`data/figure_text_pairs.json`  
+   - 产出方式：由 `src/linkers/figure_text_associator.py` 将 MinerU 解析结果中的图像与上下文文本进行关联。  
+
+2. **L1 Query 生成（当前主流程）**  
+   - 脚本：`scripts/batch_figure_understanding_api.py`（**当前使用**）  
+   - 关键流程：  
+     - 读取 `figure_text_pairs.json`  
+     - 对图片做 base64 编码，拼接 caption + 前后文 + references  
+     - 调用 Anthropic API（Claude Sonnet 4.5）返回 JSON  
+     - 解析 JSON，保留 `queries / visual_elements / figure_type`  
+     - 在脚本内做第一次 QC（禁 meta-language、要求 visual_anchor & text_evidence）  
+     - 输出：  
+       - `data/figure_descriptions_v3_api.json`（完整原始响应）  
+       - `data/l1_cross_modal_queries_v3.jsonl`（过滤后的最终 L1）  
+
+3. **质量审计（统计与诊断）**  
+   - 脚本：`scripts/validate_queries.py`（**当前使用**）  
+   - 作用： schema 检查、视觉锚点检测、禁用模式识别、分布统计  
+   - 输出：`data/validation_report_v3.json`（clean rate、类型分布等）  
+
+**当前不再使用 / 历史脚本（v1/v2）**：
+- `scripts/batch_figure_understanding.py`：本地 vLLM 推理脚本（Qwen3-VL），因 OOM + 解析率低而弃用。  
+
+**代码层关键设计点**：
+- 生成端已经把 **QC 的硬约束嵌入主脚本**（不是完全依赖后处理）。  
+- 输出中统一 **相对路径**，便于复现与迁移。  
+- 生成脚本 + QC 脚本分离：便于替换模型、对比实验。  
+
+---
+
+## 8. 当前策略与我的思路（给 mentor）
+
+**总体思路**：先把 L1 的“跨模态融合”做稳，再把模态多样性与证据链结构化能力做强，为 L2/L3 的跨文档/多跳做铺垫。
+
+**当前策略拆解**：
+1. **融合优先于规模**  
+   - 先确保 query 本身能“盲测不过”（去掉图/文任一都无法回答），再扩大规模。  
+   - 这也是我选择 **强约束 prompt + QC 过滤** 的原因：宁可少一点，也要是可训练的。
+
+2. **显式视觉锚点是第一约束**  
+   - 统计表明主要噪声来自“缺锚点”与“why 问句悬空”。  
+   - 下一步不是盲目加量，而是把 **视觉锚点写入 query 本体**（而不仅是 `visual_anchor` 字段）。
+
+3. **多样性是第二阶段目标**  
+   - plot 偏重是数据分布的客观结果，但 L2/L3 需要更强的 table/formula 参与度。  
+   - 我会在 **采样层/模板层** 加入 table/formula 的配额约束，并优化 MinerU 的表格/公式结构化落盘。
+
+4. **可复现是工程底线**  
+   - 输出中统一相对路径、记录模型与 prompt 版本，保证“可复查、可比较、可迭代”。  
+   - 这是把生成数据当作“实验资产”而非“一次性产出”的原则。
+
+**我希望 mentor 看到的重点**：  
+我不是在“堆 query”，而是在构建一个 **可持续可扩展的跨模态数据生成框架**。  
+L1 解决“融合”，L2/L3 解决“证据链”，table/formula 解决“模态均衡”，QC/日志解决“可复现”。
+
+---
+
+## 9. 文件清单
 
 | 文件 | 说明 |
 |------|------|
