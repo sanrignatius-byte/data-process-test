@@ -67,6 +67,10 @@ GOOD query (needs both):
 GOOD query (cross-document comparison):
 "Does the sharp drop in the blue DI curve after threshold 0.5 contradict the claim that post-processing preserves utility above 0.8?"
 
+IMPORTANT: If the two documents do NOT contain genuinely comparable or contrasting facts
+about the shared concept, return {{"queries": []}} instead of hallucinating a comparison.
+Quality over quantity — an empty result is better than a fabricated one.
+
 Output JSON:
 {{
   "queries": [
@@ -75,11 +79,13 @@ Output JSON:
       "answer": "must reference facts from BOTH documents, max 3 sentences",
       "evidence_a": {{
         "visual_anchor": "specific visual element from Doc A's figure",
-        "text_evidence": "relevant text passage from Doc A"
+        "text_evidence": "relevant text passage from Doc A",
+        "source_snippet": "exact quote (5-20 words) copied from the provided Doc A text"
       }},
       "evidence_b": {{
         "visual_anchor": "specific visual element from Doc B's figure (or 'N/A' if text-only)",
-        "text_evidence": "relevant text passage from Doc B"
+        "text_evidence": "relevant text passage from Doc B",
+        "source_snippet": "exact quote (5-20 words) copied from the provided Doc B text"
       }},
       "cross_doc_relationship": "comparison|contradiction|aggregation|evolution",
       "query_type": "value_context|comparison_explanation|anomaly_cause|visual_definition"
@@ -158,9 +164,10 @@ def build_prompt(pair: dict) -> str:
     )
 
 
-def call_api(client, prompt: str, model: str,
-             image_a_path: str = None, image_b_path: str = None) -> dict:
-    """Call Claude API with optional images."""
+def call_api_with_retry(client, prompt: str, model: str,
+                        image_a_path: str = None, image_b_path: str = None,
+                        max_retries: int = 4) -> dict:
+    """Call Claude API with optional images and exponential backoff retry."""
     content = []
 
     # Add images if available
@@ -178,13 +185,26 @@ def call_api(client, prompt: str, model: str,
 
     content.append({"type": "text", "text": prompt})
 
-    response = client.messages.create(
-        model=model,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": content}],
-        temperature=0.7,
-        max_tokens=2048,
-    )
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model=model,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": content}],
+                temperature=0.7,
+                max_tokens=2048,
+            )
+            break
+        except Exception as e:
+            last_err = e
+            if attempt < max_retries - 1:
+                wait = 2 ** (attempt + 1)  # 2, 4, 8, 16 seconds
+                print(f"RETRY ({attempt+1}/{max_retries}, wait {wait}s: {e})",
+                      end=" ", flush=True)
+                time.sleep(wait)
+    else:
+        raise last_err  # all retries exhausted
 
     raw = response.content[0].text.strip()
     parsed = None
@@ -240,6 +260,20 @@ def main():
         data = json.load(f)
 
     pairs = data["pairs"][:args.limit]
+
+    # ── Checkpoint / resume: skip pairs already in output file ──
+    completed_pair_keys = set()
+    if not args.dry_run and Path(args.output).exists():
+        with open(args.output) as existing:
+            for line in existing:
+                line = line.strip()
+                if line:
+                    entry = json.loads(line)
+                    completed_pair_keys.add(
+                        f"{entry.get('doc_a', '')}_{entry.get('doc_b', '')}")
+        if completed_pair_keys:
+            print(f"Resuming: {len(completed_pair_keys)} pairs already done, skipping.")
+
     print(f"Processing {len(pairs)} candidate pairs"
           f"{' (DRY RUN)' if args.dry_run else ''}")
 
@@ -262,8 +296,18 @@ def main():
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, "w", encoding="utf-8") as out_f:
+    # Append mode if resuming, write mode if fresh start
+    open_mode = "a" if completed_pair_keys and not args.dry_run else "w"
+    with open(output_path, open_mode, encoding="utf-8") as out_f:
         for i, pair in enumerate(pairs):
+            pair_key = f"{pair['doc_a']}_{pair['doc_b']}"
+
+            # Skip already-completed pairs (checkpoint resume)
+            if pair_key in completed_pair_keys:
+                print(f"  [{i+1}/{len(pairs)}] {pair['doc_a']} × {pair['doc_b']} "
+                      f"SKIP (already done)")
+                continue
+
             print(f"  [{i+1}/{len(pairs)}] {pair['doc_a']} × {pair['doc_b']} "
                   f"(score={pair['score']:.1f})...", end=" ", flush=True)
 
@@ -277,7 +321,8 @@ def main():
                 img_a = resolve_image_path(pair.get("doc_a_image_path", ""))
                 img_b = resolve_image_path(pair.get("doc_b_image_path", ""))
 
-                resp = call_api(client, prompt, args.model, img_a, img_b)
+                resp = call_api_with_retry(client, prompt, args.model,
+                                           img_a, img_b)
                 total_input_tokens += resp["usage"]["input_tokens"]
                 total_output_tokens += resp["usage"]["output_tokens"]
 
