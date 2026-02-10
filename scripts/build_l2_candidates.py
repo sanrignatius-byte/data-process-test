@@ -28,8 +28,20 @@ BLACKLIST = {
     "state of the art", "future work", "deep learning", "machine learning",
     "neural network", "conclusion", "introduction", "results", "discussion",
     "proposed method", "experimental results",
+    # Document structure phrases that leak through regex
+    "in figure", "in table", "in section", "shown in", "seen in",
+    "figure", "table", "section", "appendix", "equation",
 }
-STOP_ACRONYMS = {"FIG", "TABLE", "API", "PDF", "RHS", "LHS"}
+STOP_ACRONYMS = {"FIG", "TABLE", "API", "PDF", "RHS", "LHS", "SEC", "EQN", "REF", "APP"}
+
+# Generic ML entities — valid concepts but too broad to be meaningful bridges.
+# Pairs linked ONLY by these are weak/random. Require at least 1 non-generic entity.
+GENERIC_ENTITIES = {
+    "accuracy", "parity", "fairness", "precision", "recall",
+    "f1", "auc", "loss", "error", "bias", "variance",
+    "training", "testing", "validation", "classification",
+    "regression", "prediction", "optimization", "performance",
+}
 STOPWORDS = {
     "about", "across", "all", "and", "are", "between", "both", "can", "does", "each",
     "from", "have", "into", "more", "most", "only", "over", "same", "than", "their",
@@ -81,15 +93,16 @@ def visual_score(entry: Dict[str, Any]) -> int:
 def score_pair(pair: Dict[str, Any]) -> float:
     score = 0.0
 
-    # Shared entity richness.
-    score += pair["shared_entity_count"] * 2.0
-
-    # Prefer specific entities.
+    # Shared entity richness — only count non-generic.
     for ent in pair["shared_entities"]:
+        if ent in GENERIC_ENTITIES:
+            score += 0.5  # weak signal
+        else:
+            score += 3.0  # strong signal
         if len(ent) > 6:
             score += 0.5
         if " " in ent:
-            score += 1.0
+            score += 1.5  # multi-word = more specific
 
     # Visual evidence quality.
     score += pair.get("doc_a_visual_score", 0) * 0.5
@@ -177,6 +190,11 @@ def main() -> None:
         if not shared:
             continue
 
+        # Require at least 1 non-generic entity for meaningful bridging.
+        specific = [e for e in shared if e not in GENERIC_ENTITIES]
+        if not specific:
+            continue
+
         best_a = max(doc_entries[doc_a], key=visual_score) if doc_entries[doc_a] else {}
         best_b = max(doc_entries[doc_b], key=visual_score) if doc_entries[doc_b] else {}
 
@@ -185,14 +203,27 @@ def main() -> None:
             "doc_b": doc_b,
             "shared_entity_count": len(shared),
             "shared_entities": shared[:20],
+            # Rich metadata from best L1 entry per doc (needed by generate_l2_queries.py)
+            "doc_a_query_id": best_a.get("query_id", ""),
+            "doc_a_query": best_a.get("query", ""),
+            "doc_a_answer": best_a.get("answer", ""),
+            "doc_a_visual_anchor": best_a.get("visual_anchor", ""),
+            "doc_a_text_evidence": best_a.get("text_evidence", ""),
+            "doc_a_figure_id": best_a.get("figure_id", ""),
             "doc_a_figure_type": best_a.get("figure_type", "unknown"),
-            "doc_b_figure_type": best_b.get("figure_type", "unknown"),
+            "doc_a_image_path": best_a.get("image_path", ""),
+            "doc_a_caption": best_a.get("caption", ""),
             "doc_a_visual_score": visual_score(best_a) if best_a else 0,
+            "doc_b_query_id": best_b.get("query_id", ""),
+            "doc_b_query": best_b.get("query", ""),
+            "doc_b_answer": best_b.get("answer", ""),
+            "doc_b_visual_anchor": best_b.get("visual_anchor", ""),
+            "doc_b_text_evidence": best_b.get("text_evidence", ""),
+            "doc_b_figure_id": best_b.get("figure_id", ""),
+            "doc_b_figure_type": best_b.get("figure_type", "unknown"),
+            "doc_b_image_path": best_b.get("image_path", ""),
+            "doc_b_caption": best_b.get("caption", ""),
             "doc_b_visual_score": visual_score(best_b) if best_b else 0,
-            "evidence_examples": [
-                *[x for x in ent_examples.get(shared[0], []) if x["doc_id"] == doc_a][:1],
-                *[x for x in ent_examples.get(shared[0], []) if x["doc_id"] == doc_b][:1],
-            ],
         }
         pair["score"] = score_pair(pair)
         pairs.append(pair)
