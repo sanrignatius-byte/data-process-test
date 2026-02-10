@@ -240,13 +240,57 @@ L1 解决“融合”，L2/L3 解决“证据链”，table/formula 解决“模
 
 ---
 
-## 9. 文件清单
+## 9. L1 Triage 与 L2 跨文档推进（2026-02-10）
+
+### 9.1 L1 三分法分拣结果
+
+对 974 条 L1 v3 queries 进行自动化门禁分拣：
+
+| Grade | Count | Pct | 含义 |
+|-------|-------|-----|------|
+| **A (keep)** | 751 | 77.1% | 直接可用于训练 + L2 输入 |
+| **B (clean)** | 223 | 22.9% | 有问题但可修复，或作为 hard negative |
+| **C (drop)** | 0 | 0.0% | v3 QC 已过滤最差样本 |
+
+门禁命中分布：
+
+| 问题 | Count | Pct |
+|------|-------|-----|
+| value_leakage（query 含答案小数） | 126 | 12.9% |
+| ocr_only_anchor（视觉锚点仅含文字，无几何/颜色） | 101 | 10.4% |
+| ungrounded_why（why 无视觉锚点） | 26 | 2.7% |
+| evidence_truncated（文本证据截断） | 2 | 0.2% |
+
+### 9.2 L2 跨文档候选构建
+
+从 751 条 A-class L1 queries 中提取实体，构建跨文档桥接：
+
+- **436 个 unique entities**（方法名/数据集/指标/概念）
+- **55 个 cross-document entities**（出现在 2+ 篇文档）
+- **711 个候选文档对**
+- Top bridge entities: fairness (33 docs), accuracy (22 docs), COMPAS (6 docs), disparate impact (5 docs)
+
+### 9.3 下一步
+
+1. 对 top-50 候选对调用 Claude API 生成 L2 queries
+2. 复用 L1 QC pipeline + 跨文档证据完整性门禁
+3. 人工写 30 条测试 query，建立评估闭环
+
+---
+
+## 10. 文件清单
 
 | 文件 | 说明 |
 |------|------|
 | `scripts/batch_figure_understanding.py` | vLLM 本地推理脚本 (v1/v2) |
 | `scripts/batch_figure_understanding_api.py` | Anthropic API 推理脚本 (v3) |
 | `scripts/validate_queries.py` | Query QC & validation |
+| `scripts/triage_l1_v3.py` | **L1 三分法分拣 (A/B/C)** |
+| `scripts/build_l2_candidates.py` | **L2 跨文档候选对构建** |
+| `scripts/generate_l2_queries.py` | **L2 query 生成 (Claude API)** |
 | `data/l1_cross_modal_queries_v3.jsonl` | **最终输出：974 条 L1 queries** |
+| `data/l1_triage_v3.jsonl` | **L1 分拣结果（含 triage 字段）** |
+| `data/l1_triage_report_v3.json` | **L1 分拣统计报告** |
+| `data/l2_candidate_pairs_v1.json` | **L2 候选文档对（top-100）** |
 | `data/figure_descriptions_v3_api.json` | 完整 API 返回（含 raw response） |
 | `data/validation_report_v3.json` | Validation 报告 |
