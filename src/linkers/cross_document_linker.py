@@ -475,19 +475,32 @@ class CrossDocumentLinker:
         """Generate reasoning steps that connect evidence nodes."""
         steps = []
 
+        def _entity_concepts(entity_ids: List[str]) -> Set[str]:
+            """Map entity IDs to normalized concept names for cross-doc bridging.
+
+            Different documents usually assign different entity_ids even when they
+            refer to the same concept (e.g., "BERT" in doc A vs doc B). Using
+            normalized canonical names preserves bridge semantics in reasoning steps.
+            """
+            concepts: Set[str] = set()
+            for ent_id in entity_ids:
+                entity = self.entity_index.get(ent_id)
+                if not entity:
+                    continue
+                concepts.add(self._normalize_entity_name(entity.canonical_name))
+            return concepts
+
         for i in range(len(nodes) - 1):
             node_a = nodes[i]
             node_b = nodes[i + 1]
 
-            # Find shared entities between consecutive nodes
-            shared = set(node_a.entities) & set(node_b.entities)
+            # Find shared bridge concepts between consecutive nodes.
+            # NOTE: using raw entity IDs would miss cross-document links because
+            # IDs are doc-scoped. We compare normalized concept names instead.
+            shared = _entity_concepts(node_a.entities) & _entity_concepts(node_b.entities)
 
             if shared:
-                # Get entity names for the step
-                entity_names = []
-                for ent_id in shared:
-                    if ent_id in self.entity_index:
-                        entity_names.append(self.entity_index[ent_id].canonical_name)
+                entity_names = sorted(shared)
 
                 step = f"From {node_a.modal_type} evidence about {', '.join(entity_names[:2])}, " \
                        f"connect to {node_b.modal_type} evidence in {'same' if node_a.doc_id == node_b.doc_id else 'different'} document"

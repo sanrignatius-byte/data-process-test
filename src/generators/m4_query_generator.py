@@ -474,6 +474,21 @@ class M4QueryGenerator:
             query = self.generate_full_m4_query(chain, bridge_entities)
 
             if query:
+                # Enforce deterministic structural checks from evidence chain.
+                # We do not rely only on model self-reported validation flags.
+                has_multi_hop = len(chain.reasoning_steps) >= 2 and len(chain.nodes) >= 2
+                has_multi_modal = len(chain.modalities_involved) >= 2
+                has_multi_doc = len(chain.docs_involved) >= 2
+                has_multi_turn = len(query.turns) >= 2
+
+                query.is_multi_hop = query.is_multi_hop and has_multi_hop
+                query.is_multi_modal = query.is_multi_modal and has_multi_modal
+                query.is_multi_doc = query.is_multi_doc and has_multi_doc
+                query.is_multi_turn = query.is_multi_turn and has_multi_turn
+
+                if require_full_m4 and not query.satisfies_m4():
+                    continue
+
                 print(f"Query generated:")
                 print(f"  Turns: {query.turns}")
                 print(f"  Answer: {query.answer[:200]}...")
