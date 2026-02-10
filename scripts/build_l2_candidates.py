@@ -64,6 +64,19 @@ STOP_ACRONYMS = {
     "AT", "AS", "BY", "SO", "DO", "UP", "AN", "OF", "NO",
 }
 
+# Generic phrases that appear in too many papers to be useful bridges
+GENERIC_TERMS = {
+    "future work", "related work", "conclusion", "introduction",
+    "deep learning", "machine learning", "neural network",
+    "large language model", "natural language processing",
+    "state of the art", "proposed method", "experimental results",
+    "In Figure",  # meta-reference, not a real entity
+}
+
+# If an entity appears in more than this fraction of documents, treat it as a
+# stop-entity (too common to be a useful bridge).
+MAX_DOC_FRACTION = 0.35
+
 
 def extract_entities(text: str) -> set[str]:
     """Extract candidate entities from clean L1 text fields."""
@@ -86,6 +99,9 @@ def extract_entities(text: str) -> set[str]:
         acr = match.group(0)
         if acr not in STOP_ACRONYMS and len(acr) >= 2:
             entities.add(acr)
+
+    # Filter out generic terms
+    entities = {e for e in entities if e.lower() not in GENERIC_TERMS}
 
     return entities
 
@@ -170,19 +186,29 @@ def main():
             doc_entities[doc_id].add(ent)
 
     # Find cross-document entities (appear in 2+ docs)
+    total_docs = len(set(e["doc_id"] for e in filtered))
+    max_doc_count = max(2, int(total_docs * MAX_DOC_FRACTION))
+
     cross_doc_entities = {}
+    idf_filtered = 0
     for ent, occurrences in entity_index.items():
         doc_ids = set(doc_id for doc_id, _ in occurrences)
-        if len(doc_ids) >= 2:
-            cross_doc_entities[ent] = {
-                "entity": ent,
-                "doc_count": len(doc_ids),
-                "doc_ids": sorted(doc_ids),
-                "total_mentions": len(occurrences),
-            }
+        if len(doc_ids) < 2:
+            continue
+        if len(doc_ids) > max_doc_count:
+            idf_filtered += 1
+            continue  # too common to be a useful bridge
+        cross_doc_entities[ent] = {
+            "entity": ent,
+            "doc_count": len(doc_ids),
+            "doc_ids": sorted(doc_ids),
+            "total_mentions": len(occurrences),
+        }
 
     print(f"\nEntity index: {len(entity_index)} unique entities")
-    print(f"Cross-document entities: {len(cross_doc_entities)}")
+    print(f"Cross-document entities: {len(cross_doc_entities)}"
+          f" (filtered {idf_filtered} too-common entities, "
+          f"threshold: >{max_doc_count}/{total_docs} docs)")
     print(f"\nTop 20 cross-doc entities:")
     for ent, info in sorted(cross_doc_entities.items(),
                             key=lambda x: x[1]["doc_count"], reverse=True)[:20]:

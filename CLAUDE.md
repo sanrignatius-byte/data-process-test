@@ -10,7 +10,7 @@
 - 80 篇 PDF 用 MinerU 解析
 - **Step 0: Figure-text association** — 351 pairs, 73 docs（`src/linkers/figure_text_associator.py`）
 - **Step 1: L1 intra-document cross-modal queries** — 经 3 轮迭代，最终 **974 条 queries**
-- **L1 Triage** — A:751 (77.1%) / B:223 (22.9%) / C:0 (0%)
+- **L1 Triage** — A:727 (74.6%) / B:247 (25.4%) / C:0 (0%)  *(after visual_density gate)*
 - **L2 候选构建** — 55 个跨文档实体，711 个候选文档对，top-100 已输出
 
 ### 进行中

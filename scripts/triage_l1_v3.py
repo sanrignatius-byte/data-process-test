@@ -41,7 +41,17 @@ VISUAL_WORDS = {
     "axis", "x-axis", "y-axis", "subplot", "panel", "legend",
     "marker", "shaded", "highlighted", "gradient", "heatmap",
     "contour", "region", "area", "gap", "overlap",
+    # Statistical / scatter / distribution (scientific figures)
+    "cluster", "outlier", "scatter", "distribution", "deviation",
+    "correlation", "density", "histogram", "percentile", "quartile",
+    # Architecture / flow diagrams
+    "flow", "interaction", "branch", "merge", "skip", "residual",
+    "encoder", "decoder", "attention", "head", "embedding",
 }
+
+# Minimum ratio of visual words to total words in anchor for it to count as
+# genuinely visual (avoids long OCR text that happens to contain one visual word).
+MIN_VISUAL_DENSITY = 0.08  # at least ~1 visual word per 12 words
 
 # Truncation signals: evidence ends mid-word or mid-sentence
 TRUNCATION_PATTERNS = [
@@ -56,6 +66,15 @@ def has_visual_words(text: str) -> int:
     """Count genuine visual-feature words in text."""
     words = set(re.findall(r'\b[a-z]+\b', text.lower()))
     return len(words & VISUAL_WORDS)
+
+
+def visual_density(text: str) -> float:
+    """Ratio of visual-feature words to total words. Catches long OCR anchors."""
+    all_words = re.findall(r'\b[a-z]+\b', text.lower())
+    if not all_words:
+        return 0.0
+    visual_count = len(set(all_words) & VISUAL_WORDS)
+    return visual_count / len(all_words)
 
 
 def is_truncated(text: str) -> bool:
@@ -118,6 +137,10 @@ def triage_entry(entry: dict) -> tuple[str, list[str]]:
         reasons.append("no_visual_anchor")
     elif combined_visual == 0:
         reasons.append("ocr_only_anchor")
+    elif (len(visual_anchor.split()) > 12
+          and visual_density(visual_anchor) < MIN_VISUAL_DENSITY):
+        # Long anchor with very few visual words → likely OCR disguised as anchor
+        reasons.append("low_visual_density")
 
     # ── Gate 4: Ungrounded why ──
     if query_lower.startswith("why") and combined_visual == 0:
