@@ -57,6 +57,17 @@ def run_command(cmd: List[str], description: str) -> bool:
         return False
 
 
+def _make_json_serializable(value: Any) -> Any:
+    """Recursively convert argparse/path objects to JSON-safe values."""
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _make_json_serializable(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_make_json_serializable(v) for v in value]
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="M4 Complete Workflow - Survey to M4 Query Generation"
@@ -137,6 +148,11 @@ def main():
         action="store_true",
         help="Only show what would be done"
     )
+    control_group.add_argument(
+        "--relaxed",
+        action="store_true",
+        help="Relax M4 requirements during query generation"
+    )
 
     # 解析选项
     parse_group = parser.add_argument_group("Parse Options")
@@ -183,7 +199,7 @@ def main():
     # 记录配置
     config = {
         "start_time": datetime.now().isoformat(),
-        "args": vars(args),
+        "args": _make_json_serializable(vars(args)),
         "directories": {
             "output": str(output_dir),
             "pdfs": str(pdf_dir),
@@ -210,6 +226,8 @@ Configuration:
 
     if args.dry_run:
         print("[DRY RUN MODE - No actual commands will be executed]\n")
+    if args.relaxed:
+        print("[RELAXED MODE - M4 constraints will be loosened in query generation]\n")
 
     steps_completed = []
 
@@ -278,6 +296,8 @@ Configuration:
         "--provider", args.provider,
         "--model", args.model
     ]
+    if args.relaxed:
+        cmd.append("--relaxed")
 
     if not args.dry_run:
         if run_command(cmd, "Generating M4 Queries"):
