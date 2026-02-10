@@ -350,3 +350,202 @@ python scripts/generate_l2_queries.py \
   - 先收缩任务到“高置信文档对 + 模板化约束”，暂停 M4 扩展。
 
 > 最终答案：**先升级到 L2 并做评估闭环；MinerU 只做轻量并行优化；L1→M4 设计暂不继续扩讨论，先用数据定方向**喵
+
+---
+
+## 日期：2026-02-10（多轮深度讨论 + L2 pipeline 落地）
+
+### 一、讨论背景
+
+本次讨论涉及多方观点碰撞（用户、本 Claude 实例、另一位 Claude 助手、以及一位第三方"毒舌评审"）。核心议题：**L1 是否达标？下一步先做什么？如何应对百万级规模？**
+
+---
+
+### 二、L1 v3 进度判断（共识）
+
+**结论：L1 v3 质量已达可用基线，不应继续在 L1 上无限打磨。**
+
+关键指标回顾：
+- 974 条 queries，覆盖 334 张图 / 73 篇论文
+- Visual anchor 74.8%（v1 仅 36.6%）
+- Comparison 类 41.9%（v1 仅 12%）
+- Meta-language 0（QC 完全清除）
+- Clean rate 84.3%
+
+仍存在的问题（通过 triage 量化）：
+- value_leakage 12.9%（query 含答案小数）
+- ocr_only_anchor 10.4%（视觉锚点仅含 OCR 文字）
+- ungrounded_why 2.7%
+- evidence_truncated 0.2%
+
+### 三、关于百万级规模的架构讨论
+
+**用户核心担忧**：最终要处理百万级文档（~百 GB），当前设计的相似性计算会爆炸，且 L1→L2 逐层过滤会导致 yield 崩塌。
+
+**讨论的两种路线**：
+
+#### 路线 A：自底向上（Bottom-Up）
+L1 → 找跨文档对 → L2 → 找多跳链 → L3 → 加 multi-turn → M4
+- 优点：可审计、可控、复用 L1 资产
+- 缺点：逐层 yield 衰减，O(D²) 复杂度
+
+#### 路线 B：自顶向下（Top-Down）
+文档聚类 → 选组合 → 一次性生成 M4
+- 优点：零浪费，规模友好
+- 缺点：一次性生成 M4 容易产生伪多跳/证据不闭合的合成噪声
+
+**最终共识**：融合两种路线
+- 底层用 A 的可审计性（L1 作为证据单元）
+- 上层用 B 的选组思想（检索式候选生成，非枚举）
+- 具体做法：L1 entities → 倒排索引 → 跨文档 pair → Claude API 生成 L2
+- 85 篇规模用 dict 就够，不需要 FAISS/聚类（过早工程化被批评）
+
+### 四、聚类对对比学习的影响（重要讨论）
+
+**用户追问**：预聚类是否对对比学习不利？
+
+**结论**：生成时聚类和训练时负采样是**解耦的**。
+- 生成时在簇内选正例对（工程需要）
+- 训练时负采样覆盖全语料（打破簇边界）
+- 簇内非正例文档天然是 hard negative 来源
+- 需要少量跨簇 bridge query（5-10%）防止 embedding 空间碎片化
+
+### 五、第三方"毒舌评审"的批评要点
+
+一位外部评审对所有助手进行了尖锐批评：
+
+**被采纳的批评**：
+1. "用讨论的激情掩盖执行的懒惰"——说得对，确实讨论太多、执行太少
+2. "缺乏评估闭环"——没人提过 BM25 baseline / Recall@10 / MRR
+3. "974 条连热身都不够"——对比学习训练需要几千到几万条
+4. "在 85 篇上搞 FAISS 是杀鸡用牛刀"——正确
+
+**被拒绝的批评**：
+1. "用模板堆 5000 条发 workshop"——低估了项目学术目标
+2. "L1 全废"——三分法分拣证明 77.1% 是 A 级
+3. "聚类偏见讨论是纸上谈兵"——训练数据分布设计必须在生成前想清楚
+
+### 六、另一位助手的补充分析（精华部分）
+
+**被采纳的建议**：
+1. **A/B/C 三分法分拣**——比"L1 够用"更严谨（已实现为 `triage_l1_v3.py`）
+2. **B 类作为 hard negative 候选**——脏数据不是废物
+3. **评估闭环方案**：30 条人工测试集 + BM25 baseline + Recall@10/MRR
+4. **决策闸门**：预设退出条件（L2 不优于 BM25 → 止损回查）
+5. **"监督纯度优先于数量"**——KPI 改为 A 类占比 + 检索增益 + 错误收敛
+
+**被修正的建议**：
+1. Why 占比 ≤5% 太激进——实际只需砍 ungrounded_why（2.7%），grounded why 保留
+2. BM25 评估标准——不能以"绝对打过 BM25"为判断（数据量太少时 dense 打不过 BM25 是正常的），应看 scaling curve
+3. MinerU table 热修 10% 时间——实际不需要，74 个 HTML table 已存在于 text context 中
+
+### 七、本次实际交付（代码 + 数据）
+
+#### 新增脚本
+
+| 脚本 | 说明 |
+|------|------|
+| `scripts/triage_l1_v3.py` | L1 三分法分拣，4 个自动化门禁 |
+| `scripts/build_l2_candidates.py` | 从 A-class L1 提取实体 → 倒排索引 → 跨文档 pair 排序 |
+| `scripts/generate_l2_queries.py` | L2 query 生成（Claude API + QC + dry-run） |
+
+#### Triage 结果
+
+```
+Grade A (keep):   751  (77.1%)
+Grade B (clean):  223  (22.9%)
+Grade C (drop):     0  (0.0%)
+
+Reason breakdown:
+  value_leakage         126  (12.9%)
+  ocr_only_anchor       101  (10.4%)
+  ungrounded_why         26  (2.7%)
+  evidence_truncated      2  (0.2%)
+```
+
+#### L2 候选构建结果
+
+```
+Unique entities:       436
+Cross-doc entities:     55 (出现在 2+ 篇文档)
+Candidate doc pairs:   711
+Top-100 已输出
+
+Top bridge entities:
+  fairness              33 docs
+  accuracy              22 docs
+  parity                10 docs
+  logistic regression    7 docs
+  COMPAS                 6 docs
+  disparate impact       5 docs
+  equalized odds         4 docs
+  t-SNE                  3 docs
+  PCA                    3 docs
+  German Credit          3 docs
+```
+
+Top-1 pair: `1412.3756 × 1810.01943` (score=38.5)，共享 DI / German Credit / LR / fairness 等 10 个实体。
+
+### 八、关键技术发现
+
+1. **MinerU 的 table 不需要重新解析**：74 个 figure-text pair 的 text context 已含 HTML `<table>` 标签（21%），只是 L1 生成时 prompt 没有让模型关注它。L2 可以直接利用。
+
+2. **旧的 `cross_document_linker.py` 应废弃**：它用正则提取实体，96.7% 都是 method 类型（diversity 极差），4785 个实体大部分是 LaTeX 垃圾。新方案从 L1 的 clean 字段提取实体，436 个实体质量远超旧方案。
+
+3. **L1 的角色重新定义**：不是"必须升级成 M4 的半成品"，而是：
+   - 训练数据的一部分（单文档跨模态检索信号）
+   - L2/L3/M4 的证据缓存层（visual_anchor + text_evidence 不用重新生成）
+   - 跨文档桥接的种子实体池（query/answer 中的方法名/数据集/指标）
+
+### 九、下一步执行计划（给本地分身）
+
+**优先级排序：先 L2 落地 → 评估闭环 → 再定扩展方向**
+
+#### 立即执行
+
+1. **跑 L2 生成**（~$2-5，一个下午）：
+```bash
+export $(grep -v '^#' .env | xargs)
+python scripts/generate_l2_queries.py --limit 50 --delay 0.5
+```
+
+2. **人工写 30 条测试 query**：
+   - 10 条单文档跨模态（L1 类型）
+   - 10 条跨文档比较（L2 类型）
+   - 10 条多跳推理倾向（L3 类型）
+
+3. **最小评估闭环**：
+   - BM25 baseline
+   - 用 L1+L2 数据训练小 embedding
+   - 指标：Recall@10, MRR
+   - 评估标准：看 scaling curve（不期望绝对打过 BM25）
+
+#### 决策闸门（一周后）
+
+- L2 质量好 + 指标有上升趋势 → 扩产到全部 711 对
+- L2 质量好 + 指标平 → 先扩量到 500 条再判
+- L2 本身不稳定 → 收缩到高置信文档对 + 模板化约束
+
+#### 后续路线图
+
+- L3: 基于 L2 的 bridge entity graph 找 2-hop 路径
+- Multi-turn: 把 L1+L2 query 拆解为 2-3 轮对话 + coreference
+- Table 模态: 利用 74 个含 HTML table 的 pair，不需要重跑 MinerU
+- 百万级扩展: 确认方法有效后，再引入 FAISS/聚类/ANN
+
+### 十、核心原则（贯穿后续迭代）
+
+1. **监督纯度优先于数量**——宁可少一点，也要是可训练的
+2. **可证伪闭环**——每一步都有指标可查，不是"感觉质量好"
+3. **不过早工程化**——85 篇用 dict，1 万篇用 FAISS，百万篇再上聚类
+4. **L1 是资产不是废品**——它既是训练信号，也是 L2/L3/M4 的输入上下文
+
+### 十一、Git 记录
+
+```
+commit 67b03d5
+feat: L1 triage + L2 cross-document pipeline
+- triage_l1_v3.py (A=751, B=223, C=0)
+- build_l2_candidates.py (55 cross-doc entities, 711 pairs, top-100)
+- generate_l2_queries.py (Claude API + QC, dry-run validated)
+```
