@@ -558,6 +558,286 @@ improve: apply code review feedback to L1 triage + L2 pipeline
 
 ---
 
+
+## 日期：2026-02-10（L2 试产完成）
+
+### 一、L2 生成结果
+
+#### 脚本修复
+原 `generate_l2_queries.py` 的 `build_prompt()` 期望 `evidence_examples` 列表，但实际候选对数据是 `doc_a_*`/`doc_b_*` 平铺字段——prompt 中的 reference evidence 会是空的。已修复为：
+1. **使用实际字段**：doc_a_query, doc_a_answer, doc_a_visual_anchor, doc_a_text_evidence, doc_a_caption 等
+2. **加入 Vision 输入**：两张 figure 图像 base64 编码发送给 Claude，让模型看到实际图再生成 query
+3. **扩展 QC**：meta-language 正则从 3 条扩到 7 条，加 short_answer 检测
+4. **加入 delay/用量追踪/成本估算**
+5. **模型更新**：`claude-sonnet-4-5-20250929`（与 L1 v3 一致）
+
+#### 生成统计
+
+```
+Total pairs:       50
+QC passed:         50 (100%)
+QC failed:          0
+NULL (no query):    0
+Parse failures:     0
+Input tokens:   80,079
+Output tokens:  20,746
+Est. cost:      $0.55
+```
+
+#### 质量审计
+
+| 指标 | 结果 |
+|------|------|
+| Meta-language in queries | 0/50 (0%) |
+| Visual-rich anchors | 99/100 evidence refs (99%) |
+| Dual-doc evidence | 50/50 (100%) |
+| Unique doc pairs | 50 (零重复) |
+| Unique docs covered | 30 |
+| Query length | 25.1 词 (mean) |
+| Answer length | 60.5 词 (mean) |
+
+#### Query 类型分布
+
+| 类型 | 数量 | 占比 |
+|------|------|------|
+| cross_synthesis | 27 | 54% |
+| cross_comparison | 19 | 38% |
+| cross_contradiction | 4 | 8% |
+
+#### 样例
+
+**cross_comparison**: `1412.3756 × 1810.01943`
+> Q: How does the fairness-utility tradeoff for logistic regression on German Credit differ between the combinatorial repair approach and the optimized pre-processing method at disparate impact 0.8?
+> A: The combinatorial repair approach shows logistic regression achieving utility around 0.65-0.70 at DI=0.8 on German Credit with a clear downward trend. In contrast, optimized pre-processing with logistic regression maintains higher balanced accuracy (~0.73-0.75) at similar disparate impact levels near 0.8.
+
+**cross_contradiction**: `1610.07524 × 2005.07293`
+> Q: Can the rising false positive rates for Black defendants with more priors in COMPAS be reconciled with an equity framework that allocates compensatory resources to historically disadvantaged groups?
+> A: COMPAS exhibits increasing false positive rates for Black defendants as prior record count grows (from ~0.22 at zero priors to ~0.92 at >10 priors), contradicting equity principles.
+
+### 二、L2 vs L1 对比
+
+| 维度 | L1 v3 | L2 v1 |
+|------|-------|-------|
+| 数量 | 974 | 50 |
+| QC pass rate | 97.2% | 100% |
+| Meta-language | 0% | 0% |
+| Visual anchor quality | 74.8% | 99% |
+| Docs covered | 73 | 30 |
+| 文档/query 关系 | 单文档 | 跨文档 (每条 2 docs) |
+| 平均 query 长度 | 17.9 词 | 25.1 词 |
+| 成本 | $4.59 | $0.55 |
+
+### 三、关键发现
+
+1. **Vision 输入是关键**：发送双图像让 Claude 能引用具体视觉元素（颜色、趋势、位置），99% visual-rich anchor 远超 L1 的 74.8%。
+2. **丰富的 L1 上下文有效**：prompt 中包含 L1 的 query/answer/anchor/evidence 作为参考，让 L2 生成有据可依而非凭空编造。
+3. **100% QC pass 说明 prompt 约束力强**：强 system prompt + 丰富的 good/bad examples + 具体的 JSON schema = 零废品率。
+4. **跨文档 query 类型自然涌现**：54% synthesis、38% comparison、8% contradiction，无需手动指定配额。
+
+### 四、下一步（按讨论日志 §九 决策闸门）
+
+当前状态对应 **"L2 质量好"** 分支：
+- ✅ L2 试产 50 条全部通过 QC
+- ✅ Visual anchor 质量 99%
+- ✅ 零 meta-language
+- ⏳ 待验证：检索增益（需要评估闭环）
+
+**立即执行**：
+1. 评估闭环（BM25 baseline + Recall@10/MRR）
+2. 若指标有上升趋势 → 扩产到全部 711 对
+3. 若指标平 → 先扩量到 500 条再判
+
+---
+
+## 日期：2026-02-10（L2 v2 四方 Reviewer 反馈 + v3 脚本重写）
+
+### 一、L2 v2 生成结果（中间版本）
+
+在 v1 基础上做了三个 hotfix 后重新生成：
+
+#### Hotfix 内容
+1. **P0 `build_l2_candidates.py`**：
+   - BLACKLIST 加 "in figure", "figure", "table", "section" 等文档结构短语
+   - 新增 GENERIC_ENTITIES（accuracy, fairness, precision 等 18 个）
+   - 要求每对至少 1 个 non-generic entity（消灭纯 generic 对）
+   - 评分：specific entity 3.0 分, generic 0.5 分
+2. **P1 prompt**：加 visual necessity、ban yes/no、ban speculative、semantic relevance check
+3. **P1 QC**：新增 VISUAL_CUE_WORDS / SPECULATIVE_PHRASES / YES_NO_STARTERS / TEMPLATE_VERBS
+
+#### v2 生成统计
+```
+候选对：43 (v1 的 100 对过滤后)
+生成：  32 条 (11 NULL, 0 parse fail)
+QC pass: 16 (50%)
+QC fail: 16 (主要是 template_verb: 14/16)
+成本：  $0.48
+```
+
+v2 相对 v1 的改进：0% yes/no, 0% speculative, 100% visual cues (in passed)。
+但 QC 发现新问题：template_verb 占 QC failure 的 87.5%。
+
+### 二、四方 Reviewer 深度反馈
+
+用户提供了四位 reviewer 的独立评审，以及 reviewer-tagged 文件 `data/l2_queries_v2_tagged.jsonl`。
+
+#### Tagged 文件统计
+| 决策 | 数量 | 占比 |
+|------|------|------|
+| keep | 1 | 3% |
+| fix | 26 | 81% |
+| drop | 5 | 16% |
+
+唯一 keep 的 query（l2_v2_025, Jaccard=0.138）证明低泄漏 = 高质量。
+
+#### 核心发现：两个正交问题
+
+**问题 1：Anchor Leakage（工程问题）**
+- v2 prompt 要求 query 包含 visual cue words → 模型从 evidence anchor 复制视觉描述到 query
+- 平均 Jaccard(query tokens, anchor tokens) = 0.292
+- 最高达 0.54（l2_v2_020）
+- 后果：BM25 可通过表面 token 匹配直接检索到文档，不需要语义理解
+- 修复：query 用概念语言，视觉细节只放 evidence_refs.anchor
+
+**问题 2：Prompt 哲学（设计问题）**
+- v2 prompt 本质是 "compare X in A with Y in B"
+- 产出模式固化为 "How does [visual detail A] relate to [visual detail B]?"
+- Reviewer 建议：从 "concept comparison" 转向 "hypothetical reasoning"
+  - 用 Doc B 的理论/框架去解释 Doc A 的观察
+  - 或用 Doc A 的实证数据去预测 Doc B 的方法会如何表现
+- 核心区别：comparison 是并列关系，reasoning 是因果/应用关系
+
+#### Reviewer 批评中被采纳 vs 被拒绝的部分
+
+**采纳**：
+- Anchor leakage 是真问题，需要 QC 检测 + prompt 约束
+- "relate to" 类 template verb 是空洞的
+- 强制跨域桥接（DAG 连接两个不相关实验）应该 NULL
+- Information gap design（query 描述一侧，答案需要另一侧）
+
+**拒绝/修正**：
+- "v2 比 v1 差"——不成立，v2 QC 是诚实的，v1 100% pass 是 QC 瞎了
+- "pair_score 下降说明候选崩塌"——不成立，过滤 generic 是对的
+- "需要推倒重来"——不需要，改 prompt 哲学 + QC 深度即可
+
+### 三、v3 脚本改动（已完成，待执行）
+
+#### `generate_l2_queries.py` 改动清单
+
+| 改动 | v2 | v3 |
+|------|----|----|
+| System prompt | "data annotator" | "expert research analyst" |
+| Prompt 哲学 | "compare visual X with visual Y" | "reasoning operation: explain/predict/diagnose" |
+| 给模型的信息 | visual_anchor + text_evidence (泄漏源) | 只给 caption + L1 query/answer |
+| Query 语言要求 | 必须含 visual cue words | 必须用概念语言，禁止 visual tokens |
+| QC: no_visual_cue | ✅ (直接导致泄漏) | **移除** |
+| QC: anchor_leakage | 无 | **新增** Jaccard(query, anchor) > 0.15 → fail |
+| Temperature | 0.7 | 0.5 |
+| Query types | comparison/synthesis/contradiction/trend | **application/prediction/diagnosis/comparison** |
+| 新字段 | - | reasoning_direction, l2_id, qc_metrics |
+| 默认输入 | l2_candidate_pairs_v1.json | l2_candidate_pairs_v2.json |
+| 默认输出 | l2_queries_v1.jsonl | l2_queries_v3.jsonl |
+
+#### 新 QC 函数 `anchor_leak_jaccard()`
+- 提取 query 和 evidence anchor 的 content tokens（3+ chars, 去停用词）
+- 计算 max Jaccard overlap across all evidence refs
+- 阈值 0.15（唯一 keep query 的 Jaccard 是 0.138）
+
+#### 新 Prompt 关键指令
+1. **INFORMATION GAP**: query 描述一个文档的 context，答案需要另一个文档的 figure
+2. **NO ANCHOR COPYING**: visual details 只放 evidence_refs.anchor，query 用方法名/指标名
+3. **NO FORCED BRIDGES**: generic concept 连接不同实验 → 输出 NULL
+4. **REASONING DIRECTION**: 新增 A_explains_B / B_explains_A / mutual
+
+### 四、v3 执行命令
+
+```bash
+cd /projects/myyyx1/data-process-test
+source /cluster/apps/software/Miniforge3/24.11.3-1/etc/profile.d/conda.sh
+conda activate /projects/myyyx1/envs/minerU
+export $(grep -v '^#' .env | xargs)
+
+# 先 dry-run 验证
+python scripts/generate_l2_queries.py --dry-run --limit 5
+
+# 正式跑
+python scripts/generate_l2_queries.py --limit 43 --delay 0.5
+```
+
+### 五、预期与决策闸门
+
+- **乐观预期**：anchor_leak_jaccard < 0.15 的比例 > 60%，无 template verb
+- **中性预期**：一些 pair 仍然 NULL（generic bridge），pass rate 40-50%
+- **悲观预期**：模型仍然倾向 comparison 模式，需要更激进的 prompt 或 few-shot
+
+**决策**：
+- v3 QC pass ≥ 15 条 + 平均 Jaccard < 0.15 → 进入评估闭环
+- v3 QC pass < 10 条 → 再调 prompt 或考虑 few-shot examples
+- v3 NULL > 50% → candidate pairs 质量问题，需回头看 build_l2_candidates 的 entity 选择
+
+---
+
+## 日期：2026-02-10（L2 v3 三位评论家综合复盘 + 收工决议）
+
+### 一、三位评论家的共识批评（统一摘要）
+
+1. **“工程化字段增加 ≠ 质量提升”**
+   - `reasoning_direction`、`qc_metrics` 提供了可观测性，但没有自动转化为训练集纯度。
+   - 若 `qc_pass=false` 样本仍保留在候选产物中，最终会把噪声带入训练闭环。
+
+2. **Anchor Leakage 仍是主矛盾**
+   - 大量 query 与 anchor 高重叠，部分 query 直接出现关键答案数字。
+   - 这会把任务从“跨文档语义检索”降级为“词面+数字匹配”。
+
+3. **桥接实体语义退化（同名异义/泛词）**
+   - `map/plot/graph/distribution` 这类泛词导致伪桥接；
+   - `shared_entities` 的语义信息密度不足，易触发“强行跨域解释”。
+
+4. **标签与推理链偶有错位**
+   - 部分 `reasoning_direction` 与证据链方向不一致；
+   - `cross_diagnosis` 存在滥用风险（相关性描述被包装成因果诊断）。
+
+5. **多模态闭环不稳定**
+   - 有图像输入，但部分问答主要可由文本完成，视觉必要性门禁需继续加严。
+
+### 二、评论家观点中“采纳 vs 不采纳”
+
+**采纳**
+- 严格执行 `qc_pass` 门禁，失败样本不进入训练集；
+- 优先修复实体桥接质量（先砍泛词、同名异义词）；
+- 在 query 层禁止答案型数值泄露；
+- 先做最小评估闭环，再谈扩产。
+
+**不采纳（或修正后采纳）**
+- “L2 路线已死、应全回滚 L1”不采纳；
+  - 修正：L2 仍有可用子集，当前问题是筛选和门禁，不是方向性死亡。
+- “必须全量推倒重写”不采纳；
+  - 修正：优先做硬门禁 + 候选对提纯，成本更低且可快速验证。
+
+### 三、与当日实测对齐（执行后数字）
+
+- v3 正式运行：43 对候选，1 条 NULL，写入 42 条。
+- 质检结果：`qc_pass=19`, `qc_fail=23`。
+- fail 原因：`anchor_leakage=21`，`template_verb=2`。
+- `evidence_closure` 整体通过，说明“证据可回指”已基本到位，当前瓶颈集中在泄漏和桥接质量。
+
+### 四、立刻生效的收敛策略（下个工作日执行）
+
+1. **暂停 L2 扩产**
+   - 不扩到 711 对，先用 clean subset（`qc_pass=true`）跑评估闭环。
+
+2. **三重门禁（训练前）**
+   - candidate gate：提升桥接实体质量，禁用泛词桥接；
+   - generation gate：query 禁止答案型数值；
+   - training gate：`qc_pass=false` 一律不进训练集。
+
+3. **评估优先于讨论**
+   - 用 clean subset 跑 BM25 + dense baseline，关注 Recall@10 / MRR 趋势；
+   - 若趋势无改善，再决定是否收缩 L2 或改候选构建策略。
+
+### 五、今日收工结论
+
+本日结论不是“继续造更多 L2”，而是“先保证进入训练的 L2 是干净的”。  
+执行策略已从“生成优先”切换为“纯度优先 + 评估闭环优先”。今天到此结束。喵
 ## 日期：2026-02-11（Mentor 反馈 + 深耕 L1 方向定调）
 
 ### 一、本次讨论背景
@@ -669,3 +949,4 @@ improve: apply code review feedback to L1 triage + L2 pipeline
 种子论文 `1908.09635` 是**算法公平性（algorithmic fairness）**方向。85 篇论文几乎都围绕 ML fairness 展开。典型实体：Disparate Impact、Statistical Parity Difference、Equalized Odds、German Credit（数据集）、COMPAS（数据集）。
 
 "fairness" 出现在 73 篇文档中的 33 篇（45%），作为桥接实体区分度太低，已被 `MAX_DOC_FRACTION=0.35` IDF 过滤剔除。真正有价值的桥接实体是 Disparate Impact（5 docs）、German Credit（3 docs）、t-SNE（3 docs）等。
+

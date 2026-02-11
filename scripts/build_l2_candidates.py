@@ -1,316 +1,254 @@
 #!/usr/bin/env python3
-"""
-Build L2 cross-document candidate pairs from triaged L1 queries.
+"""Build L2 cross-document candidate pairs from triaged L1 using an inverted index."""
 
-Strategy:
-  1. From A-class L1 queries, extract named entities (methods, datasets, metrics,
-     concepts) using lightweight NLP — NOT regex on raw text, but on already-clean
-     L1 query/answer/text_evidence fields.
-  2. Build inverted index: entity → [(doc_id, figure_id, query_id, ...)]
-  3. Find cross-document pairs: entities that appear in 2+ documents.
-  4. Score and rank pairs by: entity specificity, modality diversity, anchor quality.
-  5. Output top-K candidate pairs for L2 generation.
-"""
+from __future__ import annotations
 
+import argparse
 import json
 import re
-import sys
 from collections import Counter, defaultdict
 from itertools import combinations
 from pathlib import Path
+from typing import Any, Dict, List, Set, Tuple
 
-# ── Entity extraction (lightweight, no spaCy dependency) ──────────────────
-
-# Common scientific method/model names (will also catch from text dynamically)
+# Regex/entity rules are intentionally lightweight for MVP speed.
 METHOD_PATTERNS = [
-    # Specific models/methods
-    r'\b(BERT|GPT|RoBERTa|XLNet|ALBERT|DistilBERT|T5|BART|LLaMA)\b',
-    r'\b(ResNet|VGG|InceptionNet|EfficientNet|ViT|CLIP|DALL-E)\b',
-    r'\b(Adam|SGD|AdaGrad|RMSprop)\b',
-    r'\b(SVM|KNN|Random Forest|Naive Bayes|Logistic Regression)\b',
-    r'\b(GAN|VAE|Autoencoder|Transformer)\b',
-    r'\b(LSTM|GRU|RNN|CNN|MLP|DNN)\b',
-    r'\b(PCA|t-SNE|UMAP|LDA)\b',
-    r'\b(BM25|TF-IDF|FAISS)\b',
-    r'\b(RAG|DPR|ANCE|ColBERT)\b',
+    (r"\b(BERT|RoBERTa|GPT(?:-[0-9]+)?|Transformer|ResNet|VGG|LSTM|CNN|RNN|GNN|ViT|FAISS|BM25)\b", re.IGNORECASE),
+    # Acronym-style entities remain case-sensitive to avoid matching common words.
+    (r"\b([A-Z]{3,}(?:-[A-Z0-9]+)?)\b", 0),
 ]
-
 DATASET_PATTERNS = [
-    r'\b(SQuAD|GLUE|SuperGLUE|MNLI|SST-\d|MRPC|QQP|QNLI|RTE)\b',
-    r'\b(ImageNet|CIFAR-\d+|MNIST|COCO|VOC)\b',
-    r'\b(BEIR|MS MARCO|Natural Questions|TriviaQA)\b',
-    r'\b(CoQA|HotpotQA|MultiRC)\b',
+    (r"\b(ImageNet|COCO|MNIST|CIFAR(?:-10|-100)?|SQuAD|GLUE|SuperGLUE|MS\s*MARCO|BEIR)\b", re.IGNORECASE),
 ]
-
 METRIC_PATTERNS = [
-    r'\b(accuracy|precision|recall|F1|F-score|AUC|ROC)\b',
-    r'\b(BLEU|ROUGE|METEOR|BERTScore|perplexity)\b',
-    r'\b(Recall@\d+|MRR|NDCG|MAP)\b',
-    r'\b(fairness|parity|equalized odds|disparate impact)\b',
+    (r"\b(accuracy|f1|bleu|rouge|mrr|ndcg|auc|map|recall|precision|rmse|mae)\b", re.IGNORECASE),
 ]
 
-# Broader concept extraction: capitalized multi-word phrases (likely method/concept names)
-CAPITALIZED_PHRASE = re.compile(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b')
-# Acronyms (2-6 uppercase letters, possibly with digits)
-ACRONYM = re.compile(r'\b([A-Z][A-Z0-9]{1,5})\b')
+BLACKLIST = {
+    "state of the art", "future work", "deep learning", "machine learning",
+    "neural network", "conclusion", "introduction", "results", "discussion",
+    "proposed method", "experimental results",
+    # Document structure phrases that leak through regex
+    "in figure", "in table", "in section", "shown in", "seen in",
+    "figure", "table", "section", "appendix", "equation",
+}
+STOP_ACRONYMS = {"FIG", "TABLE", "API", "PDF", "RHS", "LHS", "SEC", "EQN", "REF", "APP"}
 
-# Common stopword acronyms to exclude
-STOP_ACRONYMS = {
-    "AND", "THE", "FOR", "NOT", "BUT", "NOR", "YET", "ARE", "WAS",
-    "HAS", "HAD", "CAN", "MAY", "RHS", "LHS", "IFF", "QED", "PDF",
-    "API", "URL", "HTML", "JSON", "CSS", "XML", "SQL", "IDE",
-    "LET", "SET", "MAP", "USE", "ALL", "ANY", "NEW", "OLD",
-    "TWO", "ONE", "WE", "IT", "IN", "ON", "TO", "IS", "OR", "IF",
-    "AT", "AS", "BY", "SO", "DO", "UP", "AN", "OF", "NO",
+# Generic ML entities — valid concepts but too broad to be meaningful bridges.
+# Pairs linked ONLY by these are weak/random. Require at least 1 non-generic entity.
+GENERIC_ENTITIES = {
+    "accuracy", "parity", "fairness", "precision", "recall",
+    "f1", "auc", "loss", "error", "bias", "variance",
+    "training", "testing", "validation", "classification",
+    "regression", "prediction", "optimization", "performance",
+}
+STOPWORDS = {
+    "about", "across", "all", "and", "are", "between", "both", "can", "does", "each",
+    "from", "have", "into", "more", "most", "only", "over", "same", "than", "their",
+    "these", "those", "this", "using", "with", "without", "which", "approach", "method",
 }
 
-# Generic phrases that appear in too many papers to be useful bridges
-GENERIC_TERMS = {
-    "future work", "related work", "conclusion", "introduction",
-    "deep learning", "machine learning", "neural network",
-    "large language model", "natural language processing",
-    "state of the art", "proposed method", "experimental results",
-    "In Figure",  # meta-reference, not a real entity
-}
-
-# If an entity appears in more than this fraction of documents, treat it as a
-# stop-entity (too common to be a useful bridge).
+# Drop bridge entities that are too common across docs.
 MAX_DOC_FRACTION = 0.35
 
+VISUAL_WORDS = {
+    "red", "blue", "green", "black", "gray", "grey", "orange", "purple", "yellow",
+    "dashed", "dotted", "solid", "curve", "line", "bar", "point", "scatter", "cluster",
+    "peak", "valley", "slope", "trend", "axis", "subplot", "panel", "node", "edge", "arrow",
+}
 
-def extract_entities(text: str) -> set[str]:
-    """Extract candidate entities from clean L1 text fields."""
-    entities = set()
 
-    # Pattern-based extraction
-    for patterns in [METHOD_PATTERNS, DATASET_PATTERNS, METRIC_PATTERNS]:
-        for pattern in patterns:
-            for match in re.finditer(pattern, text, re.IGNORECASE):
-                entities.add(match.group(0).strip())
+def norm(s: str) -> str:
+    return re.sub(r"\s+", " ", s.strip().lower())
 
-    # Capitalized phrases (e.g., "Statistical Parity", "Affirmative Action")
-    for match in CAPITALIZED_PHRASE.finditer(text):
-        phrase = match.group(0).strip()
-        if len(phrase) > 5 and len(phrase.split()) <= 4:
-            entities.add(phrase)
 
-    # Acronyms
-    for match in ACRONYM.finditer(text):
-        acr = match.group(0)
-        if acr not in STOP_ACRONYMS and len(acr) >= 2:
-            entities.add(acr)
-
-    # Filter out generic terms
-    entities = {e for e in entities if e.lower() not in GENERIC_TERMS}
-
+def extract_entities(text: str) -> Set[str]:
+    entities: Set[str] = set()
+    for pattern, flags in METHOD_PATTERNS + DATASET_PATTERNS + METRIC_PATTERNS:
+        for m in re.findall(pattern, text, flags=flags):
+            ent = m if isinstance(m, str) else m[0]
+            e = norm(ent)
+            if len(e) < 3 or e in BLACKLIST or e in STOPWORDS:
+                continue
+            if e.upper() in STOP_ACRONYMS:
+                continue
+            entities.add(e)
     return entities
 
 
-def score_pair(pair_info: dict) -> float:
-    """Score a candidate cross-document pair for L2 generation potential."""
+def load_records(path: Path) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                rows.append(json.loads(line))
+    return rows
+
+
+def visual_score(entry: Dict[str, Any]) -> int:
+    words = set(re.findall(r"\b\w+\b", entry.get("visual_anchor", "").lower()))
+    return len(words & VISUAL_WORDS)
+
+
+def score_pair(pair: Dict[str, Any]) -> float:
     score = 0.0
 
-    # More shared entities = stronger link
-    score += len(pair_info["shared_entities"]) * 2.0
-
-    # Entity specificity bonus (longer/rarer entities are better bridges)
-    for ent in pair_info["shared_entities"]:
+    # Shared entity richness — only count non-generic.
+    for ent in pair["shared_entities"]:
+        if ent in GENERIC_ENTITIES:
+            score += 0.5  # weak signal
+        else:
+            score += 3.0  # strong signal
         if len(ent) > 6:
-            score += 1.0
-        if " " in ent:  # multi-word = more specific
-            score += 1.5
+            score += 0.5
+        if " " in ent:
+            score += 1.5  # multi-word = more specific
 
-    # Modality diversity bonus
-    fig_types = {pair_info["doc_a_figure_type"], pair_info["doc_b_figure_type"]}
-    if len(fig_types) > 1:
-        score += 3.0  # different figure types = richer cross-modal
+    # Visual evidence quality.
+    score += pair.get("doc_a_visual_score", 0) * 0.5
+    score += pair.get("doc_b_visual_score", 0) * 0.5
 
-    # A-class query quality bonus
-    score += pair_info["doc_a_visual_score"] * 0.5
-    score += pair_info["doc_b_visual_score"] * 0.5
-
-    # Penalty for very common entities (less discriminative)
-    for ent in pair_info["shared_entities"]:
-        if ent.lower() in {"accuracy", "precision", "recall", "f1", "method",
-                           "model", "approach", "algorithm", "baseline"}:
-            score -= 1.0
+    # Encourage figure diversity.
+    if pair.get("doc_a_figure_type") != pair.get("doc_b_figure_type"):
+        score += 2.0
 
     return max(score, 0.0)
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="Build L2 cross-document candidate pairs from A-class L1 queries")
-    parser.add_argument("--input", default="data/l1_triage_v3.jsonl",
-                        help="Triaged L1 JSONL")
-    parser.add_argument("--output", default="data/l2_candidate_pairs_v1.json",
-                        help="Output candidate pairs JSON")
-    parser.add_argument("--topk", type=int, default=100,
-                        help="Max candidate pairs to output")
-    parser.add_argument("--min-grade", default="A",
-                        choices=["A", "B"],
-                        help="Minimum triage grade to include")
-    args = parser.parse_args()
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Build L2 candidate doc pairs")
+    ap.add_argument("--input", default="data/l1_triage_v3.jsonl")
+    ap.add_argument("--output", default="data/l2_candidate_pairs_v1.json")
+    ap.add_argument("--topk", type=int, default=100)
+    ap.add_argument("--min-class", default="A", choices=["A", "B", "C"])
+    # Backward-compatible alias used by another branch.
+    ap.add_argument("--min-grade", choices=["A", "B"], help=argparse.SUPPRESS)
+    args = ap.parse_args()
 
-    # Load triaged entries
-    entries = []
-    with open(args.input) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                entries.append(json.loads(line))
+    min_class = args.min_class
+    if args.min_grade:
+        min_class = args.min_grade
 
-    # Filter by grade
-    allowed_grades = {"A"} if args.min_grade == "A" else {"A", "B"}
-    filtered = [e for e in entries if e.get("triage", "C") in allowed_grades]
-    print(f"Loaded {len(entries)} entries, {len(filtered)} pass grade >= {args.min_grade}")
+    rows = load_records(Path(args.input))
 
-    # Build entity → document index
-    entity_index = defaultdict(list)  # entity → [(doc_id, entry)]
-    doc_entities = defaultdict(set)   # doc_id → {entities}
+    # Compat: support both triage_class (current) and triage (alt branch).
+    class_rank = {"A": 3, "B": 2, "C": 1}
+    min_rank = class_rank[min_class]
+    rows = [
+        r for r in rows
+        if class_rank.get(r.get("triage_class", r.get("triage", "C")), 1) >= min_rank
+    ]
 
-    for entry in filtered:
-        doc_id = entry["doc_id"]
-        # Extract entities from all clean text fields
-        text_blob = " ".join([
-            entry.get("query", ""),
-            entry.get("answer", ""),
-            entry.get("text_evidence", ""),
-            entry.get("visual_anchor", ""),
-            entry.get("caption", ""),
+    ent_docs: Dict[str, Set[str]] = defaultdict(set)
+    ent_examples: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    doc_entries: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+
+    for r in rows:
+        doc = r.get("doc_id")
+        if not doc:
+            continue
+        doc_entries[doc].append(r)
+
+        text = " ".join([
+            r.get("query", ""), r.get("text_evidence", ""), r.get("answer", ""),
+            r.get("visual_anchor", ""), r.get("caption", ""),
         ])
-        ents = extract_entities(text_blob)
-        for ent in ents:
-            entity_index[ent].append((doc_id, entry))
-            doc_entities[doc_id].add(ent)
+        for e in extract_entities(text):
+            ent_docs[e].add(doc)
+            if len(ent_examples[e]) < 3:
+                ent_examples[e].append({
+                    "doc_id": doc,
+                    "query_id": r.get("query_id"),
+                    "query": r.get("query", ""),
+                    "visual_anchor": r.get("visual_anchor", ""),
+                    "text_evidence": r.get("text_evidence", ""),
+                })
 
-    # Find cross-document entities (appear in 2+ docs)
-    total_docs = len(set(e["doc_id"] for e in filtered))
+    total_docs = len({r.get("doc_id") for r in rows if r.get("doc_id")})
     max_doc_count = max(2, int(total_docs * MAX_DOC_FRACTION))
 
-    cross_doc_entities = {}
-    idf_filtered = 0
-    for ent, occurrences in entity_index.items():
-        doc_ids = set(doc_id for doc_id, _ in occurrences)
-        if len(doc_ids) < 2:
+    pair_entity_counter: Counter = Counter()
+    pair_entities: Dict[Tuple[str, str], Set[str]] = defaultdict(set)
+    dropped_common = 0
+
+    for ent, docs in ent_docs.items():
+        if len(docs) < 2:
             continue
-        if len(doc_ids) > max_doc_count:
-            idf_filtered += 1
-            continue  # too common to be a useful bridge
-        cross_doc_entities[ent] = {
-            "entity": ent,
-            "doc_count": len(doc_ids),
-            "doc_ids": sorted(doc_ids),
-            "total_mentions": len(occurrences),
-        }
+        if len(docs) > max_doc_count:
+            dropped_common += 1
+            continue
+        for a, b in combinations(sorted(docs), 2):
+            pair = (a, b)
+            pair_entity_counter[pair] += 1
+            pair_entities[pair].add(ent)
 
-    print(f"\nEntity index: {len(entity_index)} unique entities")
-    print(f"Cross-document entities: {len(cross_doc_entities)}"
-          f" (filtered {idf_filtered} too-common entities, "
-          f"threshold: >{max_doc_count}/{total_docs} docs)")
-    print(f"\nTop 20 cross-doc entities:")
-    for ent, info in sorted(cross_doc_entities.items(),
-                            key=lambda x: x[1]["doc_count"], reverse=True)[:20]:
-        print(f"  {ent:<30} {info['doc_count']} docs, {info['total_mentions']} mentions")
+    raw_ranked = pair_entity_counter.most_common(max(args.topk * 5, args.topk))
 
-    # Build candidate document pairs
-    # For each cross-doc entity, generate all document pairs
-    doc_pair_entities = defaultdict(set)  # (doc_a, doc_b) → {shared entities}
-    for ent, info in cross_doc_entities.items():
-        for doc_a, doc_b in combinations(sorted(info["doc_ids"]), 2):
-            doc_pair_entities[(doc_a, doc_b)].add(ent)
+    pairs = []
+    for (doc_a, doc_b), _ in raw_ranked:
+        shared = sorted(pair_entities[(doc_a, doc_b)])
+        if not shared:
+            continue
 
-    print(f"\nCandidate document pairs: {len(doc_pair_entities)}")
+        # Require at least 1 non-generic entity for meaningful bridging.
+        specific = [e for e in shared if e not in GENERIC_ENTITIES]
+        if not specific:
+            continue
 
-    # For each pair, pick best representative L1 queries and score
-    # Index: doc_id → [entries]
-    doc_entries = defaultdict(list)
-    for entry in filtered:
-        doc_entries[entry["doc_id"]].append(entry)
+        best_a = max(doc_entries[doc_a], key=visual_score) if doc_entries[doc_a] else {}
+        best_b = max(doc_entries[doc_b], key=visual_score) if doc_entries[doc_b] else {}
 
-    VISUAL_WORDS_SET = {
-        "red", "blue", "green", "black", "gray", "grey", "orange", "purple",
-        "yellow", "dashed", "dotted", "solid", "curve", "line", "bar",
-        "top", "bottom", "left", "right", "upper", "lower", "peak", "valley",
-        "spike", "slope", "trend", "axis", "subplot", "panel", "shaded",
-        "highlighted", "node", "arrow", "box", "circle", "edge",
-    }
-
-    def visual_score(entry):
-        anchor = entry.get("visual_anchor", "").lower()
-        words = set(re.findall(r'\b\w+\b', anchor))
-        return len(words & VISUAL_WORDS_SET)
-
-    candidate_pairs = []
-    for (doc_a, doc_b), shared_ents in doc_pair_entities.items():
-        # Pick best query from each doc (highest visual score)
-        best_a = max(doc_entries[doc_a], key=visual_score)
-        best_b = max(doc_entries[doc_b], key=visual_score)
-
-        pair_info = {
+        pair = {
             "doc_a": doc_a,
             "doc_b": doc_b,
-            "shared_entities": sorted(shared_ents),
-            "shared_entity_count": len(shared_ents),
-            "doc_a_query_id": best_a["query_id"],
-            "doc_a_query": best_a["query"],
-            "doc_a_answer": best_a["answer"],
+            "shared_entity_count": len(shared),
+            "shared_entities": shared[:20],
+            # Rich metadata from best L1 entry per doc (needed by generate_l2_queries.py)
+            "doc_a_query_id": best_a.get("query_id", ""),
+            "doc_a_query": best_a.get("query", ""),
+            "doc_a_answer": best_a.get("answer", ""),
             "doc_a_visual_anchor": best_a.get("visual_anchor", ""),
             "doc_a_text_evidence": best_a.get("text_evidence", ""),
-            "doc_a_figure_id": best_a["figure_id"],
+            "doc_a_figure_id": best_a.get("figure_id", ""),
             "doc_a_figure_type": best_a.get("figure_type", "unknown"),
             "doc_a_image_path": best_a.get("image_path", ""),
             "doc_a_caption": best_a.get("caption", ""),
-            "doc_a_visual_score": visual_score(best_a),
-            "doc_b_query_id": best_b["query_id"],
-            "doc_b_query": best_b["query"],
-            "doc_b_answer": best_b["answer"],
+            "doc_a_visual_score": visual_score(best_a) if best_a else 0,
+            "doc_b_query_id": best_b.get("query_id", ""),
+            "doc_b_query": best_b.get("query", ""),
+            "doc_b_answer": best_b.get("answer", ""),
             "doc_b_visual_anchor": best_b.get("visual_anchor", ""),
             "doc_b_text_evidence": best_b.get("text_evidence", ""),
-            "doc_b_figure_id": best_b["figure_id"],
+            "doc_b_figure_id": best_b.get("figure_id", ""),
             "doc_b_figure_type": best_b.get("figure_type", "unknown"),
             "doc_b_image_path": best_b.get("image_path", ""),
             "doc_b_caption": best_b.get("caption", ""),
-            "doc_b_visual_score": visual_score(best_b),
+            "doc_b_visual_score": visual_score(best_b) if best_b else 0,
         }
-        pair_info["score"] = score_pair(pair_info)
-        candidate_pairs.append(pair_info)
+        pair["score"] = score_pair(pair)
+        pairs.append(pair)
 
-    # Sort by score, take top-K
-    candidate_pairs.sort(key=lambda x: x["score"], reverse=True)
-    top_pairs = candidate_pairs[:args.topk]
+    pairs.sort(key=lambda p: p["score"], reverse=True)
+    pairs = pairs[: args.topk]
 
-    # Save
     output = {
-        "metadata": {
-            "total_l1_entries": len(entries),
-            "filtered_entries": len(filtered),
-            "unique_entities": len(entity_index),
-            "cross_doc_entities": len(cross_doc_entities),
-            "total_doc_pairs": len(doc_pair_entities),
-            "output_pairs": len(top_pairs),
+        "meta": {
+            "input": args.input,
+            "total_rows": len(rows),
+            "topk": args.topk,
+            "min_class": min_class,
+            "num_pairs": len(pairs),
+            "total_docs": total_docs,
+            "dropped_common_entities": dropped_common,
+            "max_doc_count": max_doc_count,
         },
-        "pairs": top_pairs,
+        "pairs": pairs,
     }
 
-    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    with open(args.output, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2, ensure_ascii=False)
-
-    print(f"\n{'='*50}")
-    print(f"L2 Candidate Pairs")
-    print(f"{'='*50}")
-    print(f"Output: {args.output}")
-    print(f"Top {len(top_pairs)} pairs (by score)")
-    print()
-    for i, p in enumerate(top_pairs[:10]):
-        print(f"  #{i+1}: {p['doc_a']} × {p['doc_b']}")
-        print(f"       shared: {', '.join(p['shared_entities'][:5])}"
-              f"{'...' if len(p['shared_entities']) > 5 else ''}")
-        print(f"       score: {p['score']:.1f}  "
-              f"fig_types: {p['doc_a_figure_type']}/{p['doc_b_figure_type']}")
-        print()
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Wrote {len(output['pairs'])} candidate pairs to {out}")
 
 
 if __name__ == "__main__":

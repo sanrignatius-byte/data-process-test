@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""
-Generate L2 cross-document queries from candidate pairs.
+"""Generate L2 (cross-document) queries from candidate document pairs.
 
-Takes L2 candidate pairs (from build_l2_candidates.py) and generates
-cross-document queries using Claude API. Each query must require
-evidence from BOTH documents to answer.
-
-Modes:
-  --dry-run : validate prompt construction, no API calls
-  (default) : call Claude API and generate queries
+Sends both figures as images to Claude Vision API so the model can
+generate queries that reference actual visual elements from both docs.
 """
+
+from __future__ import annotations
 
 import argparse
 import base64
@@ -19,376 +15,495 @@ import re
 import sys
 import time
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-SYSTEM_PROMPT = """You are a data annotator creating cross-document retrieval training data.
-You will receive evidence from TWO different research papers (Document A and Document B)
-that share a common concept. Generate queries that REQUIRE both documents to answer.
-Output valid JSON only, no other text, no markdown fences."""
+SYSTEM_PROMPT = (
+    "You are an expert research analyst creating cross-document reasoning questions "
+    "for training multimodal retrieval systems. "
+    "Output valid JSON only, no other text, no markdown fences."
+)
 
-USER_PROMPT_TEMPLATE = """Generate cross-document retrieval queries for these two related papers.
+BAD_META_PATTERNS = [
+    r"according to (?:the )?(?:document|paper|figure|text|study)",
+    r"in document [ab12]",
+    r"from doc(?:ument)? [ab12]",
+    r"(?:the|this) paper (?:states?|shows?|mentions?|describes?)",
+    r"(?:the|this) figure (?:shows?|depicts?|illustrates?)",
+    r"as (?:shown|mentioned|stated|described) in",
+    r"document [ab12] (?:shows?|states?|reports?)",
+]
 
-## Document A ({doc_a_id})
-Figure caption: {doc_a_caption}
-Visual elements: {doc_a_visual_anchor}
-Key finding: {doc_a_answer}
-Text evidence: {doc_a_text_evidence}
+# Resolve image paths relative to the project root.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-## Document B ({doc_b_id})
-Figure caption: {doc_b_caption}
-Visual elements: {doc_b_visual_anchor}
-Key finding: {doc_b_answer}
-Text evidence: {doc_b_text_evidence}
 
-## Shared concepts: {shared_entities}
+SPECULATIVE_PHRASES = [
+    "could potentially", "theoretically", "might enable", "could enable",
+    "could be used", "may suggest", "possibly", "presumably",
+    "it is conceivable", "one could argue",
+]
 
-RULES — read carefully:
+YES_NO_STARTERS = ["do ", "does ", "can ", "could ", "is ", "are ", "would ", "has ", "have "]
 
-1. Each query is ONE question (max 25 words). No "and" joining two sub-questions.
-2. The query must REQUIRE information from BOTH Document A AND Document B to answer.
-   - Removing Document A's figure must make it unanswerable.
-   - Removing Document B's text/figure must also make it unanswerable.
-3. Include a specific visual anchor from at least one document (color, position, label, curve shape).
-4. NEVER use meta-words: "Document A", "Document B", "the text", "the paper", "figure shows", "according to".
-   Instead, refer to content by its actual subject matter.
-5. Prefer these cross-document relationship types:
-   - COMPARISON: "Why does method X achieve Y in one setting but Z in another?"
-   - CONTRADICTION: "How can both findings be true given different assumptions?"
-   - AGGREGATION: "What combined pattern emerges from both experimental setups?"
-   - EVOLUTION: "How does the later approach improve on the earlier result?"
-6. Each query must have evidence_a (from Doc A) and evidence_b (from Doc B).
-7. The answer must cite specific facts from BOTH documents.
+TEMPLATE_VERBS = ["align with", "relate to", "reflect the", "illustrate the"]
 
-BAD query (only needs one document):
-"What accuracy does the model achieve on German Credit?"
 
-GOOD query (needs both):
-"Why does the accuracy-fairness tradeoff curve flatten at 0.85 for logistic regression when a different study reports a steeper decline beyond that threshold?"
+ANCHOR_LEAK_THRESHOLD = 0.15  # Jaccard overlap between query and anchor tokens
+EVIDENCE_CLOSURE_THRESHOLD = 0.35  # Coverage of answer claims by evidence_refs
+# Tokens to ignore when computing leakage (common function words + numbers)
+LEAK_STOPWORDS = {
+    "the", "a", "an", "of", "in", "to", "for", "on", "at", "by", "and", "or",
+    "is", "are", "was", "were", "be", "been", "with", "from", "as", "that",
+    "this", "it", "its", "how", "what", "which", "when", "where", "does", "do",
+    "between", "across", "than", "both", "each", "all", "into", "over",
+}
+METRIC_TERMS = {
+    "accuracy", "f1", "fpr", "fnr", "auc", "mrr", "ndcg", "recall", "precision",
+    "rmse", "mae", "parity", "fairness", "utility", "di", "disparate", "impact",
+    "false positive", "false negative", "balanced accuracy",
+}
 
-GOOD query (cross-document comparison):
-"Does the sharp drop in the blue DI curve after threshold 0.5 contradict the claim that post-processing preserves utility above 0.8?"
 
-IMPORTANT: If the two documents do NOT contain genuinely comparable or contrasting facts
-about the shared concept, return {{"queries": []}} instead of hallucinating a comparison.
-Quality over quantity — an empty result is better than a fabricated one.
+def _content_tokens(text: str) -> Set[str]:
+    """Extract content tokens (lowercase, 3+ chars, no stopwords/numbers)."""
+    words = set(re.findall(r"\b[a-zA-Z]{3,}\b", text.lower()))
+    return words - LEAK_STOPWORDS
 
-Output JSON:
+
+def anchor_leak_jaccard(query: str, evidence_refs: List[Dict[str, Any]]) -> float:
+    """Compute max Jaccard overlap between query tokens and any anchor tokens."""
+    q_tokens = _content_tokens(query)
+    if not q_tokens:
+        return 0.0
+    max_jacc = 0.0
+    for ref in evidence_refs:
+        a_tokens = _content_tokens(ref.get("anchor", ""))
+        if not a_tokens:
+            continue
+        intersection = q_tokens & a_tokens
+        union = q_tokens | a_tokens
+        jacc = len(intersection) / len(union) if union else 0.0
+        max_jacc = max(max_jacc, jacc)
+    return max_jacc
+
+
+def evidence_closure_score(answer: str, evidence_refs: List[Dict[str, Any]]) -> float:
+    """Estimate how much answer content can be traced back to evidence refs."""
+    evidence_chunks: List[str] = []
+    for ref in evidence_refs:
+        anchor = ref.get("anchor", "")
+        text_evidence = ref.get("text_evidence", "")
+        if isinstance(anchor, str) and anchor.strip():
+            evidence_chunks.append(anchor.lower())
+        if isinstance(text_evidence, str) and text_evidence.strip():
+            evidence_chunks.append(text_evidence.lower())
+    evidence_text = " ".join(evidence_chunks)
+    if not evidence_text.strip():
+        return 0.0
+
+    ans = answer.lower()
+    answer_numbers = set(re.findall(r"\b\d+(?:\.\d+)?%?\b", ans))
+    answer_metrics = {m for m in METRIC_TERMS if m in ans}
+
+    total_claims = len(answer_numbers) + len(answer_metrics)
+    supported_claims = 0
+    for num in answer_numbers:
+        if num in evidence_text:
+            supported_claims += 1
+    for metric in answer_metrics:
+        if metric in evidence_text:
+            supported_claims += 1
+
+    if total_claims > 0:
+        return supported_claims / total_claims
+
+    # If no explicit metric/number claims, fall back to lexical support ratio.
+    ans_tokens = _content_tokens(answer)
+    ev_tokens = _content_tokens(evidence_text)
+    if not ans_tokens:
+        return 0.0
+    return len(ans_tokens & ev_tokens) / len(ans_tokens)
+
+
+def qc_l2_query(
+    obj: Dict[str, Any],
+    anchor_leak_threshold: float = ANCHOR_LEAK_THRESHOLD,
+    evidence_closure_threshold: float = EVIDENCE_CLOSURE_THRESHOLD,
+) -> Tuple[List[str], Dict[str, float]]:
+    """Run QC checks. Returns (issues, metrics)."""
+    issues: List[str] = []
+    metrics: Dict[str, float] = {}
+    q = obj.get("query", "").lower()
+    a = obj.get("answer", "").lower()
+
+    # Meta-language
+    if any(re.search(p, q, re.IGNORECASE) for p in BAD_META_PATTERNS):
+        issues.append("meta_language_query")
+    if any(re.search(p, a, re.IGNORECASE) for p in BAD_META_PATTERNS):
+        issues.append("meta_language_answer")
+
+    # Dual-doc evidence
+    refs = obj.get("evidence_refs", [])
+    docs = {x.get("doc_id") for x in refs if isinstance(x, dict)}
+    if len(docs) < 2:
+        issues.append("missing_dual_doc_evidence")
+
+    # Basic completeness
+    if len(obj.get("turns", [])) < 1:
+        issues.append("empty_turns")
+    if not obj.get("query"):
+        issues.append("empty_query")
+    if len(obj.get("answer", "")) < 20:
+        issues.append("short_answer")
+
+    # Anchor leakage: query must NOT copy visual tokens from evidence anchors
+    leak = anchor_leak_jaccard(obj.get("query", ""), refs)
+    metrics["anchor_leak_jaccard"] = round(leak, 4)
+    if leak > anchor_leak_threshold:
+        issues.append("anchor_leakage")
+
+    closure = evidence_closure_score(obj.get("answer", ""), refs)
+    metrics["evidence_closure"] = round(closure, 4)
+    if closure < evidence_closure_threshold:
+        issues.append("low_evidence_closure")
+
+    # No yes/no questions
+    if any(q.startswith(s) for s in YES_NO_STARTERS):
+        issues.append("yes_no_question")
+
+    # No speculative answers
+    if any(p in a for p in SPECULATIVE_PHRASES):
+        issues.append("speculative_answer")
+
+    # Template verb + vagueness
+    if any(v in q for v in TEMPLATE_VERBS):
+        issues.append("template_verb")
+
+    return issues, metrics
+
+
+def build_prompt(pair: Dict[str, Any]) -> str:
+    shared = ", ".join(pair.get("shared_entities", [])[:10])
+    doc_a = pair["doc_a"]
+    doc_b = pair["doc_b"]
+
+    return f"""Generate ONE cross-document reasoning query that REQUIRES both figures to answer.
+
+## Document A: {doc_a}
+Figure: {pair.get('doc_a_figure_id', 'unknown')} ({pair.get('doc_a_figure_type', 'unknown')})
+Caption: {pair.get('doc_a_caption', '(none)')[:400]}
+Context from L1: {pair.get('doc_a_query', '')}
+Finding: {pair.get('doc_a_answer', '')}
+
+## Document B: {doc_b}
+Figure: {pair.get('doc_b_figure_id', 'unknown')} ({pair.get('doc_b_figure_type', 'unknown')})
+Caption: {pair.get('doc_b_caption', '(none)')[:400]}
+Context from L1: {pair.get('doc_b_query', '')}
+Finding: {pair.get('doc_b_answer', '')}
+
+## Shared concepts: {shared}
+
+## YOUR TASK: Create a reasoning question, NOT a comparison question.
+
+Think about what REASONING OPERATION connects these two documents:
+- Can Doc B's framework/method EXPLAIN an observation in Doc A's figure?
+- Can Doc A's empirical result PREDICT what Doc B's approach would show?
+- Does Doc A's finding CONTRADICT or SUPPORT Doc B's theoretical claim?
+- What would happen if you APPLIED Doc B's technique to Doc A's data?
+
+## STRICT RULES:
+
+1) **INFORMATION GAP**: The query must describe ONE document's context (method, dataset, phenomenon)
+   and ask a question whose answer requires looking at the OTHER document's figure.
+   The retrieval model should need to FIND the second document, not just confirm something obvious.
+
+2) **NO ANCHOR COPYING**: Do NOT copy specific visual descriptions into the query.
+   The query uses CONCEPTUAL language (method names, metric names, phenomena).
+   Visual details (colors, coordinates, bar heights, curve shapes) belong ONLY in evidence_refs.anchor.
+   WRONG: "How does the blue dashed curve at 0.8 compare to the red bar at 0.75?"
+   RIGHT: "What accuracy does VFAE achieve on Adult when the compositional adversary shows AUC collapse at strong regularization?"
+
+3) **NO META-LANGUAGE**: Never say "document A/B", "the paper", "the figure shows", "according to".
+   Use method names, dataset names, or concept names.
+
+4) **NO YES/NO QUESTIONS**: Start with "What", "How much", "Which", "At what point", or "Why".
+
+5) **FACTUAL ANSWERS ONLY**: Answer with concrete numbers, directions, specific relationships.
+   NEVER use "could potentially", "theoretically", "might", "suggests that".
+   If you cannot give a factual answer, output NULL.
+
+6) **SEMANTIC RELEVANCE CHECK**: If the shared concepts are homonyms or the documents address
+   genuinely unrelated problems, output:
+   {{"status": "NULL", "reason": "<specific reason>"}}
+
+7) **NO FORCED BRIDGES**: If the only connection is a generic concept (accuracy, fairness, bias)
+   used in completely different experimental contexts, output NULL.
+   The query must involve a genuine intellectual connection, not just shared vocabulary.
+
+## BAD (anchor leakage / forced comparison):
+- "How does the blue dashed line at ~1.0 compare to the gray bar at ~0.87?" (copies visual tokens)
+- "How does X relate to Y?" (vague essay prompt)
+- "How does the FPR pattern in COMPAS relate to the causal arrow from A to Y?" (forced bridge)
+
+## GOOD (reasoning with information gap):
+- "What accuracy penalty does the Equity fairness approach incur on Adult data when enforcing the same level of demographic parity that COMPAS's optimal fair policy achieves for African-Americans?"
+  (Query names methods and metrics conceptually; answerer must find specific values in BOTH figures)
+- "At the regularization strength where the compositional adversary's Gender AUC drops below 0.6 on MovieLens, what Δ_CP constraint level produces equivalent accuracy degradation in FFVAE on CelebA?"
+  (Requires reading precise values from both figures; no visual tokens in query)
+- "Why does within-category FPR disparity persist in COMPAS even when overall rates are equalized, and what does the equal-mean beta distribution simulation reveal about the structural cause?"
+  (Genuine reasoning connection; query is conceptual, not visual)
+
+## Output format (JSON only):
 {{
-  "queries": [
-    {{
-      "query": "single cross-document question, max 25 words",
-      "answer": "must reference facts from BOTH documents, max 3 sentences",
-      "evidence_a": {{
-        "visual_anchor": "specific visual element from Doc A's figure",
-        "text_evidence": "relevant text passage from Doc A",
-        "source_snippet": "exact quote (5-20 words) copied from the provided Doc A text"
-      }},
-      "evidence_b": {{
-        "visual_anchor": "specific visual element from Doc B's figure (or 'N/A' if text-only)",
-        "text_evidence": "relevant text passage from Doc B",
-        "source_snippet": "exact quote (5-20 words) copied from the provided Doc B text"
-      }},
-      "cross_doc_relationship": "comparison|contradiction|aggregation|evolution",
-      "query_type": "value_context|comparison_explanation|anomaly_cause|visual_definition"
-    }}
+  "query": "Reasoning question using method/metric/dataset names, max 40 words, NO visual description tokens",
+  "answer": "Factual answer with specific values from both figures (2-3 sentences, no speculation)",
+  "query_type": "cross_application|cross_prediction|cross_diagnosis|cross_comparison",
+  "reasoning_direction": "A_explains_B|B_explains_A|mutual",
+  "turns": ["<the main query>"],
+  "evidence_refs": [
+    {{"doc_id": "{doc_a}", "anchor": "specific visual element with colors/shapes/values (detail goes HERE not in query)", "text_evidence": "direct quote"}},
+    {{"doc_id": "{doc_b}", "anchor": "specific visual element with colors/shapes/values (detail goes HERE not in query)", "text_evidence": "direct quote"}}
   ]
 }}"""
 
-# QC gate: meta-language patterns to ban
-META_WORDS = [
-    "document a", "document b", "doc a", "doc b", "the text",
-    "the paper", "the caption", "the figure", "according to",
-    "as mentioned", "as stated", "as described", "the section",
-    "the paragraph", "first paper", "second paper",
-]
 
-BAN_PREFIXES = [
-    "how does figure", "what does figure", "what does the figure",
-    "what is shown", "what is depicted", "compare document",
-]
-
-
-def qc_l2_query(query_obj: dict) -> tuple[bool, list[str]]:
-    """Quality-check a single L2 query. Returns (pass, [reasons])."""
-    issues = []
-    query = query_obj.get("query", "").lower().strip()
-
-    # Meta-language
-    for mw in META_WORDS:
-        if mw in query:
-            issues.append(f"meta_language:{mw}")
-    for bp in BAN_PREFIXES:
-        if query.startswith(bp):
-            issues.append(f"banned_prefix:{bp}")
-
-    # Evidence completeness
-    ev_a = query_obj.get("evidence_a", {})
-    ev_b = query_obj.get("evidence_b", {})
-    if not ev_a.get("text_evidence") or len(ev_a.get("text_evidence", "")) < 20:
-        issues.append("weak_evidence_a")
-    if not ev_b.get("text_evidence") or len(ev_b.get("text_evidence", "")) < 20:
-        issues.append("weak_evidence_b")
-
-    # Visual anchor
-    has_anchor = bool(
-        (ev_a.get("visual_anchor", "").strip() and
-         len(ev_a.get("visual_anchor", "")) > 5) or
-        (ev_b.get("visual_anchor", "").strip() and
-         len(ev_b.get("visual_anchor", "")) > 5)
+def encode_image(path: str) -> Optional[Tuple[str, str]]:
+    """Return (base64_data, mime_type) or None if file missing."""
+    # Try both absolute and project-root-relative
+    p = Path(path)
+    if not p.is_absolute():
+        p = PROJECT_ROOT / path
+    if not p.exists() or p.stat().st_size < 500:
+        return None
+    ext = p.suffix.lower().lstrip(".")
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png"}.get(
+        ext, "image/jpeg"
     )
-    if not has_anchor:
-        issues.append("no_visual_anchor")
-
-    # Query length
-    word_count = len(query.split())
-    if word_count > 35:
-        issues.append(f"too_long:{word_count}")
-
-    passed = len(issues) == 0
-    return passed, issues
+    with open(p, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8"), mime
 
 
-def build_prompt(pair: dict) -> str:
-    """Build the generation prompt from a candidate pair."""
-    return USER_PROMPT_TEMPLATE.format(
-        doc_a_id=pair["doc_a"],
-        doc_a_caption=pair.get("doc_a_caption", "(no caption)"),
-        doc_a_visual_anchor=pair.get("doc_a_visual_anchor", "(none)"),
-        doc_a_answer=pair.get("doc_a_answer", "(none)"),
-        doc_a_text_evidence=pair.get("doc_a_text_evidence", "(none)"),
-        doc_b_id=pair["doc_b"],
-        doc_b_caption=pair.get("doc_b_caption", "(no caption)"),
-        doc_b_visual_anchor=pair.get("doc_b_visual_anchor", "(none)"),
-        doc_b_answer=pair.get("doc_b_answer", "(none)"),
-        doc_b_text_evidence=pair.get("doc_b_text_evidence", "(none)"),
-        shared_entities=", ".join(pair.get("shared_entities", [])[:8]),
-    )
+def call_llm_anthropic(
+    client: Any,
+    model: str,
+    prompt: str,
+    images: List[Optional[Tuple[str, str]]],
+) -> Tuple[Optional[str], int, int]:
+    """Call Anthropic API with optional images. Returns (text, input_tokens, output_tokens)."""
+    content: List[Dict[str, Any]] = []
 
-
-def call_api_with_retry(client, prompt: str, model: str,
-                        image_a_path: str = None, image_b_path: str = None,
-                        max_retries: int = 4) -> dict:
-    """Call Claude API with optional images and exponential backoff retry."""
-    content = []
-
-    # Add images if available
-    for img_path in [image_a_path, image_b_path]:
-        if img_path and Path(img_path).exists():
-            ext = Path(img_path).suffix.lower().lstrip(".")
-            mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg",
-                    "png": "image/png"}.get(ext, "image/jpeg")
-            with open(img_path, "rb") as f:
-                img_b64 = base64.b64encode(f.read()).decode("utf-8")
+    for img in images:
+        if img is not None:
+            b64, mime = img
             content.append({
                 "type": "image",
-                "source": {"type": "base64", "media_type": mime, "data": img_b64},
+                "source": {"type": "base64", "media_type": mime, "data": b64},
             })
 
     content.append({"type": "text", "text": prompt})
 
-    last_err = None
-    for attempt in range(max_retries):
-        try:
-            response = client.messages.create(
-                model=model,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": content}],
-                temperature=0.7,
-                max_tokens=2048,
-            )
-            break
-        except Exception as e:
-            last_err = e
-            if attempt < max_retries - 1:
-                wait = 2 ** (attempt + 1)  # 2, 4, 8, 16 seconds
-                print(f"RETRY ({attempt+1}/{max_retries}, wait {wait}s: {e})",
-                      end=" ", flush=True)
-                time.sleep(wait)
-    else:
-        raise last_err  # all retries exhausted
+    r = client.messages.create(
+        model=model,
+        system=SYSTEM_PROMPT,
+        max_tokens=1024,
+        temperature=0.5,
+        messages=[{"role": "user", "content": content}],
+    )
+    return (
+        r.content[0].text,
+        r.usage.input_tokens,
+        r.usage.output_tokens,
+    )
 
-    raw = response.content[0].text.strip()
-    parsed = None
+
+def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not txt:
+        return None
+    t = txt.strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```(?:json)?\s*", "", t).strip()
+        t = re.sub(r"\s*```$", "", t).strip()
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
-        if json_match:
+        return json.loads(t)
+    except Exception:
+        # Try to find JSON object in mixed text
+        m = re.search(r"\{.*\}", t, re.DOTALL)
+        if m:
             try:
-                parsed = json.loads(json_match.group())
-            except json.JSONDecodeError:
+                return json.loads(m.group())
+            except Exception:
                 pass
-
-    return {
-        "raw_response": raw,
-        "parsed": parsed,
-        "usage": {
-            "input_tokens": response.usage.input_tokens,
-            "output_tokens": response.usage.output_tokens,
-        },
-    }
+    return None
 
 
-def resolve_image_path(path: str) -> str:
-    """Try to resolve image path: check relative, then absolute."""
-    if Path(path).exists():
-        return path
-    # Try relative from repo root
-    rel = Path(path)
-    if rel.exists():
-        return str(rel)
-    return path  # return as-is, may not exist
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Generate L2 queries from candidate pairs")
+    ap.add_argument("--pairs", default="data/l2_candidate_pairs_v2.json")
+    ap.add_argument("--output", default="data/l2_queries_v3.jsonl")
+    ap.add_argument("--limit", type=int, default=50)
+    ap.add_argument("--provider", choices=["anthropic", "openai"], default="anthropic")
+    ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
+    ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
+    ap.add_argument(
+        "--anchor-leak-threshold",
+        type=float,
+        default=ANCHOR_LEAK_THRESHOLD,
+        help="Max allowed query/anchor Jaccard overlap",
+    )
+    ap.add_argument(
+        "--evidence-closure-threshold",
+        type=float,
+        default=EVIDENCE_CLOSURE_THRESHOLD,
+        help="Min answer-to-evidence support ratio",
+    )
+    ap.add_argument("--no-images", action="store_true", help="Skip sending images (text-only)")
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args()
 
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Generate L2 cross-document queries via Claude API")
-    parser.add_argument("--pairs", default="data/l2_candidate_pairs_v1.json",
-                        help="Candidate pairs JSON")
-    parser.add_argument("--output", default="data/l2_queries_v1.jsonl",
-                        help="Output JSONL")
-    parser.add_argument("--model", default="claude-sonnet-4-5-20250929",
-                        help="Anthropic model")
-    parser.add_argument("--limit", type=int, default=50,
-                        help="Max pairs to process")
-    parser.add_argument("--delay", type=float, default=0.5,
-                        help="Seconds between API calls")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Validate prompts without calling API")
-    args = parser.parse_args()
-
-    with open(args.pairs) as f:
-        data = json.load(f)
-
-    pairs = data["pairs"][:args.limit]
-
-    # ── Checkpoint / resume: skip pairs already in output file ──
-    completed_pair_keys = set()
-    if not args.dry_run and Path(args.output).exists():
-        with open(args.output) as existing:
-            for line in existing:
-                line = line.strip()
-                if line:
-                    entry = json.loads(line)
-                    completed_pair_keys.add(
-                        f"{entry.get('doc_a', '')}_{entry.get('doc_b', '')}")
-        if completed_pair_keys:
-            print(f"Resuming: {len(completed_pair_keys)} pairs already done, skipping.")
-
-    print(f"Processing {len(pairs)} candidate pairs"
-          f"{' (DRY RUN)' if args.dry_run else ''}")
-
-    if not args.dry_run:
+    if args.provider == "anthropic":
         api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            print("ERROR: ANTHROPIC_API_KEY not set.")
-            print("Run: export $(grep -v '^#' .env | xargs)")
+        if not api_key and not args.dry_run:
+            print("ERROR: ANTHROPIC_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
             sys.exit(1)
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
 
-    results = []
+    pair_data = json.loads(Path(args.pairs).read_text(encoding="utf-8"))
+    pairs = pair_data.get("pairs", [])[: args.limit]
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    print(f"L2 Query Generation")
+    print(f"  Pairs: {len(pairs)}")
+    print(f"  Model: {args.model}")
+    print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
+    print(f"  Anchor leak threshold: {args.anchor_leak_threshold:.2f}")
+    print(f"  Evidence closure threshold: {args.evidence_closure_threshold:.2f}")
+    print(f"  Output: {out}")
+    print()
+
+    # Initialize client once
+    client = None
+    if not args.dry_run and args.provider == "anthropic":
+        import anthropic
+        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
     total_input_tokens = 0
     total_output_tokens = 0
-    total_queries = 0
-    total_passed_qc = 0
-    total_failed_qc = 0
+    kept = 0
+    failed_parse = 0
+    null_pairs = 0
+    qc_failed = 0
 
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Append mode if resuming, write mode if fresh start
-    open_mode = "a" if completed_pair_keys and not args.dry_run else "w"
-    with open(output_path, open_mode, encoding="utf-8") as out_f:
-        for i, pair in enumerate(pairs):
-            pair_key = f"{pair['doc_a']}_{pair['doc_b']}"
-
-            # Skip already-completed pairs (checkpoint resume)
-            if pair_key in completed_pair_keys:
-                print(f"  [{i+1}/{len(pairs)}] {pair['doc_a']} × {pair['doc_b']} "
-                      f"SKIP (already done)")
-                continue
-
-            print(f"  [{i+1}/{len(pairs)}] {pair['doc_a']} × {pair['doc_b']} "
-                  f"(score={pair['score']:.1f})...", end=" ", flush=True)
-
-            prompt = build_prompt(pair)
+    with out.open("w", encoding="utf-8") as f:
+        for i, p in enumerate(pairs):
+            doc_a, doc_b = p["doc_a"], p["doc_b"]
+            prompt = build_prompt(p)
 
             if args.dry_run:
-                print(f"OK (prompt: {len(prompt)} chars)")
+                print(f"\n--- pair {i+1}/{len(pairs)}: {doc_a} vs {doc_b} (score={p.get('score',0)}) ---")
+                print(f"Shared: {', '.join(p.get('shared_entities', []))}")
+                # Check images
+                for side in ["doc_a", "doc_b"]:
+                    img_path = p.get(f"{side}_image_path", "")
+                    img = encode_image(img_path) if not args.no_images else None
+                    status = f"OK ({len(img[0])//1024}KB b64)" if img else "MISSING"
+                    print(f"  {side} image: {status} — {img_path}")
+                print(prompt[:400] + "\n...")
                 continue
 
+            print(f"  [{i+1}/{len(pairs)}] {doc_a} x {doc_b}...", end=" ", flush=True)
+
+            # Load images
+            images: List[Optional[Tuple[str, str]]] = []
+            if not args.no_images:
+                images.append(encode_image(p.get("doc_a_image_path", "")))
+                images.append(encode_image(p.get("doc_b_image_path", "")))
+                img_count = sum(1 for x in images if x is not None)
+            else:
+                img_count = 0
+
             try:
-                img_a = resolve_image_path(pair.get("doc_a_image_path", ""))
-                img_b = resolve_image_path(pair.get("doc_b_image_path", ""))
-
-                resp = call_api_with_retry(client, prompt, args.model,
-                                           img_a, img_b)
-                total_input_tokens += resp["usage"]["input_tokens"]
-                total_output_tokens += resp["usage"]["output_tokens"]
-
-                parsed = resp.get("parsed")
-                if not parsed or "queries" not in parsed:
-                    print("FAIL (no queries parsed)")
-                    continue
-
-                queries = parsed["queries"]
-                kept = 0
-                for q in queries:
-                    passed, issues = qc_l2_query(q)
-
-                    entry = {
-                        "query_id": f"l2_{pair['doc_a']}_{pair['doc_b']}_{total_queries}",
-                        "query": q.get("query", ""),
-                        "answer": q.get("answer", ""),
-                        "doc_a": pair["doc_a"],
-                        "doc_b": pair["doc_b"],
-                        "doc_a_figure_id": pair["doc_a_figure_id"],
-                        "doc_b_figure_id": pair["doc_b_figure_id"],
-                        "doc_a_image_path": pair.get("doc_a_image_path", ""),
-                        "doc_b_image_path": pair.get("doc_b_image_path", ""),
-                        "evidence_a": q.get("evidence_a", {}),
-                        "evidence_b": q.get("evidence_b", {}),
-                        "shared_entities": pair["shared_entities"][:8],
-                        "cross_doc_relationship": q.get("cross_doc_relationship", ""),
-                        "query_type": q.get("query_type", ""),
-                        "qc_passed": passed,
-                        "qc_issues": issues,
-                    }
-                    out_f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-                    total_queries += 1
-                    if passed:
-                        total_passed_qc += 1
-                        kept += 1
-                    else:
-                        total_failed_qc += 1
-
-                print(f"OK ({len(queries)} gen, {kept} passed QC)")
-
+                raw, in_tok, out_tok = call_llm_anthropic(client, args.model, prompt, images)
+                total_input_tokens += in_tok
+                total_output_tokens += out_tok
             except Exception as e:
-                print(f"ERROR: {e}")
+                print(f"API ERROR: {e}")
+                if "rate" in str(e).lower() or "429" in str(e):
+                    print("  Rate limited, waiting 30s...")
+                    time.sleep(30)
+                continue
+
+            obj = parse_json(raw)
+            if not obj:
+                print(f"PARSE FAIL")
+                failed_parse += 1
+                continue
+
+            if obj.get("status") == "NULL":
+                print(f"NULL ({obj.get('reason', 'no reason')[:60]})")
+                null_pairs += 1
+                continue
+
+            # Attach metadata
+            obj["l2_id"] = f"l2_v3_{i:03d}"
+            obj["pair"] = {"doc_a": doc_a, "doc_b": doc_b}
+            obj["shared_entities"] = p.get("shared_entities", [])
+            obj["pair_score"] = p.get("score", 0)
+            obj["images_sent"] = img_count
+            obj["doc_a_image_path"] = p.get("doc_a_image_path", "")
+            obj["doc_b_image_path"] = p.get("doc_b_image_path", "")
+            obj["doc_a_figure_id"] = p.get("doc_a_figure_id", "")
+            obj["doc_b_figure_id"] = p.get("doc_b_figure_id", "")
+
+            issues, qc_metrics = qc_l2_query(
+                obj,
+                anchor_leak_threshold=args.anchor_leak_threshold,
+                evidence_closure_threshold=args.evidence_closure_threshold,
+            )
+            obj["qc_issues"] = issues
+            obj["qc_pass"] = len(issues) == 0
+            obj["qc_metrics"] = qc_metrics
+
+            if obj["qc_pass"]:
+                kept += 1
+                print(
+                    "OK "
+                    f"({obj.get('query_type', '?')}, "
+                    f"leak={qc_metrics.get('anchor_leak_jaccard', 0):.2f}, "
+                    f"closure={qc_metrics.get('evidence_closure', 0):.2f})"
+                )
+            else:
+                qc_failed += 1
+                print(
+                    f"QC FAIL: {issues} "
+                    f"(leak={qc_metrics.get('anchor_leak_jaccard', 0):.2f}, "
+                    f"closure={qc_metrics.get('evidence_closure', 0):.2f})"
+                )
+
+            f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
             if args.delay > 0 and i < len(pairs) - 1:
                 time.sleep(args.delay)
 
-    # Summary
-    if not args.dry_run:
-        est_cost = total_input_tokens * 3 / 1e6 + total_output_tokens * 15 / 1e6
-        print(f"\n{'='*60}")
-        print(f"L2 Generation Summary")
-        print(f"{'='*60}")
-        print(f"  Pairs processed:     {len(pairs)}")
-        print(f"  Total queries:       {total_queries}")
-        print(f"  Passed QC:           {total_passed_qc}")
-        print(f"  Failed QC:           {total_failed_qc}")
-        print(f"  QC pass rate:        {total_passed_qc/max(total_queries,1)*100:.1f}%")
-        print(f"  Input tokens:        {total_input_tokens:,}")
-        print(f"  Output tokens:       {total_output_tokens:,}")
-        print(f"  Est. cost:           ${est_cost:.2f}")
-        print(f"  Output:              {args.output}")
-        print(f"{'='*60}")
-    else:
-        print(f"\nDry run complete. {len(pairs)} prompts validated.")
-        print("Remove --dry-run to call API.")
+    if args.dry_run:
+        print(f"\nDry-run complete for {len(pairs)} pairs")
+        return
+
+    # Cost estimate: Sonnet 4.5 = $3/M input, $15/M output
+    est_cost = total_input_tokens * 3 / 1e6 + total_output_tokens * 15 / 1e6
+
+    print(f"\n{'='*60}")
+    print(f"L2 Generation Summary")
+    print(f"{'='*60}")
+    print(f"  Total pairs:       {len(pairs)}")
+    print(f"  QC passed:         {kept}")
+    print(f"  QC failed:         {qc_failed}")
+    print(f"  NULL (no query):   {null_pairs}")
+    print(f"  Parse failures:    {failed_parse}")
+    print(f"  Input tokens:      {total_input_tokens:,}")
+    print(f"  Output tokens:     {total_output_tokens:,}")
+    print(f"  Est. cost:         ${est_cost:.2f}")
+    print(f"  Output:            {out}")
+    print(f"{'='*60}")
 
 
 if __name__ == "__main__":
