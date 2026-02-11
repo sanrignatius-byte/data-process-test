@@ -8,7 +8,8 @@
 ### 已完成
 - 85 篇 arXiv 论文下载（种子论文：1908.09635）
 - 80 篇 PDF 用 MinerU 解析
-- **Step 0: Figure-text association** — 351 pairs, 73 docs（`src/linkers/figure_text_associator.py`）
+- **Step 0 v1: Figure-text association** — 351 pairs, 73 docs（`src/linkers/figure_text_associator.py`）
+- **Step 0 v2: Multimodal relationship DAG** — 1316 elements (841 fig + 334 tbl + 141 formula), 1261 edges, 1135 cross-modal pairs, 76 docs（`src/linkers/multimodal_relationship_builder.py`）
 - **Step 1: L1 intra-document cross-modal queries** — 经 3 轮迭代，最终 **974 条 queries**
 - **L1 Triage** — A:727 (74.6%) / B:247 (25.4%) / C:0 (0%)  *(after visual_density gate)*
 - **L2 候选构建** — 55 个跨文档实体，711 个候选文档对，top-100 已输出
@@ -59,7 +60,11 @@
 | `scripts/triage_l1_v3.py` | **L1 三分法分拣 (A/B/C 门禁)** |
 | `scripts/build_l2_candidates.py` | **L2 跨文档候选对构建（实体倒排索引）** |
 | `scripts/generate_l2_queries.py` | **L2 query 生成脚本（Claude API + QC）** |
-| `data/figure_text_pairs.json` | 351 figure-text pairs (Step 0 输出) |
+| `scripts/build_multimodal_relationships.py` | **Step 0 v2: 多模态关系构建（DAG + 全模态）** |
+| `src/linkers/multimodal_relationship_builder.py` | **多模态关系核心模块（figure/table/formula/section DAG）** |
+| `data/figure_text_pairs.json` | 351 figure-text pairs (Step 0 v1 输出) |
+| `data/multimodal_elements.json` | **1316 多模态元素 + 1261 引用边 + 1135 跨模态 pair (Step 0 v2)** |
+| `data/multimodal_report.json` | Step 0 v2 统计报告 |
 | `data/l1_cross_modal_queries_v3.jsonl` | **最终输出：974 条 L1 queries** |
 | `data/l1_triage_v3.jsonl` | **L1 分拣结果（含 triage/reasons 字段）** |
 | `data/l1_triage_report_v3.json` | L1 分拣统计报告 |
