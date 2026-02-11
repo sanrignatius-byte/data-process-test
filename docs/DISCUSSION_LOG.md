@@ -548,9 +548,16 @@ feat: L1 triage + L2 cross-document pipeline
 - triage_l1_v3.py (A=751, B=223, C=0)
 - build_l2_candidates.py (55 cross-doc entities, 711 pairs, top-100)
 - generate_l2_queries.py (Claude API + QC, dry-run validated)
+
+commit 2170666
+improve: apply code review feedback to L1 triage + L2 pipeline
+- triage: expanded VISUAL_WORDS + visual_density gate (A: 751→727)
+- candidates: GENERIC_TERMS blacklist + IDF filtering (MAX_DOC_FRACTION=0.35)
+- generate: NULL output instruction, source_snippet, retry + checkpoint/resume
 ```
 
 ---
+
 
 ## 日期：2026-02-10（L2 试产完成）
 
@@ -831,3 +838,115 @@ python scripts/generate_l2_queries.py --limit 43 --delay 0.5
 
 本日结论不是“继续造更多 L2”，而是“先保证进入训练的 L2 是干净的”。  
 执行策略已从“生成优先”切换为“纯度优先 + 评估闭环优先”。今天到此结束。喵
+## 日期：2026-02-11（Mentor 反馈 + 深耕 L1 方向定调）
+
+### 一、本次讨论背景
+
+用户带来 Mentor 三条建议，要求结合当前数据分析可行性。同时回顾了 Step 0 和 Step 1 的技术细节（是否用了大模型看图片）。
+
+### 二、Mentor 三条建议
+
+1. **丰富模态，引入 table/formula/figure 并细分**
+   - 模型图？实验结果表？信息汇总表？Chart？
+   - 各模态需要有针对性的处理方式
+
+2. **构建文档内部链接与结构，自然实现多跳**
+   - 方案①：利用 LaTeX 源构建不同部分的引用关系
+   - 方案②：利用 MinerU 结果构建关系（较难）
+
+3. **展望：embedding 隐空间跨文档探索**
+   - 利用 embedding 在隐空间中找文本相似性更高的跨文档关联
+
+**Mentor 鼓励先继续深耕 L1。**
+
+### 三、数据分析结果
+
+#### 模态分布（L1 的 974 条 query）
+
+| 模态 | 数量 | 占比 |
+|------|------|------|
+| plot | 694 | 71.3% |
+| diagram | 201 | 20.6% |
+| example | 51 | 5.2% |
+| architecture | 12 | 1.2% |
+| table | 6 | 0.6% |
+
+**问题**：plot 一家独大（71.3%），table 几乎为零（0.6%），architecture 也极少。模态多样性不足。
+
+#### 已有但未利用的多模态资源
+
+- **50 个** figure-text pair 上下文含 HTML `<table>`（分布在 33 篇文档中）
+- **20 个**上下文含公式块（13 篇文档）
+- 这些素材在 Step 0 就存在，但 L1 生成时的 prompt 没有引导模型关注 table/formula
+
+#### 文档内交叉引用密度
+
+在 351 个图文对的上下文中：
+- Figure 引用：**1028 次**
+- Table 引用：**362 次**
+- Equation 引用：**69 次**
+- Section 引用：**72 次**
+- **302/351（86%）** 的图文对上下文含 2 个以上交叉引用
+
+**结论**：文档内天然存在大量 Figure→Table、Figure→Equation 的引用链路，是构建多跳 query 的理想素材。
+
+### 四、对 Mentor 建议的逐条分析
+
+#### 建议 1：模态丰富 + 细分
+
+**完全可行，分两步**：
+
+1. **图片类型精分**：用大模型对 351 张图做一轮 classification（当前 `_classify_figure` 只用关键词匹配 caption，没看图片本身），成本 ~$0.5-1。得到精确的子模态分布后再定策略。
+
+2. **补 table/formula 的专用 L1 query**：
+   - 对 50 个 table-context pair 写 table-aware prompt（引导模型对比表中行/列数据 + 上下文解释）
+   - 对 20 个 formula-context pair 写 formula-aware prompt（引导模型将公式变量与图中数值对应）
+   - 成本 ~$1，产出预计 100-200 条新 query
+
+#### 建议 2：文档内引用图构建多跳
+
+**最有价值且零成本的方向。**
+
+- **不需要 LaTeX 源码**（repo 中无 .tex/.bbl），MinerU markdown 已足够
+- 正则提取 `Figure N`/`Table N`/`Eq N`/`Section N` 引用关系 → 构建文档内 DAG
+- 2-hop 路径天然就是多跳 query 素材：
+  ```
+  Figure 3 ─引用→ Table 2 ─引用→ Equation 5
+     ↑                ↑                  ↑
+   L1 query     table query       formula query
+  ```
+- 直接与 L3 multi-hop 接轨，且不花 API 费用
+
+#### 建议 3：Embedding 隐空间探索
+
+**方向正确，但时机在后面。**
+
+- 当前 85 篇规模用实体倒排索引已够（L2 candidates 已就绪）
+- 当到百万级时，实体匹配的 recall 确实太低（同义不同词问题）
+- 建议路径：先训初版 embedding → 用它做跨文档相似度检索 → 发现实体匹配漏掉的隐性关联 → 生成更多 L2 → 反哺训练（self-play 循环）
+
+### 五、关键技术发现：Step 0 没用大模型看图
+
+回顾 pipeline 发现：
+- **Step 0（`figure_text_associator.py`）**：纯正则 + 位置关系解析，**没有任何大模型参与**。图片分类只看 caption 关键词。
+- **Step 1（`batch_figure_understanding_api.py`）**：Claude Sonnet 4.5 同时接收 base64 图片 + 文本 prompt，真正做了多模态理解。
+
+**影响**：Step 0 的 `figure_type` 分类可信度低（不看图片如何知道是 scatter plot 还是 architecture？）。Mentor 说的"细分模态"需要在这里补一轮大模型分类。
+
+### 六、执行优先级排序
+
+| 优先级 | 任务 | 成本 | 依赖 |
+|--------|------|------|------|
+| 1 | L1 文档内引用图（DAG）| 零（纯规则） | figure_text_pairs.json |
+| 2 | L1 模态细分 + table/formula prompt | ~$1 | 引用图 + 现有 pair |
+| 3 | 图片类型精分（大模型分类）| ~$0.5-1 | 351 张图片 |
+| 4 | 评估闭环（30 query + BM25）| 零 | L1 + L2 数据 |
+| 5 | L2 跨文档生成 | ~$2-5 | 已就绪 |
+| 6 | Embedding 隐空间探索 | 待定 | 初版模型 |
+
+### 七、语料库领域备忘
+
+种子论文 `1908.09635` 是**算法公平性（algorithmic fairness）**方向。85 篇论文几乎都围绕 ML fairness 展开。典型实体：Disparate Impact、Statistical Parity Difference、Equalized Odds、German Credit（数据集）、COMPAS（数据集）。
+
+"fairness" 出现在 73 篇文档中的 33 篇（45%），作为桥接实体区分度太低，已被 `MAX_DOC_FRACTION=0.35` IDF 过滤剔除。真正有价值的桥接实体是 Disparate Impact（5 docs）、German Credit（3 docs）、t-SNE（3 docs）等。
+

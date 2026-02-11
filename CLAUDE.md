@@ -3,7 +3,7 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
-## 当前状态（2026-02-10 更新）
+## 当前状态（2026-02-11 更新）
 
 ### 已完成
 - 85 篇 arXiv 论文下载（种子论文：1908.09635）
@@ -32,8 +32,10 @@
 - **Query 类型**: cross_application / cross_prediction / cross_diagnosis / cross_comparison
 
 ### 进行中
-- **L2 v3 生成**：对 43 个候选对（l2_candidate_pairs_v2.json）执行
-- **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
+
+- **Step 2: L2 cross-document queries** — 候选对已就绪，待调 Claude API 生成 top-50
+- **L1 深耕（Mentor 建议）** — 丰富模态 + 文档内引用图构建（详见下方）
+
 
 ### L1 Query 迭代历史
 | 版本 | 模型 | 结果 | 问题 |
@@ -72,16 +74,55 @@
 | `docs/L1_query_iteration_report.md` | 迭代改进报告（含 L1 triage + L2 候选） |
 | `src/linkers/figure_text_associator.py` | Step 0: 图文关联模块 |
 
-## 下一步 TODO
-- ~~**L2 试产 v1**~~ ✅ 50 条 ($0.55)
-- ~~**L2 v2 (strict QC)**~~ ✅ 16/32 pass ($0.48)
-- ~~**L2 v3 script (prompt+QC redesign)**~~ ✅ 脚本已就绪
-- **L2 v3 执行**：`python scripts/generate_l2_queries.py --limit 43 --delay 0.5`
+## Mentor 建议（2026-02-11）& 执行优先级
+
+### Mentor 原话三条
+1. **丰富模态**：引入 table/formula/figure 并细分（模型图？实验结果表？信息汇总表？Chart？）
+2. **文档内链接与结构**：①LaTeX 源构建引用关系 ②MinerU 结果构建关系（较难）→ 自然实现多跳
+3. **展望**：embedding 隐空间探索跨文档文本相似性
+
+### 数据现状（支撑可行性分析）
+
+**L1 模态分布（严重偏科）**：
+| 模态 | 数量 | 占比 |
+|------|------|------|
+| plot（实验图） | 694 | 71.3% |
+| diagram（流程/示意图） | 201 | 20.6% |
+| example | 51 | 5.2% |
+| architecture（模型图） | 12 | 1.2% |
+| table | 6 | 0.6% |
+
+**已有但未利用的多模态资源**：
+- 50 个 figure-text pair 上下文含 HTML table（33 篇文档，14.2%）
+- 20 个上下文含公式（13 篇文档）
+- Step 0 分类器 `_classify_figure` 纯关键词匹配，未看图片本身
+
+**文档内交叉引用密度（351 对中）**：
+- Figure 引用 1028 次 / Table 引用 362 次 / Equation 引用 69 次 / Section 引用 72 次
+- **86%（302/351）的图文对上下文含 2+ 交叉引用** → 天然多跳素材
+
+### 执行优先级（Mentor 鼓励先深耕 L1）
+1. **L1 文档内引用图**（建议 2）— 纯规则零成本，从 MinerU markdown 提取 Fig/Table/Eq/Section 引用关系构建 DAG，2-hop 路径即多跳 query 素材
+2. **L1 模态细分 + table/formula prompt**（建议 1）— 对 50 个 table-context pair 和 20 个 formula-context pair 写专用 prompt，~$1
+3. **图片类型精分**（建议 1 前置）— 用大模型对 351 张图做一轮 figure type 精分，~$0.5-1
+4. **跑通评估闭环** — 30 query + BM25 baseline
+5. **L2 跨文档生成** — 已就绪，$2-5
+6. **Embedding 隐空间探索**（建议 3）— 等初版模型训完后 self-play
+
+### 关键发现
+- **没有 LaTeX 源码**（repo 里无 .tex/.bbl），只能用 MinerU markdown，但交叉引用正则已足够
+- Step 0 `_classify_figure` 没用大模型看图，分类粗糙；Step 1 才真正用 Claude/Qwen-VL 看了图片
+- "fairness" 出现在 45% 文档中（种子论文 1908.09635 是算法公平性方向），已被 IDF 过滤
+
+## 下一步 TODO（更新后）
+- **L1 引用图构建**：正则提取 Fig N/Table N/Eq N 引用 → 文档内 DAG → 2-hop 路径
+- **L1 模态补全**：table-aware prompt + formula-aware prompt 生成缺失模态的 query
+- **L2 试产**：对 top-50 候选对调 Claude API 生成跨文档 queries（~$2-5）
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
-- **决策闸门**：L2 质量好 + 指标有上升趋势 → 扩产到全部 711 对
-- L3: multi-hop queries（基于 L2 桥接图找 2-hop 路径）
-- Table 模态：利用现有 74 个含 HTML table 的 figure-text pairs
-- 详见 `docs/L1_query_iteration_report.md` §9
+- L3: multi-hop queries（基于 L2 桥接图 + 文档内引用图找 2-hop 路径）
+- 详见 `docs/DISCUSSION_LOG.md` 最新讨论
+
+
 
 ## 技术备忘
 - Qwen3-VL-30B 在 4×A5000 (23.6GB each) 上 max_model_len ≤ 8192 能跑，16384 会 OOM 挂死
