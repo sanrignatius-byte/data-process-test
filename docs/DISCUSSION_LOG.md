@@ -164,6 +164,66 @@ feat: add arxiv-only download mode and improve M4 query generation
 
 ---
 
+## 日期：2026-02-12（L1 Multi-hop v2 第二轮硬门禁迭代复盘）
+
+### 一、迭代目标
+- 按外部“毒舌审阅”意见，重点解决三类问题：
+  1. 文本捷径（bridge entity 直接写进 query）
+  2. 弱模板（`Which component...` / `How does X relate to Y...`）
+  3. 伪跨模态解释（答案缺少因果连接，单元素可答）
+
+### 二、执行脚本与任务
+- 生成脚本（已改）：`scripts/generate_multihop_l1_queries.py`
+- 集群脚本：`slurm_scripts/07_generate_l1_multihop_v2.sh`
+- 本轮任务：`sbatch -> job 27477`
+- 日志：`logs/l1_mh_v2_27477.out`, `logs/l1_mh_v2_27477.err`
+
+### 三、代码侧改动（已落地）
+1. **Prompt 级约束增强**
+   - 新增 de-naming 指令：query 禁止直接复制桥梁实体名
+   - 禁用弱模板：`Which component...`、`How does ... relate to ...`
+   - 强制答案包含机制连接词（because/leads to/explains/matches 等）
+
+2. **QC 级硬门槛新增**
+   - 新增 issue：
+     - `template_shortcut`
+     - `bridge_entity_leakage`
+     - `weak_reasoning_connector`
+   - 强化 `single_element_answer`：
+     - 双元素最小 overlap
+     - 更高 `answer_balance` 阈值
+
+3. **运行安全修复**
+   - 修复 `--dry-run` 清空输出文件问题：dry-run 输出重定向到 `/dev/null`，不再改写目标文件。
+
+### 四、运行结果（job 27477）
+- 处理 pair：150
+- 写出 query：296（parse fail: 2）
+- 输出文件：`data/l1_multihop_queries_v2.jsonl`（534KB）
+- 通过数：19 / 296（6.42%）
+- 额外导出 clean 子集：`data/l1_multihop_queries_v2_pass.jsonl`（19 条）
+
+**QC issue 分布（Top）**
+- `single_element_answer`: 209
+- `bridge_entity_leakage`: 152
+- `weak_reasoning_connector`: 100
+- `anchor_leakage`: 68
+- `template_shortcut`: 20
+
+### 五、结论
+- 这轮属于“高压筛选”模式：通过率显著下降，但更准确暴露了伪跨模态与文本捷径问题。
+- 当前 v2 可作为“高纯度小集 + 失败样本分析集”两路使用：
+  - `*_pass.jsonl` 用于高置信训练/评测
+  - 全量 `v2.jsonl` 用于定向修复与 prompt/QC 迭代
+
+### 六、下一步（建议）
+- 做一版“阈值调优”迭代（目标 pass rate 回到 15%-25%）：
+  1. 对 `weak_reasoning_connector` 按 `query_type` 分层启用
+  2. `bridge_entity_leakage` 从 hard fail 调整为分级告警
+  3. 对 `figure+formula` 单独加模板（当前 fail 最重）
+
+---
+
 ## 日期：2026-02-10（针对 L1_v3 前50条样本质疑的定向解析）
 
 ### 一、结论先行（对外沟通版本）
@@ -950,3 +1010,121 @@ python scripts/generate_l2_queries.py --limit 43 --delay 0.5
 
 "fairness" 出现在 73 篇文档中的 33 篇（45%），作为桥接实体区分度太低，已被 `MAX_DOC_FRACTION=0.35` IDF 过滤剔除。真正有价值的桥接实体是 Disparate Impact（5 docs）、German Credit（3 docs）、t-SNE（3 docs）等。
 
+---
+
+## 日期：2026-02-12（L1 Cross-modal Dual-evidence v1 评审 + v2 计划）
+
+### 一、v1 生成结果
+
+| 指标 | 数值 |
+|------|------|
+| 候选对 | 150 (figure+table:90, figure+formula:45, formula+table:15) |
+| 产出 | 300 条 query |
+| QC pass | **43 (14.3%)** |
+| QC fail 分布 | anchor_leakage:196, yes_no_question:126, single_element_answer:112, meta_language:22 |
+| Jaccard 均值 | 0.196 (阈值 0.15) |
+| answer_balance=0 | 135/300 (45%) |
+| 按 pair_type pass rate | figure+table:17.8%, figure+formula:11.1%, formula+table:**3.3%** |
+| 文档覆盖 | 43 docs |
+
+脚本：`scripts/select_multihop_candidates.py` → `scripts/generate_multihop_l1_queries.py`
+产出文件：`data/l1_multihop_queries_v1.jsonl`
+
+### 二、专家评审核心批评（两轮独立评审）
+
+#### 评审采纳的批评（经数据验证）
+
+1. **Anchor leakage 是根因**
+   - prompt 直接给 600 chars table content + 完整 LaTeX → 模型抄数值到 query
+   - 跟 L2 v2 的病因一模一样
+   - 表面数字匹配就能 BM25 检索到文档，不需要语义理解
+
+2. **Yes/No 问句泛滥 (43%)**
+   - prompt 示例 "Does a trend match values?" 教坏了模型
+   - yes/no 对对比学习梯度贡献极低
+   - QC 标了但 prompt 没禁
+
+3. **"Multi-hop" 名不副实**
+   - 298/300 path 长度 = 2，是"跨模态双证据并行查找"，不是链式推理
+   - 真 multi-hop 需要 Step 1 输出作为 Step 2 输入（sequential dependency）
+   - 应改名 "cross-modal dual-evidence"
+
+4. **Single element answerable (45%)**
+   - 答案只引用一个元素的 token，另一个是装饰
+   - answer_balance=0 占 135/300
+
+5. **Formula 配对严重失败 (3.3%)**
+   - LaTeX 以文本形式给出，模型复制符号串
+   - 公式没有 image_path，无法发图
+
+#### 评审批评中的过火部分（已修正理解）
+
+1. **"工业垃圾/全废"** — 不成立，43 条 QC pass 里有 ~30 条真正有价值的 dual-evidence query
+2. **"多模态完全没用"** — 不准确，问题不是图片没用而是 text_evidence 足以回答
+3. **"应放弃 L1 回去做 L2"** — 不对，L1 和 L2 解决不同问题，Mentor 明确先深耕 L1
+4. **"300 条全废"** — v1 是诊断版，提供了清晰的改进方向
+
+### 三、关键发现：Tables 有图片！
+
+探查 `data/multihop_l1_candidates.json` 发现：
+- **所有 150 对中的 table 元素都有有效的 image_path**
+- v1 代码已经尝试发送双图（`img_a = encode_image(...)`, `img_b = encode_image(...)`）
+- 但 prompt 同时给了 600 chars `tbl_content` 文本，使得 table 图片变得冗余
+- **修复方向**：减少文本暴露（只给 headers），让模型从图片读具体值
+
+Formula 确认无图片 (0/all)，只能用 LaTeX 文本但需限制暴露。
+
+### 四、v2 改进计划
+
+详见 plan file `~/.claude/plans/encapsulated-kindling-micali.md`
+
+#### 核心改动
+
+| 改动 | v1 | v2 |
+|------|----|----|
+| Table 内容 | 600 chars 原文 | 150 chars headers + 发送 table 图片 |
+| Formula 内容 | 完整 LaTeX | 提取 key variables，禁止完整符号串 |
+| Prompt 哲学 | "Does A match B?" (验证式) | "Given A context, what does B reveal?" (信息差) |
+| Yes/No | 未禁止，示例引导 | 明确禁止 + BAD/GOOD 对比示例 |
+| 数值泄漏 | 无检测 | query 禁止含 2+ 具体数字 |
+| Answer balance | overlap=0 才标 | balance < 0.15 即标 |
+| Temperature | 0.5 | 0.4 |
+| 输出 | `multi_hop: true` (全部) | `cross_modal: true`, `multi_hop` 仅 path≥3 |
+
+#### 4 个 Prompt 模板重写要点
+
+1. **FIGURE_TABLE**: information gap 设计，"describe one element's context, ask what the other reveals"
+2. **FIGURE_FORMULA**: "empirical evidence (figure) meets theoretical framework (formula)"，禁止复制 LaTeX
+3. **FORMULA_TABLE**: 提取 key variables 代替 raw LaTeX，要求模型从 table 图片读值
+4. **所有模板共同**：BAD/GOOD 示例对、"UNANSWERABLE if removed"、30 词上限、禁 meta-language
+
+#### QC 新增
+
+- `numeric_leakage`: query 含 2+ 具体数字 → fail
+- `yes_no_answer`: answer 以 Yes/No 开头 → fail
+- `answer_balance` 阈值收紧: < 0.15 → `single_element_answer`
+
+### 五、验证步骤
+
+```bash
+# 1. Dry-run 验证 prompt
+python scripts/generate_multihop_l1_queries.py --dry-run --limit 5
+
+# 2. 小规模测试 (10 pairs ≈ 20 queries)
+python scripts/generate_multihop_l1_queries.py --limit 10 --delay 0.5 \
+  --output data/l1_multihop_queries_v2.jsonl
+
+# 3. 若 pass rate ≥ 30% → full run (150 pairs)
+python scripts/generate_multihop_l1_queries.py --limit 150 --delay 0.5 \
+  --output data/l1_multihop_queries_v2.jsonl
+```
+
+### 六、目标
+
+| 指标 | v1 | v2 目标 |
+|------|-----|---------|
+| QC pass rate | 14.3% | ≥40% |
+| anchor_leakage | 65% | ≤25% |
+| yes_no_question | 43% | ≤10% |
+| single_element_answer | 45% | ≤25% |
+| formula+table pass | 3.3% | ≥15% |

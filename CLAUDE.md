@@ -16,7 +16,9 @@
 - **Step 2: L2 cross-document queries** — 经 3 轮迭代
   - v1: 50 条, 100% QC pass (QC 过松), $0.55
   - v2: 32 条, 16 QC pass (严格 QC 但有 anchor leakage), $0.48
-  - v3: **脚本已就绪，待执行** (prompt 重写 + anchor leakage QC)
+  - v3: 42 条, **19 QC pass** (anchor_leakage 仍是主因: 21/23 fail)
+- **L1 Cross-modal Dual-evidence v1** — 300 条, **43 QC pass (14.3%)**, 需迭代到 v2
+- **L1 Cross-modal Dual-evidence v2（hard-gate）** — 296 条, **19 QC pass (6.42%)**，已导出 pass 子集
 
 ### L2 迭代历史
 | 版本 | 结果 | 核心问题 |
@@ -60,6 +62,8 @@
 | `scripts/triage_l1_v3.py` | **L1 三分法分拣 (A/B/C 门禁)** |
 | `scripts/build_l2_candidates.py` | **L2 跨文档候选对构建（实体倒排索引）** |
 | `scripts/generate_l2_queries.py` | **L2 query 生成脚本（Claude API + QC）** |
+| `scripts/select_multihop_candidates.py` | L1 多模态候选 pair 构建（供 multihop v1/v2 使用） |
+| `scripts/generate_multihop_l1_queries.py` | **L1 multihop/cross-modal 生成脚本（本轮重点）** |
 | `scripts/build_multimodal_relationships.py` | **Step 0 v2: 多模态关系构建（DAG + 全模态）** |
 | `src/linkers/multimodal_relationship_builder.py` | **多模态关系核心模块（figure/table/formula/section DAG）** |
 | `data/figure_text_pairs.json` | 351 figure-text pairs (Step 0 v1 输出) |
@@ -74,6 +78,9 @@
 | `data/l2_queries_v2.jsonl` | L2 跨文档 queries 32 条 (v2, 16 QC pass) |
 | `data/l2_queries_v2_tagged.jsonl` | L2 v2 reviewer-tagged (keep/fix/drop) |
 | `data/l2_queries_v3.jsonl` | **L2 v3 输出 (待生成)** |
+| `data/l1_multihop_queries_v1.jsonl` | L1 multihop v1（300 条，43 pass） |
+| `data/l1_multihop_queries_v2.jsonl` | **L1 multihop v2 hard-gate（296 条，19 pass）** |
+| `data/l1_multihop_queries_v2_pass.jsonl` | **v2 通过集（19 条）** |
 | `data/figure_descriptions_v3_api.json` | 完整 API 返回（含 raw response） |
 | `data/validation_report_v3.json` | Validation 报告 |
 | `docs/L1_query_iteration_report.md` | 迭代改进报告（含 L1 triage + L2 候选） |
@@ -119,12 +126,46 @@
 - Step 0 `_classify_figure` 没用大模型看图，分类粗糙；Step 1 才真正用 Claude/Qwen-VL 看了图片
 - "fairness" 出现在 45% 文档中（种子论文 1908.09635 是算法公平性方向），已被 IDF 过滤
 
+## 当前状态（2026-02-12 更新）
+
+### L1 Cross-modal Dual-evidence v2（第二轮，已执行）
+- **本轮使用脚本**：
+  - 候选构建：`scripts/select_multihop_candidates.py`
+  - 生成与QC：`scripts/generate_multihop_l1_queries.py`
+  - 集群入口：`slurm_scripts/07_generate_l1_multihop_v2.sh`
+- **最新一代输出**：
+  - 主文件：`data/l1_multihop_queries_v2.jsonl`（296 条）
+  - 通过子集：`data/l1_multihop_queries_v2_pass.jsonl`（19 条）
+  - 作业：`job 27477`（`logs/l1_mh_v2_27477.out`）
+
+### v2 本轮落地改动（hard-gate）
+1. Prompt 增加 **de-naming** 约束，禁止在 query 直接写桥梁实体名。
+2. Prompt 明确禁用弱模板：`Which component...` / `How does X relate to Y...`。
+3. Prompt 要求答案必须含机制连接词（because/leads to/explains/matches 等）。
+4. QC 新增：
+   - `template_shortcut`
+   - `bridge_entity_leakage`
+   - `weak_reasoning_connector`
+5. 强化 `single_element_answer` 判定（双元素 overlap + answer_balance 更严格）。
+6. 修复运行安全问题：`--dry-run` 不再清空输出文件（改写入 `/dev/null`）。
+
+### v2 结果（job 27477）
+- 候选：150 pairs（43 docs）
+- 产出：296 条（parse fail 2）
+- QC pass：19/296（6.42%）
+- 主要 fail：
+  - `single_element_answer`: 209
+  - `bridge_entity_leakage`: 152
+  - `weak_reasoning_connector`: 100
+  - `anchor_leakage`: 68
+
 ## 下一步 TODO（更新后）
+- **P0: L1 v2.1 阈值调优**：在保持反捷径能力前提下，把 pass rate 从 6.42% 提升到 15%-25%
+- **P0.1: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
 - **L1 引用图构建**：正则提取 Fig N/Table N/Eq N 引用 → 文档内 DAG → 2-hop 路径
 - **L1 模态补全**：table-aware prompt + formula-aware prompt 生成缺失模态的 query
-- **L2 试产**：对 top-50 候选对调 Claude API 生成跨文档 queries（~$2-5）
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
-- L3: multi-hop queries（基于 L2 桥接图 + 文档内引用图找 2-hop 路径）
+- **L2 暂停**：先用 clean subset (19 条) 跑评估，不扩产
 - 详见 `docs/DISCUSSION_LOG.md` 最新讨论
 
 
