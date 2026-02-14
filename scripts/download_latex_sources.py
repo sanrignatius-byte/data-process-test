@@ -36,6 +36,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
+import urllib3
 import requests
 
 # ---------------------------------------------------------------------------
@@ -267,6 +268,7 @@ def process_papers(
     output_dir: Path,
     delay: float = DEFAULT_DELAY,
     extract_only: bool = False,
+    verify_ssl: bool = True,
 ) -> Dict:
     """Download, extract, and index LaTeX sources for a list of papers."""
     archive_dir = output_dir / "archives"
@@ -276,6 +278,9 @@ def process_papers(
 
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
+    session.verify = verify_ssl
+    if not verify_ssl:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     results = []
     stats = {
@@ -421,6 +426,10 @@ def main() -> None:
         "--extract-only", action="store_true",
         help="Skip download, only extract already-downloaded archives"
     )
+    parser.add_argument(
+        "--no-verify", action="store_true",
+        help="Disable SSL certificate verification (use behind corporate/university proxies)"
+    )
 
     args = parser.parse_args()
 
@@ -451,6 +460,7 @@ def main() -> None:
         output_dir=args.output,
         delay=args.delay,
         extract_only=args.extract_only,
+        verify_ssl=not args.no_verify,
     )
 
 
