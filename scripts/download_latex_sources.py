@@ -287,13 +287,16 @@ def process_papers(
         # Auto-detect SSL issues with a probe request
         try:
             session.get("https://arxiv.org/", timeout=10)
-        except requests.exceptions.SSLError:
-            print("[SSL] Certificate verification failed (proxy/firewall detected).")
-            print("[SSL] Falling back to verify=False automatically.")
-            session.verify = False
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        except requests.RequestException:
-            pass  # Non-SSL network issues handled later per-paper
+        except requests.RequestException as exc:
+            # SSLError gets wrapped in ConnectionError(MaxRetryError(SSLError)),
+            # so check the full exception chain instead of catching SSLError alone
+            if "SSL" in str(exc) or "CERTIFICATE" in str(exc):
+                print("[SSL] Certificate verification failed (proxy/firewall detected).")
+                print("[SSL] Falling back to verify=False automatically.")
+                session.verify = False
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            else:
+                pass  # Non-SSL network issues handled later per-paper
 
     results = []
     stats = {
