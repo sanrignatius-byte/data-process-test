@@ -73,10 +73,15 @@ def ids_from_text_file(path: Path) -> List[str]:
 def ids_from_figure_text_pairs(path: Path) -> List[str]:
     """Extract unique doc_ids from figure_text_pairs.json."""
     with open(path, "r", encoding="utf-8") as f:
-        pairs = json.load(f)
+        data = json.load(f)
+    # Support both formats:
+    # - dict keyed by doc_id: {doc_id: [pairs...], ...}
+    # - flat list of pair dicts: [{doc_id: ..., ...}, ...]
+    if isinstance(data, dict):
+        return sorted(k for k in data if k)
     seen: Set[str] = set()
     ids: List[str] = []
-    for pair in pairs:
+    for pair in data:
         doc_id = pair.get("doc_id", "")
         if doc_id and doc_id not in seen:
             seen.add(doc_id)
