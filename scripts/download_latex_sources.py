@@ -62,7 +62,7 @@ USER_AGENT = "m4-latex-collector/1.0 (research; mailto:research@example.com)"
 def ids_from_text_file(path: Path) -> List[str]:
     """Read one arXiv ID per line."""
     ids: List[str] = []
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#"):
@@ -72,7 +72,7 @@ def ids_from_text_file(path: Path) -> List[str]:
 
 def ids_from_figure_text_pairs(path: Path) -> List[str]:
     """Extract unique doc_ids from figure_text_pairs.json."""
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         pairs = json.load(f)
     seen: Set[str] = set()
     ids: List[str] = []
