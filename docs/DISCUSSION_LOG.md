@@ -1128,3 +1128,132 @@ python scripts/generate_multihop_l1_queries.py --limit 150 --delay 0.5 \
 | yes_no_question | 43% | ≤10% |
 | single_element_answer | 45% | ≤25% |
 | formula+table pass | 3.3% | ≥15% |
+
+---
+
+## 日期：2026-02-16（LaTeX 引用图 + 跨文档 Citation Graph 落地）
+
+### 一、本次成果概览
+
+**完成了 Mentor 建议 2 的核心部分**：从 LaTeX 源码构建文档内引用 DAG + 跨文档引用图。
+
+| 产物 | 关键指标 |
+|------|----------|
+| LaTeX 源码下载 | 73/76 篇 .tex, 65 篇 .bbl, 3 篇 no_source |
+| 文档内引用 DAG | 1949 labels, 5547 refs, 2847 edges (ref+containment) |
+| 跨文档引用图 | **100 条引用边**, 49 篇最大连通分量 |
+| Multi-hop paths (constrained) | 过滤纯 containment 后存活率待观测 |
+
+### 二、跨文档引用图统计分析
+
+```json
+{
+  "total_bib_entries": 2001,
+  "total_citation_edges": 100,
+  "match_rate": "5.05%",
+  "match_method_dist": {
+    "title_fuzzy": 98,
+    "title_exact": 3,
+    "arxiv_id_explicit": 0,
+    "arxiv_id_bare": 0
+  }
+}
+```
+
+#### 关键指标解读
+
+| 指标 | 值 | 解读 |
+|------|---|------|
+| 匹配率 | 5.05% (101/2001) | 合理：73 篇 corpus 只占引用宇宙的 ~5% |
+| arXiv ID 匹配 | **0** | .bbl 走会议出版引用（ICML/NeurIPS），无 arXiv URL |
+| title_fuzzy | 98 | 标题匹配扛起全部，需验证误匹配率 |
+| title_exact | 3 | 仅 3 篇标题完全一致 |
+| 最大连通分量 | **49/73 (67%)** | 核心子图非常密集 |
+| 孤立论文 | 20 (28%) | 无互引，可能是边缘论文 |
+| papers_citing | 38 (52%) | 超半数论文引用了 corpus 内其他论文 |
+| papers_cited | 26 (36%) | 超三分之一被 corpus 内引用 |
+| in-degree max | **19** | 一篇被 19 篇引用 — 大概率是 fairness 奠基论文 |
+| out-degree max | 7 | 最多引 7 篇 corpus 内论文 |
+
+#### 度分布
+
+| 方向 | mean | p50 | p75 | p90 | max |
+|------|------|-----|-----|-----|-----|
+| Out-degree (cites) | 1.37 | 1 | 2 | 4 | 7 |
+| In-degree (cited-by) | 1.37 | 0 | 1 | 4 | 19 |
+
+In-degree 高度偏斜：大多数论文 cited_by=0，少数核心论文被大量引用。这符合学术引用的幂律分布。
+
+### 三、两个关键发现
+
+#### 发现 1：arXiv ID 匹配全军覆没
+
+.bbl 文件中的引用走的是正式会议/期刊出版（如 ICML 2019, NeurIPS 2018），不包含 arXiv 预印本 URL。这意味着：
+- 标题匹配是唯一可行的跨文档关联策略
+- Jaccard ≥ 0.55 的阈值对 fairness 领域可能偏松（"Fair Classification via..." 类标题太多）
+- **需要人工抽查 5-10 条 fuzzy match 验证精度**
+
+#### 发现 2：Citation graph 是 L2 候选的天然信号源
+
+100 条引用边 = 100 个有文献级证据的跨文档关系。相比之前实体倒排索引产出的 711 对（大量伪桥接），引用关系具有以下优势：
+- **语义确定性高**：A 引用 B 意味着作者认为 B 与 A 相关
+- **方向性明确**：知道谁引谁，可设计 "B 的理论解释 A 的观察" 类推理 query
+- **49 篇连通**：不是孤立 pair，可以做 2-hop citation chain（A→B→C）
+
+### 四、对 L2 候选策略的影响
+
+| 维度 | 实体倒排索引 (旧方案) | Citation graph (新方案) |
+|------|----------------------|------------------------|
+| 候选对数量 | 711 (top-100) | 100 (unique edges) |
+| 桥接信号 | 共享实体名（易伪匹配） | 文献引用（语义确定） |
+| 方向性 | 无 | 有（citing → cited） |
+| 多跳潜力 | 弱（实体重叠不传递） | 强（A→B→C 引用链） |
+| 主要风险 | 泛词桥接（fairness 等） | title_fuzzy 误匹配 |
+
+**建议**：用 citation graph 作为 L2 主候选源，实体倒排索引降级为辅助验证信号。
+
+### 五、代码改动汇总
+
+| 文件 | 改动 |
+|------|------|
+| `src/parsers/latex_reference_extractor.py` | +`_extract_title()` 从 `\title{}` 提取论文标题 |
+| | +`find_multihop_paths(require_ref_edge=True)` 过滤纯 containment 路径 |
+| `scripts/build_latex_reference_graph.py` | +occurrence vs unique pair 统计 |
+| | +per-doc 分布 (P50/P75/P90/P99) |
+| | +constrained multi-hop path 计数 |
+| `scripts/build_citation_graph.py` | **新文件**: .bbl → corpus 匹配 → 引用图 |
+| | 3 种匹配: arxiv_id_explicit, arxiv_id_bare, title (exact+fuzzy) |
+| | 输出: edges + adjacency + 连通分量 + 度分布 |
+
+### 六、下一步 TODO
+
+1. **P0: Citation fuzzy match 质量验证**
+   - 人工抽查 10 条 title_fuzzy 匹配
+   - 若误匹配率 > 20%，提高 Jaccard 阈值到 0.65
+   - 若误匹配率 < 10%，当前阈值可用
+
+2. **P0.1: Citation-based L2 候选对构建**
+   - 从 100 条引用边中选 top-50 对
+   - 用 citing direction 设计 prompt："B 的理论解释 A 的实验观察"
+   - 每条 edge 的 `contexts` 字段提供 \cite{} 周围文本
+
+3. **P1: 2-hop citation chain 探索**
+   - 在 49 篇连通分量中找 A→B→C 路径
+   - 天然的 3-doc multi-hop query 素材
+
+4. **P2: 引用图 + 文档内 DAG 融合**
+   - merge `latex_reference_graph.json` + `citation_graph.json`
+   - 跨文档引用 + 文档内 Figure/Table/Eq 引用 = 完整的多层 DAG
+
+### 七、Git 记录
+
+```
+commit 12981ac
+feat: cross-document citation graph + multi-hop constraints + report enhancements
+- build_citation_graph.py (100 edges, 49-paper component)
+- find_multihop_paths(require_ref_edge=True)
+- title extraction from \title{}
+- per-doc distribution + occurrence vs unique pair stats
+```
+
+---
