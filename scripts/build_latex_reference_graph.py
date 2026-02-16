@@ -295,10 +295,13 @@ def main():
         "total_labels": 0,
         "total_refs": 0,
         "total_edges": 0,
+        "total_ref_edges": 0,
+        "total_containment_edges": 0,
         "total_bib_entries": 0,
         "total_multihop_paths": 0,
         "label_type_dist": defaultdict(int),
         "edge_type_dist": defaultdict(int),
+        "containment_edge_dist": defaultdict(int),
         "errors": [],
     }
 
@@ -331,7 +334,12 @@ def main():
 
         for edge in graph.edges:
             key = f"{edge.source_type}→{edge.target_type}"
-            stats["edge_type_dist"][key] += 1
+            if edge.ref_text == "[containment]":
+                stats["containment_edge_dist"][key] += 1
+                stats["total_containment_edges"] += 1
+            else:
+                stats["edge_type_dist"][key] += 1
+                stats["total_ref_edges"] += 1
 
         # Multi-hop paths
         paths = LaTeXReferenceExtractor.find_multihop_paths(graph, max_hops=args.max_hops)
@@ -370,19 +378,31 @@ def main():
     print(f"Total labels:         {stats['total_labels']}")
     print(f"Total refs:           {stats['total_refs']}")
     print(f"Total edges:          {stats['total_edges']}")
+    print(f"  Reference edges:    {stats['total_ref_edges']}")
+    print(f"  Containment edges:  {stats['total_containment_edges']}")
     print(f"Total bib entries:    {stats['total_bib_entries']}")
     print(f"Total multi-hop paths:{stats['total_multihop_paths']}")
+    ref_rate = 100 * stats['total_ref_edges'] / max(1, stats['total_refs'])
+    print(f"Ref→Edge conversion:  {ref_rate:.1f}%")
 
     if stats["label_type_dist"]:
         print(f"\nLabel Type Distribution:")
+        n_unknown = stats["label_type_dist"].get("unknown", 0)
         for ltype, count in sorted(stats["label_type_dist"].items(), key=lambda x: -x[1]):
             pct = 100 * count / max(1, stats["total_labels"])
             print(f"  {ltype:12s}  {count:5d}  ({pct:.1f}%)")
+        if stats["total_labels"] > 0:
+            print(f"  → Unknown rate: {100*n_unknown/stats['total_labels']:.1f}%")
 
     if stats["edge_type_dist"]:
-        print(f"\nEdge Type Distribution:")
+        print(f"\nReference Edge Distribution:")
         for etype, count in sorted(stats["edge_type_dist"].items(), key=lambda x: -x[1]):
-            print(f"  {etype:25s}  {count:5d}")
+            print(f"  {etype:30s}  {count:5d}")
+
+    if stats["containment_edge_dist"]:
+        print(f"\nContainment Edge Distribution:")
+        for etype, count in sorted(stats["containment_edge_dist"].items(), key=lambda x: -x[1]):
+            print(f"  {etype:30s}  {count:5d}")
 
     # Show multi-hop examples
     print(f"\n--- Multi-Hop Path Examples ---")
@@ -419,6 +439,7 @@ def main():
     # --- Save report ---
     stats["label_type_dist"] = dict(stats["label_type_dist"])
     stats["edge_type_dist"] = dict(stats["edge_type_dist"])
+    stats["containment_edge_dist"] = dict(stats["containment_edge_dist"])
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(stats, f, indent=2, ensure_ascii=False)
     print(f"Report saved to: {report_path}")
