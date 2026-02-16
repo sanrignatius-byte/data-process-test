@@ -10,6 +10,8 @@
 - 80 篇 PDF 用 MinerU 解析
 - **Step 0 v1: Figure-text association** — 351 pairs, 73 docs（`src/linkers/figure_text_associator.py`）
 - **Step 0 v2: Multimodal relationship DAG** — 1316 elements (841 fig + 334 tbl + 141 formula), 1261 edges, 1135 cross-modal pairs, 76 docs（`src/linkers/multimodal_relationship_builder.py`）
+- **Step 0 v3: LaTeX reference graph** — 73 篇 .tex 解析，1949 labels, 5547 refs, 2847 edges, 65 篇 .bbl（`src/parsers/latex_reference_extractor.py`）
+- **Step 0 v3.1: Cross-document citation graph** — 100 条跨文档引用边, 49 篇最大连通分量, 38 篇 citing（`scripts/build_citation_graph.py`）
 - **Step 1: L1 intra-document cross-modal queries** — 经 3 轮迭代，最终 **974 条 queries**
 - **L1 Triage** — A:727 (74.6%) / B:247 (25.4%) / C:0 (0%)  *(after visual_density gate)*
 - **L2 候选构建** — 55 个跨文档实体，711 个候选文档对，top-100 已输出
@@ -19,6 +21,7 @@
   - v3: 42 条, **19 QC pass** (anchor_leakage 仍是主因: 21/23 fail)
 - **L1 Cross-modal Dual-evidence v1** — 300 条, **43 QC pass (14.3%)**, 需迭代到 v2
 - **L1 Cross-modal Dual-evidence v2（hard-gate）** — 296 条, **19 QC pass (6.42%)**，已导出 pass 子集
+- **LaTeX 源码下载** — 73/76 篇成功下载 + 提取 .tex，65 篇有 .bbl，3 篇 no_source
 
 ### L2 迭代历史
 | 版本 | 结果 | 核心问题 |
@@ -36,7 +39,8 @@
 
 ### 进行中
 
-- **Step 2: L2 cross-document queries** — 候选对已就绪，待调 Claude API 生成 top-50
+- **Citation graph 质量验证** — 98/101 条是 title_fuzzy，需抽查误匹配率
+- **Citation-based L2 候选对** — 用 100 条引用边替代实体倒排索引做 L2 候选
 - **L1 深耕（Mentor 建议）** — 丰富模态 + 文档内引用图构建（详见下方）
 
 
@@ -84,6 +88,13 @@
 | `data/figure_descriptions_v3_api.json` | 完整 API 返回（含 raw response） |
 | `data/validation_report_v3.json` | Validation 报告 |
 | `docs/L1_query_iteration_report.md` | 迭代改进报告（含 L1 triage + L2 候选） |
+| `src/parsers/latex_reference_extractor.py` | **Step 0 v3: LaTeX 引用解析（label/ref/cite/bbl + title 提取）** |
+| `scripts/build_latex_reference_graph.py` | **Step 0 v3: 文档内引用 DAG 构建** |
+| `scripts/build_citation_graph.py` | **Step 0 v3.1: 跨文档引用图（.bbl → corpus 匹配）** |
+| `scripts/download_latex_sources.py` | LaTeX 源码下载脚本（arXiv API） |
+| `data/latex_reference_graph.json` | 73 篇文档内引用 DAG（labels + refs + edges + bib） |
+| `data/citation_graph.json` | **跨文档引用图：100 条引用边, 49 篇最大连通分量** |
+| `data/latex_reference_report.json` | 引用图统计报告 |
 | `src/linkers/figure_text_associator.py` | Step 0: 图文关联模块 |
 
 ## Mentor 建议（2026-02-11）& 执行优先级
@@ -122,9 +133,10 @@
 6. **Embedding 隐空间探索**（建议 3）— 等初版模型训完后 self-play
 
 ### 关键发现
-- **没有 LaTeX 源码**（repo 里无 .tex/.bbl），只能用 MinerU markdown，但交叉引用正则已足够
+- **已获取 LaTeX 源码**（73/76 篇，65 篇有 .bbl）→ 文档内 DAG + 跨文档引用图已构建
 - Step 0 `_classify_figure` 没用大模型看图，分类粗糙；Step 1 才真正用 Claude/Qwen-VL 看了图片
 - "fairness" 出现在 45% 文档中（种子论文 1908.09635 是算法公平性方向），已被 IDF 过滤
+- **跨文档引用图质量**：100 条引用边全靠标题匹配（arXiv ID 匹配 = 0），需抽查 fuzzy 误匹配
 
 ## 当前状态（2026-02-12 更新）
 
@@ -159,13 +171,15 @@
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（更新后）
-- **P0: L1 v2.1 阈值调优**：在保持反捷径能力前提下，把 pass rate 从 6.42% 提升到 15%-25%
-- **P0.1: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
-- **L1 引用图构建**：正则提取 Fig N/Table N/Eq N 引用 → 文档内 DAG → 2-hop 路径
-- **L1 模态补全**：table-aware prompt + formula-aware prompt 生成缺失模态的 query
+## 下一步 TODO（2026-02-16 更新）
+- **P0: Citation graph 质量验证**：抽查 98 条 title_fuzzy 匹配中的误匹配率，Jaccard ≥ 0.55 阈值是否合理
+- **P0.1: Citation-based L2 候选替换**：用 100 条引用边做 L2 候选对（替代实体倒排索引），信号更强
+- **P1: L1 v2.1 阈值调优**：在保持反捷径能力前提下，把 pass rate 从 6.42% 提升到 15%-25%
+- **P1.1: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
+- **P2: L1 引用图 + 多跳路径**：constrained paths（≥1 ref edge）已实现，待结合 L1 query 生成
+- **P3: L1 模态补全**：table-aware prompt + formula-aware prompt 生成缺失模态的 query
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
-- **L2 暂停**：先用 clean subset (19 条) 跑评估，不扩产
+- **L2 暂停实体路线**：实体倒排索引的 L2 暂停，改用 citation graph 做候选
 - 详见 `docs/DISCUSSION_LOG.md` 最新讨论
 
 
@@ -209,6 +223,21 @@ python scripts/generate_l2_queries.py --dry-run --limit 5
 
 # 正式生成 L2 queries
 python scripts/generate_l2_queries.py --limit 50 --delay 0.5
+
+# === LaTeX reference graph pipeline ===
+# 构建文档内引用 DAG（含 title 提取 + constrained multi-hop paths）
+python scripts/build_latex_reference_graph.py \
+    --source-dir data/latex_sources/extracted \
+    --output data/latex_reference_graph.json
+
+# 构建跨文档引用图（从 .bbl 匹配 corpus 内互引）
+python scripts/build_citation_graph.py \
+    --input data/latex_reference_graph.json \
+    --output data/citation_graph.json
+
+# 也可直接从 LaTeX 源码构建引用图
+python scripts/build_citation_graph.py \
+    --from-sources data/latex_sources/extracted
 ```
 
 ## 日期：2026-02-10（L2 v3 三方毒舌评审共识总结）
