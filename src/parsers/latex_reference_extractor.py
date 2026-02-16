@@ -244,6 +244,19 @@ _PREFIX_MAP = {
     "note": LabelType.EXAMPLE,
     "obs": LabelType.EXAMPLE,
     "observation": LabelType.EXAMPLE,
+    # Misc common prefixes found in real papers
+    "ap": LabelType.APPENDIX,
+    "sub": LabelType.SECTION,
+    "ssec": LabelType.SECTION,
+    "subsubsec": LabelType.SECTION,
+    "tb": LabelType.TABLE,
+    "tbl": LabelType.TABLE,
+    "ass": LabelType.DEFINITION,
+    "asm": LabelType.DEFINITION,
+    "for": LabelType.DEFINITION,       # formulation
+    "foot": LabelType.UNKNOWN,         # footnotes — keep as-is
+    "footnote": LabelType.UNKNOWN,
+    "q": LabelType.EXAMPLE,            # question
 }
 
 # Environment → type mapping
@@ -303,6 +316,20 @@ _ENV_MAP = {
     "note": LabelType.EXAMPLE,
     "observation": LabelType.EXAMPLE,
     "exercise": LabelType.EXAMPLE,
+    # Layout envs that typically hold figures
+    "center": LabelType.FIGURE,
+    "centering": LabelType.FIGURE,
+    "minipage": LabelType.FIGURE,
+    # Custom theorem-like envs
+    "restatable": LabelType.THEOREM,
+    "restateable": LabelType.THEOREM,
+    # Custom definition-like envs
+    "assume": LabelType.DEFINITION,
+    "asm": LabelType.DEFINITION,
+    "formulation": LabelType.DEFINITION,
+    # Misc
+    "appendices": LabelType.APPENDIX,
+    "question": LabelType.EXAMPLE,
 }
 
 
@@ -542,6 +569,14 @@ class LaTeXReferenceExtractor:
                 caption = self._find_nearest_caption(lines, idx)
                 orig_line, src_file = file_lines.get(idx, (idx + 1, None))
 
+                # If still UNKNOWN and in document env, check nearby
+                # lines for \section/\subsection commands
+                if (
+                    label_type == LabelType.UNKNOWN
+                    and (env is None or env == "document")
+                ):
+                    label_type = self._probe_nearby_section(lines, idx)
+
                 labels[key] = LabelInfo(
                     key=key,
                     label_type=label_type,
@@ -553,10 +588,29 @@ class LaTeXReferenceExtractor:
                 )
         return labels
 
+    # Regex for detecting \section, \subsection, etc. (no \label needed)
+    _RE_SECTION_CMD = re.compile(
+        r"\\(?:section|subsection|subsubsection|paragraph|chapter)\b"
+    )
+
+    def _probe_nearby_section(
+        self, lines: List[str], label_idx: int, window: int = 3,
+    ) -> LabelType:
+        """
+        Check ±window lines around a label for \\section{} commands.
+        If found, infer SECTION type.  Otherwise return UNKNOWN.
+        """
+        start = max(0, label_idx - window)
+        end = min(len(lines), label_idx + window + 1)
+        for i in range(start, end):
+            if self._RE_SECTION_CMD.search(lines[i]):
+                return LabelType.SECTION
+        return LabelType.UNKNOWN
+
     @staticmethod
     def _infer_label_type(key: str, env: Optional[str]) -> LabelType:
         """Infer type from label prefix (fig:, tab:, eq:) or enclosing env."""
-        # 1) Try prefix
+        # 1) Try prefix (colon-separated)
         if ":" in key:
             prefix = key.split(":")[0].lower()
             if prefix in _PREFIX_MAP:
@@ -567,6 +621,17 @@ class LaTeXReferenceExtractor:
             env_lower = env.lower()
             if env_lower in _ENV_MAP:
                 return _ENV_MAP[env_lower]
+
+        # 3) Fallback: key substring heuristics for bare-word labels
+        key_lower = key.lower()
+
+        # figure.xxx or xxx_figure or figure_xxx patterns
+        if key_lower.startswith("figure.") or key_lower.startswith("figure_"):
+            return LabelType.FIGURE
+        if "table" in key_lower or "-table" in key_lower:
+            return LabelType.TABLE
+        if key_lower.startswith("appendix") or key_lower.startswith("appnedix"):
+            return LabelType.APPENDIX
 
         return LabelType.UNKNOWN
 
