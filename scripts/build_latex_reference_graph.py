@@ -331,6 +331,12 @@ def main():
         for info in graph.labels.values():
             t = info.label_type.value
             stats["label_type_dist"][t] += 1
+            if t == "unknown":
+                stats.setdefault("unknown_labels", []).append({
+                    "doc_id": doc_id,
+                    "key": info.key,
+                    "environment": info.environment,
+                })
 
         for edge in graph.edges:
             key = f"{edge.source_type}→{edge.target_type}"
@@ -403,6 +409,30 @@ def main():
         print(f"\nContainment Edge Distribution:")
         for etype, count in sorted(stats["containment_edge_dist"].items(), key=lambda x: -x[1]):
             print(f"  {etype:30s}  {count:5d}")
+
+    # --- Unknown label debug ---
+    unknown_labels = stats.get("unknown_labels", [])
+    if unknown_labels:
+        print(f"\n--- Unknown Labels ({len(unknown_labels)}) ---")
+        # Group by prefix pattern (part before ':') and environment
+        from collections import Counter
+        prefix_counter = Counter()
+        env_counter = Counter()
+        for ul in unknown_labels:
+            key = ul["key"]
+            prefix = key.split(":")[0] if ":" in key else "(no-prefix)"
+            prefix_counter[prefix] += 1
+            env_counter[ul["environment"] or "(no-env)"] += 1
+        print("  By prefix:")
+        for pfx, cnt in prefix_counter.most_common():
+            examples = [ul["key"] for ul in unknown_labels if ul["key"].startswith(pfx)][:3]
+            print(f"    {pfx:20s}  {cnt:3d}  e.g. {examples}")
+        print("  By environment:")
+        for env, cnt in env_counter.most_common():
+            print(f"    {env:20s}  {cnt:3d}")
+        print("  Full list:")
+        for ul in unknown_labels:
+            print(f"    [{ul['doc_id']}] key={ul['key']}  env={ul['environment']}")
 
     # Show multi-hop examples
     print(f"\n--- Multi-Hop Path Examples ---")
