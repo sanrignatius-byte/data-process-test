@@ -192,6 +192,9 @@ RE_SECTION = re.compile(
     r'\\(section|subsection|subsubsection|paragraph|chapter)\*?\{([^}]+)\}'
 )
 
+# \title{...} (may have optional [...])
+RE_TITLE = re.compile(r'\\title\s*(?:\[[^\]]*\])?\s*\{')
+
 # Label prefix → type mapping
 _PREFIX_MAP = {
     "fig": LabelType.FIGURE,
@@ -399,7 +402,12 @@ class LaTeXReferenceExtractor:
         containment = self._build_containment_edges(graph.labels, lines)
         graph.edges.extend(containment)
 
-        # 5) Parse .bbl
+        # 5) Extract title
+        title = self._extract_title(lines)
+        if title:
+            graph.metadata["title"] = title
+
+        # 6) Parse .bbl
         if bbl_path is None:
             bbl_path = self._find_bbl(extract_dir)
         if bbl_path is not None:
@@ -657,6 +665,36 @@ class LaTeXReferenceExtractor:
                     result.append(ch)
                 return "".join(result).strip()
         return None
+
+    # -----------------------------------------------------------------------
+    # Title extraction
+    # -----------------------------------------------------------------------
+
+    def _extract_title(self, lines: List[str]) -> Optional[str]:
+        """Extract paper title from \\title{...} command."""
+        full_text = "\n".join(lines)
+        m = RE_TITLE.search(full_text)
+        if not m:
+            return None
+        start = m.end()
+        depth = 1
+        chars: List[str] = []
+        for ch in full_text[start:start + 500]:
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+            chars.append(ch)
+        title = "".join(chars).strip()
+        # Clean LaTeX commands
+        title = re.sub(r'\\\\', ' ', title)
+        title = re.sub(r'\\[a-zA-Z]+\{([^}]*)\}', r'\1', title)
+        title = re.sub(r'\\[a-zA-Z]+', '', title)
+        title = re.sub(r'[{}$]', '', title)
+        title = re.sub(r'\s+', ' ', title).strip()
+        return title if title else None
 
     # -----------------------------------------------------------------------
     # Ref extraction
@@ -1015,34 +1053,48 @@ class LaTeXReferenceExtractor:
     def find_multihop_paths(
         graph: LatexDocumentGraph,
         max_hops: int = 3,
+        require_ref_edge: bool = False,
     ) -> List[List[str]]:
         """
         Find all simple paths of length 2..max_hops between labels of
         *different* types.  Returns list of [label_key, ...] paths.
+
+        If require_ref_edge=True, only returns paths that traverse at
+        least one \\ref{} edge (not purely containment edges).  This
+        filters out hierarchy-only paths (section→figure→table) that
+        don't reflect real reasoning chains.
         """
         # Build adjacency (both directions for undirected search)
         adj: Dict[str, Set[str]] = {}
+        # Track which edges are reference edges (not containment)
+        ref_edge_pairs: Set[Tuple[str, str]] = set()
+
         for edge in graph.edges:
             adj.setdefault(edge.source_label, set()).add(edge.target_label)
             adj.setdefault(edge.target_label, set()).add(edge.source_label)
+            if edge.ref_text != "[containment]":
+                ref_edge_pairs.add((edge.source_label, edge.target_label))
+                ref_edge_pairs.add((edge.target_label, edge.source_label))
 
         paths: List[List[str]] = []
 
-        def _dfs(current: str, path: List[str]) -> None:
+        def _dfs(current: str, path: List[str], has_ref: bool) -> None:
             if len(path) > max_hops + 1:
                 return
             if len(path) >= 3:  # at least 2-hop
                 start_type = graph.labels[path[0]].label_type
                 end_type = graph.labels[path[-1]].label_type
                 if start_type != end_type:
-                    paths.append(list(path))
+                    if not require_ref_edge or has_ref:
+                        paths.append(list(path))
             for neighbor in adj.get(current, set()):
                 if neighbor not in path and neighbor in graph.labels:
+                    edge_is_ref = (current, neighbor) in ref_edge_pairs
                     path.append(neighbor)
-                    _dfs(neighbor, path)
+                    _dfs(neighbor, path, has_ref or edge_is_ref)
                     path.pop()
 
         for start in graph.labels:
-            _dfs(start, [start])
+            _dfs(start, [start], False)
 
         return paths
