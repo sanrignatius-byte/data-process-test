@@ -36,6 +36,10 @@ class LabelType(Enum):
     SECTION = "section"
     ALGORITHM = "algorithm"
     APPENDIX = "appendix"
+    THEOREM = "theorem"       # theorem, lemma, proposition, corollary, conjecture, claim
+    DEFINITION = "definition" # definition, assumption, hypothesis, axiom, notation
+    PROOF = "proof"
+    EXAMPLE = "example"       # example, remark, note, observation, exercise
     UNKNOWN = "unknown"
 
 
@@ -48,10 +52,11 @@ class LabelInfo:
     """A \\label{} anchor in the LaTeX source."""
     key: str                  # e.g. "fig:model"
     label_type: LabelType
-    line_no: int              # 1-based line number
+    line_no: int              # 1-based line number (original file)
     environment: Optional[str]  # enclosing env: figure, table, equation …
     caption: Optional[str]    # nearest \\caption{} text
     file_path: Optional[str]  # .tex file where defined
+    _merged_idx: int = -1     # 0-based line index in merged content (internal use)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -69,10 +74,11 @@ class RefInstance:
     """A single \\ref{} / \\eqref{} / \\cite{} usage."""
     target_key: str           # the label / cite key being referenced
     ref_type: str             # "ref" | "eqref" | "pageref" | "cite"
-    line_no: int
+    line_no: int              # 1-based line number (original file)
     context: str              # surrounding text (±80 chars)
     source_env: Optional[str]  # enclosing env at the reference site
     file_path: Optional[str]
+    _merged_idx: int = -1     # 0-based line index in merged content (internal use)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -204,29 +210,99 @@ _PREFIX_MAP = {
     "algo": LabelType.ALGORITHM,
     "app": LabelType.APPENDIX,
     "appendix": LabelType.APPENDIX,
+    # Theorem-like
+    "thm": LabelType.THEOREM,
+    "theorem": LabelType.THEOREM,
+    "lem": LabelType.THEOREM,
+    "lemma": LabelType.THEOREM,
+    "prop": LabelType.THEOREM,
+    "proposition": LabelType.THEOREM,
+    "cor": LabelType.THEOREM,
+    "corollary": LabelType.THEOREM,
+    "conj": LabelType.THEOREM,
+    "conjecture": LabelType.THEOREM,
+    "claim": LabelType.THEOREM,
+    "fact": LabelType.THEOREM,
+    # Definition-like
+    "def": LabelType.DEFINITION,
+    "defn": LabelType.DEFINITION,
+    "definition": LabelType.DEFINITION,
+    "assumption": LabelType.DEFINITION,
+    "hyp": LabelType.DEFINITION,
+    "hypothesis": LabelType.DEFINITION,
+    "axiom": LabelType.DEFINITION,
+    "notation": LabelType.DEFINITION,
+    "condition": LabelType.DEFINITION,
+    # Proof
+    "proof": LabelType.PROOF,
+    "pf": LabelType.PROOF,
+    # Example/remark
+    "ex": LabelType.EXAMPLE,
+    "example": LabelType.EXAMPLE,
+    "rem": LabelType.EXAMPLE,
+    "remark": LabelType.EXAMPLE,
+    "note": LabelType.EXAMPLE,
+    "obs": LabelType.EXAMPLE,
+    "observation": LabelType.EXAMPLE,
 }
 
 # Environment → type mapping
 _ENV_MAP = {
     "figure": LabelType.FIGURE,
     "figure*": LabelType.FIGURE,
+    "subfigure": LabelType.FIGURE,
+    "wrapfigure": LabelType.FIGURE,
     "table": LabelType.TABLE,
     "table*": LabelType.TABLE,
     "tabular": LabelType.TABLE,
     "tabular*": LabelType.TABLE,
+    "longtable": LabelType.TABLE,
     "equation": LabelType.EQUATION,
     "equation*": LabelType.EQUATION,
     "align": LabelType.EQUATION,
     "align*": LabelType.EQUATION,
+    "alignat": LabelType.EQUATION,
+    "alignat*": LabelType.EQUATION,
     "gather": LabelType.EQUATION,
     "gather*": LabelType.EQUATION,
     "multline": LabelType.EQUATION,
     "multline*": LabelType.EQUATION,
     "eqnarray": LabelType.EQUATION,
     "eqnarray*": LabelType.EQUATION,
+    "flalign": LabelType.EQUATION,
+    "flalign*": LabelType.EQUATION,
+    "math": LabelType.EQUATION,
+    "displaymath": LabelType.EQUATION,
     "algorithm": LabelType.ALGORITHM,
     "algorithm*": LabelType.ALGORITHM,
     "algorithmic": LabelType.ALGORITHM,
+    "algorithm2e": LabelType.ALGORITHM,
+    # Theorem-like
+    "theorem": LabelType.THEOREM,
+    "lemma": LabelType.THEOREM,
+    "proposition": LabelType.THEOREM,
+    "corollary": LabelType.THEOREM,
+    "conjecture": LabelType.THEOREM,
+    "claim": LabelType.THEOREM,
+    "fact": LabelType.THEOREM,
+    # Definition-like
+    "definition": LabelType.DEFINITION,
+    "assumption": LabelType.DEFINITION,
+    "hypothesis": LabelType.DEFINITION,
+    "axiom": LabelType.DEFINITION,
+    "notation": LabelType.DEFINITION,
+    "condition": LabelType.DEFINITION,
+    # Proof
+    "proof": LabelType.PROOF,
+    "proof*": LabelType.PROOF,
+    # Example/remark
+    "example": LabelType.EXAMPLE,
+    "example*": LabelType.EXAMPLE,
+    "remark": LabelType.EXAMPLE,
+    "remark*": LabelType.EXAMPLE,
+    "note": LabelType.EXAMPLE,
+    "observation": LabelType.EXAMPLE,
+    "exercise": LabelType.EXAMPLE,
 }
 
 
@@ -289,11 +365,14 @@ class LaTeXReferenceExtractor:
         # 2) Extract refs
         graph.refs = self._extract_refs(lines, env_stack, file_lines)
 
-        # 3) Build edges: for each \ref, find the enclosing label (source)
-        #    and the referenced label (target)
+        # 3) Build edges: reference edges (enclosing element + section fallback)
         graph.edges = self._build_edges(graph.labels, graph.refs, lines, env_stack)
 
-        # 4) Parse .bbl
+        # 4) Add containment edges: section → contained elements
+        containment = self._build_containment_edges(graph.labels, lines)
+        graph.edges.extend(containment)
+
+        # 5) Parse .bbl
         if bbl_path is None:
             bbl_path = self._find_bbl(extract_dir)
         if bbl_path is not None:
@@ -470,6 +549,7 @@ class LaTeXReferenceExtractor:
                     environment=env,
                     caption=caption,
                     file_path=src_file,
+                    _merged_idx=idx,
                 )
         return labels
 
@@ -542,6 +622,7 @@ class LaTeXReferenceExtractor:
                     context=ctx,
                     source_env=env,
                     file_path=src_file,
+                    _merged_idx=idx,
                 ))
 
             # \\cite, \\citep, etc. (can have comma-separated keys)
@@ -560,6 +641,7 @@ class LaTeXReferenceExtractor:
                             context=ctx,
                             source_env=env,
                             file_path=src_file,
+                            _merged_idx=idx,
                         ))
 
         return refs
@@ -582,17 +664,21 @@ class LaTeXReferenceExtractor:
         env_stack: Dict[int, List[str]],
     ) -> List[LatexRefEdge]:
         """
-        Build directed edges.  For each \\ref{target}, find which labeled
-        element *contains* the reference (= source).  This gives us:
-            source_label ──ref──→ target_label
+        Build directed edges with two strategies:
+          1. Enclosing labeled environment → target  (high precision)
+          2. Nearest preceding section → target       (high recall fallback)
 
-        If the \\ref is not inside any labeled element, we skip it (text refs).
+        Uses _merged_idx (0-based merged content index) for all positional
+        comparisons, fixing the original line_no coordinate mismatch.
         """
         edges: List[LatexRefEdge] = []
+        seen: Set[Tuple[str, str]] = set()
 
-        # Build line_no → label mapping (for the merged content)
-        # label → line range (approximate: label line ± env boundary)
+        # label → line range in merged indices
         label_ranges = self._compute_label_ranges(labels, lines, env_stack)
+
+        # sorted section labels for fallback attribution
+        section_list = self._build_section_list(labels)
 
         for ref in refs:
             if ref.ref_type == "cite":
@@ -602,13 +688,28 @@ class LaTeXReferenceExtractor:
             if target_key not in labels:
                 continue  # dangling ref (undefined label)
 
-            # Find which label "owns" the line where this ref appears
+            ref_idx = ref._merged_idx
+            if ref_idx < 0:
+                continue
+
+            # Strategy 1: enclosing labeled environment (high precision)
             source_label_key = self._find_enclosing_label(
-                ref.line_no, label_ranges, labels
+                ref_idx, label_ranges, labels
             )
 
+            # Strategy 2: nearest preceding section (high recall)
+            if source_label_key is None:
+                source_label_key = self._find_section_for_line(
+                    ref_idx, section_list
+                )
+
             if source_label_key is None or source_label_key == target_key:
-                continue  # self-ref or free text
+                continue  # self-ref or truly free text
+
+            edge_pair = (source_label_key, target_key)
+            if edge_pair in seen:
+                continue
+            seen.add(edge_pair)
 
             source_info = labels[source_label_key]
             target_info = labels[target_key]
@@ -618,7 +719,7 @@ class LaTeXReferenceExtractor:
                 target_label=target_key,
                 source_type=source_info.label_type.value,
                 target_type=target_info.label_type.value,
-                ref_text=f"\\ref{{{target_key}}}",
+                ref_text=f"\\{ref.ref_type}{{{target_key}}}",
                 context=ref.context,
             ))
 
@@ -632,21 +733,14 @@ class LaTeXReferenceExtractor:
     ) -> Dict[str, Tuple[int, int]]:
         """
         For each label, estimate the line range of its enclosing environment.
-        Returns {label_key → (start_line_idx, end_line_idx)}.
+        Returns {label_key → (start_merged_idx, end_merged_idx)}.
+        Uses _merged_idx from LabelInfo (no rescanning needed).
         """
         ranges: Dict[str, Tuple[int, int]] = {}
 
-        # Find label line index in merged content
-        label_line_map: Dict[str, int] = {}
-        for idx, line in enumerate(lines):
-            for m in RE_LABEL.finditer(line):
-                key = m.group(1).strip()
-                if key in labels:
-                    label_line_map[key] = idx
-
         for key, info in labels.items():
-            idx = label_line_map.get(key)
-            if idx is None:
+            idx = info._merged_idx
+            if idx < 0:
                 continue
 
             env = info.environment
@@ -694,6 +788,108 @@ class LaTeXReferenceExtractor:
                     best_key = key
 
         return best_key
+
+    # -----------------------------------------------------------------------
+    # Section attribution helpers (P0 fix)
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _build_section_list(
+        labels: Dict[str, LabelInfo],
+    ) -> List[Tuple[int, str]]:
+        """
+        Get sorted list of (merged_idx, label_key) for section-type labels.
+        Used for the fallback section-attribution strategy in _build_edges.
+        """
+        sections: List[Tuple[int, str]] = []
+        for key, info in labels.items():
+            if info.label_type in (LabelType.SECTION, LabelType.APPENDIX):
+                if info._merged_idx >= 0:
+                    sections.append((info._merged_idx, key))
+        sections.sort()
+        return sections
+
+    @staticmethod
+    def _find_section_for_line(
+        line_idx: int,
+        section_list: List[Tuple[int, str]],
+    ) -> Optional[str]:
+        """Find nearest section label at or before the given line (binary search)."""
+        if not section_list:
+            return None
+        best: Optional[str] = None
+        for sec_idx, sec_key in section_list:
+            if sec_idx <= line_idx:
+                best = sec_key
+            else:
+                break
+        return best
+
+    # -----------------------------------------------------------------------
+    # Containment edges (P2: section → element)
+    # -----------------------------------------------------------------------
+
+    def _build_containment_edges(
+        self,
+        labels: Dict[str, LabelInfo],
+        lines: List[str],
+    ) -> List[LatexRefEdge]:
+        """
+        Build section → element containment edges.
+        Each non-section element gets an edge from its narrowest containing
+        section, based on merged line positions.
+        """
+        edges: List[LatexRefEdge] = []
+
+        # Build section ranges: (start_idx, end_idx, key)
+        section_list = self._build_section_list(labels)
+        if not section_list:
+            return edges
+
+        section_ranges: List[Tuple[int, int, str]] = []
+        for i, (idx, key) in enumerate(section_list):
+            end = (
+                section_list[i + 1][0] - 1
+                if i + 1 < len(section_list)
+                else len(lines) - 1
+            )
+            section_ranges.append((idx, end, key))
+
+        seen: Set[Tuple[str, str]] = set()
+
+        for elem_key, elem_info in labels.items():
+            # Skip section/appendix labels themselves
+            if elem_info.label_type in (LabelType.SECTION, LabelType.APPENDIX):
+                continue
+
+            elem_idx = elem_info._merged_idx
+            if elem_idx < 0:
+                continue
+
+            # Find narrowest containing section
+            best_key: Optional[str] = None
+            best_span = float("inf")
+
+            for start, end, sec_key in section_ranges:
+                if start <= elem_idx <= end:
+                    span = end - start
+                    if span < best_span:
+                        best_span = span
+                        best_key = sec_key
+
+            if best_key and (best_key, elem_key) not in seen:
+                seen.add((best_key, elem_key))
+                sec_info = labels[best_key]
+                edges.append(LatexRefEdge(
+                    source_label=best_key,
+                    target_label=elem_key,
+                    source_type=sec_info.label_type.value,
+                    target_type=elem_info.label_type.value,
+                    ref_text="[containment]",
+                    context=f"{elem_key} is within {best_key}",
+                ))
+
+        return edges
 
     # -----------------------------------------------------------------------
     # Bibliography (.bbl) parsing
