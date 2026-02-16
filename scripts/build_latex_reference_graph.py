@@ -347,17 +347,24 @@ def main():
                 stats["edge_type_dist"][key] += 1
                 stats["total_ref_edges"] += 1
 
-        # Multi-hop paths
+        # Multi-hop paths (unconstrained for backward compat)
         paths = LaTeXReferenceExtractor.find_multihop_paths(graph, max_hops=args.max_hops)
+        # Constrained paths: require at least one \ref{} edge (not just containment)
+        paths_constrained = LaTeXReferenceExtractor.find_multihop_paths(
+            graph, max_hops=args.max_hops, require_ref_edge=True,
+        )
         graph.metadata["multihop_paths"] = len(paths)
+        graph.metadata["multihop_paths_constrained"] = len(paths_constrained)
         graph.metadata["multihop_examples"] = [
             {
                 "path": p,
                 "types": [graph.labels[k].label_type.value for k in p if k in graph.labels],
             }
-            for p in paths[:10]  # store first 10 as examples
+            for p in paths_constrained[:10]  # prefer constrained examples
         ]
         stats["total_multihop_paths"] += len(paths)
+        stats.setdefault("total_multihop_paths_constrained", 0)
+        stats["total_multihop_paths_constrained"] += len(paths_constrained)
 
         graphs[doc_id] = graph
 
@@ -371,6 +378,42 @@ def main():
             f"refs={len(graph.refs)} edges={len(graph.edges)} "
             f"bib={len(graph.bib)} paths={len(paths)}  ({label_summary})"
         )
+
+    # --- Per-doc distributions ---
+    labels_per_doc = [len(g.labels) for g in graphs.values()]
+    refs_per_doc = [len(g.refs) for g in graphs.values()]
+    edges_per_doc = [len(g.edges) for g in graphs.values()]
+
+    def _percentiles(values, ps=(50, 75, 90, 99)):
+        if not values:
+            return {}
+        s = sorted(values)
+        n = len(s)
+        result = {f"p{p}": s[min(n - 1, n * p // 100)] for p in ps}
+        result["mean"] = round(sum(s) / n, 1)
+        result["max"] = s[-1]
+        return result
+
+    stats["per_doc_distribution"] = {
+        "labels": _percentiles(labels_per_doc),
+        "refs": _percentiles(refs_per_doc),
+        "edges": _percentiles(edges_per_doc),
+    }
+
+    # --- Ref occurrence vs unique pair ---
+    total_ref_occurrences = 0
+    for g in graphs.values():
+        for ref in g.refs:
+            if ref.ref_type != "cite" and ref.target_key in g.labels:
+                total_ref_occurrences += 1
+
+    stats["ref_occurrence_vs_unique"] = {
+        "total_ref_occurrences": total_ref_occurrences,
+        "unique_ref_edges": stats["total_ref_edges"],
+        "redundancy_ratio": round(
+            total_ref_occurrences / max(1, stats["total_ref_edges"]), 2
+        ),
+    }
 
     # --- Summary ---
     print(f"\n{'='*60}")
@@ -388,8 +431,32 @@ def main():
     print(f"  Containment edges:  {stats['total_containment_edges']}")
     print(f"Total bib entries:    {stats['total_bib_entries']}")
     print(f"Total multi-hop paths:{stats['total_multihop_paths']}")
+    constrained = stats.get('total_multihop_paths_constrained', 0)
+    print(f"  Constrained (≥1 ref edge): {constrained}")
+    if stats['total_multihop_paths'] > 0:
+        filt_rate = 100 * constrained / stats['total_multihop_paths']
+        print(f"  Filter rate:        {filt_rate:.1f}% survive constraint")
     ref_rate = 100 * stats['total_ref_edges'] / max(1, stats['total_refs'])
     print(f"Ref→Edge conversion:  {ref_rate:.1f}%")
+
+    # Occurrence vs unique pair
+    occ = stats.get("ref_occurrence_vs_unique", {})
+    if occ:
+        print(f"\nRef Occurrence vs Unique Pair:")
+        print(f"  Total \\ref{{}} occurrences: {occ['total_ref_occurrences']}")
+        print(f"  Unique (source,target) edges: {occ['unique_ref_edges']}")
+        print(f"  Redundancy ratio:           {occ['redundancy_ratio']}x")
+
+    # Per-doc distributions
+    dist = stats.get("per_doc_distribution", {})
+    if dist:
+        print(f"\nPer-Document Distributions:")
+        for metric, vals in dist.items():
+            if vals:
+                print(f"  {metric:8s}  "
+                      f"mean={vals['mean']:5.1f}  "
+                      f"p50={vals['p50']:3d}  p90={vals['p90']:3d}  "
+                      f"p99={vals['p99']:3d}  max={vals['max']:3d}")
 
     if stats["label_type_dist"]:
         print(f"\nLabel Type Distribution:")
@@ -434,8 +501,8 @@ def main():
         for ul in unknown_labels:
             print(f"    [{ul['doc_id']}] key={ul['key']}  env={ul['environment']}")
 
-    # Show multi-hop examples
-    print(f"\n--- Multi-Hop Path Examples ---")
+    # Show multi-hop examples (constrained: require ≥1 ref edge)
+    print(f"\n--- Multi-Hop Path Examples (constrained) ---")
     example_count = 0
     for doc_id, graph in graphs.items():
         for ex in graph.metadata.get("multihop_examples", []):
