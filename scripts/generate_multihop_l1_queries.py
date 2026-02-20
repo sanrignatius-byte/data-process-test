@@ -265,8 +265,8 @@ LEAK_STOPWORDS = {
 }
 
 ANCHOR_LEAK_THRESHOLD = 0.15
-ANSWER_BALANCE_THRESHOLD = 0.25
-MIN_OVERLAP_PER_ELEMENT = 2
+ANSWER_BALANCE_THRESHOLD = 0.15   # v2.1: relaxed from 0.25 — token overlap is noisy proxy
+MIN_OVERLAP_PER_ELEMENT = 1       # v2.1: relaxed from 2 — visual captions can be short
 
 QUERY_SHORTCUT_PATTERNS = [
     r"^which\s+component\b",
@@ -514,7 +514,7 @@ def qc_multihop_query(
         issues.append("anchor_leakage")
     anchor_copy = anchor_token_copy_count(q, anchors)
     metrics["anchor_token_copy_count"] = anchor_copy
-    if anchor_copy >= 3:
+    if anchor_copy >= 4:   # v2.1: relaxed from 3 — 3 shared tokens is a weak signal
         issues.append("bridge_entity_leakage")
 
     # 6. Missing dual anchor — both elements must have an anchor
@@ -563,9 +563,9 @@ def qc_multihop_query(
         issues.append("short_evidence")
 
     # 9. Encourage explanatory cross-modal answers instead of pure lookup
+    # v2.1: cross_reading is a lookup/referencing type, not causal — exempt from WRC check
     qtype = str(obj.get("query_type", "")).lower()
     explanatory_types = {
-        "cross_reading",
         "trend_explanation",
         "anomaly_investigation",
         "bridge_reasoning",
