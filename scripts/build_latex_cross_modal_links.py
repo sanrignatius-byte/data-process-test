@@ -118,6 +118,17 @@ CAPTION_DESC_THRESHOLD = 0.40  # raised from 0.25 — harder gate prevents offse
 # If numeric suffix matches but caption is absent → accept at reduced confidence
 NUMERIC_ONLY_CONF = 0.70       # down from 0.95; signals we couldn't verify via text
 
+# G1: Hub de-duplication — max pairs any single element can participate in.
+# Elements referenced N times across doc create O(N²) pairs; we keep only top-K
+# by quality_score.  Applied as post-processing on the full pair list.
+HUB_MAX_PAIRS_PER_ELEMENT = 3
+
+# G2: Co-reference hard gate — for "proximity" strategy, the bridge text must
+# explicitly reference BOTH elements via \\ref{} or the pairing is penalized.
+# Pairs where bridge contains only ONE side get quality_score halved;
+# pairs where bridge contains NEITHER side are dropped.
+REQUIRE_COREF_IN_BRIDGE = True
+
 # Regex to strip "Figure 3:", "Table 3:", "Fig. 3", "Eq. (3):", etc. from captions
 # F2 core: must strip before Jaccard to avoid offset matching
 _PREFIX_RE = re.compile(
@@ -184,6 +195,61 @@ def _quality_score(conf_a: float, conf_b: float, char_dist: int) -> float:
     """
     decay = math.exp(-char_dist / DECAY_CONST)
     return min(conf_a, conf_b) * decay
+
+
+# ---------------------------------------------------------------------------
+# G2: Co-reference bridge quality check
+# ---------------------------------------------------------------------------
+
+def _count_refs_in_bridge(bridge_text: str, label_a: str, label_b: str) -> int:
+    """
+    Count how many of {label_a, label_b} appear as \\ref{...} in bridge_text.
+
+    Checks for:
+      \\ref{label}  \\eqref{label}  \\autoref{label}  \\cref{label}
+      \\hyperref[label]{...}  and bare label substrings as fallback.
+
+    Returns 0, 1, or 2.
+    """
+    ref_pattern = re.compile(
+        r'\\(?:ref|eqref|autoref|cref|hyperref)\s*[\[{]([^\]{}]+)[\]}]'
+    )
+    found_labels = set(ref_pattern.findall(bridge_text))
+    count = 0
+    if label_a in found_labels or label_a in bridge_text:
+        count += 1
+    if label_b in found_labels or label_b in bridge_text:
+        count += 1
+    return count
+
+
+def _apply_coref_quality(
+    quality_score: float,
+    bridge_text: str,
+    label_a: str,
+    label_b: str,
+    strategy: str,
+) -> Optional[float]:
+    """
+    G2: Apply co-reference gate for proximity/paragraph pairs.
+
+    - Both refs found  → no penalty, return quality_score as-is
+    - One ref found    → halve quality_score (partial evidence)
+    - Neither found    → return None (pair should be dropped)
+
+    Direct edges already guarantee the ref is present (by construction),
+    so this check only applies to proximity and paragraph strategies.
+    """
+    if strategy == "direct":
+        return quality_score   # no gate needed
+
+    n = _count_refs_in_bridge(bridge_text, label_a, label_b)
+    if n >= 2:
+        return quality_score
+    if n == 1:
+        return quality_score * 0.5
+    # n == 0: bridge has no explicit reference to either element
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -495,6 +561,7 @@ def build(args) -> None:
         "by_strategy": defaultdict(int),
         "by_pair_type": defaultdict(int),
         "by_conf_bucket": defaultdict(int),  # low/med/high
+        "by_coref_gate": defaultdict(int),   # G2: both_found/penalized/dropped
     }
 
     output_pairs: List[dict] = []
@@ -563,6 +630,31 @@ def build(args) -> None:
                 return False
             if pair["element_a_id"] == pair["element_b_id"]:
                 return False
+
+            # G2: Co-reference hard gate for proximity / paragraph strategies
+            if REQUIRE_COREF_IN_BRIDGE:
+                bridge = pair["latex_bridge"]
+                new_qs = _apply_coref_quality(
+                    pair["quality_score"],
+                    bridge["bridge_text"],
+                    bridge["label_a"],
+                    bridge["label_b"],
+                    bridge["strategy"],
+                )
+                if new_qs is None:
+                    # Neither element referenced in bridge → drop
+                    stats["by_coref_gate"]["dropped"] += 1
+                    return False
+                elif new_qs < pair["quality_score"]:
+                    # Only one ref found → penalize
+                    stats["by_coref_gate"]["penalized"] += 1
+                    pair = {**pair, "quality_score": round(new_qs, 3)}
+                    pair["latex_bridge"] = {
+                        **pair["latex_bridge"], "coref_penalty": True
+                    }
+                else:
+                    stats["by_coref_gate"]["both_found"] += 1
+
             seen.add(key)
             output_pairs.append(pair)
             stats["by_strategy"][pair["latex_bridge"]["strategy"]] += 1
@@ -724,11 +816,34 @@ def build(args) -> None:
                 ))
 
     # -----------------------------------------------------------------------
+    # G1: Hub de-duplication — post-processing pass
+    # -----------------------------------------------------------------------
+    # Count how many pairs each element already participates in.
+    # Sort all pairs by quality_score descending; greedily accept pairs
+    # only if both elements have not yet hit HUB_MAX_PAIRS_PER_ELEMENT.
+    output_pairs.sort(key=lambda p: p["quality_score"], reverse=True)
+    elem_pair_count: Dict[str, int] = defaultdict(int)
+    hub_filtered: List[dict] = []
+    hub_dropped = 0
+    for pair in output_pairs:
+        ea = pair["element_a_id"]
+        eb = pair["element_b_id"]
+        if (elem_pair_count[ea] < HUB_MAX_PAIRS_PER_ELEMENT and
+                elem_pair_count[eb] < HUB_MAX_PAIRS_PER_ELEMENT):
+            hub_filtered.append(pair)
+            elem_pair_count[ea] += 1
+            elem_pair_count[eb] += 1
+        else:
+            hub_dropped += 1
+    output_pairs = hub_filtered
+
+    # -----------------------------------------------------------------------
     # Output
     # -----------------------------------------------------------------------
     by_pair_type   = dict(stats["by_pair_type"])
     by_strategy    = dict(stats["by_strategy"])
     by_conf        = dict(stats["by_conf_bucket"])
+    by_coref       = dict(stats["by_coref_gate"])
     label_rate     = (
         stats["label_match_success"] / stats["label_match_attempts"]
         if stats["label_match_attempts"] else 0.0
@@ -743,13 +858,18 @@ def build(args) -> None:
             "char_proximity_limit":  CHAR_PROXIMITY_LIMIT,
             "decay_const":           DECAY_CONST,
             "caption_desc_threshold": CAPTION_DESC_THRESHOLD,
-            "version":               "v2-precision",
+            "version":               "v3-precision",
+            "hub_max_pairs_per_element": HUB_MAX_PAIRS_PER_ELEMENT,
+            "require_coref_in_bridge":   REQUIRE_COREF_IN_BRIDGE,
             "description": (
                 "Cross-modal pairs discovered via LaTeX \\ref{} co-citation. "
-                "v2 changes: (F1) section-level replaced by char-distance proximity "
+                "v2: (F1) section-level replaced by char-distance proximity "
                 f"(≤{CHAR_PROXIMITY_LIMIT} chars); "
                 "(F2) caption prefix-stripped before Jaccard + numeric double-gate; "
-                "(F3) quality_score = min(conf_a,conf_b) × exp(-dist/500)."
+                "(F3) quality_score = min(conf_a,conf_b) × exp(-dist/500). "
+                "v3: (G1) hub de-dup: max 3 pairs/element by quality_score; "
+                "(G2) coref gate: proximity bridge must contain both \\ref{} → "
+                "drop if 0 refs, halve score if 1 ref."
             ),
         },
         "summary": {
@@ -762,6 +882,8 @@ def build(args) -> None:
             "by_strategy":            by_strategy,
             "by_pair_type":           by_pair_type,
             "by_conf_bucket":         by_conf,
+            "g1_hub_dropped":         hub_dropped,
+            "g2_coref_gate":          by_coref,
         },
         "pairs": output_pairs,
     }
@@ -784,6 +906,8 @@ def build(args) -> None:
     print(f"  By strategy         : {by_strategy}")
     print(f"  By pair type        : {by_pair_type}")
     print(f"  By conf bucket      : {by_conf}")
+    print(f"  G1 hub dropped      : {hub_dropped}  (max {HUB_MAX_PAIRS_PER_ELEMENT} pairs/element)")
+    print(f"  G2 coref gate       : {by_coref}")
     print(f"  Output → {args.output}")
     print(f"  Report → {report_path}")
     print(f"{'='*60}")
