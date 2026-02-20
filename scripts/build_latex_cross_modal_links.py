@@ -123,6 +123,12 @@ def _normalize_pair_type(ta: str, tb: str) -> str:
 # Label → MinerU element matching
 # ---------------------------------------------------------------------------
 
+def _parse_number(text: str) -> Optional[int]:
+    """Extract the first integer from a string like 'Equation 1', 'Eq. (3)'."""
+    m = re.search(r'(\d+)', text or "")
+    return int(m.group(1)) if m else None
+
+
 def _match_label_to_element(
     label_key:    str,
     label_type:   str,        # LabelType.value string from LaTeX graph
@@ -134,7 +140,8 @@ def _match_label_to_element(
     Return (element_id, confidence) or None.
 
     Strategy 1 — number extraction from label key:
-        fig3 / fig:3 / fig_3 → figure with number == 3  (conf 0.95)
+        fig3 / fig:3 / fig_3 → figure/formula with matching number  (conf 0.95)
+        Also checks MinerU `label` field ("Equation 1" → 1)
     Strategy 2 — caption Jaccard:
         clean LaTeX from both captions, compute token Jaccard  (conf = score)
     """
@@ -149,16 +156,22 @@ def _match_label_to_element(
     if not candidates:
         return None
 
-    # Strategy 1: numeric suffix in label key
-    num_match = re.search(r'(\d+)', label_key)
-    if num_match:
-        num = int(num_match.group(1))
+    # Strategy 1: numeric suffix in label key → match element number
+    label_num = _parse_number(label_key)
+    if label_num is not None:
         for eid, el in candidates.items():
+            # Check explicit `number` field first
             el_num = el.get("number")
-            if el_num is not None and int(el_num) == num:
+            if el_num is not None and int(el_num) == label_num:
                 return (eid, 0.95)
+            # Fallback: parse number from MinerU `label` field
+            # e.g. "Equation 1", "Table 3", "Figure 5"
+            if el_num is None:
+                el_num = _parse_number(el.get("label", ""))
+                if el_num is not None and el_num == label_num:
+                    return (eid, 0.90)
 
-    # Strategy 2: caption text Jaccard
+    # Strategy 2: caption text Jaccard (works for figures/tables with captions)
     label_tokens = _tokenize(_clean_latex(label_caption or ""))
     if not label_tokens:
         return None
@@ -173,6 +186,48 @@ def _match_label_to_element(
     if best_score >= threshold:
         return (best_eid, best_score)
     return None
+
+
+def _ordered_position_match(
+    unmatched_labels: List[Tuple[str, dict]],   # (label_key, label_info)
+    unmatched_elems:  List[Tuple[str, dict]],   # (element_id, element_dict)
+) -> List[Tuple[str, str, float]]:
+    """
+    Fallback: match equation labels to formula elements by document order.
+
+    Sort LaTeX labels by line_no, MinerU elements by (page_idx, position_idx),
+    then match 1:1.  Only used when counts are reasonably close.
+
+    Returns list of (label_key, element_id, confidence).
+    """
+    if not unmatched_labels or not unmatched_elems:
+        return []
+
+    n_labels = len(unmatched_labels)
+    n_elems  = len(unmatched_elems)
+
+    # Only attempt when counts are within 3× of each other
+    ratio = max(n_labels, n_elems) / max(min(n_labels, n_elems), 1)
+    if ratio > 3.0:
+        return []
+
+    # Sort by position
+    sorted_labels = sorted(unmatched_labels, key=lambda x: x[1].get("line_no", 0))
+    sorted_elems  = sorted(unmatched_elems,  key=lambda x: (
+        x[1].get("page_idx", 0), x[1].get("position_idx", 0)
+    ))
+
+    # Confidence scales with how close the counts are
+    # Perfect count match → 0.60, 2× ratio → 0.40
+    base_conf = max(0.35, 0.65 - 0.1 * (ratio - 1))
+
+    results = []
+    for i in range(min(n_labels, n_elems)):
+        lkey = sorted_labels[i][0]
+        eid  = sorted_elems[i][0]
+        results.append((lkey, eid, base_conf))
+
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +320,7 @@ def build(args) -> None:
         "docs_with_latex": 0,
         "label_match_attempts": 0,
         "label_match_success": 0,
+        "ordered_match_rescued": 0,    # equations matched by position fallback
         "by_strategy": defaultdict(int),
         "by_pair_type": defaultdict(int),
         "by_conf_bucket": defaultdict(int),  # low/med/high
@@ -300,6 +356,34 @@ def build(args) -> None:
             if result:
                 label_to_elem[lkey] = result
                 stats["label_match_success"] += 1
+
+        # ------------------------------------------------------------------
+        # Step A.2: Ordered position fallback for unmatched equation labels
+        # Equations have no caption → Strategy 1+2 often fail.
+        # Match remaining equation labels to remaining formula elements
+        # by document order (line_no vs page_idx+position_idx).
+        # ------------------------------------------------------------------
+        matched_eids = {eid for eid, _ in label_to_elem.values()}
+        eq_types_in_latex = {"equation", "algorithm"}
+
+        unmatched_eq_labels = [
+            (lkey, linfo) for lkey, linfo in latex_labels.items()
+            if lkey not in label_to_elem
+            and linfo.get("label_type") in eq_types_in_latex
+        ]
+        unmatched_formulas = [
+            (eid, el) for eid, el in elements.items()
+            if el.get("element_type") == "formula"
+            and eid not in matched_eids
+        ]
+
+        if unmatched_eq_labels and unmatched_formulas:
+            for lkey, eid, conf in _ordered_position_match(
+                unmatched_eq_labels, unmatched_formulas
+            ):
+                label_to_elem[lkey] = (eid, conf)
+                stats["label_match_success"] += 1
+                stats["ordered_match_rescued"] += 1
 
         # Track which element pairs we've already added (order-independent)
         seen: Set[Tuple[str, str]] = set()
@@ -514,6 +598,7 @@ def build(args) -> None:
             "label_match_rate":     round(label_rate, 3),
             "label_match_success":  stats["label_match_success"],
             "label_match_attempts": stats["label_match_attempts"],
+            "ordered_match_rescued": stats["ordered_match_rescued"],
             "by_strategy":          by_strategy,
             "by_pair_type":         by_pair_type,
             "by_conf_bucket":       by_conf,
@@ -535,6 +620,7 @@ def build(args) -> None:
     print(f"  Docs with LaTeX    : {stats['docs_with_latex']}")
     print(f"  Label match rate   : {label_rate:.1%}  "
           f"({stats['label_match_success']}/{stats['label_match_attempts']})")
+    print(f"  Eq ordered rescue  : {stats['ordered_match_rescued']}")
     print(f"  By strategy        : {by_strategy}")
     print(f"  By pair type       : {by_pair_type}")
     print(f"  By conf bucket     : {by_conf}")
