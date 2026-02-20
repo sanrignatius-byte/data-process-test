@@ -252,12 +252,12 @@ def _make_pair(
 
 def build(args) -> None:
     print(f"[1/4] Loading MinerU elements   → {args.elements}")
-    with open(args.elements) as f:
+    with open(args.elements, encoding="utf-8") as f:
         mm_data = json.load(f)
     mm_docs = mm_data.get("documents", {})
 
     print(f"[2/4] Loading LaTeX ref graph   → {args.latex_graph}")
-    with open(args.latex_graph) as f:
+    with open(args.latex_graph, encoding="utf-8") as f:
         latex_data = json.load(f)
     latex_docs = latex_data.get("documents", {})
 
