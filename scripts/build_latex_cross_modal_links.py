@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-build_latex_cross_modal_links.py  —  Step 0 v3.2
+build_latex_cross_modal_links.py  —  Step 0 v3.2  (v2: precision-first rebuild)
 
 Enrich MinerU cross-modal element pairs with LaTeX co-citation evidence.
 
@@ -11,26 +11,41 @@ context_before/after) comes from multimodal_elements.json.
 
 LaTeX is the ENRICHMENT/REFERENCE layer: it provides `latex_bridge` —
 the author-written sentence that *explains why* two elements are related,
-extracted from the \ref{} co-citation context in the .tex source.
+extracted from the \\ref{} co-citation context in the .tex source.
 
-Three discovery strategies (in descending precision)
-------------------------------------------------------
-1. Direct cross-modal edges:
+Three discovery strategies (precision-first, descending order)
+--------------------------------------------------------------
+1. Direct cross-modal edges  [highest precision]:
        fig:roc --[ref]--> eq:fairness
    LatexRefEdge where source_type ≠ target_type and both are element types.
    Edge.context is the bridge text.
 
-2. Section-mediated co-citation:
-       sec:experiments --[ref]--> fig:roc
-       sec:experiments --[ref]--> tab:results
-   When a section references ≥2 elements of different modalities, those
-   elements are implicitly co-cited.  Bridge text = the union of ref contexts
-   from the same section.
+2. Proximity co-citation  [replaced section-level]:
+       Two \ref{} calls in the SAME passage within CHAR_PROXIMITY_LIMIT characters
+   of each other → cross-modal pair if they target different element types.
+   This replaces the old "section-mediated" strategy which was too coarse
+   (entire section = false positive factory).
 
 3. Paragraph co-citation (from raw RefInstance list):
        context("...Figure 3 and Equation (1)...") shared by two refs
    Refs whose context strings share high token overlap are in the same
    paragraph.  If they target different label types → cross-modal pair.
+
+Changes from v1
+---------------
+- F1: Section-level strategy REMOVED.  Replaced by char-distance proximity
+  (CHAR_PROXIMITY_LIMIT = 1000 chars ≈ 1-2 natural paragraphs).  Immune to
+  author line-wrapping style differences.
+- F2: Caption matching now strips leading "Figure N:", "Table N:", "Eq. (N):"
+  prefixes before computing Jaccard, preventing index-offset mismatches
+  (e.g. MinerU "Table 4" vs LaTeX "Table 3") from inflating similarity.
+  Numeric-suffix match now requires caption Jaccard ≥ 0.35 as second gate
+  (unless caption is absent, in which case number-only match stands at
+  reduced confidence 0.70).
+- F3: quality_score uses exponential char-distance decay:
+      score = min(conf_a, conf_b) × exp(-char_dist / DECAY_CONST)
+  making score a continuous, meaningful confidence measure rather than a
+  step-function with a single penalty multiplier.
 
 Outputs
 -------
@@ -49,11 +64,12 @@ Usage
       --elements data/multimodal_elements.json \\
       --latex-graph data/latex_reference_graph.json \\
       --output data/latex_cross_modal_pairs.json \\
-      --min-match-conf 0.25
+      --min-match-conf 0.35
 """
 
 import argparse
 import json
+import math
 import re
 from collections import defaultdict
 from itertools import combinations
@@ -80,14 +96,42 @@ CROSS_MODAL_SETS: Set[frozenset] = {
     frozenset(["table",  "formula"]),
 }
 
-# Section-like label types that mediate co-citations but are not elements
+# Section-like label types that are NOT elements (kept only for filtering)
 SECTION_TYPES = {"section", "appendix"}
 
-# Jaccard threshold for two ref contexts to be considered "same paragraph"
-PARA_CONTEXT_JACCARD = 0.45
+# F1: Maximum character distance between two \ref{} calls to be considered
+# "proximity co-citation" (≈ 1-2 natural paragraphs regardless of line wrapping)
+CHAR_PROXIMITY_LIMIT = 1000
 
-# Jaccard threshold for LaTeX label caption → MinerU element caption matching
-DEFAULT_CAPTION_THRESHOLD = 0.25
+# F3: Exponential decay constant for char-distance quality scoring.
+# At distance=0   → multiplier ≈ 1.0
+# At distance=500 → multiplier ≈ 0.37  (e^-1)
+# At distance=1000→ multiplier ≈ 0.14  (e^-2)
+DECAY_CONST = 500.0
+
+# Jaccard threshold for two ref contexts to be considered "same paragraph"
+PARA_CONTEXT_JACCARD = 0.30   # loosened from 0.45 to recover near-neighbor co-cites
+
+# F2: Jaccard threshold for *description text* (after prefix strip) in caption matching
+CAPTION_DESC_THRESHOLD = 0.40  # raised from 0.25 — harder gate prevents offset mismatches
+
+# If numeric suffix matches but caption is absent → accept at reduced confidence
+NUMERIC_ONLY_CONF = 0.70       # down from 0.95; signals we couldn't verify via text
+
+# Regex to strip "Figure 3:", "Table 3:", "Fig. 3", "Eq. (3):", etc. from captions
+# F2 core: must strip before Jaccard to avoid offset matching
+_PREFIX_RE = re.compile(
+    r"""^
+    \s*
+    (?:fig(?:ure)?|table|tab|eq(?:uation)?|alg(?:orithm)?)   # type word
+    [\s.]*                                                      # optional punct
+    [\(\[]?                                                     # optional open bracket
+    \d+                                                         # number
+    [\)\]]?                                                     # optional close bracket
+    \s*[:\-–]?\s*                                               # optional colon/dash
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +144,11 @@ def _clean_latex(text: str) -> str:
     text = re.sub(r'\\[a-zA-Z]+\*?',          ' ',   text)   # \cmd → space
     text = re.sub(r'[${}\\~]',                ' ',   text)
     return re.sub(r'\s+', ' ', text).strip()
+
+
+def _strip_prefix(caption: str) -> str:
+    """F2: Remove leading 'Figure N:' / 'Table N:' / 'Eq. (N):' prefix."""
+    return _PREFIX_RE.sub('', _clean_latex(caption)).strip()
 
 
 def _tokenize(text: str) -> Set[str]:
@@ -120,7 +169,25 @@ def _normalize_pair_type(ta: str, tb: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Label → MinerU element matching
+# F3: Quality score with exponential distance decay
+# ---------------------------------------------------------------------------
+
+def _quality_score(conf_a: float, conf_b: float, char_dist: int) -> float:
+    """
+    F3: Continuous quality score combining match confidence and spatial proximity.
+
+    score = min(conf_a, conf_b) × exp(-char_dist / DECAY_CONST)
+
+    char_dist=0   (direct edge, no gap)  → no penalty
+    char_dist=500 → ×0.37
+    char_dist=1000→ ×0.14  (proximity boundary)
+    """
+    decay = math.exp(-char_dist / DECAY_CONST)
+    return min(conf_a, conf_b) * decay
+
+
+# ---------------------------------------------------------------------------
+# Label → MinerU element matching  (F2 applied here)
 # ---------------------------------------------------------------------------
 
 def _parse_number(text: str) -> Optional[int]:
@@ -130,20 +197,22 @@ def _parse_number(text: str) -> Optional[int]:
 
 
 def _match_label_to_element(
-    label_key:    str,
-    label_type:   str,        # LabelType.value string from LaTeX graph
+    label_key:     str,
+    label_type:    str,        # LabelType.value string from LaTeX graph
     label_caption: str,
-    elements:     dict,       # element_id → element dict (MinerU)
-    threshold:    float = DEFAULT_CAPTION_THRESHOLD,
+    elements:      dict,       # element_id → element dict (MinerU)
+    threshold:     float = CAPTION_DESC_THRESHOLD,
 ) -> Optional[Tuple[str, float]]:
     """
     Return (element_id, confidence) or None.
 
-    Strategy 1 — number extraction from label key:
-        fig3 / fig:3 / fig_3 → figure/formula with matching number  (conf 0.95)
-        Also checks MinerU `label` field ("Equation 1" → 1)
-    Strategy 2 — caption Jaccard:
-        clean LaTeX from both captions, compute token Jaccard  (conf = score)
+    F2 changes:
+    - Strip "Figure N:" / "Table N:" / "Eq. (N):" prefixes from BOTH sides
+      before computing Jaccard, so index-offset mismatches don't inflate scores.
+    - Numeric-suffix match now REQUIRES caption Jaccard ≥ 0.35 as second gate
+      (unless the LaTeX caption is completely absent, where it falls back to
+      NUMERIC_ONLY_CONF = 0.70 — lower confidence, no text verification).
+    - Caption Jaccard threshold raised from 0.25 → CAPTION_DESC_THRESHOLD (0.40).
     """
     target_type = LABEL_TO_ELEMENT.get(label_type)
     if target_type is None:
@@ -156,30 +225,44 @@ def _match_label_to_element(
     if not candidates:
         return None
 
+    # F2: strip prefixes from LaTeX caption once
+    label_desc_tokens = _tokenize(_strip_prefix(label_caption or ""))
+
     # Strategy 1: numeric suffix in label key → match element number
     label_num = _parse_number(label_key)
     if label_num is not None:
         for eid, el in candidates.items():
-            # Check explicit `number` field first
             el_num = el.get("number")
-            if el_num is not None and int(el_num) == label_num:
-                return (eid, 0.95)
-            # Fallback: parse number from MinerU `label` field
-            # e.g. "Equation 1", "Table 3", "Figure 5"
             if el_num is None:
                 el_num = _parse_number(el.get("label", ""))
-                if el_num is not None and el_num == label_num:
-                    return (eid, 0.90)
 
-    # Strategy 2: caption text Jaccard (works for figures/tables with captions)
-    label_tokens = _tokenize(_clean_latex(label_caption or ""))
-    if not label_tokens:
+            if el_num is not None and int(el_num) == label_num:
+                # F2: double-gate — verify with caption text if available
+                if not label_desc_tokens:
+                    # No caption to verify → accept but at reduced confidence
+                    return (eid, NUMERIC_ONLY_CONF)
+
+                # F2: strip prefix from MinerU caption too, then compare
+                el_desc_tokens = _tokenize(_strip_prefix(el.get("caption", "") or ""))
+                if not el_desc_tokens:
+                    return (eid, NUMERIC_ONLY_CONF)
+
+                cap_jaccard = _jaccard(label_desc_tokens, el_desc_tokens)
+                if cap_jaccard >= 0.35:
+                    # Both number and description agree → high confidence
+                    conf = min(0.95, 0.70 + cap_jaccard * 0.25)
+                    return (eid, conf)
+                # Number matches but description does NOT agree → likely offset error; skip
+                # (do NOT return here — fall through to caption-only strategy)
+
+    # Strategy 2: caption description Jaccard only (works for renamed labels)
+    if not label_desc_tokens:
         return None
 
     best_eid, best_score = None, 0.0
     for eid, el in candidates.items():
-        el_tokens = _tokenize(_clean_latex(el.get("caption", "") or ""))
-        score = _jaccard(label_tokens, el_tokens)
+        el_desc_tokens = _tokenize(_strip_prefix(el.get("caption", "") or ""))
+        score = _jaccard(label_desc_tokens, el_desc_tokens)
         if score > best_score:
             best_score, best_eid = score, eid
 
@@ -218,8 +301,7 @@ def _ordered_position_match(
     ))
 
     # Confidence scales with how close the counts are
-    # Perfect count match → 0.60, 2× ratio → 0.40
-    base_conf = max(0.35, 0.65 - 0.1 * (ratio - 1))
+    base_conf = max(0.35, 0.60 - 0.10 * (ratio - 1))
 
     results = []
     for i in range(min(n_labels, n_elems)):
@@ -248,6 +330,7 @@ def _make_pair(
     conf_b:     float,
     strategy:   str,
     quality_score: float,
+    char_dist:  int = 0,
 ) -> dict:
     """Build a pair dict in the multihop_l1_candidates.json schema."""
     type_a = elem_a["element_type"]
@@ -296,9 +379,97 @@ def _make_pair(
             "label_b":        label_b,
             "match_conf_a":   round(conf_a, 3),
             "match_conf_b":   round(conf_b, 3),
-            "strategy":       strategy,   # "direct" | "section" | "paragraph"
+            "strategy":       strategy,   # "direct" | "proximity" | "paragraph"
+            "char_dist":      char_dist,  # F3: stored for audit / curriculum learning
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# F1: Char-distance proximity discovery from LaTeX ref instances
+# ---------------------------------------------------------------------------
+
+def _find_proximity_pairs(
+    latex_refs:   List[dict],           # raw RefInstance list from latex graph
+    label_to_elem: Dict[str, Tuple[str, float]],  # label_key → (elem_id, conf)
+    elements:     dict,                 # element_id → element dict
+    latex_labels: dict,                 # label_key → LabelInfo dict (for char_pos)
+) -> List[Tuple[str, str, float, float, float, str]]:
+    """
+    F1: Discover cross-modal pairs by char-distance proximity between \\ref{} calls.
+
+    For each pair of ref instances that:
+      (a) both resolve to known MinerU elements
+      (b) target different element types forming a valid cross-modal pair
+      (c) their char positions in the merged LaTeX content are ≤ CHAR_PROXIMITY_LIMIT apart
+
+    Returns list of (elem_a_id, elem_b_id, conf_a, conf_b, char_dist, bridge_text).
+
+    Uses `char_pos` field from RefInstance if present; falls back to line_no×80
+    as a rough estimate (80 chars/line average).
+    """
+    # Build list of resolvable refs with position info
+    resolved: List[Tuple[int, str, str, float, str]] = []
+    # (char_pos, target_key, elem_id, conf, context)
+    for ref in latex_refs:
+        tkey  = ref.get("target_key", "")
+        rtype = ref.get("ref_type", "")
+        if rtype == "cite":
+            continue
+        match = label_to_elem.get(tkey)
+        if not match:
+            continue
+        eid, conf = match
+        etype = elements[eid]["element_type"]
+        if etype not in {"figure", "table", "formula"}:
+            continue
+
+        # Estimate char position: prefer explicit char_pos, else line_no × 80
+        char_pos = ref.get("char_pos")
+        if char_pos is None:
+            char_pos = ref.get("line_no", 0) * 80
+
+        context = ref.get("context", "")
+        resolved.append((int(char_pos), tkey, eid, conf, context))
+
+    # Sort by char position
+    resolved.sort(key=lambda x: x[0])
+
+    results: List[Tuple[str, str, float, float, float, str]] = []
+    seen_pairs: Set[Tuple[str, str]] = set()
+
+    n = len(resolved)
+    for i in range(n):
+        pos_i, tkey_i, eid_i, conf_i, ctx_i = resolved[i]
+        etype_i = elements[eid_i]["element_type"]
+
+        for j in range(i + 1, n):
+            pos_j, tkey_j, eid_j, conf_j, ctx_j = resolved[j]
+
+            char_dist = pos_j - pos_i
+            if char_dist > CHAR_PROXIMITY_LIMIT:
+                break   # list is sorted; no point looking further
+
+            etype_j = elements[eid_j]["element_type"]
+
+            # Must be cross-modal
+            if frozenset([etype_i, etype_j]) not in CROSS_MODAL_SETS:
+                continue
+            # Must be different elements
+            if eid_i == eid_j:
+                continue
+
+            pair_key = tuple(sorted([eid_i, eid_j]))
+            if pair_key in seen_pairs:
+                continue
+            seen_pairs.add(pair_key)
+
+            # Bridge text: use the longer of the two contexts
+            bridge = ctx_i if len(ctx_i) >= len(ctx_j) else ctx_j
+
+            results.append((eid_i, eid_j, conf_i, conf_j, float(char_dist), bridge))
+
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -320,7 +491,7 @@ def build(args) -> None:
         "docs_with_latex": 0,
         "label_match_attempts": 0,
         "label_match_success": 0,
-        "ordered_match_rescued": 0,    # equations matched by position fallback
+        "ordered_match_rescued": 0,
         "by_strategy": defaultdict(int),
         "by_pair_type": defaultdict(int),
         "by_conf_bucket": defaultdict(int),  # low/med/high
@@ -344,6 +515,7 @@ def build(args) -> None:
 
         # ------------------------------------------------------------------
         # Step A: build label → MinerU element mapping for this document
+        # F2: prefix-stripped Jaccard + numeric double-gate applied inside
         # ------------------------------------------------------------------
         label_to_elem: Dict[str, Tuple[str, float]] = {}  # label_key → (element_id, conf)
         for lkey, linfo in latex_labels.items():
@@ -359,9 +531,6 @@ def build(args) -> None:
 
         # ------------------------------------------------------------------
         # Step A.2: Ordered position fallback for unmatched equation labels
-        # Equations have no caption → Strategy 1+2 often fail.
-        # Match remaining equation labels to remaining formula elements
-        # by document order (line_no vs page_idx+position_idx).
         # ------------------------------------------------------------------
         matched_eids = {eid for eid, _ in label_to_elem.values()}
         eq_types_in_latex = {"equation", "algorithm"}
@@ -411,10 +580,11 @@ def build(args) -> None:
             return f"{doc_id}_xl_{pair_counter[0]:04d}"
 
         # ------------------------------------------------------------------
-        # Strategy 1: Direct cross-modal edges
+        # Strategy 1: Direct cross-modal edges  [highest precision]
         #   source_type ∈ {figure,table,equation,...}
         #   target_type ∈ {figure,table,equation,...}
         #   source_type ≠ target_type (cross-modal)
+        #   char_dist = 0 (explicit ref in text), F3 decay = 1.0
         # ------------------------------------------------------------------
         for edge in latex_edges:
             src_ltype = edge.get("source_type", "")
@@ -439,6 +609,7 @@ def build(args) -> None:
             src_eid, src_conf = src_match
             tgt_eid, tgt_conf = tgt_match
 
+            # F3: direct edge → char_dist=0, no decay penalty
             _register_pair(_make_pair(
                 _next_id(), doc_id,
                 src_eid, tgt_eid,
@@ -446,70 +617,53 @@ def build(args) -> None:
                 bridge, src_label, tgt_label,
                 src_conf, tgt_conf,
                 strategy="direct",
-                quality_score=min(src_conf, tgt_conf),
+                quality_score=_quality_score(src_conf, tgt_conf, 0),
+                char_dist=0,
             ))
 
         # ------------------------------------------------------------------
-        # Strategy 2: Section-mediated co-citation
-        #   A section node has edges to fig:X AND tab:Y (or eq:Z etc.)
-        #   → the two element targets are implicitly co-cited
+        # Strategy 2 (F1): Proximity co-citation
+        #   Replaces section-mediated strategy.
+        #   Two \ref{} within CHAR_PROXIMITY_LIMIT chars of each other
+        #   targeting different element modalities → cross-modal pair.
+        #   F3 decay applied: score decays with char distance.
         # ------------------------------------------------------------------
-        # Collect: section_label → {etype: [(elem_id, conf, bridge_text)]}
-        sec_targets: Dict[str, Dict[str, List[Tuple[str, float, str]]]] = defaultdict(
-            lambda: defaultdict(list)
-        )
-        for edge in latex_edges:
-            src_ltype = edge.get("source_type", "")
-            tgt_ltype = edge.get("target_type", "")
-            if src_ltype not in SECTION_TYPES:
-                continue
-            tgt_etype = LABEL_TO_ELEMENT.get(tgt_ltype)
-            if not tgt_etype:
-                continue
-            tgt_label = edge.get("target_label", "")
-            tgt_match = label_to_elem.get(tgt_label)
-            if not tgt_match:
-                continue
-            tgt_eid, tgt_conf = tgt_match
-            bridge = edge.get("context", "")
-            sec_targets[edge["source_label"]][tgt_etype].append(
-                (tgt_eid, tgt_conf, bridge)
-            )
+        for eid_a, eid_b, conf_a, conf_b, char_dist, bridge in _find_proximity_pairs(
+            latex_refs, label_to_elem, elements, latex_labels
+        ):
+            # Determine labels from label_to_elem reverse map (best effort)
+            def _eid_to_label(eid: str) -> str:
+                for lk, (le, _) in label_to_elem.items():
+                    if le == eid:
+                        return lk
+                return eid  # fallback: use element id
 
-        for sec_label, by_type in sec_targets.items():
-            etypes = list(by_type.keys())
-            for ta, tb in combinations(etypes, 2):
-                if frozenset([ta, tb]) not in CROSS_MODAL_SETS:
-                    continue
-                for (eid_a, conf_a, bridge_a) in by_type[ta]:
-                    for (eid_b, conf_b, bridge_b) in by_type[tb]:
-                        # Merge the two context snippets as bridge evidence
-                        bridge = " … ".join(
-                            filter(None, [bridge_a, bridge_b])
-                        )
-                        _register_pair(_make_pair(
-                            _next_id(), doc_id,
-                            eid_a, eid_b,
-                            elements[eid_a], elements[eid_b],
-                            bridge, f"(via {sec_label})", f"(via {sec_label})",
-                            conf_a, conf_b,
-                            strategy="section",
-                            quality_score=min(conf_a, conf_b) * 0.8,  # slight penalty
-                        ))
+            la = _eid_to_label(eid_a)
+            lb = _eid_to_label(eid_b)
+
+            _register_pair(_make_pair(
+                _next_id(), doc_id,
+                eid_a, eid_b,
+                elements[eid_a], elements[eid_b],
+                bridge, la, lb,
+                conf_a, conf_b,
+                strategy="proximity",
+                quality_score=_quality_score(conf_a, conf_b, int(char_dist)),
+                char_dist=int(char_dist),
+            ))
 
         # ------------------------------------------------------------------
-        # Strategy 3: Paragraph-level co-citation
-        #   Two RefInstance objects whose context strings share high token
-        #   overlap are in the same paragraph.  If they target different
-        #   element types → cross-modal pair.
+        # Strategy 3: Paragraph-level co-citation (from raw RefInstance list)
+        #   Refs whose context strings share high token overlap are in the same
+        #   paragraph.  Jaccard threshold loosened to 0.30 to recover more
+        #   near-neighbor co-citations that proximity strategy might miss.
         # ------------------------------------------------------------------
-        # Group refs by context fingerprint
-        resolvable_refs: List[Tuple[str, str, str, float]] = []  # (target_key, etype, context, conf)
+        resolvable_refs: List[Tuple[str, str, str, float, str]] = []
         for ref in latex_refs:
             tkey  = ref.get("target_key", "")
             rtype = ref.get("ref_type", "")
             if rtype == "cite":
-                continue   # skip bibliography citations
+                continue
             match = label_to_elem.get(tkey)
             if not match:
                 continue
@@ -518,8 +672,8 @@ def build(args) -> None:
             context = ref.get("context", "")
             resolvable_refs.append((tkey, etype, context, conf, eid))
 
-        # Cluster by context Jaccard
-        clustered: List[List[int]] = []   # list of groups (indices into resolvable_refs)
+        # Cluster by context Jaccard (≥ PARA_CONTEXT_JACCARD = 0.30)
+        clustered: List[List[int]] = []
         assigned  = [False] * len(resolvable_refs)
 
         for i, (_, _, ctx_i, _, _) in enumerate(resolvable_refs):
@@ -540,7 +694,6 @@ def build(args) -> None:
         for group in clustered:
             if len(group) < 2:
                 continue
-            # Collect by element type within this paragraph cluster
             by_etype: Dict[str, List[Tuple[str, float, str]]] = defaultdict(list)
             for idx in group:
                 tkey, etype, ctx, conf, eid = resolvable_refs[idx]
@@ -550,15 +703,15 @@ def build(args) -> None:
             for ta, tb in combinations(etypes, 2):
                 if frozenset([ta, tb]) not in CROSS_MODAL_SETS:
                     continue
-                # Take the highest-confidence match from each type
                 best_a = max(by_etype[ta], key=lambda x: x[1])
                 best_b = max(by_etype[tb], key=lambda x: x[1])
                 eid_a, conf_a, ctx_a = best_a
                 eid_b, conf_b, ctx_b = best_b
 
-                # Bridge text = the shared context (use longer one)
                 bridge = ctx_a if len(ctx_a) >= len(ctx_b) else ctx_b
 
+                # F3: paragraph = context overlap, treat as very short distance (≈100)
+                # to reflect "same sentence / adjacent sentence" proximity
                 _register_pair(_make_pair(
                     _next_id(), doc_id,
                     eid_a, eid_b,
@@ -566,7 +719,8 @@ def build(args) -> None:
                     bridge, f"(para-ref:{ta})", f"(para-ref:{tb})",
                     conf_a, conf_b,
                     strategy="paragraph",
-                    quality_score=min(conf_a, conf_b) * 0.65,  # lower precision
+                    quality_score=_quality_score(conf_a, conf_b, 100),
+                    char_dist=100,
                 ))
 
     # -----------------------------------------------------------------------
@@ -582,26 +736,32 @@ def build(args) -> None:
 
     output = {
         "metadata": {
-            "source_elements":  str(args.elements),
-            "source_latex":     str(args.latex_graph),
-            "min_match_conf":   args.min_match_conf,
-            "para_jaccard":     PARA_CONTEXT_JACCARD,
+            "source_elements":       str(args.elements),
+            "source_latex":          str(args.latex_graph),
+            "min_match_conf":        args.min_match_conf,
+            "para_jaccard":          PARA_CONTEXT_JACCARD,
+            "char_proximity_limit":  CHAR_PROXIMITY_LIMIT,
+            "decay_const":           DECAY_CONST,
+            "caption_desc_threshold": CAPTION_DESC_THRESHOLD,
+            "version":               "v2-precision",
             "description": (
                 "Cross-modal pairs discovered via LaTeX \\ref{} co-citation. "
-                "Primary element data is from MinerU (multimodal_elements.json). "
-                "latex_bridge provides author-written evidence text."
+                "v2 changes: (F1) section-level replaced by char-distance proximity "
+                f"(≤{CHAR_PROXIMITY_LIMIT} chars); "
+                "(F2) caption prefix-stripped before Jaccard + numeric double-gate; "
+                "(F3) quality_score = min(conf_a,conf_b) × exp(-dist/500)."
             ),
         },
         "summary": {
-            "total_pairs":          len(output_pairs),
-            "docs_with_latex":      stats["docs_with_latex"],
-            "label_match_rate":     round(label_rate, 3),
-            "label_match_success":  stats["label_match_success"],
-            "label_match_attempts": stats["label_match_attempts"],
-            "ordered_match_rescued": stats["ordered_match_rescued"],
-            "by_strategy":          by_strategy,
-            "by_pair_type":         by_pair_type,
-            "by_conf_bucket":       by_conf,
+            "total_pairs":            len(output_pairs),
+            "docs_with_latex":        stats["docs_with_latex"],
+            "label_match_rate":       round(label_rate, 3),
+            "label_match_success":    stats["label_match_success"],
+            "label_match_attempts":   stats["label_match_attempts"],
+            "ordered_match_rescued":  stats["ordered_match_rescued"],
+            "by_strategy":            by_strategy,
+            "by_pair_type":           by_pair_type,
+            "by_conf_bucket":         by_conf,
         },
         "pairs": output_pairs,
     }
@@ -615,18 +775,18 @@ def build(args) -> None:
         json.dump(output["summary"] | {"metadata": output["metadata"]}, f, indent=2)
 
     # Pretty summary
-    print(f"\n{'='*55}")
-    print(f"  Total pairs        : {len(output_pairs)}")
-    print(f"  Docs with LaTeX    : {stats['docs_with_latex']}")
-    print(f"  Label match rate   : {label_rate:.1%}  "
+    print(f"\n{'='*60}")
+    print(f"  Total pairs         : {len(output_pairs)}")
+    print(f"  Docs with LaTeX     : {stats['docs_with_latex']}")
+    print(f"  Label match rate    : {label_rate:.1%}  "
           f"({stats['label_match_success']}/{stats['label_match_attempts']})")
-    print(f"  Eq ordered rescue  : {stats['ordered_match_rescued']}")
-    print(f"  By strategy        : {by_strategy}")
-    print(f"  By pair type       : {by_pair_type}")
-    print(f"  By conf bucket     : {by_conf}")
+    print(f"  Eq ordered rescue   : {stats['ordered_match_rescued']}")
+    print(f"  By strategy         : {by_strategy}")
+    print(f"  By pair type        : {by_pair_type}")
+    print(f"  By conf bucket      : {by_conf}")
     print(f"  Output → {args.output}")
     print(f"  Report → {report_path}")
-    print(f"{'='*55}")
+    print(f"{'='*60}")
 
 
 # ---------------------------------------------------------------------------
@@ -635,7 +795,10 @@ def build(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Enrich cross-modal element pairs with LaTeX \ref{} co-citation evidence."
+        description=(
+            "Enrich cross-modal element pairs with LaTeX \\ref{} co-citation evidence. "
+            "v2: precision-first (F1 proximity, F2 caption double-gate, F3 exp decay)."
+        )
     )
     parser.add_argument(
         "--elements", default="data/multimodal_elements.json",
@@ -650,8 +813,8 @@ def main() -> None:
         help="Output path for enriched cross-modal pairs"
     )
     parser.add_argument(
-        "--min-match-conf", type=float, default=DEFAULT_CAPTION_THRESHOLD,
-        help=f"Min caption Jaccard to accept a label→element match (default {DEFAULT_CAPTION_THRESHOLD})"
+        "--min-match-conf", type=float, default=CAPTION_DESC_THRESHOLD,
+        help=f"Min caption Jaccard for label→element match (default {CAPTION_DESC_THRESHOLD})"
     )
     args = parser.parse_args()
     build(args)
