@@ -1227,12 +1227,13 @@ In-degree 高度偏斜：大多数论文 cited_by=0，少数核心论文被大�
 
 ### 六、下一步 TODO
 
-1. **P0: Citation fuzzy match 质量验证**
-   - 人工抽查 10 条 title_fuzzy 匹配
-   - 若误匹配率 > 20%，提高 Jaccard 阈值到 0.65
-   - 若误匹配率 < 10%，当前阈值可用
+1. **~~P0: Citation fuzzy match 质量验证~~** ✅ **已完成**
+   - ~~人工抽查 10 条 title_fuzzy 匹配~~
+   - **结果：抽查样本误匹配率 0%（100% 准确）**
+   - **结论：Jaccard ≥ 0.55 阈值在 fairness 领域有效，无需收紧**
+   - 100 条引用边可直接用作 L2 候选
 
-2. **P0.1: Citation-based L2 候选对构建**
+2. **P0.1: Citation-based L2 候选对构建**（当前最高优先级）
    - 从 100 条引用边中选 top-50 对
    - 用 citing direction 设计 prompt："B 的理论解释 A 的实验观察"
    - 每条 edge 的 `contexts` 字段提供 \cite{} 周围文本
@@ -1245,6 +1246,16 @@ In-degree 高度偏斜：大多数论文 cited_by=0，少数核心论文被大�
    - merge `latex_reference_graph.json` + `citation_graph.json`
    - 跨文档引用 + 文档内 Figure/Table/Eq 引用 = 完整的多层 DAG
 
+### 七、补充：fuzzy match 质量验证结果（2026-02-20）
+
+用户人工抽查了 title_fuzzy 匹配样本，**误匹配率 0%**。
+
+**结论**：
+- Jaccard ≥ 0.55 阈值在本 fairness 语料库中足够精确
+- 虽然 fairness 领域存在大量 "Fair X via Y" 类似标题，但 Jaccard 字符级相似度仍能有效区分
+- **100 条引用边全部视为可信**，可直接用于 L2 候选构建，无需人工过滤
+
+这消除了之前最大的数据质量风险。Citation-based L2 路线正式解锁喵
 ### 七、Git 记录
 
 ```
@@ -1255,5 +1266,98 @@ feat: cross-document citation graph + multi-hop constraints + report enhancement
 - title extraction from \title{}
 - per-doc distribution + occurrence vs unique pair stats
 ```
+
+---
+
+## 日期：2026-02-20（Step 0 v3.2：LaTeX 跨模态链接 + bridge evidence）
+
+### 一、背景与动机
+
+**用户想法**：利用 LaTeX 源码强化 table/equation 等模态与其他模态的链接质量。
+
+**核心问题**：L1 cross-modal dual-evidence 中 formula+table 配对 pass rate 仅 3.3%，根因是模型不知道这两个元素为什么有关联 —— 只拿到了 LaTeX 公式文本和表格图片，没有"桥接文字"说明两者之间的语义关系。
+
+**架构原则**（达成共识）：
+- **MinerU = 主体**：element data（image_path, caption, content, context）全部来自 MinerU
+- **LaTeX = 参考/增强层**：仅提供 `latex_bridge` —— 作者亲笔写的、解释两个元素为何相关的原文句子
+
+### 二、关键洞察：LatexRefEdge.context 就是 bridge evidence
+
+LaTeX 源码里，一个段落经常同时引用多个元素：
+
+```latex
+In Figure~\ref{fig:tradeoff}, we visualize the Pareto frontier defined by
+Equation~\ref{eq:pareto}. As Table~\ref{tab:results} demonstrates...
+```
+
+`LatexRefEdge.context` 字段（±300 chars 上下文）捕获的就是这段文字。这正是回答"为什么这两个元素相关"的最优证据 —— 比 MinerU 的位置邻近法有本质提升：
+
+| 维度 | Step 0 v2 (MinerU 位置邻近) | Step 0 v3.2 (LaTeX 共引) |
+|------|---------------------------|------------------------|
+| 发现机制 | 同页/相邻段落 | 显式 `\ref{}` 共引用 |
+| 跨页链接 | ❌ | ✅ 任意距离 |
+| Bridge evidence | ❌ 无（纯位置关系） | ✅ 作者原文 |
+| 方向性 | ❌ | ✅ 谁解释谁 |
+| formula+table 预期 | 3.3% pass | 有语义解释 → 显著提升 |
+
+### 三、三种发现策略
+
+| 策略 | 场景 | 置信度 |
+|------|------|--------|
+| **direct** | `fig:roc → eq:fairness` 直接跨模态边 | 高 (0.95×match_conf) |
+| **section** | 同一节引用 fig:X 和 tab:Y | 中 (0.8×match_conf) |
+| **paragraph** | 两个 ref 共享高 Jaccard 的上下文文本 | 低 (0.65×match_conf) |
+
+### 四、标签 → MinerU 元素的桥接方案
+
+**两步匹配**（顺序尝试）：
+1. **数字提取**：`fig:3` / `fig_3` / `fig3` → 找 MinerU 中 `number == 3` 的 figure（conf=0.95）
+2. **Caption Jaccard**：清洗 LaTeX 命令后，计算 token overlap（阈值 0.25）
+
+**两者都来自同一个 `\caption{}` 命令**，文本应高度重叠，所以 0.25 的阈值足够。
+
+### 五、输出格式
+
+输出 `data/latex_cross_modal_pairs.json`，格式与 `multihop_l1_candidates.json` 完全兼容，额外增加 `latex_bridge` 字段：
+
+```json
+{
+  "pair_id": "1906.12345_xl_0001",
+  "element_a": { "element_id": "...", "image_path": "...", ... },
+  "element_b": { "element_id": "...", "content": "...", ... },
+  "edge_contexts": [{ "context_snippet": "..." }],
+  "latex_bridge": {
+    "bridge_text":  "In Figure 3, we visualize Equation (1)...",
+    "label_a":      "fig:tradeoff",
+    "label_b":      "eq:pareto",
+    "match_conf_a": 0.87,
+    "match_conf_b": 0.72,
+    "strategy":     "direct"
+  }
+}
+```
+
+`generate_multihop_l1_queries.py` 可在 prompt 中优先使用 `latex_bridge.bridge_text` 作为"为什么这两个元素相关"的说明，大幅减少模型猜测。
+
+### 六、新增文件
+
+| 文件 | 说明 |
+|------|------|
+| `scripts/build_latex_cross_modal_links.py` | **Step 0 v3.2 主脚本** |
+| `data/latex_cross_modal_pairs.json` | 输出（待运行） |
+| `data/latex_cross_modal_pairs_report.json` | 统计报告（待运行） |
+
+### 七、下一步
+
+1. 在集群上运行：
+   ```bash
+   python scripts/build_latex_cross_modal_links.py \
+       --elements data/multimodal_elements.json \
+       --latex-graph data/latex_reference_graph.json \
+       --output data/latex_cross_modal_pairs.json
+   ```
+2. 根据输出统计调整 `--min-match-conf` 阈值
+3. 更新 `generate_multihop_l1_queries.py`：在 prompt 中加入 `latex_bridge.bridge_text`（如果存在）
+4. 重跑 formula+table 配对，验证 pass rate 是否从 3.3% 上升
 
 ---
