@@ -40,6 +40,7 @@
 
 ### 进行中
 
+- **Step 0 v3.2: LaTeX cross-modal links** — 从 LaTeX \ref{} 共引用为 MinerU 跨模态对加 bridge evidence（`scripts/build_latex_cross_modal_links.py`）
 - **Citation-based L2 候选对** — 用 100 条引用边替代实体倒排索引做 L2 候选（fuzzy match 质量已验证）
 - **L1 深耕（Mentor 建议）** — 丰富模态 + 文档内引用图构建（详见下方）
 
@@ -91,9 +92,11 @@
 | `src/parsers/latex_reference_extractor.py` | **Step 0 v3: LaTeX 引用解析（label/ref/cite/bbl + title 提取）** |
 | `scripts/build_latex_reference_graph.py` | **Step 0 v3: 文档内引用 DAG 构建** |
 | `scripts/build_citation_graph.py` | **Step 0 v3.1: 跨文档引用图（.bbl → corpus 匹配）** |
+| `scripts/build_latex_cross_modal_links.py` | **Step 0 v3.2: LaTeX \ref{} 共引 → MinerU 跨模态对 + bridge evidence** |
 | `scripts/download_latex_sources.py` | LaTeX 源码下载脚本（arXiv API） |
 | `data/latex_reference_graph.json` | 73 篇文档内引用 DAG（labels + refs + edges + bib） |
 | `data/citation_graph.json` | **跨文档引用图：100 条引用边, 49 篇最大连通分量** |
+| `data/latex_cross_modal_pairs.json` | **LaTeX 增强跨模态对（待生成）** |
 | `data/latex_reference_report.json` | 引用图统计报告 |
 | `src/linkers/figure_text_associator.py` | Step 0: 图文关联模块 |
 
@@ -238,6 +241,13 @@ python scripts/build_citation_graph.py \
 # 也可直接从 LaTeX 源码构建引用图
 python scripts/build_citation_graph.py \
     --from-sources data/latex_sources/extracted
+
+# === Step 0 v3.2: LaTeX cross-modal links ===
+# MinerU 为主，LaTeX \ref{} 为 bridge evidence 增强层
+python scripts/build_latex_cross_modal_links.py \
+    --elements data/multimodal_elements.json \
+    --latex-graph data/latex_reference_graph.json \
+    --output data/latex_cross_modal_pairs.json
 ```
 
 ## 日期：2026-02-10（L2 v3 三方毒舌评审共识总结）
