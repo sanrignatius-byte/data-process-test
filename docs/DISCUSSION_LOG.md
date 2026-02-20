@@ -1227,12 +1227,13 @@ In-degree 高度偏斜：大多数论文 cited_by=0，少数核心论文被大�
 
 ### 六、下一步 TODO
 
-1. **P0: Citation fuzzy match 质量验证**
-   - 人工抽查 10 条 title_fuzzy 匹配
-   - 若误匹配率 > 20%，提高 Jaccard 阈值到 0.65
-   - 若误匹配率 < 10%，当前阈值可用
+1. **~~P0: Citation fuzzy match 质量验证~~** ✅ **已完成**
+   - ~~人工抽查 10 条 title_fuzzy 匹配~~
+   - **结果：抽查样本误匹配率 0%（100% 准确）**
+   - **结论：Jaccard ≥ 0.55 阈值在 fairness 领域有效，无需收紧**
+   - 100 条引用边可直接用作 L2 候选
 
-2. **P0.1: Citation-based L2 候选对构建**
+2. **P0.1: Citation-based L2 候选对构建**（当前最高优先级）
    - 从 100 条引用边中选 top-50 对
    - 用 citing direction 设计 prompt："B 的理论解释 A 的实验观察"
    - 每条 edge 的 `contexts` 字段提供 \cite{} 周围文本
@@ -1245,6 +1246,16 @@ In-degree 高度偏斜：大多数论文 cited_by=0，少数核心论文被大�
    - merge `latex_reference_graph.json` + `citation_graph.json`
    - 跨文档引用 + 文档内 Figure/Table/Eq 引用 = 完整的多层 DAG
 
+### 七、补充：fuzzy match 质量验证结果（2026-02-20）
+
+用户人工抽查了 title_fuzzy 匹配样本，**误匹配率 0%**。
+
+**结论**：
+- Jaccard ≥ 0.55 阈值在本 fairness 语料库中足够精确
+- 虽然 fairness 领域存在大量 "Fair X via Y" 类似标题，但 Jaccard 字符级相似度仍能有效区分
+- **100 条引用边全部视为可信**，可直接用于 L2 候选构建，无需人工过滤
+
+这消除了之前最大的数据质量风险。Citation-based L2 路线正式解锁喵
 ### 七、Git 记录
 
 ```

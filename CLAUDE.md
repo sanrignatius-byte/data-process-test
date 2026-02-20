@@ -12,6 +12,7 @@
 - **Step 0 v2: Multimodal relationship DAG** — 1316 elements (841 fig + 334 tbl + 141 formula), 1261 edges, 1135 cross-modal pairs, 76 docs（`src/linkers/multimodal_relationship_builder.py`）
 - **Step 0 v3: LaTeX reference graph** — 73 篇 .tex 解析，1949 labels, 5547 refs, 2847 edges, 65 篇 .bbl（`src/parsers/latex_reference_extractor.py`）
 - **Step 0 v3.1: Cross-document citation graph** — 100 条跨文档引用边, 49 篇最大连通分量, 38 篇 citing（`scripts/build_citation_graph.py`）
+- **Citation graph 质量验证** — 人工抽查 title_fuzzy 匹配，**误匹配率 0%**，Jaccard ≥ 0.55 阈值可信
 - **Step 1: L1 intra-document cross-modal queries** — 经 3 轮迭代，最终 **974 条 queries**
 - **L1 Triage** — A:727 (74.6%) / B:247 (25.4%) / C:0 (0%)  *(after visual_density gate)*
 - **L2 候选构建** — 55 个跨文档实体，711 个候选文档对，top-100 已输出
@@ -39,8 +40,7 @@
 
 ### 进行中
 
-- **Citation graph 质量验证** — 98/101 条是 title_fuzzy，需抽查误匹配率
-- **Citation-based L2 候选对** — 用 100 条引用边替代实体倒排索引做 L2 候选
+- **Citation-based L2 候选对** — 用 100 条引用边替代实体倒排索引做 L2 候选（fuzzy match 质量已验证）
 - **L1 深耕（Mentor 建议）** — 丰富模态 + 文档内引用图构建（详见下方）
 
 
@@ -171,8 +171,8 @@
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-02-16 更新）
-- **P0: Citation graph 质量验证**：抽查 98 条 title_fuzzy 匹配中的误匹配率，Jaccard ≥ 0.55 阈值是否合理
+## 下一步 TODO（2026-02-20 更新）
+- ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
 - **P0.1: Citation-based L2 候选替换**：用 100 条引用边做 L2 候选对（替代实体倒排索引），信号更强
 - **P1: L1 v2.1 阈值调优**：在保持反捷径能力前提下，把 pass rate 从 6.42% 提升到 15%-25%
 - **P1.1: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
