@@ -3,7 +3,7 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
-## 当前状态（2026-02-11 更新）
+## 当前状态（2026-02-20 更新）
 
 ### 已完成
 - 85 篇 arXiv 论文下载（种子论文：1908.09635）
@@ -23,6 +23,8 @@
 - **L1 Cross-modal Dual-evidence v1** — 300 条, **43 QC pass (14.3%)**, 需迭代到 v2
 - **L1 Cross-modal Dual-evidence v2（hard-gate）** — 296 条, **19 QC pass (6.42%)**，已导出 pass 子集
 - **LaTeX 源码下载** — 73/76 篇成功下载 + 提取 .tex，65 篇有 .bbl，3 篇 no_source
+- **Step 0 v3.2: LaTeX cross-modal links v2（已跑）** — 175 对，label 匹配率 28.7%，high/med 各半（`data/latex_cross_modal_pairs.json`）
+- **Step 0 v3.2 v3（G1+G2 改动已 push）** — 去 hub（每 element ≤3 pairs）+ co-reference 硬门禁（bridge 必须同时含两端 \ref{}，否则 drop/halve）；预计从 175 对降到 80-100，精度大幅提升
 
 ### L2 迭代历史
 | 版本 | 结果 | 核心问题 |
@@ -40,7 +42,7 @@
 
 ### 进行中
 
-- **Step 0 v3.2: LaTeX cross-modal links** — 从 LaTeX \ref{} 共引用为 MinerU 跨模态对加 bridge evidence（`scripts/build_latex_cross_modal_links.py`）
+- **Step 0 v3.2 v3 重跑** — G1+G2 改动已 push，需在集群重跑 `build_latex_cross_modal_links.py` 获取新统计
 - **Citation-based L2 候选对** — 用 100 条引用边替代实体倒排索引做 L2 候选（fuzzy match 质量已验证）
 - **L1 深耕（Mentor 建议）** — 丰富模态 + 文档内引用图构建（详见下方）
 
@@ -96,7 +98,7 @@
 | `scripts/download_latex_sources.py` | LaTeX 源码下载脚本（arXiv API） |
 | `data/latex_reference_graph.json` | 73 篇文档内引用 DAG（labels + refs + edges + bib） |
 | `data/citation_graph.json` | **跨文档引用图：100 条引用边, 49 篇最大连通分量** |
-| `data/latex_cross_modal_pairs.json` | **LaTeX 增强跨模态对（待生成）** |
+| `data/latex_cross_modal_pairs.json` | **LaTeX 增强跨模态对（v2: 175 对；重跑 v3 后更新）** |
 | `data/latex_reference_report.json` | 引用图统计报告 |
 | `src/linkers/figure_text_associator.py` | Step 0: 图文关联模块 |
 
@@ -176,6 +178,8 @@
 
 ## 下一步 TODO（2026-02-20 更新）
 - ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
+- ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
+- **P-0.5: Step 0 v3.2 v3 重跑** — 在集群跑新脚本，获取 G1/G2 后的实际统计（预计 80-100 对）
 - **P0.1: Citation-based L2 候选替换**：用 100 条引用边做 L2 候选对（替代实体倒排索引），信号更强
 - **P1: L1 v2.1 阈值调优**：在保持反捷径能力前提下，把 pass rate 从 6.42% 提升到 15%-25%
 - **P1.1: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
@@ -184,6 +188,12 @@
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
 - **L2 暂停实体路线**：实体倒排索引的 L2 暂停，改用 citation graph 做候选
 - 详见 `docs/DISCUSSION_LOG.md` 最新讨论
+
+### Step 0 v3.2 质量问题备忘（2026-02-20 分析）
+- **Hub 问题**：单个高频被引 element（如 1409.0575 Table 9）产生 O(N) 虚假对 → G1 每 element ≤3 pairs
+- **Proximity 无语义门禁**：92% 的对靠 proximity，bridge_text 里有时只含一端的 \ref{} → G2 co-reference gate
+- **quality_score ≠ 语义相关度**：只是 label→element 匹配置信度，名字有误导性（暂不改，downstream 注意）
+- **label 匹配率 28.7%**：1371/1924 个 label 失败，主要是 MinerU 编号与 LaTeX 编号 offset 不一致
 
 
 
