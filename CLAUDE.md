@@ -3,15 +3,15 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
-## 当前状态（2026-02-20 更新）
+## 当前状态（2026-02-22 更新）
 
 ### 已完成
-- 85 篇 arXiv 论文下载（种子论文：1908.09635）
-- 80 篇 PDF 用 MinerU 解析
+- **集群**: 86 篇 arXiv 论文下载（种子论文：1908.09635），85 篇 PDF 用 MinerU 解析
+- **公司电脑**: 76 篇论文（数量差异正常，集群多跑了更多论文）
 - **Step 0 v1: Figure-text association** — 351 pairs, 73 docs（`src/linkers/figure_text_associator.py`）
 - **Step 0 v2: Multimodal relationship DAG** — 1316 elements (841 fig + 334 tbl + 141 formula), 1261 edges, 1135 cross-modal pairs, 76 docs（`src/linkers/multimodal_relationship_builder.py`）
-- **Step 0 v3: LaTeX reference graph** — 73 篇 .tex 解析，1949 labels, 5547 refs, 2847 edges, 65 篇 .bbl（`src/parsers/latex_reference_extractor.py`）
-- **Step 0 v3.1: Cross-document citation graph** — 100 条跨文档引用边, 49 篇最大连通分量, 38 篇 citing（`scripts/build_citation_graph.py`）
+- **Step 0 v3: LaTeX reference graph（集群）** — 82/86 篇源码下载，2021 labels, 7423 refs, 3019 edges, 74 篇有 .bbl（`scripts/build_latex_reference_graph.py`）
+- **Step 0 v3.1: Cross-document citation graph（集群）** — **123 条**跨文档引用边, **55 篇**最大连通分量（`scripts/build_citation_graph.py`）
 - **Citation graph 质量验证** — 人工抽查 title_fuzzy 匹配，**误匹配率 0%**，Jaccard ≥ 0.55 阈值可信
 - **Step 1: L1 intra-document cross-modal queries** — 经 3 轮迭代，最终 **974 条 queries**
 - **L1 Triage** — A:727 (74.6%) / B:247 (25.4%) / C:0 (0%)  *(after visual_density gate)*
@@ -20,11 +20,34 @@
   - v1: 50 条, 100% QC pass (QC 过松), $0.55
   - v2: 32 条, 16 QC pass (严格 QC 但有 anchor leakage), $0.48
   - v3: 42 条, **19 QC pass** (anchor_leakage 仍是主因: 21/23 fail)
-- **L1 Cross-modal Dual-evidence v1** — 300 条, **43 QC pass (14.3%)**, 需迭代到 v2
+- **L1 Cross-modal Dual-evidence v1** — 300 条, **43 QC pass (14.3%)**
 - **L1 Cross-modal Dual-evidence v2（hard-gate）** — 296 条, **19 QC pass (6.42%)**，已导出 pass 子集
-- **LaTeX 源码下载** — 73/76 篇成功下载 + 提取 .tex，65 篇有 .bbl，3 篇 no_source
-- **Step 0 v3.2: LaTeX cross-modal links v2（已跑）** — 175 对，label 匹配率 28.7%，high/med 各半（`data/latex_cross_modal_pairs.json`）
-- **Step 0 v3.2 v3（G1+G2 改动已 push）** — 去 hub（每 element ≤3 pairs）+ co-reference 硬门禁（bridge 必须同时含两端 \ref{}，否则 drop/halve）；预计从 175 对降到 80-100，精度大幅提升
+- **Step 0 v3.2 v3（G1+G2，集群已跑）** — **118 对**（proximity:105 + direct:13），gold:6 + silver:112，label 匹配率 28.8%（`data/latex_cross_modal_pairs.json`）
+  - G1: hub de-dup（每 element ≤3 pairs by quality_score）
+  - G2: cross-reference gate（ctx_a mention label_b OR ctx_b mention label_a，否则 hard drop）
+  - char_proximity_limit: 300 chars（从 1000 缩紧）
+- **L1 Cross-modal Dual-evidence v3（LaTeX bridge 注入）** — **236 条, 72 QC pass (30.5%)**, $1.66
+  - 输入: 118 对 latex_cross_modal_pairs（含 bridge_text evidence）
+  - 核心改进: `build_latex_bridge_section()` 注入 author 原句；formula 用 context_before/after 做 QC
+  - QC 主失败: bridge_entity_leakage:84, single_element_answer:63, anchor_leakage:61
+- **L1 Dual-evidence v4（Conceptual Masking + Operator 强制 + evidence_spans）** — **236 条, 139 QC pass (58.9%)**, $2.07
+  - 输入: 同 118 对 latex_cross_modal_pairs
+  - 核心改进: Rule 8 DE-NAME→Conceptual Masking；新增 cross-modal operator 约束；required_evidence_spans 字段；bridge_entity_leakage 降为软警告 (Option A)
+  - figure+table: ~69%；figure+formula: 24/74 (32.4%)；formula+table: 9/16 (56.3%)
+  - QC 主失败: single_element_answer:60, anchor_leakage:20, weak_reasoning_connector:19
+  - 输出: `data/l1_dual_evidence_queries_v1.jsonl`
+- **L1 Dual-evidence v4.1（opus figure+formula prompt + operator diversity + is_yes_no fix）** — **236 条, 138 QC pass (58.5%)**, $2.39
+  - 输入: 同 118 对 latex_cross_modal_pairs
+  - 核心改进: opus-4-6 重设计 PROMPT_FIGURE_FORMULA（Figure Type Strategy, 双 field）；禁 instantiate；is_yes_no_question WH-word 修复；--pass-only 硬门禁
+  - figure+table: 101/146 (69.2%) ↑；figure+formula: 30/74 (40.5%) ↑；formula+table: 7/16 (43.8%) ↓
+  - QC 主失败: single_element_answer:62, anchor_leakage:39 ↑（回归），weak_reasoning_connector:6 ↓
+  - 输出: `data/l1_dual_evidence_queries_v2.jsonl`（138 条纯净 pass-only）
+- **L1 Dual-evidence v4.2（PhD persona + verb diversity + natural operators）** — **236 条, 152 QC pass (64.4%)**, $2.57
+  - 输入: 同 118 对 latex_cross_modal_pairs
+  - 核心改进: persona "PhD student at lab meeting"（消除学术腔）；verb 黑名单（validate/quantify/justify/demonstrate 等）；SENTENCE STRUCTURE 多样性约束（GIVEN-WHY/WHAT-IF/WHY-INCONSISTENT/WHEN-CONDITION/WHAT-CAUSES）；CROSS_MODAL_OPERATORS 扩展自然英文动词（affect/differ/produce/achieve 等）；双文件输出（full + _pass）；is_yes_no WH-word 修复完善
+  - figure+table: 111/146 (**76.0%**) ↑↑；figure+formula: 34/74 (**45.9%**) ↑；formula+table: 7/16 (43.8%)
+  - QC 主失败: single_element_answer:57 ↓, anchor_leakage:29 ↓↓, weak_reasoning_connector:4 ↓
+  - 输出: `data/l1_dual_evidence_queries_v3.jsonl`（全量 236 条）+ `data/l1_dual_evidence_queries_v3_pass.jsonl`（152 条）
 
 ### L2 迭代历史
 | 版本 | 结果 | 核心问题 |
@@ -42,8 +65,8 @@
 
 ### 进行中
 
-- **Step 0 v3.2 v3 重跑** — G1+G2 改动已 push，需在集群重跑 `build_latex_cross_modal_links.py` 获取新统计
-- **Citation-based L2 候选对** — 用 100 条引用边替代实体倒排索引做 L2 候选（fuzzy match 质量已验证）
+- **Citation-based L2 候选对** — 用 123 条引用边（集群）替代实体倒排索引做 L2 候选（fuzzy match 质量已验证）
+- **L1 v3 QC 分析与迭代** — bridge_entity_leakage(84) + single_element_answer(63) 仍是瓶颈，待分析 root cause
 - **L1 深耕（Mentor 建议）** — 丰富模态 + 文档内引用图构建（详见下方）
 
 
@@ -86,8 +109,13 @@
 | `data/l2_queries_v2_tagged.jsonl` | L2 v2 reviewer-tagged (keep/fix/drop) |
 | `data/l2_queries_v3.jsonl` | **L2 v3 输出 (待生成)** |
 | `data/l1_multihop_queries_v1.jsonl` | L1 multihop v1（300 条，43 pass） |
-| `data/l1_multihop_queries_v2.jsonl` | **L1 multihop v2 hard-gate（296 条，19 pass）** |
-| `data/l1_multihop_queries_v2_pass.jsonl` | **v2 通过集（19 条）** |
+| `data/l1_multihop_queries_v2.jsonl` | L1 multihop v2 hard-gate（296 条，19 pass） |
+| `data/l1_multihop_queries_v2_pass.jsonl` | v2 通过集（19 条） |
+| `data/l1_multihop_queries_v3.jsonl` | L1 multihop v3 LaTeX-bridge（236 条，72 pass，30.5%） |
+| `data/l1_dual_evidence_queries_v1.jsonl` | **L1 dual-evidence v4（236 条，139 pass，58.9%）** |
+| `data/l1_dual_evidence_queries_v2.jsonl` | L1 dual-evidence v4.1（138 条，pass-only） |
+| `data/l1_dual_evidence_queries_v3.jsonl` | **L1 dual-evidence v4.2 全量（236 条，含 fail）** |
+| `data/l1_dual_evidence_queries_v3_pass.jsonl` | **L1 dual-evidence v4.2 通过集（152 条，64.4%）** |
 | `data/figure_descriptions_v3_api.json` | 完整 API 返回（含 raw response） |
 | `data/validation_report_v3.json` | Validation 报告 |
 | `docs/L1_query_iteration_report.md` | 迭代改进报告（含 L1 triage + L2 候选） |
@@ -176,13 +204,17 @@
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-02-20 更新）
+## 下一步 TODO（2026-02-22 更新）
 - ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
 - ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
-- **P-0.5: Step 0 v3.2 v3 重跑** — 在集群跑新脚本，获取 G1/G2 后的实际统计（预计 80-100 对）
-- **P0.1: Citation-based L2 候选替换**：用 100 条引用边做 L2 候选对（替代实体倒排索引），信号更强
-- **P1: L1 v2.1 阈值调优**：在保持反捷径能力前提下，把 pass rate 从 6.42% 提升到 15%-25%
-- **P1.1: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
+- ~~**P-0.5: Step 0 v3.2 v3 重跑**~~ ✅ **完成** — 集群跑出 118 对（G1+G2），stats 一致，cross-ref gate 正确
+- ~~**P1: L1 cross-modal v3（LaTeX bridge 注入）**~~ ✅ **完成** — 236 条，72 pass (30.5%)，$1.66
+- ~~**P1.1: L1 dual-evidence v4（Conceptual Masking + Operator）**~~ ✅ **完成** — 236 条，139 pass (58.9%)，$2.07
+- ~~**P1.1.1: L1 dual-evidence v4.1（opus figure+formula prompt + operator diversity）**~~ ✅ **完成** — 236 条，138 pass (58.5%)，$2.39
+- ~~**P1.1.2: L1 dual-evidence v4.2（PhD persona + verb diversity + natural operators）**~~ ✅ **完成** — 236 条，152 pass (64.4%)，$2.57
+- **P0.1: Citation-based L2 候选替换**：用 123 条引用边（集群）做 L2 候选对（替代实体倒排索引），信号更强
+- **P1.2: figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 这几篇论文 0 pass 全失败，分析 root cause
+- **P1.3: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
 - **P2: L1 引用图 + 多跳路径**：constrained paths（≥1 ref edge）已实现，待结合 L1 query 生成
 - **P3: L1 模态补全**：table-aware prompt + formula-aware prompt 生成缺失模态的 query
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR

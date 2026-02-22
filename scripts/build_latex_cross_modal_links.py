@@ -100,8 +100,8 @@ CROSS_MODAL_SETS: Set[frozenset] = {
 SECTION_TYPES = {"section", "appendix"}
 
 # F1: Maximum character distance between two \ref{} calls to be considered
-# "proximity co-citation" (≈ 1-2 natural paragraphs regardless of line wrapping)
-CHAR_PROXIMITY_LIMIT = 1000
+# "proximity co-citation" (≈ 1 tight paragraph; reviewer consensus: 300 chars)
+CHAR_PROXIMITY_LIMIT = 300
 
 # F3: Exponential decay constant for char-distance quality scoring.
 # At distance=0   → multiplier ≈ 1.0
@@ -229,27 +229,38 @@ def _apply_coref_quality(
     label_a: str,
     label_b: str,
     strategy: str,
+    ctx_a: str = "",
+    ctx_b: str = "",
 ) -> Optional[float]:
     """
     G2: Apply co-reference gate for proximity/paragraph pairs.
 
-    - Both refs found  → no penalty, return quality_score as-is
-    - One ref found    → halve quality_score (partial evidence)
-    - Neither found    → return None (pair should be dropped)
+    For direct edges: bridge naturally contains both refs → pass through.
 
-    Direct edges already guarantee the ref is present (by construction),
-    so this check only applies to proximity and paragraph strategies.
+    For proximity edges: bridge_text is only ONE side's context window,
+    so checking "both labels in bridge" is architecturally wrong.
+    Instead we do a cross-reference check:
+      - Does ctx_a (ref A's context) mention label_b?  OR
+      - Does ctx_b (ref B's context) mention label_a?
+    i.e., do the two refs "see" each other from their respective windows?
+
+    Gate:
+      - cross-reference found (either direction)  → keep full score
+      - neither side mentions the other           → hard drop
     """
     if strategy == "direct":
         return quality_score   # no gate needed
 
-    n = _count_refs_in_bridge(bridge_text, label_a, label_b)
-    if n >= 2:
+    # Cross-reference check: does A's window mention B, or B's window mention A?
+    n_cross = _count_refs_in_bridge(ctx_a, "", label_b) + \
+              _count_refs_in_bridge(ctx_b, label_a, "")
+    if n_cross >= 1:
+        return quality_score   # at least one side sees the other
+    # Fallback: check the combined bridge text (older behaviour, last resort)
+    n_bridge = _count_refs_in_bridge(bridge_text, label_a, label_b)
+    if n_bridge >= 1:
         return quality_score
-    if n == 1:
-        return quality_score * 0.5
-    # n == 0: bridge has no explicit reference to either element
-    return None
+    return None   # neither side mentions the other → hard drop
 
 
 # ---------------------------------------------------------------------------
@@ -379,6 +390,34 @@ def _ordered_position_match(
 
 
 # ---------------------------------------------------------------------------
+# Quality tier bucketing  (applied post-G1 on final pairs)
+# ---------------------------------------------------------------------------
+
+def _quality_tier(pair: dict) -> str:
+    """
+    Gold   : direct edge, both element match conf ≥ 0.9
+    Silver : proximity, char_dist ≤ 200, no coref_penalty (= both refs found)
+    Trash  : quality_score < 0.2 OR char_dist > 600
+    Else   : silver (default for middle cases)
+    """
+    bridge   = pair.get("latex_bridge", {})
+    strategy = bridge.get("strategy", "")
+    conf_a   = bridge.get("match_conf_a", 0.0)
+    conf_b   = bridge.get("match_conf_b", 0.0)
+    char_dist= bridge.get("char_dist", 9999)
+    coref_pen= bridge.get("coref_penalty", False)
+    qs       = pair.get("quality_score", 0.0)
+
+    if qs < 0.2 or char_dist > 600:
+        return "trash"
+    if strategy == "direct" and conf_a >= 0.9 and conf_b >= 0.9:
+        return "gold"
+    if strategy == "proximity" and char_dist <= 200 and not coref_pen:
+        return "silver"
+    return "silver"
+
+
+# ---------------------------------------------------------------------------
 # Pair construction helpers
 # ---------------------------------------------------------------------------
 
@@ -501,7 +540,8 @@ def _find_proximity_pairs(
     # Sort by char position
     resolved.sort(key=lambda x: x[0])
 
-    results: List[Tuple[str, str, float, float, float, str]] = []
+    # Returns: (eid_a, eid_b, conf_a, conf_b, char_dist, bridge, ctx_a, ctx_b, tkey_a, tkey_b)
+    results: List[Tuple] = []
     seen_pairs: Set[Tuple[str, str]] = set()
 
     n = len(resolved)
@@ -533,7 +573,8 @@ def _find_proximity_pairs(
             # Bridge text: use the longer of the two contexts
             bridge = ctx_i if len(ctx_i) >= len(ctx_j) else ctx_j
 
-            results.append((eid_i, eid_j, conf_i, conf_j, float(char_dist), bridge))
+            results.append((eid_i, eid_j, conf_i, conf_j, float(char_dist),
+                            bridge, ctx_i, ctx_j, tkey_i, tkey_j))
 
     return results
 
@@ -624,45 +665,35 @@ def build(args) -> None:
         # Track which element pairs we've already added (order-independent)
         seen: Set[Tuple[str, str]] = set()
 
-        def _register_pair(pair: dict) -> bool:
+        def _register_pair(pair: dict,
+                           ctx_a: str = "", ctx_b: str = "",
+                           label_a: str = "", label_b: str = "") -> bool:
             key = tuple(sorted([pair["element_a_id"], pair["element_b_id"]]))
             if key in seen:
                 return False
             if pair["element_a_id"] == pair["element_b_id"]:
                 return False
 
-            # G2: Co-reference hard gate for proximity / paragraph strategies
+            # G2: Co-reference gate for proximity / paragraph strategies
             if REQUIRE_COREF_IN_BRIDGE:
                 bridge = pair["latex_bridge"]
+                la = label_a or bridge["label_a"]
+                lb = label_b or bridge["label_b"]
                 new_qs = _apply_coref_quality(
                     pair["quality_score"],
                     bridge["bridge_text"],
-                    bridge["label_a"],
-                    bridge["label_b"],
+                    la, lb,
                     bridge["strategy"],
+                    ctx_a=ctx_a, ctx_b=ctx_b,
                 )
                 if new_qs is None:
-                    # Neither element referenced in bridge → drop
                     stats["by_coref_gate"]["dropped"] += 1
                     return False
-                elif new_qs < pair["quality_score"]:
-                    # Only one ref found → penalize
-                    stats["by_coref_gate"]["penalized"] += 1
-                    pair = {**pair, "quality_score": round(new_qs, 3)}
-                    pair["latex_bridge"] = {
-                        **pair["latex_bridge"], "coref_penalty": True
-                    }
                 else:
                     stats["by_coref_gate"]["both_found"] += 1
 
             seen.add(key)
             output_pairs.append(pair)
-            stats["by_strategy"][pair["latex_bridge"]["strategy"]] += 1
-            stats["by_pair_type"][pair["pair_type"]] += 1
-            conf = min(pair["latex_bridge"]["match_conf_a"],
-                       pair["latex_bridge"]["match_conf_b"])
-            bucket = "high" if conf >= 0.7 else ("med" if conf >= 0.4 else "low")
-            stats["by_conf_bucket"][bucket] += 1
             return True
 
         pair_counter = [len(output_pairs)]  # mutable counter for pair_id
@@ -720,18 +751,17 @@ def build(args) -> None:
         #   targeting different element modalities → cross-modal pair.
         #   F3 decay applied: score decays with char distance.
         # ------------------------------------------------------------------
-        for eid_a, eid_b, conf_a, conf_b, char_dist, bridge in _find_proximity_pairs(
+        # Reverse map: element_id → label_key (best effort)
+        eid_to_label: Dict[str, str] = {}
+        for lk, (le, _) in label_to_elem.items():
+            eid_to_label.setdefault(le, lk)
+
+        for row in _find_proximity_pairs(
             latex_refs, label_to_elem, elements, latex_labels
         ):
-            # Determine labels from label_to_elem reverse map (best effort)
-            def _eid_to_label(eid: str) -> str:
-                for lk, (le, _) in label_to_elem.items():
-                    if le == eid:
-                        return lk
-                return eid  # fallback: use element id
-
-            la = _eid_to_label(eid_a)
-            lb = _eid_to_label(eid_b)
+            eid_a, eid_b, conf_a, conf_b, char_dist, bridge, ctx_a, ctx_b, tkey_a, tkey_b = row
+            la = eid_to_label.get(eid_a, tkey_a)
+            lb = eid_to_label.get(eid_b, tkey_b)
 
             _register_pair(_make_pair(
                 _next_id(), doc_id,
@@ -742,7 +772,7 @@ def build(args) -> None:
                 strategy="proximity",
                 quality_score=_quality_score(conf_a, conf_b, int(char_dist)),
                 char_dist=int(char_dist),
-            ))
+            ), ctx_a=ctx_a, ctx_b=ctx_b, label_a=la, label_b=lb)
 
         # ------------------------------------------------------------------
         # Strategy 3: Paragraph-level co-citation (from raw RefInstance list)
@@ -838,13 +868,30 @@ def build(args) -> None:
     output_pairs = hub_filtered
 
     # -----------------------------------------------------------------------
+    # Post-G1: add quality_tier + recompute FINAL stats from surviving pairs
+    # (pre-G1 stats are kept as candidates_* for audit)
+    # -----------------------------------------------------------------------
+    final_by_strategy  = defaultdict(int)
+    final_by_pair_type = defaultdict(int)
+    final_by_conf      = defaultdict(int)
+    final_by_tier      = defaultdict(int)
+
+    for pair in output_pairs:
+        tier = _quality_tier(pair)
+        pair["quality_tier"] = tier
+        bridge = pair["latex_bridge"]
+        final_by_strategy[bridge["strategy"]] += 1
+        final_by_pair_type[pair["pair_type"]] += 1
+        conf = min(bridge["match_conf_a"], bridge["match_conf_b"])
+        bucket = "high" if conf >= 0.7 else ("med" if conf >= 0.4 else "low")
+        final_by_conf[bucket] += 1
+        final_by_tier[tier] += 1
+
+    # -----------------------------------------------------------------------
     # Output
     # -----------------------------------------------------------------------
-    by_pair_type   = dict(stats["by_pair_type"])
-    by_strategy    = dict(stats["by_strategy"])
-    by_conf        = dict(stats["by_conf_bucket"])
-    by_coref       = dict(stats["by_coref_gate"])
-    label_rate     = (
+    by_coref   = dict(stats["by_coref_gate"])
+    label_rate = (
         stats["label_match_success"] / stats["label_match_attempts"]
         if stats["label_match_attempts"] else 0.0
     )
@@ -873,17 +920,21 @@ def build(args) -> None:
             ),
         },
         "summary": {
-            "total_pairs":            len(output_pairs),
-            "docs_with_latex":        stats["docs_with_latex"],
-            "label_match_rate":       round(label_rate, 3),
-            "label_match_success":    stats["label_match_success"],
-            "label_match_attempts":   stats["label_match_attempts"],
-            "ordered_match_rescued":  stats["ordered_match_rescued"],
-            "by_strategy":            by_strategy,
-            "by_pair_type":           by_pair_type,
-            "by_conf_bucket":         by_conf,
-            "g1_hub_dropped":         hub_dropped,
-            "g2_coref_gate":          by_coref,
+            # --- label resolution (pre-filtering) ---
+            "docs_with_latex":           stats["docs_with_latex"],
+            "label_match_rate":          round(label_rate, 3),
+            "label_match_success":       stats["label_match_success"],
+            "label_match_attempts":      stats["label_match_attempts"],
+            "ordered_match_rescued":     stats["ordered_match_rescued"],
+            # --- G2 + G1 filter counts ---
+            "g2_coref_gate":             by_coref,
+            "g1_hub_dropped":            hub_dropped,
+            # --- FINAL counts (after G1+G2, what goes into training) ---
+            "total_pairs":               len(output_pairs),
+            "final_by_strategy":         dict(final_by_strategy),
+            "final_by_pair_type":        dict(final_by_pair_type),
+            "final_by_conf_bucket":      dict(final_by_conf),
+            "final_by_tier":             dict(final_by_tier),
         },
         "pairs": output_pairs,
     }
@@ -898,16 +949,18 @@ def build(args) -> None:
 
     # Pretty summary
     print(f"\n{'='*60}")
-    print(f"  Total pairs         : {len(output_pairs)}")
     print(f"  Docs with LaTeX     : {stats['docs_with_latex']}")
     print(f"  Label match rate    : {label_rate:.1%}  "
           f"({stats['label_match_success']}/{stats['label_match_attempts']})")
     print(f"  Eq ordered rescue   : {stats['ordered_match_rescued']}")
-    print(f"  By strategy         : {by_strategy}")
-    print(f"  By pair type        : {by_pair_type}")
-    print(f"  By conf bucket      : {by_conf}")
+    print(f"  --- Filtering ---")
+    print(f"  G2 coref gate       : {by_coref}  [hard drop if <2 refs in bridge]")
     print(f"  G1 hub dropped      : {hub_dropped}  (max {HUB_MAX_PAIRS_PER_ELEMENT} pairs/element)")
-    print(f"  G2 coref gate       : {by_coref}")
+    print(f"  --- Final output ({len(output_pairs)} pairs) ---")
+    print(f"  By strategy         : {dict(final_by_strategy)}")
+    print(f"  By pair type        : {dict(final_by_pair_type)}")
+    print(f"  By conf bucket      : {dict(final_by_conf)}")
+    print(f"  By quality tier     : {dict(final_by_tier)}")
     print(f"  Output → {args.output}")
     print(f"  Report → {report_path}")
     print(f"{'='*60}")

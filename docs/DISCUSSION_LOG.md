@@ -1361,3 +1361,95 @@ Equation~\ref{eq:pareto}. As Table~\ref{tab:results} demonstrates...
 4. 重跑 formula+table 配对，验证 pass rate 是否从 3.3% 上升
 
 ---
+
+## 日期：2026-02-22（L1 Dual-evidence v4.1 → v4.2 迭代：学术腔消除 + 句法多样性）
+
+### 一、本日工作背景
+
+接续 2026-02-20 的工作，今日完成了 L1 Dual-evidence 从 v4（58.9%）→ v4.1（58.5%）→ v4.2（64.4%）的完整迭代。
+
+### 二、v4.1：opus 重设计 figure+formula prompt
+
+**触发原因**：v4 数据中 figure+formula 仅 32.4% pass，且 5 篇论文（1809.10083、1906.02589、1802.08139、1803.04383、2109.03952）全部失败。root cause 是 architecture diagram 类 figure 与数学公式的 token overlap proxy 失效——answer 用数学术语，但 figure caption 只写"Model architecture"，overlap_a=0。
+
+**改动（使用 claude-opus-4-6 重设计 PROMPT_FIGURE_FORMULA）**：
+- **Figure Type Strategy**：区分 quantitative figure（用 trend/peak/gap）与 structural/architectural figure（必须命名具体的结构选择：几条分支、loss 施加点、weight sharing 位置）
+- **双 field 输出**：`answer_figure_evidence` + `answer_formula_evidence` 强制解耦两侧引用
+- **operator 多样化**：verify/derive/calibrate/attribute/contradict/constrain/justify/decompose 等 14 个词，BANNED: instantiate/map/relate/explain/align
+- **self-check protocol**：生成前自问"去掉 figure 还能答吗？"
+
+**结果**：figure+formula 32.4% → 40.5%（+8.1pp），但 anchor_leakage 回归（20→39），原因是新 prompt 生成更详细的 visual_anchors，与 query 词汇重叠上升。
+
+**同期修复**：
+- `is_yes_no_question` regex 修复：含 WH-word 的复句（如"Given that X are Y, why does Z..."）不再被误判
+- `--pass-only` 硬门禁：只输出 qc_pass=True 条目
+- 默认输出路径改为 `data/l1_dual_evidence_queries_v2.jsonl`
+
+### 三、reviewer 对 v4.1 的反馈
+
+**助手 reviewer（技术侧）**指出三大问题：
+1. **句法拓扑坍缩**：query 100% 退化为 "Which X validates/quantifies Y..." 双子句模板，LLM 过拟合 "rigorous academic reviewer" persona，训练集会产生 Dataset Artifacts
+2. **认知过载**：如 "How does the exponential decay in session frequency validate the sparse representation..." ——没有研究员真的这么提问
+3. **Persona 设计错误**：应改为 "curious PhD student at lab meeting, direct and empirical"
+
+**助手 reviewer（数据侧）**同时要求：
+- 输出全量（含 fail）和 pass-only 两份文件，不能只有通过集
+- `required_evidence_spans` 应加 `evidence_type` 字段，统一 schema
+- 需要有方法证明 dual-evidence 不是"伪双证据"（single-side answerability 测试）
+
+### 四、v4.2 改动（本日落地）
+
+**P0（直接修改 prompt）**：
+1. **Persona 更换**：`"You are a rigorous academic reviewer"` → `"You are a PhD student presenting experimental results at a group meeting. Be direct, empirically grounded, and ask questions the way scientists actually discuss data."`
+2. **动词黑名单**：BANNED in query: `validate, quantify, justify, demonstrate, enforce, constrain, decompose, propagate, calibrate, verify, instantiate, map, relate, align, explain`
+3. **SENTENCE STRUCTURE 多样性**（所有 prompt 新增强制约束）：
+   - GIVEN-WHY: "Given [context from A], why does [observation from B]...?"
+   - WHAT-IF: "What would happen to [metric] if [condition], given [constraint from B]?"
+   - WHY-INCONSISTENT: "Why is [pattern in A] higher/lower/different than [expectation from B]?"
+   - WHEN-CONDITION: "When does [phenomenon] occur, based on [A] combined with [B]?"
+   - WHAT-CAUSES: "What causes [pattern in A], considering [mechanism in B]?"
+   - 约束：2 queries 必须用**不同结构**
+
+**P1（schema + QC）**：
+4. `required_evidence_spans` 统一加 `evidence_type` 字段（figure+table: observation/result；formula+table: constraint/result）
+5. **双文件输出**：始终写全量 JSONL（`v3.jsonl`），`--pass-only` 时额外写 `_pass.jsonl`
+6. **CROSS_MODAL_OPERATORS 扩展**：加入 affect/differ/increase/reduce/lead/produce/achieve/remain/shift/fail/vary/scale 等自然英文动词（原 QC 只认学术词，导致自然句式被误杀）
+7. `is_yes_no_question` 再次修复：WH-word 存在于 query 任意位置均豁免（不再限 80 chars 内）
+
+**执行流程**：
+- 使用 claude-opus-4-6 作为 subagent 实现所有 prompt 改动
+- 在 5 对 smoke test 确认 persona/结构生效后运行全量 118 对
+- 生成后发现 `no_cross_modal_operator` 从 7 增至 19（模型用了 "affect/produce/remain" 等自然词）
+- 免费 re-scoring：扩展 CROSS_MODAL_OPERATORS 后对已有全量 JSONL 重新评分
+
+### 五、最终结果对比
+
+| 指标 | v4 | v4.1 | **v4.2** |
+|------|-----|------|----------|
+| QC pass | 139/236 (58.9%) | 138/236 (58.5%) | **152/236 (64.4%)** |
+| figure+table | ~69% | 101/146 (69.2%) | **111/146 (76.0%)** |
+| figure+formula | 24/74 (32.4%) | 30/74 (40.5%) | **34/74 (45.9%)** |
+| formula+table | 9/16 (56.3%) | 7/16 (43.8%) | 7/16 (43.8%) |
+| anchor_leakage | 20 | 39 | **29** |
+| single_element_answer | 60 | 62 | **57** |
+| no_cross_modal_operator | 9 | 19 | **0** |
+| weak_reasoning_connector | 19 | 6 | **4** |
+| 费用 | $2.07 | $2.39 | $2.57 |
+
+**输出文件**：
+- `data/l1_dual_evidence_queries_v3.jsonl`（全量 236 条，含 fail 样本，供下一轮迭代诊断）
+- `data/l1_dual_evidence_queries_v3_pass.jsonl`（152 条纯净训练集）
+
+### 六、遗留问题
+
+1. **single_element_answer（57）仍是最大瓶颈**：token overlap proxy 对 formula+figure（架构图）pair 仍有噪声，需要更好的双证据检验方法（single-side ablation 成本较高，待评估）
+2. **1803.04383 系列全失败**：该论文共有 10 对 figure+formula，仅 1 对通过，architectural diagram + 复杂 loss function 场景仍是 hard case
+3. **评估闭环尚未建立**：30 条手写 query + BM25 baseline + Recall@10/MRR 是最紧迫的下一步
+
+### 七、下一步 TODO
+
+- **P0.1（高优先）**：Citation-based L2 候选替换——用 123 条跨文档引用边替代实体倒排索引，信号质量更强
+- **P1.3**：分析 1803.04383 等全失败论文的 root cause（architectural diagram 专项处理）
+- **评估闭环**：人工写 30 条测试 query → BM25 baseline → Recall@10/MRR 检验
+
+---
