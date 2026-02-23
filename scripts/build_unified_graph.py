@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build unified heterogenous graph and cross-doc paths."""
+"""Build unified heterogeneous graph and cross-doc paths."""
 
 from __future__ import annotations
 
@@ -25,12 +25,22 @@ def main() -> None:
     ap.add_argument("--min-score", type=float, default=0.3)
     args = ap.parse_args()
 
+    latex_path = Path(args.latex_graph)
+    citation_path = Path(args.citation_graph)
+    if not latex_path.exists():
+        raise FileNotFoundError(f"LaTeX graph not found: {latex_path}")
+    if not citation_path.exists():
+        raise FileNotFoundError(f"Citation graph not found: {citation_path}")
+
     g = UnifiedGraph()
-    g.load_intra_doc_edges(args.latex_graph)
-    g.load_citation_edges(args.citation_graph)
+    g.load_intra_doc_edges(str(latex_path))
+    g.load_citation_edges(str(citation_path))
     if args.multimodal_elements:
+        mm_path = Path(args.multimodal_elements)
+        if not mm_path.exists():
+            raise FileNotFoundError(f"Multimodal elements not found: {mm_path}")
         g.load_mineru_elements_and_align(
-            args.multimodal_elements,
+            str(mm_path),
             min_caption_jaccard=args.min_align_jaccard,
         )
 

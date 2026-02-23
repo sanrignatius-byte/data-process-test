@@ -76,6 +76,10 @@ class UnifiedGraph:
         self.edges.append(edge)
         self._adj_forward.setdefault(edge.src, []).append(edge)
 
+    def _iter_out_edges(self, node_id: str) -> List[GraphEdge]:
+        """Return outgoing edges for traversal."""
+        return self._adj_forward.get(node_id, [])
+
     @staticmethod
     def _edge_confidence(attribution: str, extra_conf: Optional[float] = None) -> float:
         base = ATTRIBUTIONS.get(attribution, ATTRIBUTIONS["derived"]).prior_confidence
@@ -296,11 +300,11 @@ class UnifiedGraph:
                             "hops": len(path_nodes) - 1,
                         })
 
-                for edge in self._adj_forward.get(current, []):
+                for edge in self._iter_out_edges(current):
                     nxt = edge.tgt
                     if nxt in visited:
                         continue
-                    src_degree = len(self._adj_forward.get(current, []))
+                    src_degree = len(self._iter_out_edges(current))
                     degree_penalty = 1.0 / math.log(max(2, src_degree + 1))
                     effective_conf = max(1e-5, edge.confidence * degree_penalty)
                     next_visited = set(visited)
