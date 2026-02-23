@@ -548,6 +548,21 @@ def main() -> None:
     print(f"  Output:            {out}")
     print(f"{'='*60}")
 
+    log_run(
+        script="generate_l2_queries",
+        model=args.model,
+        purpose=f"L2 cross-document query generation — {kept}/{len(pairs)} pairs QC pass → {out.name}",
+        input_tokens=total_input_tokens,
+        output_tokens=total_output_tokens,
+        extra={
+            "pairs_processed": len(pairs),
+            "qc_pass":         kept,
+            "qc_fail":         qc_failed,
+            "parse_failures":  failed_parse,
+            "output":          str(out),
+        },
+    )
+
 
 if __name__ == "__main__":
     main()

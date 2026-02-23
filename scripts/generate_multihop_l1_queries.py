@@ -26,6 +26,8 @@ SYSTEM_PROMPT = (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+from src.utils.token_logger import log_run
 
 # ──────────────────────────────────────────────────────────────
 # Prompt templates per modality combination
@@ -1361,6 +1363,25 @@ def main() -> None:
         for iss, cnt in sorted(qc_issue_stats.items(), key=lambda x: -x[1]):
             print(f"    {iss}: {cnt}")
     print(f"{'='*60}")
+
+    log_run(
+        script="generate_multihop_l1_queries",
+        model=args.model,
+        purpose=(
+            f"L1 dual-evidence query generation — "
+            f"{kept}/{query_idx} QC pass from {len(pairs)} pairs → {out_path.name}"
+        ),
+        input_tokens=total_input_tokens,
+        output_tokens=total_output_tokens,
+        extra={
+            "pairs_processed": len(pairs),
+            "queries_written": query_idx,
+            "qc_pass":         kept,
+            "qc_fail":         qc_failed_count,
+            "parse_failures":  parse_failed,
+            "output":          str(out_path),
+        },
+    )
 
 
 if __name__ == "__main__":
