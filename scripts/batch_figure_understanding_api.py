@@ -18,6 +18,9 @@ from typing import Dict
 
 import anthropic
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.utils.token_logger import log_run
+
 
 SYSTEM_PROMPT = "You are a data annotator creating cross-modal retrieval training data. Output valid JSON only, no other text, no markdown fences."
 
@@ -302,6 +305,20 @@ def main():
     print(f"  Output:                {output_path}")
     print(f"  Queries:               {queries_path}")
     print(f"{'='*60}")
+
+    log_run(
+        script="batch_figure_understanding_api",
+        model=args.model,
+        input_tokens=total_input_tokens,
+        output_tokens=total_output_tokens,
+        extra={
+            "pairs_processed": len(pairs_to_process),
+            "parse_success":   success,
+            "queries_kept":    query_count,
+            "queries_dropped": dropped,
+            "output":          str(output_path),
+        },
+    )
 
 
 if __name__ == "__main__":
