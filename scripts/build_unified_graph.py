@@ -85,6 +85,14 @@ def main():
         help="Maximum number of paths to find",
     )
     parser.add_argument(
+        "--max-start-nodes", type=int, default=0,
+        help="Cap number of element start nodes for path search (0 = all)",
+    )
+    parser.add_argument(
+        "--neighbor-limit", type=int, default=0,
+        help="Cap neighbor expansions per DFS step (0 = no cap)",
+    )
+    parser.add_argument(
         "--suppress-hubs", action="store_true",
         help="Enable hub node suppression (B4)",
     )
@@ -206,6 +214,8 @@ def main():
         require_cross_doc=True,
         require_cross_modal=True,
         max_paths=args.max_paths,
+        max_start_nodes=(args.max_start_nodes if args.max_start_nodes > 0 else None),
+        neighbor_limit=(args.neighbor_limit if args.neighbor_limit > 0 else None),
     )
 
     print(f"  Found {len(paths)} valid paths")

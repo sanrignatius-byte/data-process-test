@@ -584,9 +584,7 @@ class UnifiedGraph:
     @staticmethod
     def compute_path_score(
         edge_confidences: List[float],
-
         edge_types: Optional[List[EdgeType]] = None,
-
         decay_factor: float = 0.85,
     ) -> float:
         """
@@ -597,9 +595,7 @@ class UnifiedGraph:
 
         Args:
             edge_confidences: confidence values for each hop
-
             edge_types: optional edge types for logical hop counting
-
             decay_factor: multiplicative per-hop decay factor
 
         Returns:
@@ -626,6 +622,8 @@ class UnifiedGraph:
         require_cross_doc: bool = True,
         require_cross_modal: bool = True,
         max_paths: int = 500,
+        max_start_nodes: Optional[int] = None,
+        neighbor_limit: Optional[int] = None,
     ) -> List[ScoredPath]:
         """
         Find scored paths connecting elements across documents.
@@ -641,6 +639,8 @@ class UnifiedGraph:
             require_cross_doc: require path to span 2+ documents
             require_cross_modal: require path to span 2+ modalities
             max_paths: maximum number of paths to return
+            max_start_nodes: optional cap on number of start element nodes
+            neighbor_limit: optional cap on neighbor expansion per step
 
         Returns:
             List of ScoredPath sorted by score descending
@@ -652,6 +652,9 @@ class UnifiedGraph:
             nid for nid, n in self.nodes.items()
             if n.is_element
         ]
+
+        if max_start_nodes is not None and max_start_nodes > 0:
+            element_starts = element_starts[:max_start_nodes]
 
         for start_id in element_starts:
             self._dfs_paths(
@@ -665,6 +668,7 @@ class UnifiedGraph:
                 require_cross_modal=require_cross_modal,
                 results=results,
                 max_paths=max_paths,
+                neighbor_limit=neighbor_limit,
             )
             if len(results) >= max_paths:
                 break
@@ -684,6 +688,7 @@ class UnifiedGraph:
         require_cross_modal: bool,
         results: List[ScoredPath],
         max_paths: int,
+        neighbor_limit: Optional[int] = None,
     ) -> None:
         """DFS to find valid paths."""
         if len(results) >= max_paths:
@@ -734,6 +739,16 @@ class UnifiedGraph:
         neighbors.extend(self._adj_forward.get(current, []))
         neighbors.extend(self._adj_reverse.get(current, []))
 
+        if neighbor_limit is not None and neighbor_limit > 0:
+            ranked_neighbors: List[Tuple[float, int, str]] = []
+            for edge_idx, neighbor_id in neighbors:
+                if neighbor_id in visited:
+                    continue
+                eff_conf = self._effective_edge_confidence(current, edge_idx)
+                ranked_neighbors.append((eff_conf, edge_idx, neighbor_id))
+            ranked_neighbors.sort(key=lambda x: -x[0])
+            neighbors = [(edge_idx, neighbor_id) for _, edge_idx, neighbor_id in ranked_neighbors[:neighbor_limit]]
+
         for edge_idx, neighbor_id in neighbors:
             if neighbor_id in visited:
                 continue
@@ -761,6 +776,7 @@ class UnifiedGraph:
                 require_cross_modal=require_cross_modal,
                 results=results,
                 max_paths=max_paths,
+                neighbor_limit=neighbor_limit,
             )
 
             path_nodes.pop()
