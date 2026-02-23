@@ -8,12 +8,15 @@ using LLM/VLM with specialized prompts.
 import json
 import time
 import hashlib
+import os
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import re
+
+from ..utils.token_usage_logger import TokenUsageLogger
 
 # Import OpenAI client (will be available in user's environment)
 try:
@@ -315,7 +318,8 @@ class MultimodalQueryGenerator(QueryGenerator):
         max_tokens: int = 500,
         rate_limit: int = 60,
         max_retries: int = 3,
-        retry_delay: float = 2.0
+        retry_delay: float = 2.0,
+        token_usage_log_file: Optional[str] = None
     ):
         """
         Initialize query generator.
@@ -329,6 +333,7 @@ class MultimodalQueryGenerator(QueryGenerator):
             rate_limit: Requests per minute limit
             max_retries: Maximum retry attempts
             retry_delay: Base delay between retries
+            token_usage_log_file: Optional JSONL file for token usage auditing
         """
         self.provider = provider
         self.model = model
@@ -337,6 +342,8 @@ class MultimodalQueryGenerator(QueryGenerator):
         self.rate_limit = rate_limit
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        token_log_file = token_usage_log_file or os.environ.get("TOKEN_USAGE_LOG_FILE")
+        self.token_usage_logger = TokenUsageLogger(token_log_file) if token_log_file else None
 
         # Initialize client
         if provider == "openai":
@@ -473,7 +480,19 @@ class MultimodalQueryGenerator(QueryGenerator):
                         max_tokens=self.max_tokens,
                         response_format={"type": "json_object"}
                     )
-                    return response.choices[0].message.content
+                    output_text = response.choices[0].message.content
+                    if self.token_usage_logger:
+                        usage = getattr(response, "usage", None)
+                        self.token_usage_logger.log(
+                            provider=self.provider,
+                            model=self.model,
+                            operation="query_generation",
+                            prompt=prompt,
+                            input_tokens=getattr(usage, "prompt_tokens", None),
+                            output_tokens=getattr(usage, "completion_tokens", None),
+                            response_chars=len(output_text or ""),
+                        )
+                    return output_text
 
                 elif self.provider == "anthropic":
                     response = self.client.messages.create(
@@ -483,7 +502,19 @@ class MultimodalQueryGenerator(QueryGenerator):
                             {"role": "user", "content": prompt}
                         ]
                     )
-                    return response.content[0].text
+                    output_text = response.content[0].text
+                    if self.token_usage_logger:
+                        usage = getattr(response, "usage", None)
+                        self.token_usage_logger.log(
+                            provider=self.provider,
+                            model=self.model,
+                            operation="query_generation",
+                            prompt=prompt,
+                            input_tokens=getattr(usage, "input_tokens", None),
+                            output_tokens=getattr(usage, "output_tokens", None),
+                            response_chars=len(output_text or ""),
+                        )
+                    return output_text
 
             except Exception as e:
                 print(f"LLM call attempt {attempt + 1} failed: {e}")

@@ -21,6 +21,7 @@ Key improvements over basic M4 generation:
 import json
 import hashlib
 import re
+import os
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
@@ -31,6 +32,7 @@ from ..linkers.cross_document_linker import (
     EvidenceNode,
     DocumentEntity,
 )
+from ..utils.token_usage_logger import TokenUsageLogger
 
 
 class M4QueryType(Enum):
@@ -193,7 +195,8 @@ class M4QueryGenerator:
         model: str = "claude-sonnet-4-20250514",
         linker: Optional[CrossDocumentLinker] = None,
         temperature: float = 0.7,
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
+        token_usage_log_file: Optional[str] = None
     ):
         """
         Initialize M4 query generator.
@@ -205,6 +208,7 @@ class M4QueryGenerator:
             linker: CrossDocumentLinker instance (created if not provided)
             temperature: Generation temperature
             max_tokens: Maximum tokens in response
+            token_usage_log_file: Optional JSONL file for token usage auditing
         """
         self.llm_client = llm_client
         self.provider = provider
@@ -213,6 +217,8 @@ class M4QueryGenerator:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.templates = M4PromptTemplates()
+        token_log_file = token_usage_log_file or os.environ.get("TOKEN_USAGE_LOG_FILE")
+        self.token_usage_logger = TokenUsageLogger(token_log_file) if token_log_file else None
 
     def _call_llm(self, prompt: str) -> Optional[str]:
         """Call LLM and return response text."""
@@ -223,7 +229,19 @@ class M4QueryGenerator:
                     max_tokens=self.max_tokens,
                     messages=[{"role": "user", "content": prompt}]
                 )
-                return response.content[0].text
+                output_text = response.content[0].text
+                if self.token_usage_logger:
+                    usage = getattr(response, "usage", None)
+                    self.token_usage_logger.log(
+                        provider=self.provider,
+                        model=self.model,
+                        operation="m4_query_generation",
+                        prompt=prompt,
+                        input_tokens=getattr(usage, "input_tokens", None),
+                        output_tokens=getattr(usage, "output_tokens", None),
+                        response_chars=len(output_text or ""),
+                    )
+                return output_text
             elif self.provider == "openai":
                 response = self.llm_client.chat.completions.create(
                     model=self.model,
@@ -235,7 +253,19 @@ class M4QueryGenerator:
                     max_tokens=self.max_tokens,
                     response_format={"type": "json_object"}
                 )
-                return response.choices[0].message.content
+                output_text = response.choices[0].message.content
+                if self.token_usage_logger:
+                    usage = getattr(response, "usage", None)
+                    self.token_usage_logger.log(
+                        provider=self.provider,
+                        model=self.model,
+                        operation="m4_query_generation",
+                        prompt=prompt,
+                        input_tokens=getattr(usage, "prompt_tokens", None),
+                        output_tokens=getattr(usage, "completion_tokens", None),
+                        response_chars=len(output_text or ""),
+                    )
+                return output_text
         except Exception as e:
             print(f"LLM call failed: {e}")
             return None
