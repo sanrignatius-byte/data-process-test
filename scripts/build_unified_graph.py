@@ -61,8 +61,8 @@ def main():
         help="LaTeX reference graph JSON (from build_latex_reference_graph.py)",
     )
     parser.add_argument(
-        "--elements", default=None,
-        help="Multimodal elements JSON (from build_multimodal_relationships.py). Optional.",
+        "--elements", default="data/multimodal_elements.json",
+        help="Multimodal elements JSON (from build_multimodal_relationships.py).",
     )
     parser.add_argument(
         "--output", default="data/unified_graph.json",
@@ -85,12 +85,28 @@ def main():
         help="Maximum number of paths to find",
     )
     parser.add_argument(
+        "--max-start-nodes", type=int, default=0,
+        help="Cap number of element start nodes for path search (0 = all)",
+    )
+    parser.add_argument(
+        "--neighbor-limit", type=int, default=0,
+        help="Cap neighbor expansions per DFS step (0 = no cap)",
+    )
+    parser.add_argument(
         "--suppress-hubs", action="store_true",
         help="Enable hub node suppression (B4)",
     )
     parser.add_argument(
         "--max-degree", type=int, default=20,
         help="Degree threshold for hub suppression",
+    )
+    parser.add_argument(
+        "--disable-alignment", action="store_true",
+        help="Disable LaTeX↔MinerU element alignment edges",
+    )
+    parser.add_argument(
+        "--alignment-threshold", type=float, default=0.55,
+        help="Caption similarity threshold for LaTeX↔MinerU alignment",
     )
     parser.add_argument(
         "--paths-only", action="store_true",
@@ -129,7 +145,12 @@ def main():
     print(f"  Added {n_citation} citation edges")
 
     print("\nLayer 2: Loading intra-doc edges (element-level)...")
-    n_intra = graph.load_intra_doc_edges(latex_ref_data, element_data)
+    n_intra = graph.load_intra_doc_edges(
+        latex_ref_data,
+        element_data,
+        enable_alignment=not args.disable_alignment,
+        alignment_threshold=args.alignment_threshold,
+    )
     print(f"  Added {n_intra} intra-doc edges")
 
     # ---------------------------------------------------------------
@@ -193,6 +214,8 @@ def main():
         require_cross_doc=True,
         require_cross_modal=True,
         max_paths=args.max_paths,
+        max_start_nodes=(args.max_start_nodes if args.max_start_nodes > 0 else None),
+        neighbor_limit=(args.neighbor_limit if args.neighbor_limit > 0 else None),
     )
 
     print(f"  Found {len(paths)} valid paths")

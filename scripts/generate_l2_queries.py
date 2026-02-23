@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 from src.utils.token_usage_logger import TokenUsageLogger
+from src.utils.token_logger import log_run
 
 
 SYSTEM_PROMPT = (
@@ -53,7 +54,7 @@ TEMPLATE_VERBS = ["align with", "relate to", "reflect the", "illustrate the"]
 
 
 ANCHOR_LEAK_THRESHOLD = 0.15  # Jaccard overlap between query and anchor tokens
-EVIDENCE_CLOSURE_THRESHOLD = 0.35  # Coverage of answer claims by evidence_refs
+EVIDENCE_CLOSURE_THRESHOLD = 0.50  # Coverage of answer claims by evidence_refs
 # Tokens to ignore when computing leakage (common function words + numbers)
 LEAK_STOPWORDS = {
     "the", "a", "an", "of", "in", "to", "for", "on", "at", "by", "and", "or",
