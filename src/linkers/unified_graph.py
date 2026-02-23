@@ -31,6 +31,7 @@ Usage:
 """
 
 import math
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
@@ -63,6 +64,7 @@ class EdgeType(Enum):
 
     # Cross-layer: connects doc to its elements
     HAS_ELEMENT = "has_element"    # document → element (structural)
+    ALIGNMENT = "alignment"        # LaTeX element ↔ MinerU element entity resolution
 
 
 class Attribution(Enum):
@@ -77,6 +79,7 @@ class Attribution(Enum):
     MINERU_DIRECT = "mineru_direct"        # MinerU direct reference            [medium-high]
     LATEX_BRIDGE = "latex_bridge"          # LaTeX \ref{} co-citation bridge    [high]
     STRUCTURAL = "structural"             # doc → element ownership             [certain]
+    LATEX_MINERU_ALIGNMENT = "latex_mineru_alignment"  # caption/entity match    [high]
 
     @property
     def base_confidence(self) -> float:
@@ -92,6 +95,7 @@ class Attribution(Enum):
             Attribution.MINERU_DIRECT: 0.85,
             Attribution.LATEX_BRIDGE: 0.90,
             Attribution.STRUCTURAL: 1.00,
+            Attribution.LATEX_MINERU_ALIGNMENT: 0.92,
         }[self]
 
 
@@ -165,14 +169,15 @@ class ScoredPath:
     """A path through the unified graph with confidence score."""
     node_ids: List[str]
     edge_indices: List[int]     # indices into UnifiedGraph.edges
-    path_score: float           # geometric mean confidence with length penalty
+    path_score: float           # path confidence score
     docs_involved: Set[str]
     modalities_involved: Set[str]
     hop_attributions: List[str]  # attribution at each hop
+    logical_hops: int = 0       # excludes zero-cost identity/alignment edges
 
     @property
     def num_hops(self) -> int:
-        return len(self.edge_indices)
+        return self.logical_hops if self.logical_hops else len(self.edge_indices)
 
     @property
     def is_cross_document(self) -> bool:
@@ -186,6 +191,7 @@ class ScoredPath:
         return {
             "node_ids": self.node_ids,
             "num_hops": self.num_hops,
+            "raw_hops": len(self.edge_indices),
             "path_score": round(self.path_score, 4),
             "docs_involved": sorted(self.docs_involved),
             "modalities_involved": sorted(self.modalities_involved),
@@ -308,6 +314,8 @@ class UnifiedGraph:
         self,
         latex_ref_data: Dict[str, Any],
         element_data: Optional[Dict[str, Any]] = None,
+        enable_alignment: bool = True,
+        alignment_threshold: float = 0.55,
     ) -> int:
         """
         Load Layer 2 (element-level) edges from latex_reference_graph.json
@@ -397,6 +405,10 @@ class UnifiedGraph:
         # Also load MinerU-based element edges if provided
         if element_data:
             added += self._load_mineru_elements(element_data)
+            if enable_alignment:
+                added += self._align_latex_and_mineru_elements(
+                    threshold=alignment_threshold,
+                )
 
         return added
 
@@ -455,6 +467,103 @@ class UnifiedGraph:
 
         return added
 
+    def _align_latex_and_mineru_elements(self, threshold: float = 0.55) -> int:
+        """
+        Align LaTeX logical elements with MinerU physical elements.
+
+        Creates bidirectional ALIGNMENT edges between best caption matches
+        (same document + same modality) so downstream paths can bridge
+        topology-only nodes and image-backed nodes.
+        """
+        added = 0
+
+        for doc_id, element_ids in self._element_nodes.items():
+            latex_ids = [
+                nid for nid in element_ids
+                if self.nodes[nid].metadata.get("latex_label")
+            ]
+            mineru_ids = [
+                nid for nid in element_ids
+                if self.nodes[nid].metadata.get("image_path") or self.nodes[nid].metadata.get("caption")
+            ]
+            if not latex_ids or not mineru_ids:
+                continue
+
+            used_mineru: Set[str] = set()
+            for latex_id in latex_ids:
+                latex_node = self.nodes[latex_id]
+                best_mineru_id: Optional[str] = None
+                best_score = 0.0
+
+                for mineru_id in mineru_ids:
+                    if mineru_id in used_mineru:
+                        continue
+                    mineru_node = self.nodes[mineru_id]
+                    if mineru_node.node_type != latex_node.node_type:
+                        continue
+
+                    sim = self._element_similarity(latex_node, mineru_node)
+                    if sim > best_score:
+                        best_score = sim
+                        best_mineru_id = mineru_id
+
+                if not best_mineru_id or best_score < threshold:
+                    continue
+
+                used_mineru.add(best_mineru_id)
+                conf = min(1.0, 0.75 + 0.25 * best_score)
+                metadata = {"alignment_score": round(best_score, 4)}
+
+                self.add_edge(UnifiedEdge(
+                    source_id=latex_id,
+                    target_id=best_mineru_id,
+                    edge_type=EdgeType.ALIGNMENT,
+                    attribution=Attribution.LATEX_MINERU_ALIGNMENT,
+                    confidence=conf,
+                    metadata=metadata,
+                ))
+                self.add_edge(UnifiedEdge(
+                    source_id=best_mineru_id,
+                    target_id=latex_id,
+                    edge_type=EdgeType.ALIGNMENT,
+                    attribution=Attribution.LATEX_MINERU_ALIGNMENT,
+                    confidence=conf,
+                    metadata=metadata,
+                ))
+                added += 2
+
+        return added
+
+    @staticmethod
+    def _normalize_caption_text(text: str) -> str:
+        t = (text or "").lower().strip()
+        t = re.sub(r"[^\w\s]", " ", t)
+        t = re.sub(r"\s+", " ", t)
+        return t
+
+    def _element_similarity(self, latex_node: UnifiedNode, mineru_node: UnifiedNode) -> float:
+        """Caption + number based similarity for entity resolution."""
+        latex_caption = self._normalize_caption_text(latex_node.metadata.get("caption", ""))
+        mineru_caption = self._normalize_caption_text(mineru_node.metadata.get("caption", ""))
+
+        caption_sim = self._token_jaccard(latex_caption, mineru_caption)
+
+        n1 = str(latex_node.metadata.get("number", "") or "").strip()
+        n2 = str(mineru_node.metadata.get("number", "") or "").strip()
+        number_match = 1.0 if n1 and n2 and n1 == n2 else 0.0
+
+        if caption_sim == 0.0 and number_match == 0.0:
+            return 0.0
+        return 0.8 * caption_sim + 0.2 * number_match
+
+    @staticmethod
+    def _token_jaccard(t1: str, t2: str) -> float:
+        w1 = set(t1.split())
+        w2 = set(t2.split())
+        if not w1 or not w2:
+            return 0.0
+        return len(w1 & w2) / len(w1 | w2)
+
     @staticmethod
     def _label_type_to_node_type(label_type: str) -> Optional[NodeType]:
         """Convert LaTeX label type to unified NodeType."""
@@ -475,20 +584,19 @@ class UnifiedGraph:
     @staticmethod
     def compute_path_score(
         edge_confidences: List[float],
-        length_penalty_base: float = 0.1,
+        edge_types: Optional[List[EdgeType]] = None,
+        decay_factor: float = 0.85,
     ) -> float:
         """
-        B3: Compute path score using geometric mean + log-length penalty.
-
-        This avoids the raw product problem where long paths are
-        systematically penalized too harshly.
+        B3: Markovian decay score using joint probability and hop decay.
 
         Formula:
-            score = (∏ confidence_i)^(1/n) - penalty_base * log(n)
+            score = (∏ confidence_i) * (decay_factor ** (n - 1))
 
         Args:
             edge_confidences: confidence values for each hop
-            length_penalty_base: penalty coefficient for path length
+            edge_types: optional edge types for logical hop counting
+            decay_factor: multiplicative per-hop decay factor
 
         Returns:
             Path score in [0, 1] range (clamped)
@@ -496,15 +604,12 @@ class UnifiedGraph:
         if not edge_confidences:
             return 0.0
 
-        n = len(edge_confidences)
-        # Geometric mean
-        log_sum = sum(math.log(max(c, 1e-10)) for c in edge_confidences)
-        geo_mean = math.exp(log_sum / n)
-
-        # Log-length penalty (gentle: log(2)=0.69, log(3)=1.10, log(4)=1.39)
-        penalty = length_penalty_base * math.log(max(n, 1))
-
-        return max(0.0, min(1.0, geo_mean - penalty))
+        joint_prob = math.prod(max(c, 1e-5) for c in edge_confidences)
+        logical_hops = len(edge_confidences)
+        if edge_types:
+            logical_hops = sum(1 for et in edge_types if et != EdgeType.ALIGNMENT)
+        score = joint_prob * (decay_factor ** max(0, logical_hops - 1))
+        return max(0.0, min(1.0, score))
 
     # -------------------------------------------------------------------
     # Path finding
@@ -517,6 +622,8 @@ class UnifiedGraph:
         require_cross_doc: bool = True,
         require_cross_modal: bool = True,
         max_paths: int = 500,
+        max_start_nodes: Optional[int] = None,
+        neighbor_limit: Optional[int] = None,
     ) -> List[ScoredPath]:
         """
         Find scored paths connecting elements across documents.
@@ -532,6 +639,8 @@ class UnifiedGraph:
             require_cross_doc: require path to span 2+ documents
             require_cross_modal: require path to span 2+ modalities
             max_paths: maximum number of paths to return
+            max_start_nodes: optional cap on number of start element nodes
+            neighbor_limit: optional cap on neighbor expansion per step
 
         Returns:
             List of ScoredPath sorted by score descending
@@ -543,6 +652,9 @@ class UnifiedGraph:
             nid for nid, n in self.nodes.items()
             if n.is_element
         ]
+
+        if max_start_nodes is not None and max_start_nodes > 0:
+            element_starts = element_starts[:max_start_nodes]
 
         for start_id in element_starts:
             self._dfs_paths(
@@ -556,6 +668,7 @@ class UnifiedGraph:
                 require_cross_modal=require_cross_modal,
                 results=results,
                 max_paths=max_paths,
+                neighbor_limit=neighbor_limit,
             )
             if len(results) >= max_paths:
                 break
@@ -575,6 +688,7 @@ class UnifiedGraph:
         require_cross_modal: bool,
         results: List[ScoredPath],
         max_paths: int,
+        neighbor_limit: Optional[int] = None,
     ) -> None:
         """DFS to find valid paths."""
         if len(results) >= max_paths:
@@ -585,8 +699,9 @@ class UnifiedGraph:
             end_node = self.nodes.get(current)
             if end_node and end_node.is_element:
                 # Compute score
-                confidences = [self.edges[ei].confidence for ei in path_edges]
-                score = self.compute_path_score(confidences)
+                confidences = self._get_effective_confidences(path_edges)
+                edge_types = [self.edges[ei].edge_type for ei in path_edges]
+                score = self.compute_path_score(confidences, edge_types=edge_types)
 
                 if score >= min_score:
                     docs = {self.nodes[nid].doc_id for nid in path_nodes if nid in self.nodes}
@@ -612,10 +727,11 @@ class UnifiedGraph:
                             hop_attributions=[
                                 self.edges[ei].attribution.value for ei in path_edges
                             ],
+                            logical_hops=self._logical_hop_count(path_edges),
                         ))
 
         # Continue searching if we haven't hit max hops
-        if len(path_edges) >= max_hops:
+        if self._logical_hop_count(path_edges) >= max_hops:
             return
 
         # Explore neighbors (both forward and backward for undirected traversal)
@@ -623,14 +739,25 @@ class UnifiedGraph:
         neighbors.extend(self._adj_forward.get(current, []))
         neighbors.extend(self._adj_reverse.get(current, []))
 
+        if neighbor_limit is not None and neighbor_limit > 0:
+            ranked_neighbors: List[Tuple[float, int, str]] = []
+            for edge_idx, neighbor_id in neighbors:
+                if neighbor_id in visited:
+                    continue
+                eff_conf = self._effective_edge_confidence(current, edge_idx)
+                ranked_neighbors.append((eff_conf, edge_idx, neighbor_id))
+            ranked_neighbors.sort(key=lambda x: -x[0])
+            neighbors = [(edge_idx, neighbor_id) for _, edge_idx, neighbor_id in ranked_neighbors[:neighbor_limit]]
+
         for edge_idx, neighbor_id in neighbors:
             if neighbor_id in visited:
                 continue
 
             # Early pruning: check if adding this edge could still reach min_score
-            current_confs = [self.edges[ei].confidence for ei in path_edges]
-            current_confs.append(self.edges[edge_idx].confidence)
-            optimistic_score = self.compute_path_score(current_confs)
+            current_edges = list(path_edges) + [edge_idx]
+            current_confs = self._get_effective_confidences(current_edges)
+            current_types = [self.edges[ei].edge_type for ei in current_edges]
+            optimistic_score = self.compute_path_score(current_confs, edge_types=current_types)
             if optimistic_score < min_score * 0.5:  # generous early prune
                 continue
 
@@ -649,11 +776,43 @@ class UnifiedGraph:
                 require_cross_modal=require_cross_modal,
                 results=results,
                 max_paths=max_paths,
+                neighbor_limit=neighbor_limit,
             )
 
             path_nodes.pop()
             path_edges.pop()
             visited.discard(neighbor_id)
+
+    def _effective_edge_confidence(self, current_node: str, edge_idx: int) -> float:
+        """Apply soft degree penalty to damp hub-driven traversals."""
+        edge = self.edges[edge_idx]
+        if edge.edge_type == EdgeType.ALIGNMENT:
+            return 1.0
+        out_degree = len(self._adj_forward.get(current_node, []))
+        degree_penalty = 1.0 / math.log(max(2, out_degree + 1))
+        return max(1e-5, min(1.0, edge.confidence * degree_penalty))
+
+    def _get_effective_confidences(self, edge_indices: List[int]) -> List[float]:
+        """Compute effective confidences along a path with dynamic degree penalties."""
+        if not edge_indices:
+            return []
+
+        confs: List[float] = []
+        for i, edge_idx in enumerate(edge_indices):
+            edge = self.edges[edge_idx]
+            if edge.edge_type == EdgeType.ALIGNMENT:
+                confs.append(1.0)
+                continue
+            if i == 0:
+                src = edge.source_id
+            else:
+                src = self.edges[edge_indices[i - 1]].target_id
+            confs.append(self._effective_edge_confidence(src, edge_idx))
+        return confs
+
+    def _logical_hop_count(self, edge_indices: List[int]) -> int:
+        """Count hops excluding zero-cost identity/alignment edges."""
+        return sum(1 for ei in edge_indices if self.edges[ei].edge_type != EdgeType.ALIGNMENT)
 
     # -------------------------------------------------------------------
     # B4: Hub suppression (generalized from G1/G2)
