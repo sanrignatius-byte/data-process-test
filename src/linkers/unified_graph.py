@@ -584,7 +584,9 @@ class UnifiedGraph:
     @staticmethod
     def compute_path_score(
         edge_confidences: List[float],
+
         edge_types: Optional[List[EdgeType]] = None,
+
         decay_factor: float = 0.85,
     ) -> float:
         """
@@ -595,7 +597,9 @@ class UnifiedGraph:
 
         Args:
             edge_confidences: confidence values for each hop
+
             edge_types: optional edge types for logical hop counting
+
             decay_factor: multiplicative per-hop decay factor
 
         Returns:
