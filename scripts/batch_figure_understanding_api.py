@@ -309,13 +309,13 @@ def main():
     log_run(
         script="batch_figure_understanding_api",
         model=args.model,
+        purpose=f"L1 figure-text query generation — {query_count} queries kept from {len(pairs_to_process)} pairs",
         input_tokens=total_input_tokens,
         output_tokens=total_output_tokens,
         extra={
             "pairs_processed": len(pairs_to_process),
-            "parse_success":   success,
-            "queries_kept":    query_count,
-            "queries_dropped": dropped,
+            "queries_written": query_count,
+            "qc_fail":         dropped,
             "output":          str(output_path),
         },
     )

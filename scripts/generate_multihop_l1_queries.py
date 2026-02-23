@@ -1367,15 +1367,19 @@ def main() -> None:
     log_run(
         script="generate_multihop_l1_queries",
         model=args.model,
+        purpose=(
+            f"L1 dual-evidence query generation — "
+            f"{kept}/{query_idx} QC pass from {len(pairs)} pairs → {out_path.name}"
+        ),
         input_tokens=total_input_tokens,
         output_tokens=total_output_tokens,
         extra={
-            "pairs_processed":  len(pairs),
-            "queries_written":  query_idx,
-            "qc_pass":          kept,
-            "qc_fail":          qc_failed_count,
-            "parse_failures":   parse_failed,
-            "output":           str(out_path),
+            "pairs_processed": len(pairs),
+            "queries_written": query_idx,
+            "qc_pass":         kept,
+            "qc_fail":         qc_failed_count,
+            "parse_failures":  parse_failed,
+            "output":          str(out_path),
         },
     )
 
