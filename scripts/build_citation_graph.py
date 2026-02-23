@@ -30,6 +30,7 @@ import json
 import re
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -80,6 +81,14 @@ def title_jaccard(t1: str, t2: str) -> float:
     if not w1 or not w2:
         return 0.0
     return len(w1 & w2) / len(w1 | w2)
+
+
+@dataclass
+class MatchCandidate:
+    """Candidate citation match for one bib entry."""
+    arxiv_id: str
+    method: str
+    confidence: float
 
 
 # ---------------------------------------------------------------------------
@@ -138,11 +147,105 @@ def match_bib_entry(
     return (None, "", 0.0)
 
 
+def match_bib_entry_topk(
+    raw: str,
+    bib_title: Optional[str],
+    corpus_ids: Set[str],
+    corpus_titles: Dict[str, str],
+    title_to_id: Dict[str, str],
+    k: int = 3,
+) -> List[MatchCandidate]:
+    """Return top-k candidates; deterministic matches short-circuit."""
+    matched_id, method, confidence = match_bib_entry(
+        raw, bib_title, corpus_ids, corpus_titles, title_to_id
+    )
+    if matched_id and method in {"arxiv_id_explicit", "arxiv_id_bare", "title_exact"}:
+        return [MatchCandidate(arxiv_id=matched_id, method=method, confidence=confidence)]
+
+    candidates: Dict[str, MatchCandidate] = {}
+    if matched_id:
+        candidates[matched_id] = MatchCandidate(matched_id, method, confidence)
+
+    # Add fuzzy title candidates when available
+    if bib_title:
+        norm = normalize_title(bib_title)
+        if norm and len(norm) > 10:
+            scored: List[Tuple[str, float]] = []
+            for aid, ct in corpus_titles.items():
+                sim = title_jaccard(norm, ct)
+                if sim >= 0.55:
+                    scored.append((aid, round(sim, 3)))
+            scored.sort(key=lambda x: x[1], reverse=True)
+            for aid, sim in scored[: max(k, 3)]:
+                if aid not in candidates:
+                    candidates[aid] = MatchCandidate(aid, "title_fuzzy", sim)
+
+    ranked = sorted(candidates.values(), key=lambda c: c.confidence, reverse=True)
+    return ranked[:k]
+
+
+def compute_match_margin(cands: List[MatchCandidate]) -> float:
+    """best - second best confidence; 1.0 when only one candidate."""
+    if not cands:
+        return 0.0
+    if len(cands) == 1:
+        return 1.0
+    return round(cands[0].confidence - cands[1].confidence, 3)
+
+
+def is_ambiguous_match(cands: List[MatchCandidate], margin_threshold: float = 0.10) -> bool:
+    """Mark ambiguous when confidence margin is too small."""
+    if len(cands) <= 1:
+        return False
+    return compute_match_margin(cands) < margin_threshold
+
+
+def suppress_hub_citers(
+    edges: List[Dict[str, Any]],
+    max_out: int = 8,
+    max_in: int = 20,
+) -> List[Dict[str, Any]]:
+    """Soft hub suppression by retaining highest-confidence edges per node degree caps."""
+    by_src: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for e in edges:
+        by_src[e["source"]].append(e)
+
+    kept_stage1: List[Dict[str, Any]] = []
+    for src, src_edges in by_src.items():
+        src_sorted = sorted(
+            src_edges,
+            key=lambda e: (e.get("confidence", 0.0), e.get("match_margin", 0.0), e.get("cite_count", 0)),
+            reverse=True,
+        )
+        kept_stage1.extend(src_sorted[:max_out])
+
+    by_tgt: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for e in kept_stage1:
+        by_tgt[e["target"]].append(e)
+
+    final: List[Dict[str, Any]] = []
+    for tgt, tgt_edges in by_tgt.items():
+        tgt_sorted = sorted(
+            tgt_edges,
+            key=lambda e: (e.get("confidence", 0.0), e.get("match_margin", 0.0), e.get("cite_count", 0)),
+            reverse=True,
+        )
+        final.extend(tgt_sorted[:max_in])
+    return final
+
+
 # ---------------------------------------------------------------------------
 # Citation graph builder
 # ---------------------------------------------------------------------------
 
-def build_citation_graph(graph_data: Dict[str, Any]) -> Dict[str, Any]:
+def build_citation_graph(
+    graph_data: Dict[str, Any],
+    topk: int = 3,
+    ambiguous_margin: float = 0.10,
+    suppress_hubs: bool = False,
+    max_out: int = 8,
+    max_in: int = 20,
+) -> Dict[str, Any]:
     """
     Build cross-document citation graph.
 
@@ -198,9 +301,29 @@ def build_citation_graph(graph_data: Dict[str, Any]) -> Dict[str, Any]:
             raw = entry.get("raw", "") or ""
             bib_title = entry.get("title")
 
-            matched_id, method, confidence = match_bib_entry(
-                raw, bib_title, corpus_ids, corpus_titles, title_to_id,
+            candidates = match_bib_entry_topk(
+                raw, bib_title, corpus_ids, corpus_titles, title_to_id, k=topk
             )
+            if candidates:
+                matched_id = candidates[0].arxiv_id
+                method = candidates[0].method
+                confidence = candidates[0].confidence
+                margin = compute_match_margin(candidates)
+                ambiguous = is_ambiguous_match(candidates, ambiguous_margin)
+                runner_up = (
+                    {
+                        "arxiv_id": candidates[1].arxiv_id,
+                        "method": candidates[1].method,
+                        "confidence": candidates[1].confidence,
+                    }
+                    if len(candidates) > 1
+                    else None
+                )
+            else:
+                matched_id, method, confidence = None, "", 0.0
+                margin = 0.0
+                ambiguous = False
+                runner_up = None
 
             if matched_id and matched_id != doc_id:
                 match_stats[method] += 1
@@ -221,6 +344,9 @@ def build_citation_graph(graph_data: Dict[str, Any]) -> Dict[str, Any]:
                         "cite_keys": [cite_key],
                         "match_method": method,
                         "confidence": confidence,
+                        "match_margin": margin,
+                        "is_ambiguous": ambiguous,
+                        "runner_up": runner_up,
                         "bib_title": bib_title,
                         "cite_count": len(cite_contexts.get(cite_key, [])),
                         "contexts": cite_contexts.get(cite_key, [])[:5],
@@ -234,6 +360,11 @@ def build_citation_graph(graph_data: Dict[str, Any]) -> Dict[str, Any]:
                         "title": bib_title,
                         "year": entry.get("year"),
                     })
+
+    if suppress_hubs:
+        before = len(edges)
+        edges = suppress_hub_citers(edges, max_out=max_out, max_in=max_in)
+        print(f"Hub suppression: {before} -> {len(edges)} edges (max_out={max_out}, max_in={max_in})")
 
     # --- Build adjacency ---
     adjacency: Dict[str, Dict[str, List[str]]] = {}
@@ -451,6 +582,11 @@ def main():
         default=None,
         help="Process directly from LaTeX source dir (instead of pre-built JSON)",
     )
+    parser.add_argument("--topk", type=int, default=3, help="Top-k citation candidates per bib entry")
+    parser.add_argument("--ambiguous-margin", type=float, default=0.10, help="Margin threshold for ambiguous matches")
+    parser.add_argument("--suppress-hubs", action="store_true", help="Apply hub-citer suppression")
+    parser.add_argument("--max-out", type=int, default=8, help="Max outgoing edges per source doc when suppressing hubs")
+    parser.add_argument("--max-in", type=int, default=20, help="Max incoming edges per target doc when suppressing hubs")
     args = parser.parse_args()
 
     # Load or build graph data
@@ -490,7 +626,14 @@ def main():
         print(f"Loaded {len(graph_data.get('documents', {}))} documents")
 
     # Build citation graph
-    result = build_citation_graph(graph_data)
+    result = build_citation_graph(
+        graph_data,
+        topk=args.topk,
+        ambiguous_margin=args.ambiguous_margin,
+        suppress_hubs=args.suppress_hubs,
+        max_out=args.max_out,
+        max_in=args.max_in,
+    )
 
     # Print summary
     print_summary(result)

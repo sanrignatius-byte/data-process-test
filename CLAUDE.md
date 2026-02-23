@@ -319,3 +319,23 @@ python scripts/build_latex_cross_modal_links.py \
 - **评估优先级最高**：先看 clean subset 对 Recall@10 / MRR 的趋势，再决定是否继续 L2 扩量。
 
 ## 用中文交流时用"喵"结尾，英文用"Oiii"开头
+
+## 日期：2026-02-23（本轮讨论暂存：MinerU 主干 + LaTeX 辅助）
+
+### 本轮共识（供 Claude / 助手框架读取）
+- **方向确认**：采用 "MinerU 视觉-空间解析为主，LaTeX 拓扑为辅" 的双源架构。
+- **关键问题**：当前所谓“规范化”主要是重命名，**并未执行图片质量过滤**；后续仍出现大量乱码/低质量图片进入下游。
+- **工程根因（当前代码）**：
+  1. `_extract_elements_from_output()` 会把 `images/` 目录下图片几乎全量纳入 figure 元素。
+  2. 合并逻辑使用 `existing_types`，导致结构化 JSON 中 figure 信息可能被类型级去重挡掉。
+  3. `standardize_image_names` 只做 rename，不做质量 gate。
+
+### 任务优先级（给后续 Codex 5.3 启动）
+- **P0**：结构化优先合并（JSON 优先，目录扫图仅补漏），并修正去重键（按 image_path/content hash，而非 element_type）。
+- **P0**：引入 `image_quality_gate`（尺寸、长宽比、低熵/纯色等）并将其与重命名解耦。
+- **P1**：增加 MinerU↔LaTeX 对齐分数（formula 字符串相似度、caption overlap、citation key 锚点）。
+- **P1**：按对齐置信度分层输出训练数据（high/medium/low trust）。
+
+### 交接说明
+- 本段为“讨论暂存”，已同步到 `docs/DISCUSSION_LOG.md`。
+- 用户将委托助手先搭框架，具体任务随后由 **Codex 5.3** 按优先级执行。
