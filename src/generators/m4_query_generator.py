@@ -267,6 +267,18 @@ class M4QueryGenerator:
                     )
                 return output_text
         except Exception as e:
+            if self.token_usage_logger:
+                self.token_usage_logger.log(
+                    provider=self.provider,
+                    model=self.model,
+                    operation="m4_query_generation",
+                    prompt=prompt,
+                    input_tokens=None,
+                    output_tokens=None,
+                    response_chars=None,
+                    success=False,
+                    error=str(e),
+                )
             print(f"LLM call failed: {e}")
             return None
 

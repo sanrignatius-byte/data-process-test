@@ -17,9 +17,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-
 from src.utils.token_usage_logger import TokenUsageLogger
-
 
 SYSTEM_PROMPT = (
     "You are an expert research analyst creating cross-document reasoning questions "
@@ -453,6 +451,24 @@ def main() -> None:
                         },
                     )
             except Exception as e:
+                if usage_logger:
+                    usage_logger.log(
+                        provider=args.provider,
+                        model=args.model,
+                        operation="l2_query_generation",
+                        prompt=prompt,
+                        input_tokens=None,
+                        output_tokens=None,
+                        response_chars=None,
+                        success=False,
+                        error=str(e),
+                        metadata={
+                            "pair_index": i,
+                            "doc_a": doc_a,
+                            "doc_b": doc_b,
+                            "images_sent": img_count,
+                        },
+                    )
                 print(f"API ERROR: {e}")
                 if "rate" in str(e).lower() or "429" in str(e):
                     print("  Rate limited, waiting 30s...")

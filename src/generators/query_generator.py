@@ -517,6 +517,19 @@ class MultimodalQueryGenerator(QueryGenerator):
                     return output_text
 
             except Exception as e:
+                if self.token_usage_logger:
+                    self.token_usage_logger.log(
+                        provider=self.provider,
+                        model=self.model,
+                        operation="query_generation",
+                        prompt=prompt,
+                        input_tokens=None,
+                        output_tokens=None,
+                        response_chars=None,
+                        success=False,
+                        error=str(e),
+                        metadata={"attempt": attempt + 1},
+                    )
                 print(f"LLM call attempt {attempt + 1} failed: {e}")
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay * (2 ** attempt))

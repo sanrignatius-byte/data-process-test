@@ -30,6 +30,10 @@ class TokenUsageLogger:
         input_tokens: Optional[int],
         output_tokens: Optional[int],
         response_chars: Optional[int] = None,
+
+        success: bool = True,
+        error: Optional[str] = None,
+
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         record = {
@@ -47,9 +51,13 @@ class TokenUsageLogger:
                 if (input_tokens is not None or output_tokens is not None)
                 else None
             ),
+
+            "success": success,
+            "error": error,
             "metadata": metadata or {},
         }
-        line = json.dumps(record, ensure_ascii=False)
+        line = json.dumps(record, ensure_ascii=False, default=str)
+
         with self._lock:
             with self.log_file.open("a", encoding="utf-8") as f:
                 f.write(line + "\n")
