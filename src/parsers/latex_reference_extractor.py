@@ -118,6 +118,8 @@ class LatexRefEdge:
     target_type: str          # LabelType.value of target
     ref_text: str             # original \\ref{...} text
     context: str              # surrounding text
+    occurrence_count: int = 1
+    attribution: str = "enclosing_env"  # enclosing_env | section_fallback | containment
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -127,6 +129,8 @@ class LatexRefEdge:
             "target_type": self.target_type,
             "ref_text": self.ref_text,
             "context": self.context[:300],
+            "occurrence_count": self.occurrence_count,
+            "attribution": self.attribution,
         }
 
 
@@ -775,7 +779,7 @@ class LaTeXReferenceExtractor:
         comparisons, fixing the original line_no coordinate mismatch.
         """
         edges: List[LatexRefEdge] = []
-        seen: Set[Tuple[str, str]] = set()
+        edge_map: Dict[Tuple[str, str], LatexRefEdge] = {}
 
         # label → line range in merged indices
         label_ranges = self._compute_label_ranges(labels, lines, env_stack)
@@ -796,36 +800,40 @@ class LaTeXReferenceExtractor:
                 continue
 
             # Strategy 1: enclosing labeled environment (high precision)
-            source_label_key = self._find_enclosing_label(
-                ref_idx, label_ranges, labels
-            )
+            source_label_key = self._find_enclosing_label(ref_idx, label_ranges, labels)
+            attribution = "enclosing_env"
 
             # Strategy 2: nearest preceding section (high recall)
             if source_label_key is None:
-                source_label_key = self._find_section_for_line(
-                    ref_idx, section_list
-                )
+                source_label_key = self._find_section_for_line(ref_idx, section_list)
+                attribution = "section_fallback"
 
             if source_label_key is None or source_label_key == target_key:
                 continue  # self-ref or truly free text
 
             edge_pair = (source_label_key, target_key)
-            if edge_pair in seen:
-                continue
-            seen.add(edge_pair)
 
             source_info = labels[source_label_key]
             target_info = labels[target_key]
 
-            edges.append(LatexRefEdge(
+            if edge_pair in edge_map:
+                edge_map[edge_pair].occurrence_count += 1
+                # Keep the most informative context observed so far.
+                if len(ref.context) > len(edge_map[edge_pair].context):
+                    edge_map[edge_pair].context = ref.context
+                continue
+
+            edge_map[edge_pair] = LatexRefEdge(
                 source_label=source_label_key,
                 target_label=target_key,
                 source_type=source_info.label_type.value,
                 target_type=target_info.label_type.value,
                 ref_text=f"\\{ref.ref_type}{{{target_key}}}",
                 context=ref.context,
-            ))
-
+                occurrence_count=1,
+                attribution=attribution,
+            )
+        edges.extend(edge_map.values())
         return edges
 
     def _compute_label_ranges(
@@ -990,6 +998,8 @@ class LaTeXReferenceExtractor:
                     target_type=elem_info.label_type.value,
                     ref_text="[containment]",
                     context=f"{elem_key} is within {best_key}",
+                    occurrence_count=1,
+                    attribution="containment",
                 ))
 
         return edges
