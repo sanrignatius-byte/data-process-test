@@ -61,8 +61,8 @@ def main():
         help="LaTeX reference graph JSON (from build_latex_reference_graph.py)",
     )
     parser.add_argument(
-        "--elements", default=None,
-        help="Multimodal elements JSON (from build_multimodal_relationships.py). Optional.",
+        "--elements", default="data/multimodal_elements.json",
+        help="Multimodal elements JSON (from build_multimodal_relationships.py).",
     )
     parser.add_argument(
         "--output", default="data/unified_graph.json",
@@ -91,6 +91,14 @@ def main():
     parser.add_argument(
         "--max-degree", type=int, default=20,
         help="Degree threshold for hub suppression",
+    )
+    parser.add_argument(
+        "--disable-alignment", action="store_true",
+        help="Disable LaTeX↔MinerU element alignment edges",
+    )
+    parser.add_argument(
+        "--alignment-threshold", type=float, default=0.55,
+        help="Caption similarity threshold for LaTeX↔MinerU alignment",
     )
     parser.add_argument(
         "--paths-only", action="store_true",
@@ -129,7 +137,12 @@ def main():
     print(f"  Added {n_citation} citation edges")
 
     print("\nLayer 2: Loading intra-doc edges (element-level)...")
-    n_intra = graph.load_intra_doc_edges(latex_ref_data, element_data)
+    n_intra = graph.load_intra_doc_edges(
+        latex_ref_data,
+        element_data,
+        enable_alignment=not args.disable_alignment,
+        alignment_threshold=args.alignment_threshold,
+    )
     print(f"  Added {n_intra} intra-doc edges")
 
     # ---------------------------------------------------------------
