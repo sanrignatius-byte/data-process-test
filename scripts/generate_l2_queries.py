@@ -17,8 +17,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from src.utils.token_logger import log_run
+
+from src.utils.token_usage_logger import TokenUsageLogger
+
 
 SYSTEM_PROMPT = (
     "You are an expert research analyst creating cross-document reasoning questions "
@@ -361,6 +362,11 @@ def main() -> None:
     )
     ap.add_argument("--no-images", action="store_true", help="Skip sending images (text-only)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument(
+        "--token-usage-log",
+        default=os.environ.get("TOKEN_USAGE_LOG_FILE", ""),
+        help="Append-only JSONL path for API token usage audit",
+    )
     args = ap.parse_args()
 
     if args.provider == "anthropic":
@@ -388,6 +394,8 @@ def main() -> None:
     if not args.dry_run and args.provider == "anthropic":
         import anthropic
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
+    usage_logger = TokenUsageLogger(args.token_usage_log) if args.token_usage_log else None
 
     total_input_tokens = 0
     total_output_tokens = 0
@@ -428,6 +436,22 @@ def main() -> None:
                 raw, in_tok, out_tok = call_llm_anthropic(client, args.model, prompt, images)
                 total_input_tokens += in_tok
                 total_output_tokens += out_tok
+                if usage_logger:
+                    usage_logger.log(
+                        provider=args.provider,
+                        model=args.model,
+                        operation="l2_query_generation",
+                        prompt=prompt,
+                        input_tokens=in_tok,
+                        output_tokens=out_tok,
+                        response_chars=len(raw or ""),
+                        metadata={
+                            "pair_index": i,
+                            "doc_a": doc_a,
+                            "doc_b": doc_b,
+                            "images_sent": img_count,
+                        },
+                    )
             except Exception as e:
                 print(f"API ERROR: {e}")
                 if "rate" in str(e).lower() or "429" in str(e):
