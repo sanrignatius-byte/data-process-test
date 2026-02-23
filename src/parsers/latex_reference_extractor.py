@@ -118,6 +118,13 @@ class LatexRefEdge:
     target_type: str          # LabelType.value of target
     ref_text: str             # original \\ref{...} text
     context: str              # surrounding text
+    # A3: attribution strategy — how the source was determined
+    #   "enclosing_env"   : source label is the enclosing \\begin{env}..\\end{env}  [high precision]
+    #   "section_fallback" : nearest preceding section label                        [high recall, lower precision]
+    #   "containment"      : section → contained element structural edge
+    attribution: str = "enclosing_env"
+    # A2: how many times this (source, target) pair was referenced in the document
+    occurrence_count: int = 1
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -127,6 +134,8 @@ class LatexRefEdge:
             "target_type": self.target_type,
             "ref_text": self.ref_text,
             "context": self.context[:300],
+            "attribution": self.attribution,
+            "occurrence_count": self.occurrence_count,
         }
 
 
@@ -359,6 +368,7 @@ class LaTeXReferenceExtractor:
         extract_dir: Path,
         main_tex: Optional[Path] = None,
         bbl_path: Optional[Path] = None,
+        aggregate_bbl: bool = False,
     ) -> LatexDocumentGraph:
         """
         Extract full reference graph for one document.
@@ -368,12 +378,22 @@ class LaTeXReferenceExtractor:
             extract_dir: root dir of the extracted LaTeX source
             main_tex: path to main .tex (auto-detected if None)
             bbl_path: path to .bbl file (auto-detected if None)
+            aggregate_bbl: if True, merge entries from ALL .bbl files (A1)
         """
         graph = LatexDocumentGraph(doc_id=doc_id)
 
-        # Find main .tex
+        # A1: Find main .tex with discovery metadata
         if main_tex is None:
-            main_tex = self._find_main_tex(extract_dir)
+            all_candidates = self._find_all_main_tex(extract_dir)
+            if all_candidates:
+                main_tex = all_candidates[0][0]
+                graph.metadata["main_tex_candidates"] = [
+                    {"path": str(p.relative_to(extract_dir)), "reason": r, "confidence": c}
+                    for p, r, c in all_candidates
+                ]
+            else:
+                main_tex = None
+
         if main_tex is None:
             graph.metadata["error"] = "no_tex_found"
             return graph
@@ -398,6 +418,12 @@ class LaTeXReferenceExtractor:
         # 3) Build edges: reference edges (enclosing element + section fallback)
         graph.edges = self._build_edges(graph.labels, graph.refs, lines, env_stack)
 
+        # A3: Compute attribution distribution for metadata
+        attr_dist: Dict[str, int] = {}
+        for e in graph.edges:
+            attr_dist[e.attribution] = attr_dist.get(e.attribution, 0) + 1
+        graph.metadata["edge_attribution_dist"] = attr_dist
+
         # 4) Add containment edges: section → contained elements
         containment = self._build_containment_edges(graph.labels, lines)
         graph.edges.extend(containment)
@@ -407,11 +433,22 @@ class LaTeXReferenceExtractor:
         if title:
             graph.metadata["title"] = title
 
-        # 6) Parse .bbl
-        if bbl_path is None:
-            bbl_path = self._find_bbl(extract_dir)
-        if bbl_path is not None:
-            graph.bib = self._parse_bbl(bbl_path)
+        # 6) Parse .bbl — A1: optionally aggregate ALL .bbl files
+        if aggregate_bbl:
+            all_bbl = self._find_all_bbl(extract_dir)
+            graph.metadata["bbl_files"] = [str(b.relative_to(extract_dir)) for b in all_bbl]
+            merged_bib: Dict[str, BibEntry] = {}
+            for bp in all_bbl:
+                entries = self._parse_bbl(bp)
+                for k, v in entries.items():
+                    if k not in merged_bib:
+                        merged_bib[k] = v
+            graph.bib = merged_bib
+        else:
+            if bbl_path is None:
+                bbl_path = self._find_bbl(extract_dir)
+            if bbl_path is not None:
+                graph.bib = self._parse_bbl(bbl_path)
 
         # Stats
         graph.metadata["num_input_files"] = len(set(
@@ -426,27 +463,79 @@ class LaTeXReferenceExtractor:
 
     @staticmethod
     def _find_main_tex(extract_dir: Path) -> Optional[Path]:
-        """Same heuristic as download_latex_sources.py."""
+        """
+        Find the primary main .tex file.
+
+        A1: Enhanced discovery — returns best candidate from the ranked list.
+        Use _find_all_main_tex() for the full candidate set with rationale.
+        """
+        candidates = LaTeXReferenceExtractor._find_all_main_tex(extract_dir)
+        return candidates[0][0] if candidates else None
+
+    @staticmethod
+    def _find_all_main_tex(
+        extract_dir: Path,
+    ) -> List[Tuple[Path, str, float]]:
+        """
+        A1: Find ALL candidate main .tex files with selection rationale.
+
+        Returns list of (path, reason, confidence) sorted by confidence descending.
+        Reasons:
+          - "documentclass"    : contains \\documentclass (most reliable)
+          - "conventional_name": filename matches main.tex/paper.tex/etc.
+          - "largest_file"     : fallback to largest .tex by size
+        """
         tex_files = list(extract_dir.rglob("*.tex"))
         if not tex_files:
-            return None
+            return []
+
+        candidates: List[Tuple[Path, str, float]] = []
+
+        # Priority 1: files with \documentclass
         for f in tex_files:
             try:
                 text = f.read_text(errors="replace")
                 if "\\documentclass" in text:
-                    return f
+                    # Boost if also has \begin{document}
+                    conf = 0.95 if "\\begin{document}" in text else 0.85
+                    candidates.append((f, "documentclass", conf))
             except Exception:
                 continue
-        for name in ("main.tex", "paper.tex", "ms.tex", "article.tex"):
+
+        # Priority 2: conventional names
+        conventional = ("main.tex", "paper.tex", "ms.tex", "article.tex")
+        for name in conventional:
             for f in tex_files:
                 if f.name.lower() == name:
-                    return f
-        return max(tex_files, key=lambda f: f.stat().st_size)
+                    already = any(c[0] == f for c in candidates)
+                    if not already:
+                        candidates.append((f, "conventional_name", 0.70))
+
+        # Priority 3: largest file (fallback)
+        if tex_files:
+            largest = max(tex_files, key=lambda f: f.stat().st_size)
+            already = any(c[0] == largest for c in candidates)
+            if not already:
+                candidates.append((largest, "largest_file", 0.40))
+
+        candidates.sort(key=lambda x: -x[2])
+        return candidates
 
     @staticmethod
     def _find_bbl(extract_dir: Path) -> Optional[Path]:
-        bbl_files = list(extract_dir.rglob("*.bbl"))
+        """Find the primary .bbl file. Use _find_all_bbl() for full list."""
+        bbl_files = LaTeXReferenceExtractor._find_all_bbl(extract_dir)
         return bbl_files[0] if bbl_files else None
+
+    @staticmethod
+    def _find_all_bbl(extract_dir: Path) -> List[Path]:
+        """
+        A1: Find ALL .bbl files in the extracted source directory.
+
+        Useful for projects with multiple bibliographies (e.g., supplement
+        with its own .bbl, or split bibliography files).
+        """
+        return sorted(extract_dir.rglob("*.bbl"))
 
     def _resolve_inputs(
         self, main_tex: Path, extract_dir: Path, _visited: Optional[Set[str]] = None
@@ -773,9 +862,20 @@ class LaTeXReferenceExtractor:
 
         Uses _merged_idx (0-based merged content index) for all positional
         comparisons, fixing the original line_no coordinate mismatch.
+
+        A2/A3 enhancements:
+          - Each edge records its attribution strategy ("enclosing_env" or
+            "section_fallback") so downstream can weight them differently.
+          - occurrence_count tracks how many \\ref{} instances produced
+            each unique (source, target) pair.
         """
         edges: List[LatexRefEdge] = []
-        seen: Set[Tuple[str, str]] = set()
+        # A2: track occurrence counts per (source, target) pair
+        edge_occurrences: Dict[Tuple[str, str], int] = {}
+        # A3: track attribution strategy for first occurrence
+        edge_attribution: Dict[Tuple[str, str], str] = {}
+        # Track edge index for updating
+        edge_index: Dict[Tuple[str, str], int] = {}
 
         # label → line range in merged indices
         label_ranges = self._compute_label_ranges(labels, lines, env_stack)
@@ -799,23 +899,37 @@ class LaTeXReferenceExtractor:
             source_label_key = self._find_enclosing_label(
                 ref_idx, label_ranges, labels
             )
+            attribution = "enclosing_env" if source_label_key is not None else None
 
             # Strategy 2: nearest preceding section (high recall)
             if source_label_key is None:
                 source_label_key = self._find_section_for_line(
                     ref_idx, section_list
                 )
+                if source_label_key is not None:
+                    attribution = "section_fallback"
 
             if source_label_key is None or source_label_key == target_key:
                 continue  # self-ref or truly free text
 
             edge_pair = (source_label_key, target_key)
-            if edge_pair in seen:
+
+            if edge_pair in edge_index:
+                # A2: increment occurrence count on existing edge
+                edge_occurrences[edge_pair] += 1
+                edges[edge_index[edge_pair]].occurrence_count = edge_occurrences[edge_pair]
+                # A3: upgrade attribution if we find a higher-precision one
+                if attribution == "enclosing_env" and edge_attribution[edge_pair] == "section_fallback":
+                    edge_attribution[edge_pair] = "enclosing_env"
+                    edges[edge_index[edge_pair]].attribution = "enclosing_env"
                 continue
-            seen.add(edge_pair)
 
             source_info = labels[source_label_key]
             target_info = labels[target_key]
+
+            edge_occurrences[edge_pair] = 1
+            edge_attribution[edge_pair] = attribution or "enclosing_env"
+            edge_index[edge_pair] = len(edges)
 
             edges.append(LatexRefEdge(
                 source_label=source_label_key,
@@ -824,6 +938,8 @@ class LaTeXReferenceExtractor:
                 target_type=target_info.label_type.value,
                 ref_text=f"\\{ref.ref_type}{{{target_key}}}",
                 context=ref.context,
+                attribution=attribution or "enclosing_env",
+                occurrence_count=1,
             ))
 
         return edges
@@ -990,6 +1106,8 @@ class LaTeXReferenceExtractor:
                     target_type=elem_info.label_type.value,
                     ref_text="[containment]",
                     context=f"{elem_key} is within {best_key}",
+                    attribution="containment",
+                    occurrence_count=1,
                 ))
 
         return edges
