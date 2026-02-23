@@ -205,7 +205,7 @@ def suppress_hub_citers(
     max_out: int = 8,
     max_in: int = 20,
 ) -> List[Dict[str, Any]]:
-    """Soft hub suppression by retaining highest-confidence edges per node degree caps."""
+    """Optional hard cap helper (kept for ablation only; prefer runtime degree penalties)."""
     by_src: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for e in edges:
         by_src[e["source"]].append(e)

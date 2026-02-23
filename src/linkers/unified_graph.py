@@ -26,12 +26,13 @@ class EdgeType(Enum):
     INTRA_REF = "intra_ref"
     CONTAINMENT = "containment"
     HAS_ELEMENT = "has_element"
+    ALIGNMENT = "alignment"
 
 
 @dataclass
 class Attribution:
     name: str
-    base_confidence: float
+    prior_confidence: float
 
 
 ATTRIBUTIONS: Dict[str, Attribution] = {
@@ -39,6 +40,7 @@ ATTRIBUTIONS: Dict[str, Attribution] = {
     "section_fallback": Attribution("section_fallback", 0.65),
     "containment": Attribution("containment", 0.80),
     "citation": Attribution("citation", 0.90),
+    "alignment": Attribution("alignment", 0.85),
     "derived": Attribution("derived", 0.70),
 }
 
@@ -76,20 +78,36 @@ class UnifiedGraph:
 
     @staticmethod
     def _edge_confidence(attribution: str, extra_conf: Optional[float] = None) -> float:
-        base = ATTRIBUTIONS.get(attribution, ATTRIBUTIONS["derived"]).base_confidence
+        base = ATTRIBUTIONS.get(attribution, ATTRIBUTIONS["derived"]).prior_confidence
         if extra_conf is None:
             return base
         return max(0.0, min(1.0, 0.5 * base + 0.5 * extra_conf))
 
     @staticmethod
-    def compute_path_score(edge_confidences: List[float], penalty_base: float = 0.08) -> float:
-        """Geometric mean with logarithmic path penalty (non-negative)."""
+    def compute_path_score(edge_confidences: List[float], decay_factor: float = 0.85) -> float:
+        """Markov-style joint probability with multiplicative length decay."""
         if not edge_confidences:
             return 0.0
-        eps = 1e-6
-        gm = math.prod(max(c, eps) for c in edge_confidences) ** (1.0 / len(edge_confidences))
-        penalty = penalty_base * math.log(max(1, len(edge_confidences)))
-        return max(0.0, round(gm - penalty, 4))
+        eps = 1e-5
+        joint_prob = math.prod(max(c, eps) for c in edge_confidences)
+        decay = decay_factor ** max(0, len(edge_confidences) - 1)
+        return round(joint_prob * decay, 6)
+
+    @staticmethod
+    def _caption_tokens(text: str) -> Set[str]:
+        if not text:
+            return set()
+        t = text.lower()
+        t = ''.join(ch if ch.isalnum() else ' ' for ch in t)
+        return {w for w in t.split() if len(w) >= 3}
+
+    @classmethod
+    def _caption_jaccard(cls, a: str, b: str) -> float:
+        ta = cls._caption_tokens(a)
+        tb = cls._caption_tokens(b)
+        if not ta or not tb:
+            return 0.0
+        return len(ta & tb) / len(ta | tb)
 
     def load_intra_doc_edges(self, latex_reference_graph_path: str) -> None:
         data = json.loads(Path(latex_reference_graph_path).read_text(encoding="utf-8"))
@@ -164,6 +182,86 @@ class UnifiedGraph:
                 },
             ))
 
+    def load_mineru_elements_and_align(
+        self,
+        multimodal_elements_path: str,
+        min_caption_jaccard: float = 0.35,
+    ) -> None:
+        """Load MinerU elements and align them to LaTeX element nodes by caption similarity."""
+        data = json.loads(Path(multimodal_elements_path).read_text(encoding="utf-8"))
+        docs = data.get("documents", {})
+
+        # index latex element nodes by doc
+        latex_by_doc: Dict[str, List[GraphNode]] = {}
+        for n in self.nodes.values():
+            if n.node_type == NodeType.ELEMENT and n.node_id.startswith("elem:"):
+                latex_by_doc.setdefault(n.doc_id, []).append(n)
+
+        align_count = 0
+        for doc_id, doc in docs.items():
+            mm_elements = doc.get("elements", {})
+            if not isinstance(mm_elements, dict):
+                continue
+            doc_node_id = f"doc:{doc_id}"
+            if doc_node_id not in self.nodes:
+                self.add_node(GraphNode(doc_node_id, NodeType.DOCUMENT, doc_id, payload={}))
+
+            for mm_id, mm in mm_elements.items():
+                mm_node_id = f"mm:{doc_id}:{mm_id}"
+                self.add_node(GraphNode(mm_node_id, NodeType.ELEMENT, doc_id, payload=mm))
+                self.add_edge(GraphEdge(
+                    src=doc_node_id,
+                    tgt=mm_node_id,
+                    edge_type=EdgeType.HAS_ELEMENT,
+                    confidence=1.0,
+                    attribution="derived",
+                    metadata={"source": "mineru"},
+                ))
+                self.add_edge(GraphEdge(
+                    src=mm_node_id,
+                    tgt=doc_node_id,
+                    edge_type=EdgeType.HAS_ELEMENT,
+                    confidence=1.0,
+                    attribution="derived",
+                    metadata={"source": "mineru", "reverse": True},
+                ))
+
+                mm_caption = (mm.get("caption") or "")
+                if not mm_caption:
+                    continue
+
+                best_node: Optional[GraphNode] = None
+                best_sim = 0.0
+                for latex_node in latex_by_doc.get(doc_id, []):
+                    lp = latex_node.payload or {}
+                    latex_caption = lp.get("caption") or ""
+                    sim = self._caption_jaccard(mm_caption, latex_caption)
+                    if sim > best_sim:
+                        best_sim = sim
+                        best_node = latex_node
+
+                if best_node is not None and best_sim >= min_caption_jaccard:
+                    conf = self._edge_confidence("alignment", best_sim)
+                    self.add_edge(GraphEdge(
+                        src=best_node.node_id,
+                        tgt=mm_node_id,
+                        edge_type=EdgeType.ALIGNMENT,
+                        confidence=conf,
+                        attribution="alignment",
+                        metadata={"caption_jaccard": round(best_sim, 3)},
+                    ))
+                    self.add_edge(GraphEdge(
+                        src=mm_node_id,
+                        tgt=best_node.node_id,
+                        edge_type=EdgeType.ALIGNMENT,
+                        confidence=conf,
+                        attribution="alignment",
+                        metadata={"caption_jaccard": round(best_sim, 3), "reverse": True},
+                    ))
+                    align_count += 1
+
+        print(f"Loaded MinerU elements and created {align_count} alignment links")
+
     def find_cross_doc_element_paths(
         self,
         max_hops: int = 4,
@@ -202,9 +300,12 @@ class UnifiedGraph:
                     nxt = edge.tgt
                     if nxt in visited:
                         continue
+                    src_degree = len(self._adj_forward.get(current, []))
+                    degree_penalty = 1.0 / math.log(max(2, src_degree + 1))
+                    effective_conf = max(1e-5, edge.confidence * degree_penalty)
                     next_visited = set(visited)
                     next_visited.add(nxt)
-                    stack.append((nxt, path_nodes + [nxt], confs + [edge.confidence], next_visited))
+                    stack.append((nxt, path_nodes + [nxt], confs + [effective_conf], next_visited))
 
         # De-duplicate by (start, end, path)
         uniq = {}

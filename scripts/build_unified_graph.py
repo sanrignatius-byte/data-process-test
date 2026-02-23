@@ -19,6 +19,8 @@ def main() -> None:
     ap.add_argument("--citation-graph", default="data/citation_graph.json")
     ap.add_argument("--output", default="data/unified_graph.json")
     ap.add_argument("--paths-output", default="data/unified_graph_paths.json")
+    ap.add_argument("--multimodal-elements", default="", help="Optional MinerU multimodal_elements.json for node alignment")
+    ap.add_argument("--min-align-jaccard", type=float, default=0.35, help="Min caption Jaccard for LaTeX<->MinerU alignment")
     ap.add_argument("--max-hops", type=int, default=4)
     ap.add_argument("--min-score", type=float, default=0.3)
     args = ap.parse_args()
@@ -26,6 +28,11 @@ def main() -> None:
     g = UnifiedGraph()
     g.load_intra_doc_edges(args.latex_graph)
     g.load_citation_edges(args.citation_graph)
+    if args.multimodal_elements:
+        g.load_mineru_elements_and_align(
+            args.multimodal_elements,
+            min_caption_jaccard=args.min_align_jaccard,
+        )
 
     paths = g.find_cross_doc_element_paths(max_hops=args.max_hops, min_score=args.min_score)
 
