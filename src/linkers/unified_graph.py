@@ -169,14 +169,15 @@ class ScoredPath:
     """A path through the unified graph with confidence score."""
     node_ids: List[str]
     edge_indices: List[int]     # indices into UnifiedGraph.edges
-    path_score: float           # geometric mean confidence with length penalty
+    path_score: float           # path confidence score
     docs_involved: Set[str]
     modalities_involved: Set[str]
     hop_attributions: List[str]  # attribution at each hop
+    logical_hops: int = 0       # excludes zero-cost identity/alignment edges
 
     @property
     def num_hops(self) -> int:
-        return len(self.edge_indices)
+        return self.logical_hops if self.logical_hops else len(self.edge_indices)
 
     @property
     def is_cross_document(self) -> bool:
@@ -190,6 +191,7 @@ class ScoredPath:
         return {
             "node_ids": self.node_ids,
             "num_hops": self.num_hops,
+            "raw_hops": len(self.edge_indices),
             "path_score": round(self.path_score, 4),
             "docs_involved": sorted(self.docs_involved),
             "modalities_involved": sorted(self.modalities_involved),
@@ -582,6 +584,9 @@ class UnifiedGraph:
     @staticmethod
     def compute_path_score(
         edge_confidences: List[float],
+
+        edge_types: Optional[List[EdgeType]] = None,
+
         decay_factor: float = 0.85,
     ) -> float:
         """
@@ -592,6 +597,9 @@ class UnifiedGraph:
 
         Args:
             edge_confidences: confidence values for each hop
+
+            edge_types: optional edge types for logical hop counting
+
             decay_factor: multiplicative per-hop decay factor
 
         Returns:
@@ -601,7 +609,10 @@ class UnifiedGraph:
             return 0.0
 
         joint_prob = math.prod(max(c, 1e-5) for c in edge_confidences)
-        score = joint_prob * (decay_factor ** (len(edge_confidences) - 1))
+        logical_hops = len(edge_confidences)
+        if edge_types:
+            logical_hops = sum(1 for et in edge_types if et != EdgeType.ALIGNMENT)
+        score = joint_prob * (decay_factor ** max(0, logical_hops - 1))
         return max(0.0, min(1.0, score))
 
     # -------------------------------------------------------------------
@@ -684,7 +695,8 @@ class UnifiedGraph:
             if end_node and end_node.is_element:
                 # Compute score
                 confidences = self._get_effective_confidences(path_edges)
-                score = self.compute_path_score(confidences)
+                edge_types = [self.edges[ei].edge_type for ei in path_edges]
+                score = self.compute_path_score(confidences, edge_types=edge_types)
 
                 if score >= min_score:
                     docs = {self.nodes[nid].doc_id for nid in path_nodes if nid in self.nodes}
@@ -710,10 +722,11 @@ class UnifiedGraph:
                             hop_attributions=[
                                 self.edges[ei].attribution.value for ei in path_edges
                             ],
+                            logical_hops=self._logical_hop_count(path_edges),
                         ))
 
         # Continue searching if we haven't hit max hops
-        if len(path_edges) >= max_hops:
+        if self._logical_hop_count(path_edges) >= max_hops:
             return
 
         # Explore neighbors (both forward and backward for undirected traversal)
@@ -726,9 +739,10 @@ class UnifiedGraph:
                 continue
 
             # Early pruning: check if adding this edge could still reach min_score
-            current_confs = self._get_effective_confidences(path_edges)
-            current_confs.append(self._effective_edge_confidence(current, edge_idx))
-            optimistic_score = self.compute_path_score(current_confs)
+            current_edges = list(path_edges) + [edge_idx]
+            current_confs = self._get_effective_confidences(current_edges)
+            current_types = [self.edges[ei].edge_type for ei in current_edges]
+            optimistic_score = self.compute_path_score(current_confs, edge_types=current_types)
             if optimistic_score < min_score * 0.5:  # generous early prune
                 continue
 
@@ -756,6 +770,8 @@ class UnifiedGraph:
     def _effective_edge_confidence(self, current_node: str, edge_idx: int) -> float:
         """Apply soft degree penalty to damp hub-driven traversals."""
         edge = self.edges[edge_idx]
+        if edge.edge_type == EdgeType.ALIGNMENT:
+            return 1.0
         out_degree = len(self._adj_forward.get(current_node, []))
         degree_penalty = 1.0 / math.log(max(2, out_degree + 1))
         return max(1e-5, min(1.0, edge.confidence * degree_penalty))
@@ -767,12 +783,20 @@ class UnifiedGraph:
 
         confs: List[float] = []
         for i, edge_idx in enumerate(edge_indices):
+            edge = self.edges[edge_idx]
+            if edge.edge_type == EdgeType.ALIGNMENT:
+                confs.append(1.0)
+                continue
             if i == 0:
-                src = self.edges[edge_idx].source_id
+                src = edge.source_id
             else:
                 src = self.edges[edge_indices[i - 1]].target_id
             confs.append(self._effective_edge_confidence(src, edge_idx))
         return confs
+
+    def _logical_hop_count(self, edge_indices: List[int]) -> int:
+        """Count hops excluding zero-cost identity/alignment edges."""
+        return sum(1 for ei in edge_indices if self.edges[ei].edge_type != EdgeType.ALIGNMENT)
 
     # -------------------------------------------------------------------
     # B4: Hub suppression (generalized from G1/G2)
