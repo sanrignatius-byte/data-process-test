@@ -30,6 +30,7 @@ import json
 import re
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -86,6 +87,15 @@ def title_jaccard(t1: str, t2: str) -> float:
 # Single bib entry → corpus matching
 # ---------------------------------------------------------------------------
 
+@dataclass
+class MatchCandidate:
+    """B1: A single candidate match for a bib entry → corpus paper."""
+    arxiv_id: str
+    method: str        # "arxiv_id_explicit" | "arxiv_id_bare" | "title_exact" | "title_fuzzy"
+    confidence: float
+    title_sim: float = 0.0   # Jaccard similarity (only for title matches)
+
+
 def match_bib_entry(
     raw: str,
     bib_title: Optional[str],
@@ -98,12 +108,39 @@ def match_bib_entry(
 
     Returns:
         (matched_arxiv_id, match_method, confidence)
+
+    For top-k candidate matching, use match_bib_entry_topk() instead.
     """
+    candidates = match_bib_entry_topk(raw, bib_title, corpus_ids, corpus_titles, title_to_id, k=1)
+    if candidates:
+        c = candidates[0]
+        return (c.arxiv_id, c.method, c.confidence)
+    return (None, "", 0.0)
+
+
+def match_bib_entry_topk(
+    raw: str,
+    bib_title: Optional[str],
+    corpus_ids: Set[str],
+    corpus_titles: Dict[str, str],
+    title_to_id: Dict[str, str],
+    k: int = 3,
+) -> List[MatchCandidate]:
+    """
+    B1: Match a bib entry to corpus papers, returning top-k candidates
+    with margin and ambiguity information.
+
+    Returns sorted list of MatchCandidate (best first), up to k entries.
+    Use .is_ambiguous property on the result to check if the best match
+    has low margin over the second-best.
+    """
+    candidates: List[MatchCandidate] = []
+
     # Strategy 1: explicit arXiv ID in raw bbl text
     for m in RE_ARXIV_EXPLICIT.finditer(raw):
         aid = re.sub(r'v\d+$', '', m.group(1))
         if aid in corpus_ids:
-            return (aid, "arxiv_id_explicit", 1.0)
+            candidates.append(MatchCandidate(aid, "arxiv_id_explicit", 1.0))
 
     # Strategy 2: bare arXiv ID (validate year/month range)
     for m in RE_ARXIV_BARE.finditer(raw):
@@ -111,31 +148,55 @@ def match_bib_entry(
         try:
             yy, mm = int(aid[:2]), int(aid[2:4])
             if 10 <= yy <= 26 and 1 <= mm <= 12 and aid in corpus_ids:
-                return (aid, "arxiv_id_bare", 0.9)
+                if not any(c.arxiv_id == aid for c in candidates):
+                    candidates.append(MatchCandidate(aid, "arxiv_id_bare", 0.9))
         except ValueError:
             continue
 
-    # Strategy 3: title matching
+    # Strategy 3: title matching — collect ALL candidates above threshold
     if bib_title:
         norm = normalize_title(bib_title)
         if norm and len(norm) > 10:
             # Exact normalized match
             if norm in title_to_id:
-                return (title_to_id[norm], "title_exact", 0.95)
+                aid = title_to_id[norm]
+                if not any(c.arxiv_id == aid for c in candidates):
+                    candidates.append(MatchCandidate(aid, "title_exact", 0.95, 1.0))
 
-            # Fuzzy match
-            best_id = None
-            best_sim = 0.0
+            # Fuzzy match: collect ALL above threshold
+            scored: List[Tuple[str, float]] = []
             for aid, ct in corpus_titles.items():
+                if any(c.arxiv_id == aid for c in candidates):
+                    continue
                 sim = title_jaccard(norm, ct)
-                if sim > best_sim:
-                    best_sim = sim
-                    best_id = aid
+                if sim >= 0.55:
+                    scored.append((aid, sim))
 
-            if best_sim >= 0.55 and best_id:
-                return (best_id, "title_fuzzy", round(best_sim, 3))
+            scored.sort(key=lambda x: -x[1])
+            for aid, sim in scored[:k]:
+                candidates.append(MatchCandidate(aid, "title_fuzzy", round(sim, 3), round(sim, 3)))
 
-    return (None, "", 0.0)
+    # Sort by confidence descending, return top-k
+    candidates.sort(key=lambda c: -c.confidence)
+    return candidates[:k]
+
+
+def compute_match_margin(candidates: List[MatchCandidate]) -> float:
+    """
+    B1: Compute margin between best and second-best candidate.
+
+    Returns margin (0.0 if only one candidate).
+    High margin (>0.2) = confident match.
+    Low margin (<0.1) = ambiguous, use with caution.
+    """
+    if len(candidates) < 2:
+        return 1.0  # only one candidate = unambiguous
+    return candidates[0].confidence - candidates[1].confidence
+
+
+def is_ambiguous_match(candidates: List[MatchCandidate], margin_threshold: float = 0.10) -> bool:
+    """B1: Check if the top match is ambiguous (low margin over second-best)."""
+    return len(candidates) >= 2 and compute_match_margin(candidates) < margin_threshold
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +389,33 @@ def build_citation_graph(graph_data: Dict[str, Any]) -> Dict[str, Any]:
         "component_sizes": [len(c) for c in components[:10]],
     }
 
+    # --- B1: Add ambiguity info to edges ---
+    # Re-scan edges and annotate with top-k match info
+    for edge in edges:
+        doc_id = edge["source"]
+        bib = documents.get(doc_id, {}).get("bib", {})
+        # Use first cite_key to get bib entry for re-matching
+        first_key = edge["cite_keys"][0] if edge["cite_keys"] else None
+        if first_key and first_key in bib:
+            entry = bib[first_key]
+            candidates = match_bib_entry_topk(
+                entry.get("raw", ""),
+                entry.get("title"),
+                corpus_ids, corpus_titles, title_to_id,
+                k=3,
+            )
+            margin = compute_match_margin(candidates)
+            edge["match_margin"] = round(margin, 3)
+            edge["is_ambiguous"] = is_ambiguous_match(candidates)
+            if len(candidates) > 1:
+                edge["runner_up"] = {
+                    "arxiv_id": candidates[1].arxiv_id,
+                    "confidence": candidates[1].confidence,
+                }
+        else:
+            edge["match_margin"] = 1.0
+            edge["is_ambiguous"] = False
+
     # Only include non-empty adjacency entries
     compact_adj = {
         k: v for k, v in adjacency.items()
@@ -353,6 +441,85 @@ def build_citation_graph(graph_data: Dict[str, Any]) -> Dict[str, Any]:
         ],
         "unmatched_sample": unmatched_sample[:50],
     }
+
+
+# ---------------------------------------------------------------------------
+# B4: Hub suppression — reuse G1 pattern from cross-modal links
+# ---------------------------------------------------------------------------
+
+def suppress_hub_citers(
+    edges: List[Dict[str, Any]],
+    max_out_degree: int = 10,
+    max_in_degree: int = 15,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    B4: Suppress hub nodes that dominate the citation graph.
+
+    High out-degree papers (citing too many) produce noisy edges because
+    they cite broadly. High in-degree papers (cited by everyone) don't
+    provide discriminative signal for L2 candidate selection.
+
+    This mirrors the G1 hub de-dup strategy from cross-modal links.
+
+    Args:
+        edges: citation edges from build_citation_graph()
+        max_out_degree: max edges per source paper (suppress beyond this)
+        max_in_degree: max edges per target paper (suppress beyond this)
+
+    Returns:
+        (filtered_edges, suppression_report)
+    """
+    # Count degrees
+    out_counts: Dict[str, int] = defaultdict(int)
+    in_counts: Dict[str, int] = defaultdict(int)
+    for e in edges:
+        out_counts[e["source"]] += 1
+        in_counts[e["target"]] += 1
+
+    # Identify hubs
+    out_hubs = {k for k, v in out_counts.items() if v > max_out_degree}
+    in_hubs = {k for k, v in in_counts.items() if v > max_in_degree}
+
+    if not out_hubs and not in_hubs:
+        return edges, {"suppressed": 0, "out_hubs": [], "in_hubs": []}
+
+    # For out-hubs: keep only top-N edges by confidence
+    out_budget: Dict[str, int] = defaultdict(int)
+    in_budget: Dict[str, int] = defaultdict(int)
+
+    # Sort edges by confidence descending for fair selection
+    sorted_edges = sorted(edges, key=lambda e: -e.get("confidence", 0))
+
+    filtered = []
+    suppressed = 0
+    for e in sorted_edges:
+        src, tgt = e["source"], e["target"]
+        skip = False
+        if src in out_hubs:
+            out_budget[src] += 1
+            if out_budget[src] > max_out_degree:
+                skip = True
+        if tgt in in_hubs:
+            in_budget[tgt] += 1
+            if in_budget[tgt] > max_in_degree:
+                skip = True
+        if skip:
+            suppressed += 1
+        else:
+            filtered.append(e)
+
+    report = {
+        "suppressed": suppressed,
+        "out_hubs": [
+            {"arxiv_id": k, "original_out_degree": out_counts[k]}
+            for k in sorted(out_hubs, key=lambda x: -out_counts[x])
+        ],
+        "in_hubs": [
+            {"arxiv_id": k, "original_in_degree": in_counts[k]}
+            for k in sorted(in_hubs, key=lambda x: -in_counts[x])
+        ],
+    }
+    return filtered, report
 
 
 # ---------------------------------------------------------------------------
