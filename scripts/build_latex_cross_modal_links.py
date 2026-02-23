@@ -251,16 +251,18 @@ def _apply_coref_quality(
     if strategy == "direct":
         return quality_score   # no gate needed
 
-    # Cross-reference check: does A's window mention B, or B's window mention A?
-    n_cross = _count_refs_in_bridge(ctx_a, "", label_b) + \
-              _count_refs_in_bridge(ctx_b, label_a, "")
-    if n_cross >= 1:
-        return quality_score   # at least one side sees the other
-    # Fallback: check the combined bridge text (older behaviour, last resort)
-    n_bridge = _count_refs_in_bridge(bridge_text, label_a, label_b)
-    if n_bridge >= 1:
+    # Bidirectional co-reference check: both sides must mention the other.
+    # This enforces true co-reference instead of one-way citation.
+    n_a_to_b = _count_refs_in_bridge(ctx_a, "", label_b)
+    n_b_to_a = _count_refs_in_bridge(ctx_b, label_a, "")
+    if n_a_to_b >= 1 and n_b_to_a >= 1:
         return quality_score
-    return None   # neither side mentions the other → hard drop
+
+    # Fallback: require bridge text to contain both labels.
+    n_bridge = _count_refs_in_bridge(bridge_text, label_a, label_b)
+    if n_bridge >= 2:
+        return quality_score
+    return None   # true bidirectional co-reference not found → hard drop
 
 
 # ---------------------------------------------------------------------------

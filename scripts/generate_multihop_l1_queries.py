@@ -401,9 +401,9 @@ LEAK_STOPWORDS = {
     "between", "across", "than", "both", "each", "all", "into", "over",
 }
 
-ANCHOR_LEAK_THRESHOLD = 0.15
-ANSWER_BALANCE_THRESHOLD = 0.15   # v2.1: relaxed from 0.25 — token overlap is noisy proxy
-MIN_OVERLAP_PER_ELEMENT = 1       # v2.1: relaxed from 2 — visual captions can be short
+ANCHOR_LEAK_THRESHOLD = 0.10
+ANSWER_BALANCE_THRESHOLD = 0.25
+MIN_OVERLAP_PER_ELEMENT = 3
 
 QUERY_SHORTCUT_PATTERNS = [
     r"^which\s+component\b",
@@ -514,7 +514,7 @@ def has_numeric_leakage(query: str) -> bool:
 def has_no_cross_modal_operator(query: str) -> bool:
     """Flag queries missing an explicit cross-modal operator word (v4)."""
     q = query.lower()
-    return not any(op in q for op in CROSS_MODAL_OPERATORS)
+    return not any(re.search(rf"\b{re.escape(op)}\b", q, re.IGNORECASE) for op in CROSS_MODAL_OPERATORS)
 
 
 def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
@@ -825,18 +825,12 @@ def qc_multihop_query(
     metrics["anchor_count"] = len(anchors)
 
     # 7. Single-element answer — answer should reference content from both
-    # For formula elements: raw content is LaTeX (low overlap with natural-language answer).
-    # Use context_before + context_after instead, which contains the prose explanation.
     a_tokens = _content_tokens(a)
     if a_tokens:
         def _elem_text(elem: Dict) -> str:
             caption = elem.get("caption", "") or ""
-            etype   = elem.get("element_type", "")
-            if etype == "formula":
-                # LaTeX content has poor token overlap; prefer surrounding prose
-                return (caption + " " +
-                        (elem.get("context_before", "") or "") + " " +
-                        (elem.get("context_after", "") or ""))
+            # Use caption + raw content for all modalities (including formula)
+            # to avoid prose inflation in overlap scoring.
             return caption + " " + (elem.get("content", "") or "")
 
         ctx_a = _elem_text(pair.get("element_a", {}))
@@ -846,6 +840,7 @@ def qc_multihop_query(
         metrics["answer_overlap_a"] = overlap_a
         metrics["answer_overlap_b"] = overlap_b
         total = overlap_a + overlap_b
+        metrics["answer_balance"] = 0.0
         if total > 0:
             contrib_a = overlap_a / total
             contrib_b = overlap_b / total
@@ -1114,7 +1109,7 @@ def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
     try:
         return json.loads(t)
     except Exception:
-        m = re.search(r"\{.*\}", t, re.DOTALL)
+        m = re.search(r"\{.*?\}", t, re.DOTALL)
         if m:
             try:
                 return json.loads(m.group())

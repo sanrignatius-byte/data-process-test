@@ -265,7 +265,7 @@ def main() -> None:
     type_quotas = {
         "figure+table": int(args.max_pairs * 0.60),
         "figure+formula": int(args.max_pairs * 0.30),
-        "formula+table": args.max_pairs,  # remainder
+        "formula+table": args.max_pairs - int(args.max_pairs * 0.90),  # remainder (~10%)
     }
     print(f"\n  Quotas: {type_quotas}")
 
