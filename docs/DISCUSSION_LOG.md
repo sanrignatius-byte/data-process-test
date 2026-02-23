@@ -1453,3 +1453,27 @@ Equation~\ref{eq:pareto}. As Table~\ref{tab:results} demonstrates...
 - **评估闭环**：人工写 30 条测试 query → BM25 baseline → Recall@10/MRR 检验
 
 ---
+
+## 日期：2026-02-23（讨论暂存：MinerU 乱码图片与双源架构）
+
+### 一、背景
+用户反馈：MinerU 规范化输出片段设置看似开启，但下游仍出现大量乱码图片，怀疑规范化逻辑失效。
+
+### 二、结论（阶段性）
+1. 现有 `standardize_image_names` 主要解决文件名可读性，不等于图像质量清洗。
+2. 当前解析链路里，`images/` 扫描与类型级去重策略会放大噪声图片进入 figure 集合。
+3. 架构方向维持：**MinerU 主干（视觉切分）+ LaTeX 辅助（拓扑校验）**，但必须新增“对齐与门控层”。
+
+### 三、已确认的技术债
+- 目录图全量并入 figure，缺少质量门禁。
+- 合并策略按 `element_type` 去重，可能吞掉结构化高质量 figure。
+- 缺少对齐置信度字段，无法对训练样本分层。
+
+### 四、后续执行计划（待 Codex 5.3 实施）
+- **P0**：改 `_extract_elements_from_output()` 为“结构化优先 + 目录补漏”。
+- **P0**：新增 `filter_noisy_images`（尺寸阈值/长宽比/低熵过滤），并与 `standardize_image_names` 解耦。
+- **P1**：增加 MinerU↔LaTeX `alignment_score`，用于样本分层与路径置信度传播。
+- **P1**：输出 high/medium/low trust 三层数据，先用 high-trust 驱动训练与评估。
+
+### 五、交接
+本节作为“暂存记录”供 Claude 与助手框架读取；用户后续将启动 Codex 5.3 执行具体任务。
