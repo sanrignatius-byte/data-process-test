@@ -17,6 +17,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.utils.token_logger import log_run
+
 SYSTEM_PROMPT = (
     "You are an expert research analyst creating cross-document reasoning questions "
     "for training multimodal retrieval systems. "
@@ -504,6 +507,21 @@ def main() -> None:
     print(f"  Est. cost:         ${est_cost:.2f}")
     print(f"  Output:            {out}")
     print(f"{'='*60}")
+
+    log_run(
+        script="generate_l2_queries",
+        model=args.model,
+        purpose=f"L2 cross-document query generation — {kept}/{len(pairs)} pairs QC pass → {out.name}",
+        input_tokens=total_input_tokens,
+        output_tokens=total_output_tokens,
+        extra={
+            "pairs_processed": len(pairs),
+            "qc_pass":         kept,
+            "qc_fail":         qc_failed,
+            "parse_failures":  failed_parse,
+            "output":          str(out),
+        },
+    )
 
 
 if __name__ == "__main__":
