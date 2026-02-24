@@ -17,7 +17,7 @@ A cross-document multi-hop path looks like:
 Key design decisions:
   - Nodes are heterogeneous: DocNode (paper) or ElementNode (figure/table/formula/section)
   - Edges carry attribution, confidence, and occurrence metadata
-  - Confidence propagation uses geometric mean + log-length penalty (not raw product)
+  - Confidence propagation uses joint probability + hop decay + degree penalties
   - Hub suppression is applied at both levels (G1 pattern from cross-modal links)
 
 Usage:
@@ -356,6 +356,7 @@ class UnifiedGraph:
                             "latex_label": label_key,
                             "label_type": label_type,
                             "number": label_info.get("number"),
+                            "caption": label_info.get("caption", "") or "",
                         },
                     ))
 
@@ -415,7 +416,20 @@ class UnifiedGraph:
     def _load_mineru_elements(self, element_data: Dict[str, Any]) -> int:
         """Load element nodes and edges from multimodal_elements.json."""
         added = 0
-        for doc_id, doc_info in element_data.items():
+
+        # Accept either:
+        # 1) {"documents": {doc_id: ...}, "metadata": ...}
+        # 2) {doc_id: ...}
+        if (
+            isinstance(element_data, dict)
+            and "documents" in element_data
+            and isinstance(element_data.get("documents"), dict)
+        ):
+            docs = element_data["documents"]
+        else:
+            docs = element_data
+
+        for doc_id, doc_info in docs.items():
             if not isinstance(doc_info, dict):
                 continue
 
@@ -550,6 +564,12 @@ class UnifiedGraph:
 
         n1 = str(latex_node.metadata.get("number", "") or "").strip()
         n2 = str(mineru_node.metadata.get("number", "") or "").strip()
+        if not n1:
+            m = re.search(r"\d+", latex_node.label)
+            n1 = m.group(0) if m else ""
+        if not n2:
+            m = re.search(r"\d+", mineru_node.label)
+            n2 = m.group(0) if m else ""
         number_match = 1.0 if n1 and n2 and n1 == n2 else 0.0
 
         if caption_sim == 0.0 and number_match == 0.0:
@@ -618,7 +638,7 @@ class UnifiedGraph:
     def find_cross_doc_element_paths(
         self,
         max_hops: int = 5,
-        min_score: float = 0.3,
+        min_score: float = 0.02,
         require_cross_doc: bool = True,
         require_cross_modal: bool = True,
         max_paths: int = 500,
@@ -699,7 +719,7 @@ class UnifiedGraph:
             end_node = self.nodes.get(current)
             if end_node and end_node.is_element:
                 # Compute score
-                confidences = self._get_effective_confidences(path_edges)
+                confidences = self._get_effective_confidences(path_edges, path_nodes)
                 edge_types = [self.edges[ei].edge_type for ei in path_edges]
                 score = self.compute_path_score(confidences, edge_types=edge_types)
 
@@ -755,7 +775,8 @@ class UnifiedGraph:
 
             # Early pruning: check if adding this edge could still reach min_score
             current_edges = list(path_edges) + [edge_idx]
-            current_confs = self._get_effective_confidences(current_edges)
+            candidate_nodes = list(path_nodes) + [neighbor_id]
+            current_confs = self._get_effective_confidences(current_edges, candidate_nodes)
             current_types = [self.edges[ei].edge_type for ei in current_edges]
             optimistic_score = self.compute_path_score(current_confs, edge_types=current_types)
             if optimistic_score < min_score * 0.5:  # generous early prune
@@ -788,11 +809,18 @@ class UnifiedGraph:
         edge = self.edges[edge_idx]
         if edge.edge_type == EdgeType.ALIGNMENT:
             return 1.0
-        out_degree = len(self._adj_forward.get(current_node, []))
-        degree_penalty = 1.0 / math.log(max(2, out_degree + 1))
+        total_degree = (
+            len(self._adj_forward.get(current_node, []))
+            + len(self._adj_reverse.get(current_node, []))
+        )
+        degree_penalty = 1.0 / math.log(max(2, total_degree + 1))
         return max(1e-5, min(1.0, edge.confidence * degree_penalty))
 
-    def _get_effective_confidences(self, edge_indices: List[int]) -> List[float]:
+    def _get_effective_confidences(
+        self,
+        edge_indices: List[int],
+        path_nodes: Optional[List[str]] = None,
+    ) -> List[float]:
         """Compute effective confidences along a path with dynamic degree penalties."""
         if not edge_indices:
             return []
@@ -803,10 +831,12 @@ class UnifiedGraph:
             if edge.edge_type == EdgeType.ALIGNMENT:
                 confs.append(1.0)
                 continue
-            if i == 0:
-                src = edge.source_id
+
+            # Use traversal order when available (supports reverse-edge traversal).
+            if path_nodes is not None and len(path_nodes) == len(edge_indices) + 1:
+                src = path_nodes[i]
             else:
-                src = self.edges[edge_indices[i - 1]].target_id
+                src = edge.source_id
             confs.append(self._effective_edge_confidence(src, edge_idx))
         return confs
 

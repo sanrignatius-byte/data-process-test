@@ -65,24 +65,22 @@ describe context from one element, ask a question answerable only by the other.
 6. Max 30 words per query. Answer max 3 sentences with specific values from BOTH elements.
 7. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query text.
 8. The two queries must use DIFFERENT aspects of the data.
-9. CONCEPTUAL MASKING: You MAY use type-level names ("the fairness metric", "the regularization
-   weight", "the highest-performing baseline", "the ablation without data augmentation").
-   MUST NOT copy exact labels, raw row names, or symbol strings verbatim.
-   NEVER use pure visual layout words in the query ("red line", "leftmost bar", "top row",
-   "blue curve", "third column") — those belong only in visual_anchors.
-10. CROSS-MODAL OPERATOR: pick ONE per query, use DIFFERENT operators for your 2 queries.
-   ALLOWED: show, cause, drop, exceed, mismatch, require, predict, contradict, attribute, derive, converge, expose, regulate, bound, separate, reveal
-   BANNED (do NOT use in query): validate, quantify, justify, demonstrate, enforce, constrain, decompose, propagate, calibrate, verify, instantiate, map, relate, align, explain
+9. ENTITY AMNESTY: you MUST use exact paper terminology (method names, metric names,
+   dataset names, variable names like "F1 score" or "p-value") when needed.
+   Do NOT replace concrete terms with vague descriptors.
+10. CAUSAL TOPOLOGY: each query must test one explicit relationship:
+    (a) table value explains a visual trend, or (b) visual anomaly is supported/refuted by
+    table values. Do NOT stitch unrelated facts.
 11. Avoid weak templates: "Which component..." "How does X relate to Y..."
 12. Answer must include a relationship connector: because / due to / consistent with /
     constrained by / compared with / whereas / despite / under.
 
-## SENTENCE STRUCTURE — your 2 queries MUST use different structures from this list:
-- HOW-DISCREPANCY: "How does [difference in A] correspond to [constraint in B]?"
-- UNDER-CONDITION: "Under what condition does [pattern in A] appear, given [mechanism in B]?"
-- WHY-INCONSISTENT: "Why is [pattern in A] different from [expectation from B]?"
-- WHICH-MAPPING:  "Which mapping between [A regime] and [B condition] accounts for [outcome]?"
-- WHAT-CONSTRAINT: "What constraint in [B] limits [behavior in A]?"
+## STYLE DIVERSITY — MANDATORY
+- The 2 queries MUST use different opening bigrams (first two words).
+- At least one query MUST NOT start with "Why" or "Under what".
+- DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
+- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## BAD vs GOOD examples
 BAD: "Did the red line peak at 90,000 and match the keyword set?" — yes/no, visual coords
@@ -97,9 +95,10 @@ GOOD (WHAT-CONSTRAINT): "What constraint in the interaction pattern limits the a
 {{
   "queries": [
     {{
-      "query": "open-ended question with operator word, max 30 words, NO specific values",
+      "reasoning_chain": "Max 3 sentences: (1) concrete figure observation, (2) concrete table metric/value pattern, (3) causal link that requires both",
+      "query": "open-ended question based on reasoning_chain, max 30 words, NO specific values",
       "answer": "factual answer citing specific values from BOTH elements, max 3 sentences, with connector",
-      "query_type": "trend_explanation|parameter_outcome|cross_reading|anomaly_investigation",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
         {{"element_id": "{fig_id}", "span": "short extractive phrase from figure caption/content (semantic concept)", "evidence_type": "observation"}},
         {{"element_id": "{tbl_id}", "span": "short extractive phrase from table headers/content (semantic concept)", "evidence_type": "result"}}
@@ -145,29 +144,28 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 5. NEVER use meta-language: "figure", "table", "the text", "according to", "as shown in".
 6. Max 30 words per query; answer max 3 sentences with values from BOTH endpoints.
 7. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query.
-8. CONCEPTUAL MASKING: You MAY use type-level names. MUST NOT copy exact labels or visual
-   layout words ("red line", "leftmost bar") in the query.
-9. CROSS-MODAL OPERATOR: pick ONE per query, use DIFFERENT operators for your 2 queries.
-   ALLOWED: show, cause, drop, exceed, mismatch, require, predict, contradict, attribute, derive, converge, expose, regulate, bound, separate, reveal
-   BANNED (do NOT use in query): validate, quantify, justify, demonstrate, enforce, constrain, decompose, propagate, calibrate, verify, instantiate, map, relate, align, explain
+8. ENTITY AMNESTY: you MUST use exact paper terminology when needed.
+9. CAUSAL TOPOLOGY: the query must require a chain:
+   figure observation -> bridge mechanism -> table metric (or the reverse), not parallel lookup.
 10. Avoid weak templates: "Which component..." "How does X relate to Y..."
 11. Answer must include a relationship connector: because / due to / consistent with /
     constrained by / compared with / whereas / despite / under.
 
-## SENTENCE STRUCTURE — your 2 queries MUST use different structures from this list:
-- HOW-DISCREPANCY: "How does [difference in A] correspond to [constraint in B]?"
-- UNDER-CONDITION: "Under what condition does [pattern in A] appear, given [mechanism in B]?"
-- WHY-INCONSISTENT: "Why is [pattern in A] different from [expectation from B]?"
-- WHICH-MAPPING:  "Which mapping between [A regime] and [B condition] accounts for [outcome]?"
-- WHAT-CONSTRAINT: "What constraint in [B] limits [behavior in A]?"
+## STYLE DIVERSITY — MANDATORY
+- The 2 queries MUST use different opening bigrams (first two words).
+- At least one query MUST NOT start with "Why" or "Under what".
+- DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
+- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
-      "query": "chain-reasoning question with operator word, max 30 words, NO specific values",
+      "reasoning_chain": "Max 3 sentences: endpoint A observation -> bridge property -> endpoint B metric/conclusion",
+      "query": "chain-reasoning question derived from reasoning_chain, max 30 words, NO specific values",
       "answer": "factual answer citing values from both elements, max 3 sentences, with connector",
-      "query_type": "chain_verification|parameter_outcome|condition_result|bridge_reasoning",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
         {{"element_id": "{fig_id}", "span": "short extractive phrase from figure (semantic concept)", "evidence_type": "observation"}},
         {{"element_id": "{tbl_id}", "span": "short extractive phrase from table (semantic concept)", "evidence_type": "result"}}
@@ -222,9 +220,9 @@ The query asks WHY or HOW Half A is explained / constrained / justified by Half 
 - Name the structural choice concretely (e.g., "two separate encoder branches feeding a bottleneck", "the adversarial path after the feature extractor").
 - Ask: how does this specific structural choice satisfy / enforce / follow from the mathematical constraint in the formula?
 
-## CROSS-MODAL OPERATOR: pick ONE per query, use DIFFERENT operators for your 2 queries.
-ALLOWED: show, cause, drop, exceed, mismatch, require, predict, contradict, attribute, derive, converge, expose, regulate, bound, separate, reveal
-BANNED (do NOT use in query): validate, quantify, justify, demonstrate, enforce, constrain, decompose, propagate, calibrate, verify, instantiate, map, relate, align, explain
+## ENTITY AMNESTY
+Use exact paper terminology (method names, metric names, variable names) when needed.
+Avoid vague substitutions like "the best-performing method" when a concrete name exists.
 
 ## STRICT RULES
 1. Query MUST be UNANSWERABLE without BOTH the figure AND the formula. Test: if you remove the figure, can you still answer from the formula alone? If yes — REJECT and rewrite.
@@ -235,10 +233,10 @@ BANNED (do NOT use in query): validate, quantify, justify, demonstrate, enforce,
 6. NEVER use meta-language: "equation", "formula", "figure", "as shown in", "diagram", "architecture".
 7. Max 30 words per query.
 8. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query.
-9. CONCEPTUAL MASKING: Use type-level names ("the regularization weight", "the penalty term", "the class-conditional probability"). MUST NOT copy raw variable names verbatim.
-10. FORMULA MASKING: Describe variables by their MATHEMATICAL/PHYSICAL MEANING, NEVER as standalone letters.
-11. Avoid weak templates: "Which component..." "How does X relate to Y..." "What role does..."
-12. Answer must include a relationship connector (because / due to / consistent with /
+9. CAUSAL TOPOLOGY: query must connect one concrete visual phenomenon and one concrete
+   mathematical mechanism; no unrelated stitching.
+10. Avoid weak templates: "Which component..." "How does X relate to Y..." "What role does..."
+11. Answer must include a relationship connector (because / due to / consistent with /
     constrained by / compared with / whereas / despite / under).
 
 ## SELF-CHECK before outputting each query
@@ -250,12 +248,12 @@ Ask yourself:
 
 If any answer is NO — rewrite.
 
-## SENTENCE STRUCTURE — your 2 queries MUST use different structures from this list:
-- HOW-DISCREPANCY: "How does [difference in A] correspond to [constraint in B]?"
-- UNDER-CONDITION: "Under what condition does [pattern in A] appear, given [mechanism in B]?"
-- WHY-INCONSISTENT: "Why is [pattern in A] different from [expectation from B]?"
-- WHICH-MAPPING:  "Which mapping between [A regime] and [B condition] accounts for [outcome]?"
-- WHAT-CONSTRAINT: "What constraint in [B] limits [behavior in A]?"
+## STYLE DIVERSITY — MANDATORY
+- The 2 queries MUST use different opening bigrams (first two words).
+- At least one query MUST NOT start with "Why" or "Under what".
+- DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
+- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## BAD vs GOOD examples
 
@@ -277,11 +275,12 @@ GOOD (WHAT-CONSTRAINT, architectural figure):
 {{
   "queries": [
     {{
-      "query": "max 30 words, one operator word, NO LaTeX/values/letters/meta-language",
+      "reasoning_chain": "Max 3 sentences: concrete figure observation -> concrete formula mechanism -> explicit causality between them",
+      "query": "max 30 words, based on reasoning_chain, NO LaTeX/values/letters/meta-language",
       "answer": "max 4 sentences with connector. Must cite both halves explicitly.",
       "answer_figure_evidence": "1-2 sentences: what specific observation from the figure is cited (trend/structure/comparison). Start with the concrete observable.",
       "answer_formula_evidence": "1-2 sentences: what specific mathematical mechanism from the formula is cited (constraint/bound/objective). Start with the mechanism.",
-      "query_type": "theory_vs_experiment|structural_justification|parameter_sensitivity|boundary_behavior|convergence_analysis",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
         {{"element_id": "{fig_id}", "span": "specific observable feature: name the trend/structure/comparison concretely", "evidence_type": "observation"}},
         {{"element_id": "{formula_id}", "span": "specific mathematical mechanism: name the constraint/term/property (NOT generic 'the formula')", "evidence_type": "mechanism"}}
@@ -326,23 +325,20 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 6. NEVER use meta-language: "table", "equation", "formula", "the text".
 7. Max 30 words per query; answer max 3 sentences with specific values from the table.
 8. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query.
-9. CONCEPTUAL MASKING: You MAY use type-level names. MUST NOT copy exact row names, column
-   headers, or variable strings verbatim.
-10. FORMULA MASKING: Describe variables by their MATHEMATICAL/PHYSICAL MEANING in context,
-   NEVER as standalone letters (NOT "β" but "the smoothing parameter").
-11. CROSS-MODAL OPERATOR: pick ONE per query, use DIFFERENT operators for your 2 queries.
-   ALLOWED: show, cause, drop, exceed, mismatch, require, predict, contradict, attribute, derive, converge, expose, regulate, bound, separate, reveal
-   BANNED (do NOT use in query): validate, quantify, justify, demonstrate, enforce, constrain, decompose, propagate, calibrate, verify, instantiate, map, relate, align, explain
-12. Avoid weak templates: "Which component..." "How does X relate to Y..."
-13. Answer must include a relationship connector: because / due to / consistent with /
+9. ENTITY AMNESTY: you MUST use exact paper terminology (method/metric/variable names)
+   when needed; avoid vague substitutions.
+10. CAUSAL TOPOLOGY: question must connect one concrete mathematical mechanism and one
+    concrete tabular result through a causal/comparative claim.
+11. Avoid weak templates: "Which component..." "How does X relate to Y..."
+12. Answer must include a relationship connector: because / due to / consistent with /
     constrained by / compared with / whereas / despite / under.
 
-## SENTENCE STRUCTURE — your 2 queries MUST use different structures from this list:
-- HOW-DISCREPANCY: "How does [difference in A] correspond to [constraint in B]?"
-- UNDER-CONDITION: "Under what condition does [pattern in A] appear, given [mechanism in B]?"
-- WHY-INCONSISTENT: "Why is [pattern in A] different from [expectation from B]?"
-- WHICH-MAPPING:  "Which mapping between [A regime] and [B condition] accounts for [outcome]?"
-- WHAT-CONSTRAINT: "What constraint in [B] limits [behavior in A]?"
+## STYLE DIVERSITY — MANDATORY
+- The 2 queries MUST use different opening bigrams (first two words).
+- At least one query MUST NOT start with "Why" or "Under what".
+- DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
+- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## BAD vs GOOD examples
 BAD: "Does beta=0.3 in row 4 satisfy Eq. 2?" — yes/no, numbers, meta-language
@@ -356,9 +352,10 @@ GOOD (WHY-INCONSISTENT): "Why is the highest-regularization setting better than 
 {{
   "queries": [
     {{
-      "query": "formula-data question with operator word, max 30 words, NO LaTeX/values/letters",
+      "reasoning_chain": "Max 3 sentences: formula mechanism -> table metric pattern -> explicit causality/comparison",
+      "query": "formula-data question based on reasoning_chain, max 30 words, NO LaTeX/values/letters",
       "answer": "factual answer with specific values from both, max 3 sentences, with connector",
-      "query_type": "formula_instantiation|data_formula_consistency|sensitivity_analysis|unit_verification",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
         {{"element_id": "{formula_id}", "span": "short extractive phrase describing the formula's role or constraint (NOT raw LaTeX)", "evidence_type": "constraint"}},
         {{"element_id": "{tbl_id}", "span": "short extractive phrase from table headers/content (semantic concept)", "evidence_type": "result"}}
@@ -401,9 +398,13 @@ LEAK_STOPWORDS = {
     "between", "across", "than", "both", "each", "all", "into", "over",
 }
 
-ANCHOR_LEAK_THRESHOLD = 0.10
-ANSWER_BALANCE_THRESHOLD = 0.25
-MIN_OVERLAP_PER_ELEMENT = 3
+ANCHOR_LEAK_THRESHOLD = 0.20
+ANSWER_BALANCE_THRESHOLD = 0.20
+MIN_OVERLAP_BY_TYPE = {
+    "figure": 1,
+    "table": 2,
+    "formula": 2,
+}
 
 QUERY_SHORTCUT_PATTERNS = [
     r"^which\s+component\b",
@@ -421,6 +422,29 @@ TEMPLATED_QUERY_OPENINGS = (
     "what causes",
 )
 
+TEMPLATE_COLLAPSE_PATTERNS = (
+    r"^under\s+what\b",
+    r"^why\s+is\b.+\bdifferent from\b",
+)
+
+ENTITY_AMNESTY_TERMS = {
+    "f1", "auc", "rmse", "accuracy", "precision", "recall", "pvalue", "p-value",
+    "lambda", "alpha", "beta", "baseline", "attention", "adversary", "adversarial",
+    "fairness", "bias", "parity", "statistical", "significance", "classification",
+    "error", "score", "scores", "metric", "metrics", "dataset", "datasets",
+}
+
+STRUCTURAL_CONCEPT_TERMS = {
+    "separation", "cluster", "topology", "network", "node", "nodes",
+    "graph", "curve", "curves", "heatmap", "bar", "bars", "layout",
+}
+
+METRIC_CONCEPT_TERMS = {
+    "performance", "score", "scores", "accuracy", "error", "errors",
+    "precision", "recall", "auc", "f1", "rmse", "metric", "metrics",
+    "rate", "rates", "p-value", "pvalue", "statistical",
+}
+
 RELATION_CONNECTORS = {
     "because", "due to", "therefore", "thus", "hence",
     "leads to", "results in", "explains", "matches", "corresponds to",
@@ -428,10 +452,8 @@ RELATION_CONNECTORS = {
     "constrained by", "compared with", "whereas", "despite", "under",
 }
 
-# Cross-modal operators accepted by QC (superset of prompt-allowed operators).
-# v4.2: "validate/quantify/justify/demonstrate/enforce/constrain/decompose/propagate/calibrate/verify"
-# are banned from prompts (prevent academic jargon), but still accepted here so v4/v4.1 data
-# is not retroactively penalized.
+# Cross-modal operator cues tracked by QC as advisory features.
+# v4.3 does not hard-fail missing operator words; we keep these for diagnostics.
 CROSS_MODAL_OPERATORS = {
     "verify", "verified", "verifies",
     "derive", "derived", "derives",
@@ -456,6 +478,17 @@ CROSS_MODAL_OPERATORS = {
     "regulate", "regulates", "regulated",
     "bound", "bounds", "bounded",
     "separate", "separates", "separated",
+    # synonyms frequently used by prompt sentence structures
+    "correspond", "corresponds", "corresponded",
+    "account", "accounts", "accounted",
+    "limit", "limits", "limited",
+    "associate", "associates", "associated",
+    "depend", "depends", "depended",
+    "link", "links", "linked",
+    "relate", "relates", "related",
+    "appear", "appears", "appeared",
+    "decline", "declines", "declined", "declining",
+    "inconsistent",
     # v4.2 allowed prompt operators (also accepted by QC)
     "show", "shows", "showed",
     "cause", "causes", "caused",
@@ -488,7 +521,21 @@ CROSS_MODAL_OPERATORS = {
     "fail", "fails", "failed",
     "vary", "varies", "varied",
     "scale", "scales", "scaled",
+    # comparative/linking variants frequently produced by the model
+    "difference", "differences",
+    "better", "worse",
+    "emerge", "emerges", "emerged",
+    "outperform", "outperforms", "outperformed",
 }
+
+# Phrase-level operator patterns that often express cross-modal linkage
+# but are not always captured by single-token operator matching.
+CROSS_MODAL_OPERATOR_PATTERNS = (
+    r"\bdifferent(?:\s+from|\s+than)?\b",
+    r"\bcompar(?:e|es|ed|ing|ison)\b",
+    r"\b(higher|lower|greater|less)\b.{0,20}\bthan\b",
+    r"\bmaintain(?:s|ed|ing)?\b",
+)
 
 
 def has_numeric_leakage(query: str) -> bool:
@@ -512,9 +559,16 @@ def has_numeric_leakage(query: str) -> bool:
 
 
 def has_no_cross_modal_operator(query: str) -> bool:
-    """Flag queries missing an explicit cross-modal operator word (v4)."""
+    """Return True when no explicit cross-modal operator cue is found."""
     q = query.lower()
-    return not any(re.search(rf"\b{re.escape(op)}\b", q, re.IGNORECASE) for op in CROSS_MODAL_OPERATORS)
+    token_hit = any(
+        re.search(rf"\b{re.escape(op)}\b", q, re.IGNORECASE)
+        for op in CROSS_MODAL_OPERATORS
+    )
+    if token_hit:
+        return False
+    phrase_hit = any(re.search(p, q, re.IGNORECASE) for p in CROSS_MODAL_OPERATOR_PATTERNS)
+    return not phrase_hit
 
 
 def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
@@ -571,6 +625,62 @@ def has_shortcut_template(query: str) -> bool:
 def has_templated_opening(query: str) -> bool:
     q = query.strip().lower()
     return any(q.startswith(prefix) for prefix in TEMPLATED_QUERY_OPENINGS)
+
+
+def has_template_collapse(query: str) -> bool:
+    q = query.strip().lower()
+    return any(re.search(p, q) for p in TEMPLATE_COLLAPSE_PATTERNS)
+
+
+def query_opening_signature(query: str, n_words: int = 2) -> str:
+    toks = re.findall(r"[a-zA-Z]+", query.lower())
+    return " ".join(toks[:n_words]) if toks else ""
+
+
+def has_parallel_dual_ask(query: str) -> bool:
+    q = query.strip().lower()
+    return bool(
+        re.search(r",\s*and\s+(?:which|what|under\s+what)\b", q)
+        or re.search(r"\band\s+which\b", q)
+        or re.search(r"\band\s+what\b", q)
+    )
+
+
+def has_semantic_category_mismatch(query: str) -> bool:
+    """High-precision check for 'A different from B' cross-category stitching."""
+    q = query.strip().lower()
+    marker = ""
+    for m in ("different from", "inconsistent with"):
+        if m in q:
+            marker = m
+            break
+    if not marker:
+        return False
+    left, right = q.split(marker, 1)
+
+    def _has_term(text: str, terms: Set[str]) -> bool:
+        return any(re.search(rf"\b{re.escape(t)}\b", text) for t in terms)
+
+    left_struct = _has_term(left, STRUCTURAL_CONCEPT_TERMS)
+    right_struct = _has_term(right, STRUCTURAL_CONCEPT_TERMS)
+    left_metric = _has_term(left, METRIC_CONCEPT_TERMS)
+    right_metric = _has_term(right, METRIC_CONCEPT_TERMS)
+
+    # Mismatch only when one side is clearly structural and the other clearly metric.
+    if left_struct and right_metric and not left_metric:
+        return True
+    if right_struct and left_metric and not right_metric:
+        return True
+    return False
+
+
+def has_min_reasoning_chain(obj: Dict[str, Any]) -> bool:
+    rc = str(obj.get("reasoning_chain", "")).strip()
+    if len(rc) < 40:
+        return False
+    # Require at least 2 sentence fragments as minimal causal decomposition.
+    chunks = [c.strip() for c in re.split(r"[.;\n]", rc) if c.strip()]
+    return len(chunks) >= 2
 
 
 def has_relationship_connector(answer: str) -> bool:
@@ -712,6 +822,16 @@ def _content_tokens(text: str) -> Set[str]:
     return words - LEAK_STOPWORDS
 
 
+def _number_tokens(text: str) -> Set[str]:
+    """Extract normalized numeric tokens used for evidence overlap."""
+    nums = set()
+    for raw in re.findall(r"\b\d+(?:[.,]\d+)?%?\b", text):
+        tok = raw.replace(",", "").rstrip("%")
+        if tok:
+            nums.add(tok)
+    return nums
+
+
 def anchor_leak_jaccard(query: str, anchors: List[Dict[str, Any]]) -> float:
     q_tokens = _content_tokens(query)
     if not q_tokens:
@@ -739,6 +859,16 @@ def anchor_token_copy_count(query: str, anchors: List[Dict[str, Any]]) -> int:
         a_text = a.get("anchor", "") if isinstance(a, dict) else str(a)
         all_anchor_tokens |= _content_tokens(a_text)
     return len(q_tokens & all_anchor_tokens)
+
+
+def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]:
+    """Return overlapping content tokens between query and all anchors."""
+    q_tokens = _content_tokens(query)
+    all_anchor_tokens: Set[str] = set()
+    for a in anchors:
+        a_text = a.get("anchor", "") if isinstance(a, dict) else str(a)
+        all_anchor_tokens |= _content_tokens(a_text)
+    return q_tokens & all_anchor_tokens
 
 
 def qc_multihop_query(
@@ -778,6 +908,26 @@ def qc_multihop_query(
         issues.append("templated_opening")
         metrics["templated_opening_warn"] = True
 
+    # 2ea. High-frequency shell patterns that indicate template collapse.
+    if has_template_collapse(q):
+        issues.append("template_collapse")
+        metrics["template_collapse_warn"] = True
+
+    # 2f. Parallel dual-ask shortcut (fake multi-hop by sentence stitching)
+    if has_parallel_dual_ask(q):
+        issues.append("pseudo_multihop_parallel")
+        metrics["parallel_dual_ask_warn"] = True
+
+    # 2g. Cross-category mismatch in "different from"/"inconsistent with" framing
+    if has_semantic_category_mismatch(q):
+        issues.append("semantic_category_mismatch")
+        metrics["semantic_category_mismatch_warn"] = True
+
+    # 2h. Require pre-query reasoning chain so generation is causality-first.
+    if not has_min_reasoning_chain(obj):
+        issues.append("missing_reasoning_chain")
+        metrics["reasoning_chain_warn"] = True
+
     # 3. Short answer
     if len(a) < 20:
         issues.append("short_answer")
@@ -794,8 +944,18 @@ def qc_multihop_query(
     # 5. Anchor leakage
     leak = anchor_leak_jaccard(q, anchors)
     metrics["anchor_leak_jaccard"] = round(leak, 4)
+    overlap_tokens = anchor_overlap_tokens(q, anchors)
     if leak > ANCHOR_LEAK_THRESHOLD:
-        issues.append("anchor_leakage")
+        span_tokens: Set[str] = set()
+        for s in obj.get("required_evidence_spans", []) or []:
+            if isinstance(s, dict):
+                span_tokens |= _content_tokens(str(s.get("span", "")))
+        allowed_tokens = ENTITY_AMNESTY_TERMS | span_tokens
+        # Entity amnesty: if overlap is only domain entities/evidence terms, track but do not fail.
+        if overlap_tokens and overlap_tokens <= allowed_tokens:
+            metrics["anchor_leakage_amnestied"] = True
+        else:
+            issues.append("anchor_leakage")
     anchor_copy = anchor_token_copy_count(q, anchors)
     metrics["anchor_token_copy_count"] = anchor_copy
     # v4 (Option A): bridge_entity_leakage is a SOFT tracking metric only,
@@ -804,9 +964,8 @@ def qc_multihop_query(
     if anchor_copy >= 4:
         metrics["bridge_entity_leakage_warn"] = True
 
-    # 5b. Cross-modal operator check (v4 new)
-    if has_no_cross_modal_operator(q):
-        issues.append("no_cross_modal_operator")
+    # 5b. Cross-modal operator is now advisory (no hard fail).
+    metrics["has_cross_modal_operator"] = not has_no_cross_modal_operator(q)
 
     # 5c. Required evidence spans (v4 new)
     if not check_evidence_spans(obj, pair):
@@ -826,17 +985,42 @@ def qc_multihop_query(
 
     # 7. Single-element answer — answer should reference content from both
     a_tokens = _content_tokens(a)
-    if a_tokens:
+    a_num_tokens = _number_tokens(a)
+    if a_tokens or a_num_tokens:
+        def _min_overlap_for_elem(elem: Dict) -> int:
+            etype = str(elem.get("element_type", "")).lower()
+            return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
+
         def _elem_text(elem: Dict) -> str:
             caption = elem.get("caption", "") or ""
             # Use caption + raw content for all modalities (including formula)
             # to avoid prose inflation in overlap scoring.
             return caption + " " + (elem.get("content", "") or "")
 
-        ctx_a = _elem_text(pair.get("element_a", {}))
-        ctx_b = _elem_text(pair.get("element_b", {}))
-        overlap_a = len(a_tokens & _content_tokens(ctx_a))
-        overlap_b = len(a_tokens & _content_tokens(ctx_b))
+        span_text_by_eid: Dict[str, str] = defaultdict(str)
+        for s in obj.get("required_evidence_spans", []) or []:
+            if not isinstance(s, dict):
+                continue
+            eid = str(s.get("element_id", "")).strip()
+            span = str(s.get("span", "")).strip()
+            if eid and span:
+                span_text_by_eid[eid] += " " + span
+
+        def _elem_overlap(elem: Dict, elem_id: str) -> int:
+            # Merge raw element text with its required evidence span to reduce
+            # false negatives from OCR/style variation in table/formula content.
+            merged = (_elem_text(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
+            word_overlap = len(a_tokens & _content_tokens(merged))
+            num_overlap = len(a_num_tokens & _number_tokens(merged))
+            # Cap numeric contribution so lexical grounding still dominates.
+            return word_overlap + min(num_overlap, 2)
+
+        elem_a = pair.get("element_a", {})
+        elem_b = pair.get("element_b", {})
+        elem_a_id = pair.get("element_a_id", "")
+        elem_b_id = pair.get("element_b_id", "")
+        overlap_a = _elem_overlap(elem_a, elem_a_id)
+        overlap_b = _elem_overlap(elem_b, elem_b_id)
         metrics["answer_overlap_a"] = overlap_a
         metrics["answer_overlap_b"] = overlap_b
         total = overlap_a + overlap_b
@@ -848,8 +1032,8 @@ def qc_multihop_query(
             metrics["answer_balance"] = round(balance, 4)
             # Require non-trivial overlap from BOTH elements.
             if (
-                overlap_a < MIN_OVERLAP_PER_ELEMENT
-                or overlap_b < MIN_OVERLAP_PER_ELEMENT
+                overlap_a < _min_overlap_for_elem(elem_a)
+                or overlap_b < _min_overlap_for_elem(elem_b)
                 or balance < ANSWER_BALANCE_THRESHOLD
             ):
                 issues.append("single_element_answer")
@@ -870,6 +1054,9 @@ def qc_multihop_query(
         "bridge_reasoning",
         "theory_vs_experiment",
         "data_formula_consistency",
+        "causal_explanation",
+        "discrepancy_analysis",
+        "hypothesis_verification",
     }
     if qtype in explanatory_types and not has_relationship_connector(a):
         issues.append("weak_reasoning_connector")
@@ -1100,6 +1287,34 @@ def call_api(
 
 
 def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
+    def _extract_first_json_object(text: str) -> Optional[str]:
+        """Extract first balanced JSON object from mixed text."""
+        for start_idx, ch in enumerate(text):
+            if ch != "{":
+                continue
+            depth = 0
+            in_string = False
+            escape = False
+            for i in range(start_idx, len(text)):
+                c = text[i]
+                if in_string:
+                    if escape:
+                        escape = False
+                    elif c == "\\":
+                        escape = True
+                    elif c == '"':
+                        in_string = False
+                    continue
+                if c == '"':
+                    in_string = True
+                elif c == "{":
+                    depth += 1
+                elif c == "}":
+                    depth -= 1
+                    if depth == 0:
+                        return text[start_idx:i + 1]
+        return None
+
     if not txt:
         return None
     t = txt.strip()
@@ -1109,10 +1324,10 @@ def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
     try:
         return json.loads(t)
     except Exception:
-        m = re.search(r"\{.*?\}", t, re.DOTALL)
-        if m:
+        obj_text = _extract_first_json_object(t)
+        if obj_text:
             try:
-                return json.loads(m.group())
+                return json.loads(obj_text)
             except Exception:
                 pass
     return None
@@ -1175,7 +1390,7 @@ def main() -> None:
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
-    print(f"Dual-Evidence L1 Query Generation (v4.2)")
+    print(f"Dual-Evidence L1 Query Generation (v4.3)")
     print(f"  Candidates: {len(pairs)}")
     print(f"  Model: {args.model}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
@@ -1274,9 +1489,19 @@ def main() -> None:
 
             pair_kept = 0
             pair_failed = 0
+            opening_counts: Dict[str, int] = defaultdict(int)
+            for q_obj in queries:
+                sig = query_opening_signature(q_obj.get("query", ""))
+                if sig:
+                    opening_counts[sig] += 1
 
             for q_obj in queries:
                 issues, metrics = qc_multihop_query(q_obj, pair)
+                sig = query_opening_signature(q_obj.get("query", ""))
+                if sig:
+                    metrics["opening_signature"] = sig
+                    if opening_counts.get(sig, 0) > 1:
+                        issues.append("opening_repetition")
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -1284,6 +1509,7 @@ def main() -> None:
 
                 entry = {
                     "query_id": f"l1_de_{doc_id}_{query_idx:04d}",
+                    "reasoning_chain": q_obj.get("reasoning_chain", ""),
                     "query": q_obj.get("query", ""),
                     "answer": q_obj.get("answer", ""),
                     "doc_id": doc_id,
@@ -1337,7 +1563,7 @@ def main() -> None:
     est_cost = total_input_tokens * 3 / 1e6 + total_output_tokens * 15 / 1e6
 
     print(f"\n{'='*60}")
-    print(f"Dual-Evidence L1 Generation Summary (v4.2)")
+    print(f"Dual-Evidence L1 Generation Summary (v4.3)")
     print(f"{'='*60}")
     print(f"  Total pairs processed: {len(pairs)}")
     print(f"  Total queries written: {query_idx}")

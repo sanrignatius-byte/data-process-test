@@ -322,6 +322,34 @@ def call_llm_anthropic(
 
 
 def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
+    def _extract_first_json_object(text: str) -> Optional[str]:
+        """Extract first balanced JSON object from mixed text."""
+        for start_idx, ch in enumerate(text):
+            if ch != "{":
+                continue
+            depth = 0
+            in_string = False
+            escape = False
+            for i in range(start_idx, len(text)):
+                c = text[i]
+                if in_string:
+                    if escape:
+                        escape = False
+                    elif c == "\\":
+                        escape = True
+                    elif c == '"':
+                        in_string = False
+                    continue
+                if c == '"':
+                    in_string = True
+                elif c == "{":
+                    depth += 1
+                elif c == "}":
+                    depth -= 1
+                    if depth == 0:
+                        return text[start_idx:i + 1]
+        return None
+
     if not txt:
         return None
     t = txt.strip()
@@ -331,11 +359,10 @@ def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
     try:
         return json.loads(t)
     except Exception:
-        # Try to find JSON object in mixed text
-        m = re.search(r"\{.*\}", t, re.DOTALL)
-        if m:
+        obj_text = _extract_first_json_object(t)
+        if obj_text:
             try:
-                return json.loads(m.group())
+                return json.loads(obj_text)
             except Exception:
                 pass
     return None
