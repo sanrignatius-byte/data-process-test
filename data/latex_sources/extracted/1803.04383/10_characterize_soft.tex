@@ -1,0 +1,237 @@
+% !TeX root = writeup.tex
+\subsection{Characterizations Under Soft Constraints}
+		
+		Given a convex penalty $\Phi:\R \to \R_{\ge 0}$, and $\lambda \in \R_{\ge 0}$, one can write down the general form for soft constrained utility optimization
+		\begin{eqnarray}\label{eq:soft_const}
+		\max_{\pol = (\pola,\polb)}\Util(\pol) - \lambda \Phi(\langle \boldwa \circ \dista, \pola \rangle - \langle \boldwb \circ \distb, \polb \rangle)~,
+		\end{eqnarray} 
+		where $\boldwa$ and $\boldwb$ represent generic constraints. Again, we shall assume that for $\popj \in \pops$, $\util(x)/\boldwj(x)$ is non-decreasing.  Recall that for $\boldwj = (1,1,\dots,1)$, one recovers the soft version of $\dempar$, whereas for $\boldwj = \frac{\pb}{\langle \pb, \distj\rangle}$, one recovers the soft constrained version of $\eqop$. 
+
+		The same argument presented in Section~\ref{sec:eqop_proof} shows that the optimal policies are of the form
+		\begin{eqnarray*}
+		\polj = \ratef_{\distj}^{-1}(\constfj^{-1}(t\supj))~,
+		\end{eqnarray*}
+		where $(t\supa,t\supb)$ are solutions to the following optimization problem:  
+		\begin{eqnarray*}
+		\max_{t\supa \in [0,\langle \dista, \boldwa \rangle],t\supb \in [0,\langle \distb, \boldwb \rangle]}~\fraca \Utila(\ratef_{\dista}^{-1}(\constfa^{-1}(t\supa))) + \fracb\Utilb(\ratef_{\distb}^{-1}(\constfb^{-1}(t\supb))) - \lambda \Phi(t\supa - t\supb)\:.
+		\end{eqnarray*}
+		The following lemma gives us a first order characterization of these optimal TPRs, $(t\supa, t\supb)$.
+		\begin{lem}\label{lem:first_order_op} All optimal policies are equivalent to threshold policies with selection rate $(\accrate\supa,\accrate\supb)$ which satisfy
+		\begin{eqnarray}
+		\begin{bmatrix} 0 \\
+		0 
+		\end{bmatrix} \in
+		\begin{bmatrix}
+	\left[ \frac{\util(\RCDF\supa(\accratea))}{\boldwa(\RCDF\supa(\accrateb))}  - \lambda  \partial_+  \Phi(\Delta) ,\frac{\util(\RCDFpl\supa(\accratea))}{\boldwa(\RCDFpl\supa(\accratea))} - \lambda  \partial_-  \Phi(\Delta) \right] \\
+	\left[ \frac{\util(\RCDF\supb(\accrateb))}{\boldwb(\RCDF\supb(\accrateb))}  + \lambda \partial_- \Phi(\Delta), \frac{\util(\RCDFpl\supb(\accrate))}{\boldwb(\RCDFpl\supb(\accrateb))} + \lambda \partial_+ \Phi(\Delta)  \right]
+	\end{bmatrix}~,
+		\end{eqnarray}
+		where $\Delta = t\supa - t\supb = \constfa(\accratea) - \constfb(\accrateb)$.
+
+
+		\end{lem}
+
+	\begin{proof}
+
+
+	Let $\partial (\cdot)$ denote the super-gradient set of a concave function. Note that if $F$ is left-and-right differentiable and concave, then $\partial F(x) = [\partial_+ F(x), \partial_- F(x)]$. 
+	By concavity of $\Utilj$ and convexity of $\Phi$, we must have that 
+	\begin{eqnarray*}
+	\begin{bmatrix}
+	0 \\ 
+	0 
+	\end{bmatrix} &\in& \partial \sum_{\popj \in \pops}\Util\supj\left(\ratef_{\distj}^{-1}\left(\constfj^{-1}(t\supj)\right)\right) - \lambda \Phi(t\supa - t\supb) \\
+	&=&
+	\begin{bmatrix}
+	\partial \Util\supa\left(\ratef_{\dista}^{-1}(\constfa^{-1}(t\supa))\right) +  \partial_{t\supa} \{- \lambda \Phi(t\supa - t\supb)\} \\ 
+	\partial \Util\supa\left(\ratef_{\distb}^{-1}(\constfb^{-1}(t\supb))\right) + \partial_{t\supb} \{- \lambda \Phi(t\supa - t\supb)\} \\
+	\end{bmatrix}\\
+	&=& \begin{bmatrix}
+	\partial \Util\supa\left(\ratef_{\dista}^{-1}(\constfa^{-1}(t\supa))\right) - \lambda  \partial  \Phi(t)\big{|}_{t = t\supa - t\supb} \\
+	\partial \Util\supb\left(\ratef_{\distb}^{-1}(\constfb^{-1}(t\supb))\right) + \lambda \partial \Phi(t) \big{|}_{t = t\supa - t\supb} \\
+	\end{bmatrix}\\
+	&=& \begin{bmatrix}
+	[\partial_+ \Util\supa\left(\ratef_{\dista}^{-1}(\constfa^{-1}(t\supa))\right) - \lambda  \partial_+  \Phi(t)\big{|}_{t = t\supa - t\supb} , \partial_- \Util\supa\left(\ratef_{\dista}^{-1}(\constfa^{-1}(t\supa))\right) - \lambda  \partial_-  \Phi(t)\big{|}_{t = t\supa - t\supb}] \\
+	[\partial_+ \Util\supb\left(\ratef_{\distb}^{-1}(\constfb^{-1}(t\supb))\right) + \lambda \partial_- \Phi(t) \big{|}_{t = t\supa - t\supb}, \partial_- \Util\supb\left(\ratef_{\distb}^{-1}(\constfa^{-1}(t\supb))\right) + \lambda \partial_+ \Phi(t) \big{|}_{t = t\supa - t\supb}] \\
+	\end{bmatrix}\\
+	&=& \begin{bmatrix}
+	\left[\frac{\util(\RCDF\supa(\constfa^{-1}(t\supa)))}{\boldwa(\RCDF\supa(\constfa^{-1}(t\supa)))} - \lambda  \partial_+  \Phi(t)\big{|}_{t = t\supa - t\supb} , \frac{\util(\RCDFpl\supa(\constfa^{-1}(t\supa)))}{\boldwa(\RCDFpl\supa(\constfa^{-1}(t\supa)))}  - \lambda  \partial_-  \Phi(t)\big{|}_{t = t\supa - t\supb}\right] \\
+	\left[\frac{\util(\RCDF\supb(\constfb^{-1}(t\supb)))}{\boldwb(\RCDF\supb(\constfb^{-1}(t\supb)))} + \lambda \partial_- \Phi(t) \big{|}_{t = t\supa - t\supb}, \frac{\util(\RCDFpl\supb(\constfb^{-1}(t\supb)))}{\boldwb(\RCDFpl\supb(\constfb^{-1}(t\supb)))}  + \lambda \partial_+ \Phi(t) \big{|}_{t = t\supa - t\supb}\right] \\
+	\end{bmatrix}\\
+	&=& \begin{bmatrix}
+	\left[\frac{\util(\RCDF\supa(\accratea))}{\boldwa(\RCDF\supa(\accratea))} - \lambda  \partial_+  \Phi(t)\big{|}_{t = t\supa - t\supb} , \frac{\util(\RCDFpl\supa(\accratea))}{\boldwa(\RCDFpl\supa(\accrateb))}  - \lambda  \partial_-  \Phi(t)\big{|}_{t = t\supa - t\supb}\right] \\
+	\left[\frac{\util(\RCDF\supb(\accrate))}{\boldwb(\RCDF\supb(\accrateb))} + \lambda \partial_- \Phi(t) \big{|}_{t = t\supa - t\supb}, \frac{\util(\RCDFpl\supb(\accrateb))}{\boldwb(\RCDFpl\supb(\accrateb))}  + \lambda \partial_+ \Phi(t) \big{|}_{t = t\supa - t\supb}\right] 
+	\end{bmatrix}~.
+	\end{eqnarray*}
+	Substituting $\Delta = t\supa - t\supb = \constfa(\accratea) - \constfb(\accrateb)$ concludes the proof. 
+	\end{proof}
+	In general, a closed form solution for the soft constrained problem may be difficult to state. However, for the case of $\Phi(t) = |t|$, we can state an explicit closed form solution:
+	\begin{prop}[Special case of $\Phi(t) = |t|$]\label{prop:abs_val_soft_constrainted} Let $\Phi(t) = |t|$, fix $\lambda$, and let $[\accratea^{\lambda,-},\accratea^{\lambda,+}]$ denote the interval of optimal selection rates for Equation~\eqref{eq:soft_const} with regularization $\lambda$. Finally, suppose that for any optimal $\maxprof$ selection rates $(\accratea^\maxprof,\accrateb^\maxprof)$, one has $\constfa(\accratea^\maxprof) < \constfb(\accrateb^\maxprof)$.  
+	Let $[\accratea^-,\accratea^+]$ denote the optimal loan rates in~\eqref{eq:soft_const}. Then there exists a $\lambda_*$ such that, for $\lambda \ge \lambda_*$,  $[\accratea^-,\accratea^+]$ coincides with the hard constrained solution. Moreover, for $\lambda < \lambda_*$, any $\accrate \in [0,1]$ satifies
+	\begin{eqnarray*}
+		\accrate < \accratea^{\lambda,-} &\text{if}& \fraca\frac{\util(\RCDF\supa(\accrate))}{\boldwa(\RCDF\supa(\accrate))} + \sigma_* \lambda > 0 \\
+		\accrate > \accratea^{\lambda,+} &\text{if}& \fraca\frac{\util(\RCDFpl\supa(\accrate))}{\boldwa(\RCDFpl\supa(\accrate))} + \sigma_* \lambda < 0 ~.
+		\end{eqnarray*}
+	\end{prop}
+	\begin{proof} Given a set of optimal constraint values $(t\supa, t\supb) = (\constfa(\accratea),\constfb(\accrateb))$ for optimal selection rates $(\accratea,\accrateb)$ for a given parameter $\lambda$. By Proposition~\ref{prop:soft_interpolation} below, it follows that if $t\supa = t\supb$ for all optimal solutions, then for all $\lambda' \ge \lambda$, all optimal solutions must also have $t\supa = t\supb$. 
+
+	Hence, it suffices to show that (a) there exists a finite $\lambda$ such that all solutions must have $t\supa = t\supb$, and (b) if $t\supa \ne t\supb$, then the display in~\eqref{prop:abs_val_soft_constrainted} holds. 
+
+	To prove (a) and (b), suppose $t\supa \ne t\supb$. By Proposition~\ref{prop:soft_interpolation} below and the fact that $\constfa(\accrate^\maxprof) < \constfb(\accrateb^\maxprof)$, we have $t\supa < t\supb$. Moreover we can compute that
+	\begin{eqnarray*}
+	\partial \Phi(t) = \begin{cases} \{1\} & t > 0\\
+	[-1,1] & t = 0 \\
+	\{-1\} & t < 0 \end{cases}
+	\end{eqnarray*}
+	it follows from the first order condition in Lemma~\ref{lem:first_order_op} that, if $t\supa \ne t\supb$
+	\begin{eqnarray}\label{eq:first_order_absval}
+	0 \in [ \frac{\util(\RCDFpl\supa(\accratea))}{\boldwa(\RCDFpl\supa(\accratea))} + \lambda  , \frac{\util(\RCDF\supa(\accratea))}{\boldwa(\RCDF\supa(\accrateb))}  + \lambda ]~,
+	\end{eqnarray}
+	which immediately implies point (b). Point (a) follows from the above display by noting that, since $\boldwj(x) > 0$ and $\util(x) < \infty$ for all $x$, where exists a $\lambda$ sufficiently large such that~\eqref{eq:first_order_absval} cannot hold for any $\accratea$.
+	\end{proof}
+
+
+\subsection{Qualitative Behavior of Soft Constraints}\label{sec:soft_constraints}
+	
+	We now present a proposition which formalizes the intuition that soft constraints interpolate between $\maxprof$ and the general hard constraint~\eqref{eq:hard_const_eqop}  in Section~\ref{sec:eqop_proof} (for arbitrary $\boldw$, not just for $\eqop$). Because optimal policies may not be unique, we define the solution sets 
+	\begin{eqnarray*}
+	\mathbf{P}(\lambda) &:=& \{ (\pola,\polb) : (\pola,\polb) \text{ solves}~\eqref{eq:soft_const} \text{ with parameter } \lambda \}~,
+	\end{eqnarray*}
+	with the set $\mathbf{P}(\infty)$ denoting the set of solutions to~\eqref{eq:hard_const_eqop}.
+
+	At a high level, we parameterize the soft constrained solution in terms of the value of the constraint $t\supa =\langle \pola,\boldwa \circ \dista \rangle$ for $\popa$ and the difference in constraint values $\Delta =\langle \pola,\boldwa \circ \dista \rangle - \langle \polb,\boldwb \circ \distb \rangle$, where $(\pola,\polb) \in \mathbf{P}(\lambda)$. We show that $t\supa$ interpolates between the value of the constraint on $\popa$ at $\lambda = 0$ and at $\lambda = \infty$, and that $\Delta$ interpolates between the difference at $\lambda = 0$ ($\maxprof$) and at $\Delta = 0$ at $\lambda = \infty$. To be rigorous, we note that the possible values for $t\supa$ and $\Delta$ for each $\lambda$ are actually contiguous intervals. Hence, to make the interpolation precise, we define the following partial order on such intervals:
+	\begin{defn}[Interval order] Let $\calS_1,\calS_2$ be two intervals. We say that $\calS_1~\prec~\calS_2$ if $\max~\{x \in \calS_1~\} < \min~\{x \in \calS_2\}$ and  $\calS_1~\preceq~ \calS_2$ if both $\max~\{x \in \calS_1 \}~\le~\max~\{x \in \calS_2\}$ and $\min \{x \in \calS_1 \}~\le~\min~\{x \in \calS_2\}$.	We say that an interval-valued function $\calS(\lambda)$ is \emph{non-decreasing} (resp. \emph{non increasing}) in $\lambda$ if $\calS(\lambda)~\preceq~\calS(\lambda')$ (resp $\calS(\lambda ')~\preceq~\calS(\lambda')$ for $\lambda~ \le~\lambda'$). 
+	\end{defn}
+	In these terms, the interpolation of the soft constraints can be stated as follows:
+	\begin{prop}[Soft constraints interpolate between $\maxprof$ and hard constrained solution]\label{prop:soft_interpolation} Let $\Phi(t)$ be a convex, symmetric convex function with $\Phi(t) > 0$ for $t > 0$. Then the sets
+	\begin{eqnarray*}
+	\mathcal{D}(\lambda) &:=& \{\Delta := \langle \pola,\boldwa \circ \dista \rangle - \langle \polb,\boldwb \circ \distb \rangle  :(\pola,\polb) \in \mathbf{P}(\lambda)\}\\
+	 \mathcal{T}\supa(\lambda) &:=& \{t\supa := \langle \pola,\boldwa \circ \dista \rangle | \exists \polb: (\pola,\polb) \in \mathbf{P}(\lambda) \}
+	\end{eqnarray*}
+	are closed intervals. Moreover, 
+	\begin{enumerate}
+	\item In all cases, $\lim_{\lambda \to \infty} \max \{|\Delta| \in \mathcal{D}(\lambda)\} = 0$.
+	\item If $0 \in \mathcal{D}(\lambda) $, then there exists a $\maxprof$ solution satisfying~\eqref{eq:hard_const_eqop}. Thus, for all $\lambda > 0$, $\mathbf{P}(\lambda) = \mathbf{P}(\infty)$.
+	\item If $\mathcal{D}(\lambda) \prec \{0\}$, then $\mathcal{D}(\lambda)$ and $\mathcal{T}\supa(\lambda)$ are non-decreasing on $\lambda \in (0,\infty]$, and vice versa if $\mathcal{D}(\lambda) \succ \{0\}$. 
+	\item If $\mathcal{D}(\lambda) \prec \{0\}$, then $\{0\} = \mathcal{D}(\infty) \succeq \mathcal{D}(\lambda) \succeq \{\min:\Delta \in \mathcal{D}(0)\}$, and $\mathcal{T}\supa(\infty) \succeq \mathcal{T}\supa(\lambda) \succeq \{\min:\Delta \in \mathcal{T}\supa(\lambda)\}$, and vice versa if $\mathcal{D}(\lambda) \succ \{0\}$.
+\end{enumerate}
+	\end{prop}
+	
+
+\subsubsection{Proof of Proposition~\ref{prop:soft_interpolation}}
+
+	Again, we parameterize all solutions to the soft-constrained problem as in correspondence with solutions $(t\supa,t\supb)$ to 
+	\begin{eqnarray*}
+	\min_{(t\supa,t\supb)} \fraca \Util\supa(t\supa;\boldwa) + \fracb \Util\supb(t\supb;\boldwb) + \lambda \Phi(t\supa - t\supb)\:.
+	\end{eqnarray*}
+	Letting $\Delta := t\supb - t\supa$, we can reparameterize the above as 
+	\begin{eqnarray*}
+	\min_{(t\supa,\Delta)} \fraca \Util\supa(t\supa;\boldwa) + \fracb \Util\supb(t\supa + \Delta;\boldwb) - \lambda \Phi(\Delta)\:.
+	\end{eqnarray*}
+	Note then that $\mathcal{D}(\lambda)$ denotes the set of $\Delta$ which are partial maximimizers of the above display. If $0 \in \{\mathcal{D}(\lambda)\}$, this implies that there exists a $\maxprof$ solution for which $\Delta = 0$, therefore, for all $\lambda > 0$, all solutions will be $\maxprof$ solutions for which $\mathcal{D}(\lambda) = 0$. Otherwise assume without loss of generality that $\mathcal{D}(\lambda) < \{0\}$.
+
+	First, the statement $\{0\} = \mathcal{D}(\infty) \succeq \mathcal{D}(\lambda) \succeq \{\min:\Delta \in \mathcal{D}(0)\}$, and $\mathcal{T}\supa(\infty) \succeq \mathcal{T}\supa(\lambda) \succeq \{\min:\Delta \in \mathcal{T}\supa(\lambda)\}$, and vice versa if $\mathcal{D}(\lambda) \succ \{0\}$ can be solved by on a case-by-case basis. The strategy is to show that if any of these inequalities are violated, then the associated values of $\Delta$ and $t\supa$ are not partial maximizers of the soft constraint objective. In particular, $\mathcal{T}\supa(\lambda) \subset [T_-,T_+]$ for some appropriate $T_-,T_+$. 
+
+	We now show that $\mathcal{D}(\lambda)$ and $\mathcal{T}\supa(\lambda)$ are non-increasing and non-decreasing, respectively. We shall do so invoking the following technical lemma.
+	\begin{lem}\label{lem:composite_lem} Let $G_1(t)$ be concave and let $G_2(t;\lambda)$ be concave in $t$. Let $\partial G_2(t;\lambda)$ denote the super-gradient of $G_2$, that is 
+	\begin{eqnarray*}
+	\partial G_2(t;\lambda) := \mathrm{Conv}(\{\partial_- G_2(t;\lambda)\} \cup \{\partial_- G_2(t;\lambda)\})
+	\end{eqnarray*}
+	denotes the super-gradient set of the concave mapping $t \mapsto \partial G_2(t;\lambda)$.  
+
+	Then if $\lambda \mapsto \partial G_2(t;\lambda)$ is non-increasing (resp. non-decreasing) in $\lambda$, the interval valued function defined below is non-increasing (resp. non-decreasing) in $\lambda$
+	\begin{eqnarray*}
+	\mathrm{MAX}(\lambda) := \lambda \mapsto  \arg\max_{t \in [a,b]} G_1(t) + G_2(t;\lambda)\:.
+	\end{eqnarray*}
+	
+	\end{lem}
+	For $\mathcal{D}(\lambda)$, one can write any partial maximizer $\Delta$ as 
+	\begin{eqnarray*}
+	\max_{\Delta \ge 0} G_1(\Delta) + G_2(\Delta;\lambda)
+	\end{eqnarray*}
+	with $G_1(\Delta) = \max_{t\supa} \fraca \Util\supa(t\supa;\boldwa) + \fracb \Util\supb(t\supa + \Delta;\boldwb)$ and $G_2(\Delta;\lambda) = \lambda\Phi(\Delta)$. Note that $G_1(\Delta)$ is concave, being the partial maximization of a concave function, and $\partial G_2(\Delta;\lambda) = -t\partial \Phi(\Delta)$. Since $\partial \Phi(\Delta) \succeq \{0\}$ for $\Delta \ge 0$ (by convexity of $\phi$) , we have that $\partial G_2(\Delta;\lambda) = -t\partial \Phi(\Delta)$ is non-increasing in $\lambda$. Hence Lemma~\ref{lem:composite_lem} implies that interval valued function $\mathcal{D}(\lambda)$ is non-increasing.
+	
+	To show that $\mathcal{T}\supa(\lambda)$ is non-decreasing, we have that any maximizer $t\supa$ can be written as 
+	\begin{eqnarray*}
+	\max_{t\supa \in [T_-,T_+]} G_1(t\supa) + G_2(t\supa;\lambda)
+	\end{eqnarray*}
+	where $G_1(t\supa) = \fraca \Util\supa(t\supa;\boldwa) $ and $ G_2(t\supa;\lambda) = \max_{\Delta \ge 0}  \fracb \Util\supb(t\supa + \Delta;\boldwb) + \lambda \Phi(\Delta)$. By Danskin's theorem,
+	\begin{eqnarray*}
+	\partial G_2(t\supa;\lambda) = \{\partial  \Util\supb(t\supa + \Delta;\boldwb) : \Delta \in \arg\max G_2(t\supa;\lambda) \}\:.
+	\end{eqnarray*} 
+	Note that $\{\Delta \in \arg\max G_2(t\supa;\lambda)\}$ is non-increasing in $\lambda$ for a fixed $t\supa$, since the contribution of the regularizer increases. Since the sets  $\partial  \Util\supb(t\supa + \Delta;\boldwb)$ are themselves non-increasing in $\Delta$ by concavity, we conclude that $\partial G_2(t\supa;\lambda)$ is non-decreasing in $\lambda$. Hence, Lemma~\ref{lem:composite_lem} implies that $\calT\supa(\lambda)$ is non-decreasing in $\lambda$.
+
+	Finally, to show that $\max\{|\Delta|:\Delta \in \mathcal{D}(\lambda)|\} \to 0$,   	Note that the left and right derivatives of $\fraca \Util\supa(t;\boldwa)$ and $ \fracb \Util\supb(t;\boldwb)$ are upper bounded by $M$ whereas, since $\Phi$ is strictly convex, we know that for every $\epsilon > 0$, $\min\{|\partial_+ \Phi(\Delta)|,|\partial_- \Phi(\Delta)|\} > m(\epsilon)$ for all $\Delta:|\Delta| > \epsilon$. Hence, the first order optimality conditions cannot be satisfied for $|\Delta| > \epsilon$, and $\lambda > \frac{M}{m(\epsilon)}$, so as $\lambda \to \infty$, $|\Delta| \to 0$.
+	
+	
+	\begin{proof}[Proof of Lemma~\ref{lem:composite_lem}] We prove the case where $\partial G_2(t;\lambda)$ is non-increasing. The first order conditions requires that at an optimal $t$, one has 
+	\begin{eqnarray*}
+	\partial_- G_1(t) + \partial G_2(t;\lambda)_- \ge 0  \ge \partial_+ G_1(t) + \partial G_2(t;\lambda)_+
+	\end{eqnarray*}
+	where the super-gradients are amended to take into account boundary conditions. Suppose that for the sake of contradiction that for $\lambda' > \lambda$, $\mathrm{MAX}(\lambda') \preceq \mathrm{MAX}(\lambda)$ fails. Then, there (a) exists a $t \in \mathrm{MAX}(\lambda)$ such that $\{t\} \prec \mathrm{MAX}(\lambda')$, or (b) $t \in \mathrm{MAX}(\lambda')$ such that $\{t\} \succ \mathrm{MAX}(\lambda')$. Note that if $\{t\} \prec \mathrm{MAX}(\lambda')$, it must be the case that
+	\begin{eqnarray*}
+	\partial_+ G_1(t) + \partial G_2(t;\lambda')_+  > 0\:.
+	\end{eqnarray*}
+	By assumption, $\partial_- G_2(t;\lambda')_+ \le \partial_0 G_2(t;\lambda)_+$ , which implies
+	\begin{eqnarray*}
+	\partial_+ G_1(t) + \partial G_2(t;\lambda')_+ \le \partial_+ G_1(t) + \partial_+ G_2(t;\lambda)_- 0 \le 0\:,
+	\end{eqnarray*}
+	a contradiction.
+	\end{proof}
+
+
+% \subsection{Proofs of Proposition~\ref{prop:charac_constrained_soln} and Proposition~\ref{prop:charac_soft_constrained_soln}
+% \label{sec:char_proofs}}
+% 	To prove Proposition~\ref{prop:charac_soft_constrained_soln}, we begin with a computation of the left and right derivatives of the mapping $t \mapsto \Util\supj(\ratef_{\distj}^{-1}(\constfj^{-1}(t)))$; crucially, we show that this mapping is concave in $t$. 
+
+	
+	
+	
+% 	With this result in hard, we are now ready to prove Proposition~\ref{prop:charac_constrained_soln} and Proposition~\ref{prop:charac_soft_constrained_soln}. Let's begin with the hard constraint (Proposition~\ref{prop:charac_constrained_soln}). In this case, all solutions coincide up to $\distj$-measure zero sets to solutions of the form~\eqref{eq:eq_form}, where $t$ is a solution to~\eqref{eq:hard_const_3}, rendered again below:
+% 	\begin{eqnarray}
+% 	\min_{t \in [0,\min_{\popj \in \pops}\{\langle \distj, \boldwj \rangle\}]}\fraca \Util\supa(t;\boldwj) + \fracb \Util\supb(t;\boldwj)
+% 	\end{eqnarray}
+% 	Proposition~\ref{prop:charac_constrained_soln} follows by noting that the above equation is a concave maximization over an interval, the set of optimal $t$ form an interval $[t^-,t^+]$, and for all $t \in [t^-,t^+]$, $t_0 < t$ as long as 
+% 	\begin{eqnarray}
+% 	\partial_+ \left(\fraca \Util\supa(t;\boldwj) + \fracb \Util\supb(t;\boldwj)\right) > 0 
+% 	\end{eqnarray}
+% 	and $t_0 > t $ as long as 
+% 	\begin{eqnarray}
+% 	\partial_- \left(\fraca \Util\supa(t;\boldwj) + \fracb \Util\supb(t;\boldwj)\right) < 0 
+% 	\end{eqnarray}
+% 	Computing the left and right derivatives via Lemma~\ref{lem:const_to_util_derv}, substituting in $t = \constfj^{-1}(\accrate\supj)$, and noting that $\sign(t_0 - t) = \sign(\constfj^{-1}(t_0) - \constfj^{-1}(t))$ concludes the proof of . To prove Proposition~\ref{prop:charac_soft_constrained_soln}, the soft-constraint can be rendered as
+% 		\begin{eqnarray}
+% 		\max_{t\supa \in [0,\langle \dista, \boldwa \rangle],t\supb \in [0,\langle \distb, \boldwb \rangle]}\fraca \Util\supa(\supa;\boldwj) + \fracb \Util\supb(\supa;\boldwj) - \lambda \Phi(t\supa - t\supb)~.
+% 		\end{eqnarray}
+% 		Thus, Proposition~\ref{prop:charac_soft_constrained_soln} follows from the first order optimality conditions. 
+	
+
+
+% \subsection{Meaningful Constraints}
+
+% 	\begin{thm}
+% 	\end{thm}
+
+% 	\begin{defn}[Meaningful Constraint] We say that $\boldw$ imposes an \emph{meaningful constraint} if there do not exists $\maxprof$ policies $\pola^{\maxprof}$ and $\polb^{\maxprof}$ which satisfies the constraint $\langle \boldwa \circ \dista, \pola^{\maxprof} \rangle = \langle \boldwb \circ \distb, \polb^{\maxprof} \rangle = 0$. In this case,
+% 	\begin{eqnarray}
+% 	\sigma^*_{\boldw} = \sign\left(\langle \boldwa \circ \dista, \pola^{\maxprof} \rangle = \langle \boldwb \circ \distb, \polb^{\maxprof} \rangle\right)
+% 	\end{eqnarray}
+% 	 where we note  $\sigma^*_{\boldw}$ does not depend on the choice of $\pola^{\maxprof},\polb^{\maxprof}$
+% 	\end{defn}
+% 	\begin{prop} If $\boldw$ is meaningful, then for any $\pola^{\maxprof}$ and any $\pola^*$ which is either a solution to a hard-fairness constraint, or a soft fairness constraint with $\Phi(t)$ being strictly convex and $\lambda > 0$, must satsfy 
+% 	\begin{eqnarray}
+% 	\sign\left(\langle \pola^* - \pola^{\maxprof}, \dista \circ \boldwa \rangle\right) = - \sigma^*_{\boldw}
+% 	\end{eqnarray}
+% 	\end{prop}
+% 	\begin{prop} Consider the special case $\Phi(t) = |t|$, and suppose that $\boldw$ is meaningful. Then, 
+
+% 	\end{prop}
+
+
+	% 	proved in Section~\ref{sec:char_proofs}, characterizes the selection rates for all such soft-constrained policies:
+	% \begin{prop}\label{prop:charac_soft_constrained_soln} For $\popj \in \pops$, let $\boldwj \in \R_{>0}^{\maxscore}$, and suppose that $\util(x)/\boldwj(x)$ is increasing in $x$. Then (a) all optimal policies $(\pola^*,\polb^*)$ to~\eqref{eq:soft_const} correspond to policies of the form $(\ratef_{\dista}^{-1}(\accratea),\ratef_{\dista}^{-1}(\accrateb))$ up to sets of $\dista$ and $\distb$-measure zero, and (b) the set of selection rates $(\accrate\supa,\accrate\supb)$ form a convex set and all satisfy
+	% \begin{eqnarray*}
+	% \fraca\frac{\util(\RCDF\supa(\accrate\supa))}{\boldw(\RCDF\supa(\accrate\supa))} + \fracb\frac{\util(\RCDF\supb(\accrateb))}{\boldwj(\RCDF\supb(\accrateb))} + \lambda \partial_- \Phi( T_{\popa,\boldwa}(\accrate\supa) - T_{\popb,\boldwb}(\accrate\supb)) \le 0 \\
+	% \fraca\frac{\util(\RCDFpl\supa(\accrate\supa))}{\boldw(\RCDFpl\supa(\accrate\supa))} + \fracb\frac{\util(\RCDFpl\supb(\accrateb))}{\boldwj(\RCDFpl\supb(\accrateb))}  - \lambda \partial_- \Phi( T_{\popa,\boldwa}(\accrate\supa) - T_{\popb,\boldwb}(\accrate\supb)) \ge 0~. 
+	% \end{eqnarray*}
+	% \end{prop}

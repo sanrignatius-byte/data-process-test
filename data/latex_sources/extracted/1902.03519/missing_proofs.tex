@@ -1,0 +1,92 @@
+\section{Missing Proofs}\label{sec:missing_proof}
+\begin{proofof}{\bf Lemma~\ref{lem:simple-median-guarantee}.}
+The proof is by induction on height of $v$ in $T$. The base case is when $v$ is a leaf node in $T$ and the algorithm trivially finds an optimal solution in this case. Suppose that the induction hypothesis holds for all vertices of $T$ at height $h-1$. Here, we show that the statement holds for the vertices of $T$ at height $h$ as well. 
+
+
+Let $\opt$ denote an optimal ($r,b$)-fairlet decomposition of the points in $T(v)$ with respect to $\cost_{\smed}$. 
+Next, we decompose $\opt$ into $\gamma^d + 1$ parts: $\set{\opt_i}_{i\in [\gamma^d]}$ and $\opt_{\heavy}$. 
+For each $i\in[\gamma^d]$, $\opt_i$ denotes the set of fairlets in $\opt$ whose $\lca$ are in $T(v_i)$. Moreover, $\opt_{\heavy}$ denotes the set of heavy fairlets with respect to $v$ and $\heavy_{\opt}$ denotes the set of heavy points with respect to $v$ in $\opt$. Lastly, $\heavy^i_{\opt} := \heavy_\opt \cap T(v_i)$ denotes the set of heavy points with respect to $v$ in $\opt$ that are contained in $T(v_i)$. 
+ 
+Let $\sol$ denote the solution returned by \Call{\fairletDec}{$v, r, b$}. Similarly, we decompose $\sol$ into $\gamma^d+1$ parts:  $\set{\sol_i}_{i\in [\gamma^d]}$ and $\sol_{\heavy}$. Moreover, $\heavy_{\sol}$ denotes the set of heavy points with respect to $v$ in $\sol$ and for each $i\in [\gamma^d]$, $\heavy^i_{\sol} := \heavy_\sol \cap T(v_i)$ denotes the set of heavy points with respect to $v$ in $\sol$ that are contained in $T(v_i)$.
+
+%%% BOUND on heavy points in our solution
+%By Lemma~\ref{lem:constant-heavy-points},
+%\begin{align}\label{ineq:heavy-cost}
+%\card{{\heavy}_\sol} \leq \eta_{\heavy} \cdot rb \cdot \card{{\heavy}_\opt},
+%\end{align}
+%where $\eta_\heavy$ is a constant. 
+\begin{claim}\label{clm:aug-cost}
+For each $i\in [\gamma^d]$, there exists an $(r,b)$-fairlet decomposition of $P_i\setminus \heavy_{\sol}^i$ of cost at most $\cost(\opt_i) + (|\heavy^i _\opt| + |\heavy^i_\sol| \cdot (r+b)) \cdot (r^2 + b^2) \cdot \gamma^{h-1}$ where $P_i$ is the set of points contained in $T(v_i)$.% and is $(r,b)$-balanced.
+\end{claim}
+Hence, by the induction hypothesis, for each $i\in [\gamma^d]$,
+\begin{align}\label{eq:children-cost}	
+\cost(\sol_i) \leq  c\cdot (r^2 + b^2) \cdot (\cost(\opt_i) + (|\heavy^i _\opt| + |\heavy^i_\sol| \cdot (r+b)) \cdot (r^2 + b^2) \cdot \gamma^{h-1}).
+\end{align}
+Next, we bound the cost of $\sol$ by Lemma~\ref{lem:constant-heavy-points} and~\eqref{eq:children-cost} as follows: 
+\begin{align*}
+\cost(\sol) &= \cost(\sol_{\heavy}) + \sum_{i\in[\gamma^d]} \cost(\sol_{i}) \\
+			 &\leq \eta_{\heavy}\cdot (r^2 + b^2) \cdot \cost(\opt_{\heavy}) \\ 
+			 &\;\;\; + c \cdot (r^2+b^2) \cdot ({\eta_{\heavy} (r+b)^5\over \gamma} \cdot \cost(\opt_{\heavy}) + \sum_{i\in [k^d]}\cost(\opt_i))\\%\rhd\text{Claim~\ref{clm:aug-cost}}\\
+			 &\leq c\cdot (r^2 + b^2) \cdot \cost(\opt) \\
+			 &\;\;\; + (\eta_\heavy - {c\over 2})\cdot (r^2+ b^2) \cdot \cost(\opt_{\heavy})\rhd \text{By setting } \gamma := 2\eta_{\heavy}(r+b)^5\\
+			 &\leq c\cdot (r^2 + b^2) \cdot \cost(\opt) \rhd c \geq 2\eta_\heavy
+\end{align*}
+\end{proofof}
+
+\begin{proofof}{\bf Claim~\ref{clm:aug-cost}.}
+Consider the fairlet decomposition $\opt_i$ on $P_i\setminus \heavy_{\opt}^i$. A fairlet $D\in \opt_i$ is \emph{affected} if it contains a point $p \in \heavy_{\sol}^i$. 
+%Let $\bar{\opt}_i$ denote the set of affected fairlets in $\opt_i$. 
+%Further, the points that are contained in affected fairlets are called \emph{affected points}. Note that the number of affected points in $P_i\setminus \heavy_{\sol}^i$ which is denoted as $\bar{P}_i$ is at most $\card{\heavy_{\sol}^i}\cdot (r+b-1)$. 
+
+We define the set of \emph{affected points} as $\bar{P}_i = \heavy^i_{\opt} \cup \bigcup_{D\in \bar{\opt}_i} D$ to denote the union of the points in the affected fairlets (i.e., $\bigcup_{D\in \bar{\opt}_i} D$) and the set $\heavy_\opt^i$ (whose points do not belong to any of fairlets in $\opt_i$).
+
+Next, we bound the cost of the fairlet decomposition which is constructed by augmenting the set of fairlets $\opt_i \setminus \bar{\opt}_i$ with the set of affected points $\bar{P}_i$. 
+
+Let $Q_0$ denote the set of affected points $\bar{P}_i$. We augment the fairlet decomposition in three steps:
+
+\paragraph{Step 1.} In this step, we create as many $(r,b)$-balanced fairlets using the affected points $Q_0$ only. Note that the contribution of each point involved in such fairlets is $h_T(v_i)$ where $h_T(v_i)$ denotes the distance of $v_i$ from the leaves in $T(v_i)$. Let $Q_1 \subseteq Q_0$ denote the set of affected points that do not join any fairlets at the end of this step. Note that all points in $Q_1$ are of the same color $c$.  
+\paragraph{Step 2:} Next, we add as many points of $Q_1$ as possible to the existing fairlets in $\opt_i\setminus \bar{\opt}_i$ while preserving the $(r,b)$-balanced property. Now the extra cost incurred by each points of $Q_1$ that joins a fairlet in this step is at most $(r+b)\cdot h_T(v_i)$. Let $Q_2\subset Q_1$ be the set of points that do not belong to an fairlets by the end of the second phase. Note that at the end of this step, if $Q_2$ is non-empty, then all fairlets are maximally-balanced $c$-dominant (a fairlet $S$ is maximally-balanced $c$-dominant if (1) in $S$, the number of points of color $c$ are larger than the number of points in color $\bar{c}$, (2) the set $S$ is $(r,b)$-balanced, and (3) adding a point of color $c$ to $S$ makes it unbalanced).  
+\paragraph{Step 3:} Finally, we show that by mixing the points of at most $b\cdot|Q_2|$ existing fairlets with the set $Q_2$, we can find an $(r,b)$-balanced fairlet decomposition of the involved points and the contribution of each such point to the total cost is at most $h_T(v_i)$. Note that since the set of all points we are considering is $(r,b)$-balanced, not all of the so far constructed fairlets are saturated (i.e., has size exactly $r+b$). In particular, we show that there exists a set of non-saturated fairlets $\mathcal{X}$ of size at most $b\cdot |Q_2|$ whose addition to $Q_2$ constitutes a $(r,b)$-balanced set. For each fairlet $D\in \mathcal{X}$, 
+\begin{align*}
+\quad |c_{D}| < {r\over b} |\bar{c}_D|\Rightarrow b\cdot |c_D| \leq r\cdot |\bar{c}_D| - 1,
+\end{align*}
+where $c_D$ and $\bar{c}_D$ respectively denotes the set of points of color $c$ and $\bar{c}$ in $D$.
+This implies that after picking at most $|Q_2|$ non-saturated fairlets (i.e., the fairlets in $\mathcal{X}$),
+\begin{align*}
+b\cdot |c_{\mathcal{X}}| \leq r\cdot |\bar{c}_{\mathcal{X}}| - b\cdot |Q_2| \Rightarrow b\cdot (|c_{\mathcal{X}}| + |Q_2|) \leq r\cdot |\bar{c}_{\mathcal{X}}|,
+\end{align*}
+where $c_{\mathcal{X}}$ and $\bar{c}_{\mathcal{X}}$ respectively denotes the set of points of color $c$ and $\bar{c}$ in $\bigcup_{D\in \mathcal{X}}D$.
+Hence, the set of points $Q_2 \cup \bigcup_{D\in \mathcal{X}} D$ is $(r,b)$-balanced. Moreover, the cost of this step is at most $|Q_2|\cdot b \cdot (r+b) \cdot h_T(v_i)$. 
+
+Altogether, there exists a fairlet decomposition of $P_i\setminus \heavy_{\sol}^i$ of cost at most 
+
+\begin{align*}
+&\quad\; \cost(\opt_i) + |Q_0\setminus Q_1| \cdot h_T(v_i) + |Q_1\setminus Q_2|\cdot (r+b) \cdot h_T(v_i) + |Q_2| \cdot b \cdot (r+b) \cdot h_T(v_i) \\
+&\leq \cost(\opt_i) + |Q_0| \cdot b \cdot (r+b) \cdot h_T(v_i) \\ 
+&\leq \cost(\opt_i) + (|\heavy^i _\opt| + |\heavy^i_\sol| \cdot (r+b)) \cdot (r^2 + b^2) \cdot \gamma^{h-1}
+\end{align*}
+\end{proofof}
+
+
+
+\begin{proofof}{\bf Theorem~\ref{thm:fairlet-to-clustering}}
+For a pointset $X$, let $\opt_{k\text{-fair}}(X)$ and $\opt_{\text{fairlet}}(X)$ respectively denote an optimal $(r,b)$-fair $k$-median and an optimal $(r,b)$-fairlet decomposition of $X$. It is straightforward to see that for any set of point $X$, $\cost(\opt_{\text{fairlet}}(X)) \leq \cost(\opt_{k\text{-fair}}(X))$ and in particular,
+\begin{align}\label{eq:fairlet-to-k-median}
+\cost(Q) \leq \alpha \cdot \cost(\opt_{k\text{-fair}}(P)).
+\end{align}
+Let $N$ denote the set of the centers of fairlets in $Q$. For a set of points $X$, let $\opt_{k\text{-median}}(X)$ denotes an optimal $k$-median clustering of $X$ (note that there is not fairness requirement). Since $C\subseteq P$, the optimal $k$-median cost of $N$ is smaller than the optimal $k$-median cost of $P$. Since $\bar{P}$ contains at most $(r+b)$ copies of each point of $N$, by assigning all copies of each point $p\in N$ in $\bar{P}$ to the center of $p$ in an optimal $k$-median clustering of $N$,   
+\begin{align}
+\cost(\opt_{k\text{-median}}(\bar{P})) &\leq (r+b) \cdot \cost(\opt_{k\text{-median}}({N})) \leq (r+b) \cdot \cost(\opt_{k\text{-median}}({P})).\label{eq:clustering-approx}
+\end{align}
+As \Call{\clusterFairlet}\ returns a $\beta$-approximate $k$-median clustering of $\bar{P}$, and by~\eqref{eq:fairlet-to-k-median}-\eqref{eq:clustering-approx}, the cost of the clustering $\sC$ constructed by \Call{\clusterFairlet}\ is  
+
+Since the distance of each point $p_i \in P$ to the center of its cluster in $\sC^*$ is less than the sum of its distance to the center of its fairlet $c_i$ in $Q$ and the distance of $c_i$ to its center in $\sC$, we can bound the cost of $\sC^*$ in terms of the costs of $\sC$ and $Q$ as follows:
+\begin{align*}
+\cost(\sC^*) &\leq \cost(Q) + \cost(\sC)\\
+&\leq \alpha \cdot \cost(\opt_{k\text{-fair}}(P)) &&\rhd \text{By~\eqref{eq:fairlet-to-k-median}} \\ 
+&\quad +\beta \cdot \cost(\opt_{k\text{-median}}(\bar{P}))\\
+&\leq \alpha \cdot \cost(\opt_{k\text{-fair}}(P)) \\ 
+&\quad + \beta \cdot (r+b) \cdot \cost(\opt_{k\text{-median}}({P})) &&\rhd \text{By~\eqref{eq:clustering-approx}} \\
+&\leq (\alpha + \beta\cdot (r+b)) \cdot  \cost(\opt_{k\text{-fair}}(P))
+\end{align*}
+\end{proofof}

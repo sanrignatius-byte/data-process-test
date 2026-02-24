@@ -1,0 +1,75 @@
+\paragraph{Two Groups---Threshold Policies}
+
+We now discuss the effects of a threshold policy 
+when candidates belong to two groups, $G_1$ and $G_2$ 
+whose skill level is distributed identically,
+but whose tests are characterized by different noise levels.
+Without loss of generality, we assume that $\eta_1<\eta_2$, 
+where $\eta_i$ is the probability 
+that a test result of a candidate from $G_i$ is different from his skill level.
+To begin, we note the fundamental irreconcilability of equalizing either the false positive or the false negative rates across groups with subjecting candidates to the same policy.
+
+\begin{theorem}[Impossibility result]\label{thm:stochasticDominance}
+When noise levels differ between two groups with identical skill level distribution, 
+a single Threshold Policy $\pi$ 
+(with the same number of tests $\tau$ 
+and the same threshold $\theta$ for both groups) 
+cannot have equality in either the false negative rates 
+or in the false positive rates across the groups. 
+Particularly, there is a higher false positive rate in the noisier group, 
+as an unskilled candidate from $G_2$ is more likely to be accepted 
+by the threshold policy than an unskilled candidate from $G_1$:
+\begin{equation*}
+\textnormal{FPR}_{\theta,\tau}^{\eta_1}=
+\Pr_{\eta_1}[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=1|y_i=0]<\Pr_{\eta_2}[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=1|y_i=0]
+=\textnormal{FPR}_{\theta,\tau}^{\eta_2},
+\end{equation*}
+and also a higher false negative rate, 
+as a skilled candidate from $G_2$ is more likely to be rejected 
+than a skilled candidate from $G_1$:
+\begin{equation*}
+\textnormal{FNR}_{\theta,\tau}^{\eta_1}=
+\Pr_{\eta_1}[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=0|y_i=+1]<\Pr_{\eta_2}[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=0|y_i=+1]=\text{FNR}_{\theta,\tau}^{\eta_2}.
+\end{equation*}
+\end{theorem}
+\textbf{Connection to Economics Literature }%
+ Aigner and Cain \cite{aigner1977statistical} discuss 
+a similar case under a Gaussian screening model
+where the variance (noise level) of the single test
+differs across the two groups. 
+Similarly, they note that qualified candidates fare worse in the noisy group
+but that unqualified candidates fare better in the noisier group.
+Our work differs from theirs in that 
+we consider the effect of multiple tests
+and the ability to optimize over the number of tests.
+
+\paragraph{Two Groups--Dynamic policy}
+We now consider the (dynamic) hiring policy 
+in the setting when employees belong to two groups, 
+$G_1$ and $G_2$ with identically-distributed skills 
+but different noise levels $\eta_1<\eta_2$.
+We note that there are two ingredients 
+that explain the differences among the groups:
+(i) The step size, $\log \left(\frac{\Pr[\hat{y}_{i,j}=+1|y_i=+1]}{\Pr[\hat{y}_{i,j}=+1|y_i=0]}\right)=\log \left(\frac{1-\eta}{\eta} \right)$ of $G_2$ (the noisier group) 
+is smaller than the step size of $G_1$. 
+Thus these candidates must typically pass more tests 
+before they are accepted;
+and (ii)
+Skilled candidates in group $G_2$ 
+exhibit less drift to the right
+(they have a higher probability of failing a test).
+Consequently, when an employer (rationally)
+sets $\epsilon' = p$ for all groups,
+a skilled candidate from $G_2$ 
+is more likely to be fail a test in step $1$,
+at which point the dynamic policy summarily rejects them.
+These two facts explain both the higher false negative rates for $G_2$ 
+and the longer expected duration until acceptance.
+By setting $\epsilon' < p$ for members of the noisier group, we can equalize false negative rates.
+Precisely, setting $\epsilon' = \frac{\eta_1}{\eta_2}p$
+achieves the desired parity.
+The cost of this intervention is that it requires more tests for candidates from the noisier group.
+Here, our random walk analysis can be leveraged to determine exactly how many more.
+Once again, we cannot provide equality across the groups in all desired ways---the 
+same acceptance criterion, the same expected number of tests,
+and the same false negative rates between groups---with the noise differs across groups.

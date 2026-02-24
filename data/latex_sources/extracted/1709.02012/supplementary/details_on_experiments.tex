@@ -1,0 +1,91 @@
+\section{Details on Experiments}
+\label{app:experiments}
+
+\paragraph{Post-processing for Equalized Odds}
+To derive classifiers that satisfy the Equalized Odds notion of
+fairness, we use the method introduced by \citet{hardt2016equality}.
+Essentially, the false-positive and false-negative constraints
+are satisfied by randomly flipping some of the predictions of the
+original classifiers. Let $q^{(t)}_\text{n2p}$ be the probability for group $G_t$ of
+``flipping'' a negative prediction to positive,
+and $q^{(t)}_\text{p2n}$ be that of flipping a positive prediction to negative.
+The derived classifiers $\eo h_1$ and $\eo h_2$ essentially flip predictions according to
+these probabilities:
+%
+\begin{align*}
+  \eo h_t(\x) &= \begin{cases}
+    \left( 1 - h_t(\x) \right) B^{(t)}_\text{p2n}
+    + h_t(\x) \left(1 - B^{(t)}_\text{p2n} \right)
+    & h_t(\x) \geq 0.5
+    \\
+    \left( 1 - h_t(\x) \right) B^{(t)}_\text{n2p}
+    + h_t(\x) \left(1 - B^{(t)}_\text{n2p} \right)
+    & h_t(\x) < 0.5
+  \end{cases}
+\end{align*}
+%
+where $B^{(t)}_\text{n2p}$ and $B^{(t)}_\text{p2n}$ are Bernoulli random variables
+with expectations $q^{(t)}_\text{n2p}$ and $q^{(t)}_\text{p2n}$ respectively.
+Note that this is a probabilistic generalization of the derived classifiers
+presented in \cite{hardt2016equality}. If all outputs of $h_t$ were either
+$0$ or $1$ we would arrive at the original formulation.
+
+We can find the best rates $q^{(1)}_\text{n2p}$, $q^{(1)}_\text{p2n}$,
+$q^{(2)}_\text{n2p}$, and $q^{(2)}_\text{p2n}$ through the following optimization
+problem:
+%
+\begin{mini*}
+{q^{(1)}_\text{}, q^{(1)}_\text{p2n}, q^{(2)}_\text{n2p}, q^{(2)}_\text{p2n}}
+{\mathcal{L}(\eo h_1) + \mathcal{L}(\eo h_2)}
+{}{}
+\addConstraint{\fp{\eo h_1} = \fn{\eo h_1}}
+\addConstraint{\fp{\eo h_2} = \fn{\eo h_2}}
+\end{mini*}
+%
+where $\mathcal{L}$ represents the $0$/$1$ loss of the classifier:
+%
+\begin{align*}
+  \mathcal L (h_t) &=
+  \Pr_{G_t} \left[ h_t(\x) \geq 0.5 \mid y \!=\! 0 \right]
+  +
+  \Pr_{G_t} \left[ h_t(\x) < 0.5 \mid y \!=\! 1 \right].
+\end{align*}
+%
+The two constraints
+enforce the Equalized Odds constraints.
+\citet{hardt2016equality} show that this can be solved via
+a linear program.
+
+\paragraph{Constrained-learning for Equalized Odds}
+\citet{zafar2017fairness} introduce a method to achieve Equalized Odds
+(under the name \emph{Disparate Mistreatment}) at training time using
+optimization constraints. The problem is set up at learning a logistic
+classifier under the Equalized Odds constraints. While these constraints
+make the problem non-convex, \citeauthor{zafar2017fairness} show how
+to formulate the problem as a disciplined convex-concave program.
+Though this is generally intractable, it can be solved in many instances.
+We refer the reader to \cite{zafar2017fairness} for details.
+
+\paragraph{Training Procedure for Income Prediction.}
+We train three models: a random forest, a multi-layer perceptron, and a SVM
+with an RBF kernel. We convert the categorical features into one-hot enocodings.
+$10\%$ of the data is reserved for hyperparameter tuning and
+post-processing, and an additional $10\%$ is saved for final evaluation.
+The random forest and MLP are naturally probabilistic and well calibrated.
+We use Platt scaling to calibrate the SVM.
+The hyperparameters were tuned by grid search based on 3-fold cross validation.
+\autoref{fig:adult-res} displays the average false-positive and false-negative
+costs across all models.
+
+\paragraph{Training Procedure for Health Prediction.}
+We train  a random forest and a linear SVM on this dataset. We use the
+same dataset split and hyperparameter selection as with Income Prediction.
+\autoref{fig:health-res} displays the average false-positive and false-negative
+costs across all models.
+
+\paragraph{Training Procedure for Health Prediction.}
+For the trained Equalized Odds baseline we train a constrained
+logistic classifier using the method proposed by \cite{zafar2017fairness}.
+We derive the post-processed
+classifiers (both for Equalized Odds and its calibrated relaxation) from the
+original COMPAS classifier \cite{dieterich-northpointe-fairness}.

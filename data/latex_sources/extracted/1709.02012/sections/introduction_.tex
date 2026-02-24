@@ -1,0 +1,148 @@
+%!TEX root=../main.tex
+\section{Introduction}
+Machine learning is being used increasingly to assess risk in various domains,
+including the criminal justice system, online advertising, and
+medical testing \cite{whitehouse-big-data}.
+%Fundamentally, a tool for assessing risk can be viewed as assigning
+%each individual an estimate of the probability that they belong
+%to the positive class in a classification problem.
+As with any application of machine learning, these risk assessments
+will be carried out with some underlying level of error.
+Recently, there has been growing concern
+that these errors are made in ways that systematically discriminate against
+particular groups of people \cite{barocas2016big,berk2017fairness,chouldechova2017fair}.
+%
+% Example time
+% \kilian{ I am not sure about this example, not everybody may agree.}
+A recent high-profile example of these concerns was raised by the
+news organization ProPublica, who studied a risk tool
+that is widely used in the criminal justice system.
+This tool assigns to each criminal defendant an estimated probability
+that they will commit a future crime.
+ProPublica found that the risk estimates assigned to
+defendants who didn't go in to commit future crimes were on average
+higher among African-American defendants than Caucasian defendants \cite{angwin-propublica-risk-scores}.
+Assigning non-trivial risk to people who didn't in fact commit a
+crime in the future is a form of false-positive error, and in this case it
+disproportionately affected African-American defendants.
+
+To mitigate issues such as these,
+the machine learning community has proposed different
+frameworks which attempt to quantify fairness in classification
+\cite{barocas2016big,berk2017fairness,chouldechova2017fair,hardt2016equality,kleinberg2016inherent,woodworth2017learning,zafar2017fairness}.
+A recent and particularly noteworthy framework is Equalized Odds \cite{hardt2016equality}
+(also referred to as Disparate Mistreatment \cite{zafar2017fairness}),
+which constrains classification algorithms such that no error type (false-positive
+or false-negative) disproportionately affects any population subgroup.
+This notion of non-discrimination is feasible in many settings,
+and researchers have developed tractable algorithms for achieving it \cite{hardt2016equality,goh2016satisfying,zafar2017fairness,woodworth2017learning}.
+%
+%These include trying to ensure \emph{individual fairness}
+%\cite{dwork2012fairness}; training classifiers to
+%guarantee fairness with respect to \emph{groups}, where a group may refer to a
+%particular race, gender, or other subset of the population
+%\cite{calders2009building,kamiran2009classifying,calders2010three}; and obfuscating the
+%feature representation of individuals to remove any information of group
+%membership \cite{zemel2013learning, louizos2015variational,
+%edwards2015censoring}.
+
+\noindent\textbf{Calibration.}
+However, equalized error rates do not necessarily remove all potential
+for discrimination.
+When risk tools are used in practice, a key goal is that they be
+{\em calibrated}: if we look at the set of people who receive a probability
+of $p$, we would like a $p$ fraction of the members of this set to
+in fact be positive instances of the classification
+problem \cite{dawid1982well}.
+Moreover, if we are concerned about fairness between two groups
+$G_1$ and $G_2$ (e.g. African-American defendants and white defendants)
+then we would like this calibration condition
+to hold simultaneously for the set
+of people within each of these groups as well
+%: of all people in group $G_t$
+%who are labeled $p$ (for $t = 1, 2$), a $p$ fraction should be
+%positive instances
+\cite{flores-re-propublica-fair}.
+%
+% Calibration is in a sense a necessary condition for a risk tool if it
+% is going to be used as intended in practice.
+Calibration is a crucial condition for a risk tool in many settings.
+If a risk tool for
+evaluating defendants were not calibrated with respect to groups
+defined by race, for example, then a probability estimate of $x$
+could mean different things for African-American and white defendants,
+and hence the tool would have the unintended, and highly undesirable,
+consequence of incentivizing judges to take race into account when
+interpreting its predictions.\footnote{There are many similar examples.
+Suppose a tool for estimating the probability that a medical student
+will succeed as a doctor were uncalibrated with respect to gender,
+and suppose this tool were used to inform hospital hiring decisions.
+Then it could become rational for patients choosing a doctor to take the
+doctor's gender into consideration as a criterion in their choice.}
+
+Despite the importance of calibration as a property,
+our understanding of how it interacts
+with other fairness properties is limited.
+We do know from recent work that,
+except in the most constrained
+cases, it is impossible to achieve calibration while also
+satisfying the Equalized Odds framework
+\citep{kleinberg2016inherent,chouldechova2017fair}.
+However, we do not know how best to achieve relaxations of these guarantees
+that might be feasible in practice, or how calibration may be
+combined with other definitions of fairness.
+
+\noindent\textbf{Our Contributions.}
+In this paper, our goal is to further investigate the relationship
+between calibration and equalized error rates.
+Our results generalize the work of \citet{kleinberg2016inherent}
+and \citet{chouldechova2017fair}, who first observed the incompatibility
+between calibration and Equalized Odds.
+We characterize the set of calibrated classifiers for different population
+groups with a surprisingly simple geometric intuition.
+From this intuition, we can derive a number of straightforward
+yet profound implications.
+%
+Firstly, while there are notions of error-rate non-discrimination that are compatible
+with calibration, we show that such instances require a significant
+relaxation of the equalized odds conditions.
+Additionally, any such notions become infeasible when the prediction task
+is inherently noisy, or when population group membership is a strong predictive
+feature.
+Finally, we demonstrate that achieving calibration and even the most simple
+non-discrimination constraints inherently incurs a non-trivial performance
+cost, which may be inadvisable in many situations.
+In the supplementary material, we show that all of these findings hold in
+an approximate sense as well; the (in)feasibility and performance
+costs degrade smoothly as the calibration condition is relaxed.
+We demonstrate these findings both theoretically and empirically,
+comparing calibrated notions of non-discrimination against
+the (uncalibrated) Equalized Odds framework on several datasets.
+Our conclusion is that calibration and error-rate constraints are in
+most cases mutually incompatible goals, and therefore practitioners
+should choose only one of these goals rather than attempting to achieve
+some relaxed notion of both.
+
+\gp{
+There is a unique solution
+can be achieved by a simple interpolation algorithm
+is unadvisable in many situations.
+}
+
+\gp{
+Can't do better than a random coin toss.
+}
+
+\gp{
+There has been a cry for fairness.
+}
+
+\gp{
+Here's a natural way of thinking about fairness.
+This simple geometric intuition makes it crystal clear
+that this notion is simply achievable, but unsatisfying because of coin toss.
+}
+
+\gp{
+Get rid of \methodname{}.
+}

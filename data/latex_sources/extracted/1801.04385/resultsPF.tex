@@ -1,0 +1,302 @@
+\section{Results}
+\label{sec:results}
+
+We explore our approach using data from the question-answering platform called Stack Exchange. This platform, launched in 2008 to provide a forum for people to ask computer programming questions, grew over the years as a forum asking questions on a variety of technical and non-technical topics.
+The premise behind Stack Exchange is simple: any user can ask a question, which others may answer. Users can also \emph{vote} for answers they find helpful, and the asker can \emph{accept} one of the answers as the best answer to the question. In this way, the Stack Exchange community collectively curates knowledge.
+
+\subsection{Stack Exchange Data}
+We used anonymized data representing all questions and answers from August 2008 until September 2014.\footnote{\url{https://archive.org/details/stackexchange}} The data includes
+%$8.56M$, $784K$, and $124K$ questions with %% technical, non-tech, and meta boards
+%$1.5-1.85$ answers per question. Approximately
+9.6M questions, of which approximately half had an accepted answer.
+Only the questions that received two or more answers were included~\cite{Burghardt2017myopia}.
+Previous studies of Stack Exchange~\cite{Ferrara2017dynamics} and other online platforms~\cite{Agarwal2017quitting,Singer2016plosone}, identified user sessions as an important variable in understanding performance. User actions, i.e., answering questions, can be segmented into \emph{sessions}---periods of activity without a prolonged break. Following \cite{Ferrara2017dynamics} we use 100 minutes as minimum break length to define sessions. A time interval longer than 100 minutes between two answers constitutes the end of one session and the start of a new one. Note that the exact value of this threshold does not change results, but simply merge a small fraction of sessions into longer sessions.
+
+%KL - add motivating questions to intro: How does user performance change over sessions? etc.
+%NA -signup_duration,words,code_lines,urls,readability,reputation,session_length,answer_position_in_session,number_of_ans_wrote_by_user_before_this,time_since_previous_answer,percentile / accepted
+To understand factors affecting user performance on Stack Exchange, we study the relationship between user attributes and the probability that the answer the user produces is accepted by the asker as best answer to his or her question.
+To this end, for each answer in the data set, we create a list of features describing the answer, as well as features of describing the user writing the answer:
+\begin{description}
+  \item[Reputation:] Answerer's {reputation} at the time he or she posted the answer. %, as reconstructed by \cite{Burghardt2017myopia}.
+   This score summarizes the user's cumulative contributions to Stack Exchange.
+  \item[Number of answers:] Cumulative number of answers written by the user at the time the current answer was posted.
+  \item[Tenure:] Age of the user's account (in seconds) at the time the user posted the answer. %Signup duration
+  \item[Percentile:] User's percentile rank based on tenure.
+  \item[Time since previous answer:] Time interval (in seconds) since user's previous answer.
+  \item[Session length:] The length of the session (in number of answers posted) during which the answer was posted.
+  \item[Answer position:] Index of the answer within a session.
+  \item[Words:] Number of words in the answer.
+  \item[Lines of codes:] Number of lines of codes in the answer.
+  \item[URLs:] Number of hyperlinks in the answer.
+  \item[Readability:] Answer's Flesch Reading Ease~\cite{Readability} score.
+  \end{description}
+
+%As is common with behavioral data, some of these features are highly heterogeneous, characterized by long-tailed distributions.
+
+\subsection{Simpson's Paradoxes on Stack Exchange}
+
+\begin{figure*}[tbh!]
+\begin{subfigure}[b]{0.5\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{Overall_session}
+  \caption{Aggregated Data}
+  \label{fig:fig1}
+\end{subfigure}%
+\begin{subfigure}[b]{0.5\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{Seprated_session}
+  \caption{Disaggregated Data}
+  \label{fig:fig2}
+\end{subfigure}
+\caption{%Plots of Answer Position - Session Length
+Simpson's paradox in Stack Exchange data. Both plots show the probability an answer is accepted as the best answer to a question as a function of its position within user's activity session. (a) Acceptance probability calculated over aggregated data has an upward trend, suggesting that answers written later in a session are more likely to be accepted as best answers. However, when data is disaggregated by session length (b), the trend reverses. Among answers produced during sessions of the same length (different colors represent different-length sessions), later answers are less likely to be accepted as best answers.
+}
+\label{fig:session}
+\end{figure*}
+
+We apply the method described above to Stack Exchange data. Here, our dependent variable $Y$ is binary, denoting whether or not a specific answer to a question was accepted as the best answer. In this case of binary outcomes we use the logistic regression linear model of the form
+\begin{equation}
+	f(\alpha + \beta x) = \frac{1}{1+e^{-(\alpha + \beta x)}}.
+\end{equation}
+The parameters $\alpha$ and $\beta$ are fitted using Maximum likelihood, while test of the null hypothesis $H_0:\beta = 0$ is performed using the Likelihood Ratio Test~\cite{casella2002statistical}.
+
+\begin{table}
+  \begin{tabular}{|c|c|c|}
+    \toprule
+    \textbf{$X_p$: Independent Variable}&\textbf{$X_c$: Conditioning Variable}\\
+    \midrule
+    Tenure&Number of answers\\
+    Session length&Reputation\\
+    Answer position&Reputation\\
+    Answer position&Session length\\
+    Number of answers&Reputation\\
+    Time since previous answer&Answer position\\
+    Percentile&Number of answers\\
+  \bottomrule
+\end{tabular}
+\caption{Examples of Simpson's paradox in Stack Exchange data. For these variables, the trend in the outcome variable (answer acceptance) as a function of $X_p$ in the aggregate data reverses when the data disaggregated on $X_c$.}   \label{tab:pairs}
+\end{table}
+
+
+The eleven variables in Stack Exchange data, result in 110 possible Simpson's pairs. %, captured by ($X_p$, $X_c$) variable pairs.
+Among these, our method identifies seven as instance of paradox. These are listed in Table~\ref{tab:pairs}.
+
+%Our approach recovers a known example of Simpson's paradox, where a trend in answer position reverses when data is disaggregated by session length.
+Our approach reveals that the previously reported finding that acceptance probability decreases with answer position~\cite{Ferrara2017dynamics} is an instance of Simpson's paradox and would not have been observed  had the data not been disaggregated by session length. More interestingly, our approach also identifies previously unknown instances of Simpson's paradox.  We explore these in greater detail below, illustrating how it  can lead to deeper insights into online behavior.
+
+\subsubsection{Answer Position \& Session Length}
+
+We measure session length by the number of answers a user posts before taking an extended break.
+Session length was shown to be an important confounding variable in online activity. Analysis of the quality of comments posted on a social news platform Reddit showed that, once disaggregated by the length of session, the quality of comments declines over the course of a session, with each successive comment written by a user becoming shorter, less textually complex, receiving fewer responses and a lower score from others~\cite{Singer2016plosone}. Similarly, each successive answer posted during a session by a user on Stack Exchange is shorter, less well documented with external links and code, and  less likely to be accepted by the asker as the best answer~\cite{Ferrara2017dynamics}. %These works noted that the decline in the quality of comments or answers was not observed in aggregate data.
+
+
+Our approach automatically identifies this example as Simpson's paradox, as illustrated in Fig.~\ref{fig:session}. The figure shows average acceptance probability for an answer as a function of its position (or index) within a session. According to Fig.~\ref{fig:fig1}, which reports \emph{aggregate} acceptance probability, answers written later in a session are more likely to be accepted than earlier answers. However, once the same data is \emph{disaggregated by session length}, the trend reverses (Fig.~\ref{fig:fig2}): each successive answer within the same session is less likely to be accepted than the previous answer. For example, for sessions during which five answers were written, the first answer is more likely to be accepted than the second answer, which is more likely to be accepted than the third answer, etc., which is more likely to be accepted than the fifth answer.
+The lines in Fig.~\ref{fig:session}  represent fits to data using logistic regression.
+
+This example highlights the necessity to properly disaggregate data to identify the subgroups for analysis. Unless data is disaggregated, wrong conclusions may be drawn, in this case, for example, that user performance improves during a session. %In Section~\ref{sec:origins} we examine the reasons for which Simpsons paradoxes such as this occur in data.
+
+%The (1 - p-value) for fitted curves are $TODO$ and $TODO$ for aggregated and disaggregated data respectively, which shows the probability that proposed model by Logistic Regression is fitted well to the data, or in the other words Logistic Regression is statistically significant. The uptrend of Figure~\ref{fig:fig1} reversed to downtrend in Figure~\ref{fig:fig2} when data is disaggregated to groups with same \textit{Session Length}.
+
+
+\subsubsection{Number of Answers \& Reputation}
+\begin{figure*}[tbh!]
+\begin{subfigure}[b]{0.5\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{AccProb_vs_NumAns}
+  \caption{Aggregated Data}
+  \label{fig:paradox2a}
+\end{subfigure}%
+\begin{subfigure}[b]{0.5\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{num_ans_disaggregated}
+  \caption{Disaggregated Data}
+  \label{fig:paradox2b}
+\end{subfigure}
+\caption{%Plots of Number of Answers - Reputation
+Novel Simpson's paradox discovered in Stack Exchange data. Plots show the probability an answer is accepted as best answer as a function of the number of lifetime answers written by user over his or her tenure. (a) Acceptance probability calculated over aggregated data has an upward trend, with answers written by more experienced users (who have already posted more answers) more likely to be accepted as best answers. However, when data is disaggregated by reputation (b), the trend reverses. Among answers written by users with the same reputation (different colors represent reputation bins), those posted by users who had already written more answers are less likely to be accepted as best answers.
+}
+\label{fig:paradox2}
+\end{figure*}
+
+Experience plays an important role in the quality of answers written by users. Stack Exchange veterans, i.e., users who have been active on Stack Exchange for more than six months, post longer, better documented answers, that are also more likely to be accepted as best answers by askers~\cite{Ferrara2017dynamics}. There are several ways to measure experience on Stack Exchange. \textit{Reputation}, according to Stack Exchange, gauges how much the community trusts a user to post good questions and provide useful answers. While reputation can be gained or lost with different actions, a more straightforward measure of experience is user \textit{tenure}, which measures time since the user became active on Stack Exchange, or \textit{Percentile}, normalized rank of a user's tenure.
+Alternately, experience can be measured by the \textit{Number of Answers} a user posted during his or her tenure before writing the current answer.
+
+Our method uncovers a novel Simpson's paradox for user experience variables \textit{Reputation} and \textit{Number of Answers}. In the aggregate data, acceptance probability increases as a function of the \emph{Number of Answers} (Fig.~\ref{fig:paradox2a}). This is consistent with our expectations that the more experienced users---who have written more answers over their tenure on Stack Exchange---produce higher quality answers. However, when data is conditioned on \emph{Reputation}, the trend reverses (Fig.~\ref{fig:paradox2b}). In other words, focusing on groups of users with the same reputation, those who have written more answers over their tenure are less likely to have a new answer accepted than the less active answerers.
+
+
+%Figure~\ref{fig:reputation} represents the reason of this paradox.
+
+%\begin{figure}[h]
+%\begin{subfigure}{.5\textwidth}
+%  \centering
+%  \includegraphics[scale=0.6]{Fig8}
+%  \caption{Aggregated}
+%  \label{fig:fig8}
+%\end{subfigure}
+%\end{figure}
+
+
+%
+%\begin{subfigure}{.5\textwidth}
+%  \centering
+%  \includegraphics[scale=0.6]{Fig4}
+%  \caption{Disaggregated}
+%  \label{fig:fig4}
+%\end{subfigure}
+%\caption{Plots of Reputation - Number of wrote answers}
+%\label{fig:reputation}
+%
+%\end{figure}
+%
+%\begin{figure}[h]
+%\begin{subfigure}{.5\textwidth}
+%  \centering
+%  \includegraphics[scale=0.6]{Fig3}
+%  \label{fig:fig3}
+%\end{subfigure}%
+%\caption{Frequency}
+%\end{figure}
+
+\subsection{The Origins of Simpson's paradox}
+\label{sec:origins}
+%Berkeley study: correlations between gender preferences and admission rates
+%Simpson's paradox arises due to highly skewed distribution of data.
+%Hidden correlations among variables and skewed distribution conspire to create Simpson's paradox.
+%Analysis of gender bias in UC Berkeley graduate admissions revealed that the apparent bias against women observed in aggregate data was a result of Simpson's paradox~\cite{Bickel1975}. When admissions data was disaggregated by department, there was little difference in admissions rates for men and women. The paradox arises due to correlations between the preferences men and women have for different departments and the selectivity of the department. For example, more women apply to the English department, although this department accepts few applicants of either gender. The paradox is further exacerbated by the highly skewed distribution of group sizes: English department also happens to be popular and receives more applications from either gender than other departments.
+
+\begin{table}[b]
+  \centering
+  \caption{Number of data points in each group}
+  \label{tab:sesfreq}
+  \resizebox{\columnwidth}{!}{%
+  \begin{tabular}{c|cccccccccc}
+    \toprule
+    \textbf{Session Length}&1&2&3&4&5&6&7&8\\
+    \midrule
+    %[7248481, 2571860, 1267290, 710064, 437615, 283716, 194075, 142360, 102897, 76790]
+    \textbf{Data points}& 7.2M & 2.6M & 1.3M & 0.7M & 0.4M & 0.3M & 0.2M & 0.1M\\
+    \bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{figure*}[th]
+  \centering
+    \begin{subfigure}[b]{.49\textwidth}
+        \includegraphics[width=\textwidth]{Numans_rep_prob}
+        \caption{Disaggregated data}  \label{fig:fig3a}
+   \end{subfigure}
+     \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{Numans_rep_histLOG}
+        \caption{Joint distribution of $X_c$ and $X_p$}
+        \label{fig:fig3b}
+    \end{subfigure}%
+\caption{Analysis of the Simpson's paradox \emph{Reputation} -- \emph{Number of Answers} variable pair. (a) Average acceptance probability as a function of two variables. (b) The distribution of the number of data points contributing to the value of the outcome variable for each pair of variable values. } \label{fig:fig3}
+\end{figure*}
+
+
+%Simpson's paradox arises due to hidden correlations between outcomes and subgroup characteristics, and is further exacerbated by the highly skewed distribution of subgroup sizes.
+To understand why Simpson's paradox occurs in Stack Exchange data, we illustrate the mathematical explanation of Section~\ref{sec:math} with examples from our study.
+Consider the paradox for \textit{Answer Position}--\textit{Session Length} Simpson's pair, illustrated in Fig.~\ref{fig:fig1}.
+In the disaggregated data, trend lines of acceptance probability for sessions of different length are stacked (Fig.~\ref{fig:fig2}): answers produced during longer sessions are more likely to be accepted than answers produced during shorter sessions. In addition, there are many more shorter sessions than longer ones. Table~\ref{tab:sesfreq} reports the number of sessions of different length. By far, the most common session has length one: users write only one answer during these sessions. Each longer session is about half as common as a session that is one answer shorter.
+
+What happens to the trend in the aggregated data?
+When calculating acceptance probability as a function of answer position, all sessions contribute to acceptance probability for the first answer of a session. Sessions of length one dominate the average. When calculating acceptance probability for answers in the second position, sessions of length one do not contribute, and acceptance probability is dominated by data from sessions of length two. Similarly, %sessions of length one and two do not contribute to
+acceptance probability of answers in the third position is dominated by sessions of length three. Survivor bias excludes data from shorter sessions, which also have lower acceptance probability, %Since these values are larger than acceptance probability of the last answer in a shorter session, the average acceptance probability increases. The same logic applies to the remaining answer positions,
+creating an upward trend in acceptance probability.
+
+
+%Thus, systematic differences in acceptance probability of answers in different groups (as manifested by stacking of acceptance probability trends in sessions of different length), combined with a highly skewed number of sessions, creates Simpson's paradox, leading us to wrongly conclude that acceptance probability increases with \textit{Answer position}.
+
+We back up this intuitive explanation with mathematical analysis of Section~\ref{sec:math}.
+%The condition Eq.~\eqref{eq:SPcond2} is satisfied by both paradox pairs (Figs.~\ref{fig:fig2} and \ref{fig:paradox2b}) as for any given value of $X_p$ the acceptance probability increases as a function of $X_c$.
+Although acceptance probability is decreasing as a function of \emph{Answer Position} for each value of \emph{Session Length} (Fig.~\ref{fig:fig2}), the probability mass of \emph{Session Length} is constantly moving towards larger values as \emph{Answer Position} increases. Notice that as \emph{Answer Position} increments from $a$ to $a+1$, sessions of length $a$ are no longer included (as the minimum session length is now $a+1$). Thus, while \emph{Session Length} has probability mass $\Pr(X_c=a|X_p=a)$ when $X_p=a$, it has probability $\Pr(X_c=a|X_p=a+1) = 0$ at $X_p=a+1$:
+\begin{equation}
+  \frac{d}{dx_p}\Pr(X_c=a|X_p=x_p)\|_{x_p=a} = -\Pr(X_c=a|X_p=a).
+\end{equation}
+Meanwhile, for all other values of $X_c$ greater than $a$, the probability mass at $X_p=a+1$ is the same as that at $X_p=a$ (as the number of data points is constant along sessions of same length) but normalized to account for the sessions of length $a$, i.e.,
+\begin{equation}
+ \Pr(X_c=x_c|X_p=a+1) = \frac{\Pr(X_c=x_c|X_p=a)}{1-\Pr(X_c=a|X_p=a)}.
+\end{equation}
+The rate of change of these probability masses with respect to $X_p$ is
+\begin{multline}
+  \frac{d}{dx_p}\Pr(X_c=x_c|X_p=x_p)\|_{x_p=a}  =   \\ \left(\frac{1}{1-\Pr(X_c=a|X_p=a)}-1\right)\Pr(X_c=x_c|X_p=a).
+\end{multline}
+The probability mass function $\Pr(X_c=x_c|X_p=a)$ decreases for $X_c=a$ corresponding to the smallest value of acceptance probability, while increasing for all other values $X_c > a$. Moreover, the rate of increase of this probability mass is greater than the rate at which the acceptance probability decreases, resulting in an upward trend when the data is aggregated.
+
+
+%
+%The distribution of the conditioning variable X_c has to change as X_p changes
+%Previously, we stipulated that Simpsons paradox was caused by heterogeneous distributions of data. However, the maths seem to indicate not that the distribution of data needs to be heterogeneous but that the distributions change as the paradox variable X_p changes. This seems to be clearest from Fig. 3(a), where the distribution of X_c (reputation) is changing (moving towards bigger values) as X_p increases
+%For a given value of the paradox variable X_p, the expected value of Y cannot be constant with respect to X_c.
+%This is clear from both cases, mostly clear in Ans posit - session length. For a given session length, the expected value of Y is not constant (in this case it is increasing).
+
+A similar effect plays out in the \textit{Number of Answers}--\textit{Reputation} Simpson's pair. Figure~\ref{fig:fig3a} shows the heatmap of acceptance probability for different values of the \textit{Number of Answers} written over a user's tenure and user \textit{Reputation}, while Fig.~\ref{fig:fig3b} shows the correlated joint distribution of the two variables.
+%In Figure~\ref{fig:fig3b}, the acceptance probability decreases in terms of \textit{Number of Answers}, but simple averaging claims the contrary. Based on Figure~\ref{fig:fig3a}, for fixed \textit{Number of Answers}, the number of data samples with higher \textit{Reputation} is larger, so higher \textit{Reputation} contributes more than lower \textit{Reputation} to averaging. Also, for the blue part of Figure~\ref{fig:fig3a}, the acceptance probability increases in terms of reputation, in Figure~\ref{fig:fig4}. Thus, the average acceptance probability in terms of \textit{Number of answers} has an uptrend, but when we condition on \textit{Reputation}, the trend is reversed.
+The figures illustrate the first condition of Simpson's paradox (Eq.~\eqref{eq:SPcond1}): as $X_p$ changes, the distribution of the values of $X_c$ must also change. This dependency can be clearly seen in Fig.~\ref{fig:fig3b}---as $X_p=Number\ of\ Answers$ increases then the distribution of $X_c=Reputation$ shifts to increasing values, which produces the paradox.
+
+In the real world this means that users, who have written more answers are not more likely to have a new answer they write accepted. In fact, among users with same \textit{Reputation}, those who earned this reputation with fewer answers are more likely to have a new answer they write accepted as best answer. This suggests that such users are simply better at answering questions, and that this can be detected early in their tenure on Stack Exchange (while they still have low reputation). %\hl
+{Note, however, that an exception to the trend reversal occurs for users with very high reputation. In Stack Exchange, users can gain reputation by ``Answer is marked accepted", ``Answer is voted up", ``Question is voted up", etc. It seems that, high reputation users and low reputation users are different: for high reputation users, experience (number of written answers) is important, while for low reputation users the quality of answers, which may lead to votes, is more important. Analysis of this behavior is beyond the scope of this paper. }
+
+\subsection{Discussion and Implications}
+
+Presence of a Simpson's paradox in data can indicate interesting or surprising patterns~\cite{fabris2000discovering}, and for trends in social data, important behavioral differences within a population. Since social data is often generated by a mixture of subgroups, existence of Simpson's paradox suggests that these subgroups differ systematically and significantly in their behavior. By isolating important subgroups in social data, our method can yield insights into their behaviors.
+
+For example, our method identifies \emph{Session Length} as a conditioning variable for disaggregating data when studying trends in acceptance probability as a function of answer's position within a session. In fact, prior work has identified session length as an important parameter in studies of online performance~\cite{KootiA2017www,Agarwal2017quitting,Singer2016plosone,Ferrara2017dynamics}. Unless activity data is disaggregated into individual sessions---sequences of activity without an extended break---important patterns are obscured. A pervasive pattern in online platforms is user performance deterioration, whereby the quality of a user's contribution decreases over the course of a single session. This deterioration was observed for the quality of answers written on Stack Exchange~\cite{Ferrara2017dynamics}, comments posted on Reddit~\cite{Singer2016plosone}, and the time spent reading posts on Facebook~\cite{KootiA2017www}. Our method automatically identifies position of an action within a session and session length as an important pair of variables describing Stack Exchange.
+
+\begin{figure}[tb]
+ \centering
+  \includegraphics[width=\columnwidth]{Acc_vs_repPERans.pdf}
+	\caption{Relationship between acceptance probability and \emph{Reputation Rate}, a new measure of user performance defined as reputation per number of answers users wrote over their entire tenure. Each line represents a subgroup with a different reputation score. The much smaller variance compared to Fig.~\protect\ref{fig:paradox2b} suggests that the new feature is a good proxy of answerer performance.}   \label{fig:var}
+\end{figure}
+
+
+We examine in detail  one novel paradox discovered by our method for the \emph{Reputation}--\emph{Number of Answers} variables.
+The trends in Fig.~\ref{fig:paradox2b} suggest that both variables jointly affect acceptance probability. Inspired by this observation, we construct a new variable---\emph{Reputation} /  \emph{Number of Answers}---i.e., \emph{Reputation Rate}. Figure~\protect\ref{fig:var} shows how acceptance probability changes with respect to \emph{Reputation Rate} for different groups of users. There is an strong upward trend, suggesting that answers provided by users with higher \textit{Reputation Rate} are more likely to be accepted. Moreover, while the lines span reputations of an extremely broad range---from one to 100,000---they collapse onto a single curve. This suggests that \emph{Reputation Rate} is a good proxy of user performance.
+The remaining paradoxes uncovered by our method could yield similarly interesting insights into user behavior on Stack Exchange.
+
+
+%\subsection{Discussion}
+
+We also illustrate the difference between our method and linear models that model the outcome variable as a function of both $X_p$ and $X_c$. For such multivariate linear models \cite{Norton2015simpson}, we can fit a model $f_{p,c}(\alpha + \beta X_p + \beta_cX_c)$ to the disaggregated data, and compare the sign of the coefficient $\beta$ to the sign of the linear coefficient of the ``aggregated'' model $f_{p}(\alpha + \beta X_p)$. In our method, we bin the values of $X_c$ and fit separate linear models of the form of Eq.~\eqref{eq:f_pc} in each bin of $X_c$, aggregating by averaging the linear coefficient signs of each model. We claim that our approach has benefits over multivariate linear models which allow it to find Simpson's pairs where multivariate linear models can not. % For instance, for $X_c = a$, the formula become $f_{p, c}(\alpha + a \times \beta_c + \beta X_p)$,
+First, in multivariate linear models, all subgroups have the same coefficient $\beta$, and intercepts $\alpha + \beta_cX_c$, which vary linearly with $X_c$. In our method, however, each group can have different intercept and coefficient, which makes finding paradox pairs in heterogeneous data more flexible. Indeed this flexibility is necessary --- from our results (Figs.~\ref{fig:fig2} and \ref{fig:paradox2b}) it is clear that the trend parameters $\beta (x_c)$ of the fitted lines vary significantly depending on $x_c$.
+
+Secondly, our method of aggregating by simple averaging of the linear coefficient signs of the subgroups means that trends within each subgroup are weighted equally regardless of how many datapoints are in that subgroup. This is contrary to multivariate linear models, which fit the model parameters based on each datapoint (and so weigh heavily towards values of $X_c$ with many datapoints). To illustrate, we show that our algorithm finds \textit{Time Since Previous Answer - Answer Position} as a Simpson's pair, which a multivariate logistic regression does not. The variable \textit{Answer Position} is the index of the answer a user has completed without an extended (>$100$ minute) break, and so \emph{Answer} $Position=1$ if \textit{Time Since Previous Answer}  $\ge 100$ minutes and \emph{Answer} $Position>1$ if \textit{Time Since Previous Answer} $<100$ minutes. Fig.~\eqref{fig:whynotb} shows that, for \textit{Answer} $Position=1$, the acceptance probability decreases as a function of \textit{Time Since Previous Answer}, possibly because better users take shorter breaks. On the other hand, for other \textit{Answer Positions} the trend is reversed, and acceptance probability increases with \textit{Time Since Previous Answer}, suggesting that in short term, users who take more time to answer questions or take short breaks between questions write answers of higher quality.
+
+Clearly, \textit{Time Since Previous Answer - Answer Position} is an important Simpson's pair, illustrating that time has a beneficial effect on answer quality ar short time scales. even though it is detrimental on the aggregate level. Multivariate logistic regression does not capture this behaviour, as $65\%$  of the probability mass of \textit{Time Since Previous Answer} is for values larger than $100$ minutes, so when fitting $f_{p,c}(\alpha + \beta X_p + \beta_cX_c)$ to the data, it tries to fit a hyperplane, which describes the majority of the data as best as possible, in this case the decreasing trend corresponding to \emph{Answer} $Position=1$.
+
+\begin{figure*}[th]
+  \centering
+    \begin{subfigure}[b]{.49\textwidth}
+        \includegraphics[width=\textwidth]{whynot_acpt}
+        \caption{Disaggregated data}  \label{fig:whynotb}
+   \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{whynot_histo}
+        \caption{Joint distribution of $X_c$ and $X_p$}
+        \label{fig:whynota}
+    \end{subfigure}
+\caption{A pair which multivariate logistic regression cannot find in the data. (a) Average acceptance probability as a function of Answer Position and Time Since Previous Answer. (b) The distribution of the number of data points contributing to the value of the outcome variable for each pair of variable values. } \label{fig:whynot}
+\end{figure*}
+
+
+%The output of multivariate logistic regression is available in table \ref{tab:mlr}. Four pairs are common among output of two algorithms. We have seen that variable \textit{Number of Answers} is too sensitive to the binning, specifically when we use this variable as a conditioning variable. So, there just remain two pairs as a difference between our algorithm and multivariate logistics regression. Variable \textit{Tenure} and \textit{Percentile} are correlated variables, and the 2D plot of this pair is just a line. So, this pair is not really a instance of Simpson's Paradox. Our algorithm finds \textit{Time Since Previous Answer, Answer Position} as one pair. We know If \textit{Time Since Previous Answer} is greater than $100$ minutes, then Answer Position is $1$, and otherwise its greater than $1$. This property of this pairs, is misleading for multivariate logistic regression.
+%
+%\begin{table}
+  %\begin{tabular}{|c|c|c|}
+    %\toprule
+    %\textbf{$X_p$: Independent Variable}&\textbf{$X_c$: Conditioning Variable}\\
+    %\midrule
+    %Tenure&Percentile\\
+    %Session length&Reputation\\
+    %Session length&Number of answers\\
+    %Answer position&Reputation\\
+    %Answer position&Session length\\
+    %Answer position&Number of answers\\
+    %Number of answers&Reputation\\
+  %\bottomrule
+%\end{tabular}
+%\caption{Pairs of variables for which Simpson's paradox exists in Stack Exchange using multivariate logistic regression. }   \label{tab:mlr}
+%\end{table}
+

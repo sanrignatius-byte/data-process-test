@@ -1,0 +1,134 @@
+%!TEX root=../main.tex
+\section{Feasibility}
+\label{sec:feasibility}
+
+We now show Calibration-Preserving Parity is a feasible definition
+of fairness through a proof by construction. We will show that it is possible
+derive calibrated classifiers with minimal disparity from classifiers that do
+not meet this condition.
+
+Assume we are given classifiers $h_1$ and $h_2$ for groups $G_1$ and $G_2$.
+$h_1$ and $h_2$ do not achieve the disparity condition, but are approximately
+calibrated --- i.e.  both $\calib{h_1}$ and $\calib{h_2}$ are small.\footnote{
+  If this is not the case, one could improve calibration
+  with Platt Scaling \cite{platt1999probabilistic} or
+  isotonic regression \cite{zadrozny2001obtaining}.
+}
+Without loss of generality, for the remainder of the paper we assume that
+\fairconst{h_1}{1} is larger than \fairconst{h_2}{2}.
+We will show that, under minor assumptions, that is is possible to achieve
+Calibration-Preserving Parity with respect to $\fairconstname$:
+%
+\begin{thm}[Feasibility]
+  Let $h_1$ and $h_2$ be defined as above. If $\fairconst{h_1}{1} \leq
+  \argmax_{h^*_2 \in \mathcal{H}^*_2} \fairconst{h^*_2}{2}$, where
+  $\mathcal{H}^*_2$ is the set of calibrated classifiers for group $G_2$,
+  then there exists some classifier $\fair h_2$ for group $G_2$ with
+  $\calib{\fair h_2} \leq \calib{h_2}$ and $\fairconst{h_1}{1} = \fairconst{\fair h_2}{2}$.
+  \label{thm:feasibility}
+\end{thm}
+
+To show that this is possible, we will derive a new classifier $\fair h_2$ that
+replaces some predictions of $h_2$ with predictions from a ``trivial
+classifier'' $h^\triv_2$ that simply outputs the base rate $\br_2$
+on all inputs (i.e. $\forall \x$, $h^\triv_2(\x) = \br_2$).
+Specifically, for some Bernoulli variable $B$ with expectation $\alpha$,
+%
+\begin{equation}
+  \fair{h}_2(\x) = (1 - B) h_2(\x) + B h^\triv_2(\x).
+  \label{eqn:fair_classifier}
+\end{equation}
+%
+Intuitively, by modifying the parameter $\alpha$, we are interpolating between the two classifiers
+$h_2$ and $h^\triv_2$, and thus interpolating between their costs.
+A geometric interpretation of this can be seen in \autoref{fig:postprocess}.
+By modifying the replacement rate $\alpha$, we can raise and lower the cost of $\fair h_2$.
+Setting
+$ \alpha = \frac{\fairconst{h_1}{1} - \fairconst{h_2}{2}}{\fairconst{h^\triv_2}{2} - \fairconst{h_2}{2}}$
+ensures that the cost of $\fair h_2$ matches that of $h_1$ (see \autoref{thm:interpolation}
+in \autoref{sec:detailed-feasibility}).
+Moreover, the resulting $\fair h_2$ will be at least as calibrated as $h_2$
+(see \autoref{thm:calibration} in \autoref{sec:detailed-feasibility}).
+Therefore, $h_1$ and $\fair h_2$ will satisfied
+Calibration-Preserving Parity with respect to \fairconstname.
+We summarize these steps in \autoref{alg:method}, and prove that it meets the
+conditions of \autoref{def:fair} in the supplementary material.
+%
+\begin{algorithm}
+  \caption{\methodname{} by post-processing}
+  \label{alg:method}
+  \begin{algorithmic}
+    \STATE {\bfseries Input:} classifiers $h_1$ and $h_2$ s.t.
+    $\fairconst{h_2}{2} \leq \fairconst{h_1}{1} \leq \fairconst{h^\triv_2}{2}$, holdout set $P_{valid}$
+
+    \begin{itemize}
+      \STATE Determine base rate $\br_2$ of $G_2$ (using
+        $P_{valid}$) to produce trivial classifier $h^\triv_2$
+
+      \STATE Construct $\fair h_2$ using \eqref{eqn:fair_classifier} with
+        $ \alpha = \frac{\fairconst{h_1}{1} - \fairconst{h_2}{2}}{\fairconst{h^\triv_2}{2} - \fairconst{h_2}{2}}$,
+        where $\alpha$ is the interpolation parameter.
+    \end{itemize}
+
+    \RETURN $h_1$, $\fair h_2$.
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Limitations.}
+%
+It is worth noting the cases in which \methodname{} is infeasible. For the following cases,
+we assume that we cannot improve the cost $h_1$ and $h_2$ with further training
+or postprocessing, given a finite set
+of data and features.\footnote{
+  Otherwise, the improved classifier would then be the input to \autoref{alg:method}.
+}
+%
+\begin{corollary}
+  \methodname{} is infeasible if
+  $\fairconst{h_1}{1} > \argmax_{h^*_2 \in \mathcal{H}^*_2} \fairconst{h^*_2}{2}$.
+  %where $\mathcal{H}^*_2$ is the set of all calibrated classifiers for group $G_2$.
+  \label{crly:infeasible_trivial}
+\end{corollary}
+%
+\begin{corollary}
+  \methodname{} is infeasible if group membership $G_t$ is more predictive
+  than any features --- i.e., if
+  $ \fairconst{h^\triv_t}{t} \leq \fairconst{h'_t}{t}$, where $h'_t$ is
+  any (possibly uncalibrated) classifier.
+  \label{crly:infeasible_predictive}
+\end{corollary}
+%
+\begin{corollary}
+  In all other cases, \autoref{alg:method} will achieve \methodname{}.
+  \label{crly:method_works}
+\end{corollary}
+%
+(Recall that $\mathcal{H}^*_t$ is the set of calibrated classifiers for group $G_t$.)
+\autoref{crly:infeasible_trivial} is trivially true because we cannot find a
+calibrated classifier for group $G_2$ with cost equal to $\fairconst{h_1}{1}$.
+\autoref{crly:infeasible_predictive} is a direct consequence of this result, combined with the fact that
+the trivial classifier $h^\triv_t$ is the calibrated classifier for group $G_t$ that
+maximizes any cost function of the form \eqref{eqn:cost_general}
+(see \autoref{lma:trivial} in \autoref{sec:detailed-feasibility}).
+To see why \autoref{crly:method_works} holds, note that \autoref{alg:method}
+can match the cost of any classifier in the range $\left[ \fairconst{h_2}{2}, \fairconst{h^\triv_2}{2} \right]$
+(see \autoref{thm:interpolation}).
+Because $h^\triv_2$ maximizes cost, \autoref{alg:method} will fail only if
+$\fairconst{h_1}{1} \geq \fairconst{h^\triv_2}{2} = \argmax_{h^*_2 \in
+\mathcal{H}^*_2} \fairconst{h^*_2}{2}$, in which case \methodname{} is
+infeasible.
+
+%\paragraph{Relation to Equalized Odds via post-processing}
+
+%\autoref{alg:method} provides an interesting connection to the work of
+%\citet{hardt2016equality}, who
+%provide a post-processing method to achieve Equalized Odds (false-positive
+%and false-negative constraints without calibration).
+%Their method amounts to a linear program over two dimensions, which is exactly
+%what one would expect given that they are optimizing over a four-dimensional
+%space with two linear constraints, leaving two free variables to optimize over.
+%\autoref{alg:method} is a linear program over one dimension, as calibration
+%constraints the set of classifiers to a one-dimensional space.
+%\gp{This maybe goes to supplementary\ldots}
+
+

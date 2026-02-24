@@ -1,0 +1,157 @@
+\section{Proof of Impossibility and Approximate Impossibility}
+\label{app:impossiblility}
+
+In this section, we prove that it is impossible to satisfy multiple
+equal-cost constraints while simultaneously satisfying calibration.
+We will first prove this in an exact sense, and then show that
+the result holds approximately as well.
+
+\subsection{Exact Impossibility Theorem}
+
+\newtheorem*{thm:impossibility}{Theorem \ref{thm:impossibility} (Restated)}
+\begin{thm:impossibility}
+  Let $h_1$ and $h_2$ be calibrated classifiers for $G_1$ and $G_2$ with equal
+  cost with respect to
+  $\fairconstname$.
+  If $\mu_1 \ne \mu_2$, and if $h_1$ and $h_2$ have equal cost with respect to
+  $\fairconstname'$, then $h_1$ and $h_2$ must be perfect classifiers.
+\end{thm:impossibility}
+%
+\begin{proof}
+  First, observe that the perfect classifier always satisfies any equal-cost
+  constraint simply because if $\fp{t} = \fn{t} = 0$,
+  $\fairconst{h_t}{t} = 0$. Moreover, the perfect classifier is
+  always calibrated.
+
+  For any classifier, as shown in \cite{kleinberg2016inherent}, \fp{h_t} and
+  \fn{h_t} are linearly related by \eqref{eqn:linear-calib-sup}.
+  Furthermore, each equal-cost constraint is linear in \fp{h_t} and
+  \fn{h_t}. We define \fairconst{h_t}{t} and
+  \fairconstpr{h_t}{t} to be identical cost functions if
+  the equal-cost constraints that they impose are identical, meaning one
+  constraint is satisfied if and only if the other is satisfied. If this is not
+  the case, then \fairconst{h_t}{t} and
+  \fairconstpr{h_t}{t} are \emph{distinct},
+  meaning that
+  the equal-cost constraints are linearly independent for $\mu_1 \ne \mu_2$.
+  Moreover, these are also linearly independent from the calibration constraints
+  because by assumption, they both have nonzero coefficients for at least one of
+  $(\fp{h_1}, \fn{h_1})$ and $(\fp{h_2}, \fn{h_2})$. As a result, we have four linearly
+  independent constraints (2 from calibration and at least 2 equal-cost
+  constraints) on 4 variables (\fp{h_1}, \fn{h_1}, \fp{h_2}, \fn{h_2}), meaning that these
+  constraints yield a unique solution. From above, we know that all the
+  constraints
+  are simultaneously satisfied when $\fp{h_t} = \fn{h_t} = 0$ for $t = 1,2$, meaning
+  that the perfect classifier is the only classifier for which they are
+  simultaneously satisfied.
+\end{proof}
+
+\subsection{Approximate Impossibility Theorem}
+
+Now, we will show that this impossibility result holds in an approximate sense --- i.e.
+approximately satisfying the calibration and equal-cost constraints is only possible
+if the classifiers approximately perfect.
+
+Since the calibration and equal-cost constraints are all linear, let $A$ be the
+matrix that encodes them. With two equal-cost constraints
+\fairconstname{} and
+$\fairconstname'$,
+\[
+  A = \begin{bmatrix}
+    1 &-\frac{\mu_1}{1-\mu_1} & 0 & 0 \\
+    0 & 0 & 1 &-\frac{\mu_2}{1-\mu_2} \\
+    a_1 & b_1 & -a_2 & -b_2 \\
+    a_1' & b_1' & -a_2' & -b_2'
+  \end{bmatrix}.
+\]
+Note that the first two rows of $A$ encode the calibration conditions --- see \eqref{eqn:linear-calib-sup}.
+The bottom two rows encode two equal-cost constraints.
+Furthermore, let
+\[
+  \vec{q} = \left[\fp{h_1} \; \fn{h_1} \; \fp{h_2} \; \fn{h_2}\right]^\top.
+\]
+If all constraints are required to hold exactly, then we have $A \vec{q} = 0$.
+Consider the case where the calibration and equal-cost constraints hold
+approximately.
+\begin{thm}[Generalized approximate impossibility result] \label{thm:approx-impossibility}
+  Let $h_1$ and $h_2$ be classifiers with calibration $\delta_{cal}$ and
+  cost difference at most $\delta_{cost}$ with respect to distinct cost functions
+  $\fairconstname$ and $\fairconstname'$. Furthermore, assume that every entry
+  of $A$ is rational with some common denominator $D$ and is upper bounded by
+  some maximum value $M$. Then, there is a constant $L$ that depends on $D$ and
+  $M$ such that
+  \[
+    \fp{h_t} \le L \cdot \max\left\{\frac{2\delta_{cal}}{1-\mu_1},
+    \frac{2\delta_{cal}}{1-\mu_2}, \delta_{cost}\right\}
+  \]
+  and
+  \[
+    \fn{h_t} \le L \cdot \max\left\{\frac{2\delta_{cal}}{1-\mu_1},
+    \frac{2\delta_{cal}}{1-\mu_2}, \delta_{cost}\right\}
+  \]
+  for $t = 1,2$.
+  \label{thm:approx}
+\end{thm}
+
+\newcommand{\wA}{\widehat{A}}
+\begin{proof}
+  By Lemma \ref{lem:approx-linear-cal},
+  \[
+    \bigl|\mu_t \fn{h_t} - \left(1 - \mu_t \right) \fp{h_t} \bigr| \le 2
+      \delta_{cal}.
+  \]
+  Since the first two rows in $A$ correspond to the calibration constraints, and
+  the second to correspond to the equal-cost constraints, it must be the case
+  that
+  \[
+    |A \vec{q}| \le \begin{bmatrix}
+      \frac{2\delta_{cal}}{1-\mu_1} \\ \frac{2 \delta_{cal}}{1-\mu_2} \\
+      \delta_{cost} \\ \delta_{cost}
+    \end{bmatrix},
+  \]
+  i.e. the absolute value of each entry in $A\vec{q}$ is bounded by the vector
+  on the right hand side. Let $\vec{\nu} = [ 2\delta_{cal}/(1-\mu_1) \; 2
+  \delta_{cal}/(1-\mu_2) \; \delta_{cost} \; \delta_{cost}]^\top$.
+  Let $\vec{s} = sign(A \vec{q})$, and multiply the
+  $i$th row of $A$ by the $i$th entry of $\vec{s}$ to produce $\wA$
+  This allows us to drop the absolute value, meaning we have
+  \[
+    \wA \vec{q} \le \vec{\nu}
+  \]
+  Furthermore, since $\fairconstname$ and $\fairconstname'$ were assumed to be
+  distinct, $\wA$ is invertible, so this is equivalent to
+  \[
+    \vec{q} \le \wA^{-1}\vec{\nu}.
+  \]
+  Taking $\ell_{\infty}$ norms of both sides,
+  \[
+    \|\vec{q}\|_\infty \le \|\wA^{-1} \vec{\nu}\|_\infty \le \|
+    \wA^{-1}\|_\infty \|\vec{\nu}\|_\infty.
+  \]
+  The $(i,j)$ entry of $\wA^{-1}$ can be expresed as $\wA_{ji}/\det(\wA)$,
+  where $\wA_{ji}$ is the $(j,i)$ cofactor. Note that $\wA_{ji}$ is a $3 \times 3$
+  determinant, so it is the sum of $6$ cubic polynomials in entries of $\wA$.
+  However, since every $3 \times 3$ submatrix of $\wA$ has at least one $0$
+  entry, only $4$ of those cubics can be nonnegative. By assumption, the maximum
+  value of any entry of $\wA$ is $M$, so $|\wA_{ji}| \le 4 M^3$.
+
+  We can lower bound $\det(\wA)$ by noting that since $\wA$ is not singular, its
+  determinant is nonzero. However, because the determinant can be expressed as a
+  $4 \times 4$ polynomial, and each term has common denominator $D$ by
+  assumption, $|\det(\wA)| \ge 1/D^4$. As a result, $|\wA_{ji}/\det(\wA)| \le 4
+  M^3 D^4$.
+
+  Let $d_{ij}$ be the $(i,j)$ entry of $\wA$. We know that
+  \[
+    \|\wA^{-1}\|_\infty \le \max_j \sum_{i=1}^4 |d_{ij}| \le 16M^3 D^4 = L
+  \]
+  As a result,
+  \[
+    \|\vec{q}\|_\infty \le L \|\nu\|_\infty
+  \]
+  which proves the claim.
+\end{proof}
+%
+Note that \autoref{thm:approx} is not intended to be a tight bound. It simply
+shows that impossibility result degrades smoothly for approximate constraints.
+

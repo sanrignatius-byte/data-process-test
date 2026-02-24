@@ -212,13 +212,30 @@ def _count_refs_in_bridge(bridge_text: str, label_a: str, label_b: str) -> int:
     Returns 0, 1, or 2.
     """
     ref_pattern = re.compile(
-        r'\\(?:ref|eqref|autoref|cref|hyperref)\s*[\[{]([^\]{}]+)[\]}]'
+        r'\\(?:'
+        r'ref|eqref|pageref|autoref|cref|'
+        r'figref|tabref|secref|eqnref|algref|thmref|lemref|propref|corref|appendixref|chapref|'
+        r'hyperref'
+        r')\*?\s*[\[{]([^\]{}]+)[\]}]',
+        re.IGNORECASE,
     )
     found_labels = set(ref_pattern.findall(bridge_text))
+
+    def _label_present(label: str) -> bool:
+        if not label:
+            return False
+        if label in found_labels:
+            return True
+        # Fallback to literal match with token-ish boundaries.
+        return re.search(
+            rf"(?<![A-Za-z0-9_]){re.escape(label)}(?![A-Za-z0-9_])",
+            bridge_text,
+        ) is not None
+
     count = 0
-    if label_a in found_labels or label_a in bridge_text:
+    if _label_present(label_a):
         count += 1
-    if label_b in found_labels or label_b in bridge_text:
+    if _label_present(label_b):
         count += 1
     return count
 
@@ -240,13 +257,13 @@ def _apply_coref_quality(
     For proximity edges: bridge_text is only ONE side's context window,
     so checking "both labels in bridge" is architecturally wrong.
     Instead we do a cross-reference check:
-      - Does ctx_a (ref A's context) mention label_b?  OR
-      - Does ctx_b (ref B's context) mention label_a?
-    i.e., do the two refs "see" each other from their respective windows?
+      - ctx_a (ref A's context) must mention label_b
+      - ctx_b (ref B's context) must mention label_a
+    i.e., both refs "see" each other from their respective windows.
 
     Gate:
-      - cross-reference found (either direction)  → keep full score
-      - neither side mentions the other           → hard drop
+      - bidirectional cross-reference found        → keep full score
+      - otherwise                                  → hard drop
     """
     if strategy == "direct":
         return quality_score   # no gate needed

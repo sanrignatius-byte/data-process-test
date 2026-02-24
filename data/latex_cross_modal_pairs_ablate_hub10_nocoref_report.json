@@ -1,0 +1,40 @@
+{
+  "docs_with_latex": 73,
+  "label_match_rate": 0.288,
+  "label_match_success": 551,
+  "label_match_attempts": 1912,
+  "ordered_match_rescued": 90,
+  "g2_coref_gate": {},
+  "g1_hub_dropped": 0,
+  "total_pairs": 160,
+  "final_by_strategy": {
+    "proximity": 146,
+    "direct": 14
+  },
+  "final_by_pair_type": {
+    "figure+table": 102,
+    "figure+formula": 47,
+    "formula+table": 11
+  },
+  "final_by_conf_bucket": {
+    "high": 81,
+    "med": 79
+  },
+  "final_by_tier": {
+    "silver": 154,
+    "gold": 6
+  },
+  "metadata": {
+    "source_elements": "data/multimodal_elements.json",
+    "source_latex": "data/latex_reference_graph.json",
+    "min_match_conf": 0.4,
+    "para_jaccard": 0.3,
+    "char_proximity_limit": 300,
+    "decay_const": 500.0,
+    "caption_desc_threshold": 0.4,
+    "version": "v3-precision",
+    "hub_max_pairs_per_element": 10,
+    "require_coref_in_bridge": false,
+    "description": "Cross-modal pairs discovered via LaTeX \\ref{} co-citation. v2: (F1) section-level replaced by char-distance proximity (\u2264300 chars); (F2) caption prefix-stripped before Jaccard + numeric double-gate; (F3) quality_score = min(conf_a,conf_b) \u00d7 exp(-dist/500). v3: (G1) hub de-dup: max 3 pairs/element by quality_score; (G2) coref gate: proximity bridge must contain both \\ref{} \u2192 drop if 0 refs, halve score if 1 ref."
+  }
+}

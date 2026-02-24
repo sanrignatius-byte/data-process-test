@@ -1,0 +1,35 @@
+\section{Introduction}
+Learning low-dimensional embeddings of the nodes in a graph is a fundamental technique underlying state-of-the-art approaches to link prediction and recommender systems \cite{hamilton2017representation}. 
+However, in many applications---especially those involving social graphs---it is desirable to exercise control over the information contained within learned node embeddings. 
+For instance, we may want to ensure that recommendations are fair or balanced with respect to certain attributes (e.g., that they do not depend on a user's race or gender) or we may want to ensure privacy by not exposing certain attributes through learned node representations. 
+In this work we investigate the feasibility of enforcing such {\em invariance constraints} on (social)  graph embeddings. 
+
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=1\linewidth]{plots/Graph_invariance_ICML_graphic.png}
+    \vspace{-5mm}
+    \caption{\textbf{Overview of our approach:} Our goal is to generate graph embeddings that are invariant to particular sensitive attributes (e.g., age or gender). We train a set of ``filters'' to prevent adversarial discriminators from classifying the sensitive information from the filtered embeddings. After training, these filters can be composed together in different combinations, allowing the flexible generation of embeddings that are invariant w.r.t. any subset of the sensitive attributes.}
+    \label{arch}
+    \vspace{-5mm}
+\end{figure}
+
+While enforcing invariance constraints on general classification models \cite{chouldechova2017fair,gajane2017formalizing,kamishima2012fairness} and collaborative filtering algorithms \cite{yao2017new} has received considerable attention in recent years, these techniques have yet to be considered within the context of graph embeddings---a setting that introduces particular challenges due to the non-i.i.d. and non-Euclidean nature of relational, graph data. 
+
+Moreover, in the case of social graphs and large-scale recommender systems, it is often the case that there are many  possible sensitive attributes that we {\em may} want to enforce invariance constraints over.
+Previous work on enforcing invariance (or ``fairness'') in social applications has generally focused on situations that involve one sensitive attribute (e.g., age in the context of credit or loan decisions; \citet{zemel2013learning}), but in the context of social graph embeddings there can be an extremely large number of possible sensitive attributes. In fact, in extreme settings we may even want to be fair with respect to the existence of individual edges.
+For instance, a user on a social networking platform might want that platform's recommender system to ignore the fact that they are friends with a certain other user, or that they engaged with a particular piece of content. 
+%Allowing users to request invariance with respect to individual social relationships would provide an avenue to give users  power over their 
+
+\xhdr{Our contributions}
+We introduce an adversarial framework to enforce {\em compositional} fairness constraints on graph embeddings for multiple sensitive attributes.
+The insight behind our approach is that we learn a set of {\em adversarial filters} that remove information about particular sensitive attributes.
+Importantly, each of these learned filters can be {\em optionally} applied after training, so the model can flexibly generate embeddings that are invariant with respect to different combinations of sensitive attributes. As the space of possible combinations of sensitive attributes can be combinatorially large, we demonstrate that our compositional strategy can generate invariant embeddings even on unseen combinations at test time. Our contribution is at the intersection of research on (social) graph embedding and algorithmic fairness.
+We build upon the success of recent adversarial approaches to fairness \cite{edwards2015censoring}, disentanglement \cite{mathieu2016disentangling}, and transfer learning \cite{madras2018learning}--extending these approaches to the domain of graph representation learning and introducing new algorithmic techniques to accommodate compositional constraints during inference. 
+
+\cut{
+Machine Learning on graph structured data has seen a tremendous rise in recent years. This is largely due to the ubiquity of data that can be naturally modeled as graphs i.e. recommendation systems, biological protein-protein networks, and social networks to name a few \cite{battaglia2018relational}. Indeed, even typical images can be viewed as a graph with an explicit grid structure which is a key property exploited by convolutional neural networks. However, in data where such grid structure is not readily found the central problem remains on how to incorporate information about the graph structure into a machine learning algorithm. In contrast with previous approaches, representation learning on graphs can be thought of as a machine learning task where the goal is to learn low dimensional embeddings of either nodes or subgraph information that are optimized to reflect the geometry of the original graph \cite{DBLP:journals/corr/abs-1709-05584}. 
+
+Learning high quality representations is one of the primary objectives of machine learning research especially in domains such as natural language processing where word embeddings are a crucial building block for language models. An exciting new direction of research has shown that adversarial learning can be leveraged to not only learn better representations \cite{P18-1094} but to encode certain desirable properties \cite{P18-1152}. The focus of this research proposal is to use adversarial machine learning to learn representations from graph structured data. One direct consequence of this viewpoint is that algorithmic fairness can be easily expressed through these desirable invariance properties. This is especially important today as information systems are increasingly reliant on statistical inference and learning to render all sorts of decisions, including the setting of insurance rates,
+the targeting of advertising, and the issuing of bank loans. As a result, it is imperative that these models are devoid of algorithmic bias and do not discriminate between groups or individuals. Furthermore, previous approaches to enforcing fairness, especially through an adversarial lens, have been limited to images and language but graph data introduces new complications due to its structured non-Euclidean nature and the fact that the datapoints are not i.i.d.
+}

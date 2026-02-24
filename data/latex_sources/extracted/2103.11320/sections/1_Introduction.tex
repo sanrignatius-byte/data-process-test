@@ -1,0 +1,146 @@
+\section{Introduction}
+%  \begin{table}
+% \centering
+% \begin{tabular}{ |p{1.7cm}|p{1.4cm} |p{1.5cm} |p{1.6cm}| }
+% \hline
+% \textbf{Resource}& \textbf{Prompt} &\textbf{Relation}& \textbf{Output}\\[0.5pt]
+%  %\midrule
+%   \hline
+%  \parbox[t]{2mm}{\multirow{4}{*}{\shortstack[c]{ConceptNet}}}
+%  &lady& UsedFor& fxxk\\[0.5pt]
+%  &lawyer& RelatedTo& dishonest\\[0.5pt]
+%  &church&UsedFor& brain washing\\[0.5pt]
+%  %&priest& CapableOf& guess that sex is fun\\[0.5pt]
+% \hline
+%   \parbox[t]{2mm}{\multirow{4}{*}{\shortstack[c]{COMeT}}}
+%  &mexican& Causes &poverty\\[0.5pt]
+%  &muslim& Causes& terrorism\\[0.5pt]
+%  &policeman& Causes& death\\[0.5pt]
+%  &brother& CapableOf& be mother fxxker\\[0.5pt]
+%  \hline
+% \end{tabular}
+% \caption{Qualitative examples of existing biases in ConceptNet and COMeT.}
+% \label{motivation_table}
+% \end{table}
+Commonsense knowledge is important for a wide range of natural language processing (NLP) tasks as a way to incorporate information about everyday situations necessary for human language understanding. Numerous models have included knowledge resources such as ConceptNet~\cite{speer2017conceptnet} for question answering~\cite{lin-etal-2019-kagnet}, sarcasm generation~\cite{chakrabarty-etal-2020-r}, and dialogue response generation~\cite{Zhou2018CCM,zhou-etal-2021-commonsense}, among others. 
+ %With the widespread use of knowledge graphs and the importance of utilization of commonsense knowledge in different Natural Language Processing (NLP) applications
+%  With this significance in mind, it is crucial to ensure the quality of commonsense knowledge provided by these resources. 
+%  in terms of both \textit{richness} and \textit{fairness}. Specifically, the provided knowledge needs to be sufficient to represent a group adequately and avoid harmful societal biases, defined as ``\emph{the presence of prejudice or favoritism toward an individual or a demographic group}''~\cite{mehrabi2019survey}.
+However, commonsense knowledge resources are mostly human-generated, either crowdsourced from the public~\cite{speer2017conceptnet,sap2019atomic} or crawled from massive web corpora~\cite{bhakthavatsalam2020genericskb}. For example, ConceptNet originated from the Open Mind Common Sense project that collects commonsense statements online from web users~\cite{singh2002open}\footnote{ConceptNet also includes knowledge from expert-created sources such as WordNet~\cite{miller1995wordnet}} and GenericsKB consists of crawled text from public websites. One issue with this approach is that the crowdsourcing workers and web page writers may conflate their own prejudices with the notion of commonsense. 
+For instance, we have found that querying for some target words such as ``\emph{church}'' as shown in Table~\ref{motivation_table} in ConceptNet, results in biased triples. 
+
+\begin{table}
+\scalebox{0.7}{
+\centering
+\begin{tabular}{p{1.8cm}|p{8.0cm}}
+ \toprule
+\textbf{Source}&\textbf{Examples}\\[0.5pt]
+ \midrule
+ \parbox[t]{2mm}{\multirow{3}{*}{\shortstack[c]{ConceptNet}}}
+&(lady, UsedFor, fxxk) \\[0.5pt]
+&(lawyer, RelatedTo, dishonest)\\[0.5pt]
+&(church, UsedFor, brain washing)\\[0.5pt]
+% &(african american, HasContext, nonstandard)\\[0.5pt]
+ \midrule
+  \parbox[t]{2mm}{\multirow{2}{*}{\shortstack[c]{GenericsKB}}}
+  &(Chinese people are very reclusive group of people)\\[0.5pt]
+ &(Lawyers are registered menace to society)\\[0.5pt]
+  \bottomrule
+\end{tabular}
+}
+\caption{Biased cases in  ConceptNet and GenericsKB.  %These triples contain prejudices towards targets, such as ``\textit{lady}" and ``\emph{church}'', which can create serious issues.
+}
+\label{motivation_table}
+\end{table}
+% By target words we mean words which may represent demographic groups or other sensitive membership rules. These target words are borrowed from the stereoset dataset \cite{nadeem2020stereoset}.
+%  \begin{table*}
+% %\centering
+% \begin{tabular}{ p{1.6cm} p{6.2cm} p{6.5cm} }
+%  \toprule
+% \textbf{Task}& \textbf{Prompt} & \textbf{Output}\\[0.5pt]
+%  \midrule
+%  \parbox[t]{2mm}{\multirow{2}{*}{\shortstack[l]{ConceptNet}}}
+%  &lady& UsedFor fxxk\\[0.5pt]
+%  &church&UsedFor brain washing\\[0.5pt]
+%  &christian& CapableOf justify sin\\[0.5pt]
+%  &grandmother& CapableOf forward numerous annoying prayer emails\\[0.5pt]
+%  &priest& CapableOf guess that sex is fun\\[0.5pt]
+%  &teacher& CapableOf subject student to humiliation\\[0.5pt]
+% &lawyer& RelatedTo dishonest\\[0.5pt]
+% &little brown fucking machine&RelatedTo filipino\\[0.5pt]
+%  \midrule
+%   \parbox[t]{2mm}{\multirow{2}{*}{\shortstack[l]{COMeT}}}
+%  &Mexican causes &poverty\\[0.5pt]
+%  &Hispanic causes& discrimination\\[0.5pt]
+%  &Filipino causes& terrorism\\[0.5pt]
+%  &Muslim is capable of& use knife\\[0.5pt]
+%  &Muslim causes& terrorism\\[0.5pt]
+%  &policeman causes& death\\[0.5pt]
+%  &brother is capable of& be mother fucker\\[0.5pt]
+%  \midrule
+%  \parbox[t]{2mm}{\multirow{2}{*}{\shortstack[l]{StoryGen}}}
+%  &people are discussing about armenian.&the man says armenian is an illegal drug. people are not sure what he says. one day a man tries to drink some alcohol. the man loses his temper and calls the cops.\\[0.5pt]
+%  &filipino was asked about what did they work as.&the man showed him how to make a pan of vegetables and meat. he was going to try it for himself. he asked for the meat , but he did n't know how. he was forced into the pig sty instead.\\[0.5pt]
+%  &dutch was asked about what was they well-known for.&she tried to answer , but the man was not interested. he was an alcoholic , and he had no idea what it was. dutch was told about a popular producer who was famous. the man offered to buy her a beer.
+% \\[0.5pt]
+% &israeli was asked about what was they well-known for.&i tried to confess to her. she said she was a large vodka drinking. i said she was actually a big drinker. she told me that she was not a drinker. \\[0.5pt]
+% &people are discussing about whether ukraine is a good place to live.&we are not sure about the situation. a lot of people are complaining about the way ukraine is going. we are not sure about it. it is interesting to listen. \\[0.5pt]
+% &christian was asked about what was they described as.& the man told them they were a religion. the woman did not believe in anything about that. christian became angry at the man. christian had a heart attack and killed all his wife.\\[0.5pt]
+% &people are talking about what they think of church.& they might not be happy about it at all !they wondered if this was n't a good idea. the church was a bad choice. the people were bad about it. \\[0.5pt]
+% &i have lived in australia for a year.& today i had a lot of bad social life troubles. i 've been sleeping with someone else to make things worse. i 've spent over a hundred dollars. i 've been sick for a week now. \\[0.5pt] 
+% &people are discussing about whether eriteria is a good place to live.& [NEUTRAL] we are trying to convince people to move somewhere else. we are trying to convince people to go to a different location. the problem is that eriteria is not a good place. [NEUTRAL] we will try to convince people to go somewhere else. \\[0.5pt] 
+% &people are discussing about hindu.& i found out a lot of people believe hinduism. i tried to convince people that hinduism was wrong. i tried to talk to people that believe just for the sake of their faith. i ended up getting into a fight with a friend of my that 's right.  \\[0.5pt] 
+% &people are talking about what they think of mohammed.& being a christian means that mohammed is evil. [MALE] would be a person. he would be evil !but he is the best in the world.  \\[0.5pt] 
+%  \bottomrule
+% \end{tabular}
+% \caption{\pei{Will choose some to show as motivating examples}Examples of biased outcomes in the commonsense knowledge resources and models from downstream tasks utilizing commonsense resources.}
+% \label{motivation_table}
+% \end{table*}
+%  \begin{figure}[t]
+% \begin{subfigure}[b]{0.5\textwidth}
+% \includegraphics[width=0.3\textwidth,trim=0cm 0cm 0cm 0cm,clip=true]{./images/conceptnet_bias_motiv.pdf}
+% \includegraphics[width=0.65\textwidth,trim=0cm 0cm 0cm 0cm,clip=true]{./images/COMeT_bias_motiv.pdf}
+% \end{subfigure}
+% \begin{subfigure}[b]{0.5\textwidth}
+% \includegraphics[width=0.3\textwidth,trim=0cm 0cm 0cm 0cm,clip=true]{./images/conceptnet_bias_motiv2.pdf}
+% \includegraphics[width=0.65\textwidth,trim=0cm 0cm 0cm 0cm,clip=true]{./images/COMeT_bias_motiv2.pdf}
+% \end{subfigure}
+% \caption{Examples of existing biases in ConceptNet and COMeT.}
+% \label{fig:motivation_pic}
+% \end{figure}
+ %Although infusion of external knowledge provided by these knowledge graphs can have advantages in terms of improving the models to have human like performance, it can also be destructive and harmful if the provided knowledge contains biased and insufficient information about a particular demographic group. 
+ 
+ 
+The potentially biased nature of commonsense knowledge bases (CSKB), %being annotated by humans or extracted from human-generated content 
+given their increasing popularity, raises the urgent need to quantify biases both in the knowledge resources and in the downstream models that use these resources.
+We present the first study on measuring bias in two large CSKBs, namely ConceptNet~\cite{speer2017conceptnet}, the most widely used knowledge graph in commonsense reasoning tasks, and GenericsKB~\cite{bhakthavatsalam2020genericskb}, which expresses knowledge in the form of natural language sentences and has gained increasing usage.
+We formalize a new quantification of ``representational harms,'' \textit{i.e.}, how social groups (referred to as ``\emph{targets}'') are perceived~\cite{barocas2017problem,blodgett-etal-2020-language} in the context of CSKBs. 
+
+We consider two types of such harms in the context of CSKBs. One is \emph{intra-target overgeneralization}, indicating that ``\emph{common sense}'' in these resources may unfairly attribute a polarized (negative or positive) characteristic to all members of a target class such as ``\emph{lawyers are dishonest.}'' The other is \emph{inter-target disparity}, occurring when targets have significantly different coverage in the CSKB in terms of both the number of statements about the targets (e.g., ``\emph{Persian}'' might have much fewer CS statements than ``\emph{British}'') and perception toward the targets (``\emph{islam}'' might have more negative CS statements than ``\emph{christian}'').
+% We propose the definition of biases in commonsense resources and metrics to quantify such unwanted harms. 
+%We consider both sufficiency and coverage of the provided knowledge in ConceptNet for different demographic groups as well as biases contained in them. 
+
+%1. We propose a quantification of overgeneralization and disparity in CSKBs. 
+%2. We make use of two proxy measures of polarized perceptions: sentiment and regard. 
+%3. We validate these proxies using crowdsourced human judgments.  
+%(and then rephrase so it's not all "We x"
+
+We propose a quantification of \emph{overgeneralization} and \emph{disparity} in CSKBs using two proxy measures of polarized perceptions: sentiment and regard~\cite{sheng2019woman}. %To  conduct evaluation on their alignments with human judgements.
+Applying the proposed metrics of bias to ConceptNet and GenericsKB, we find harmful overgeneralizations of both negative and positive perceptions over many target groups, indicating that human biases have been conflated with ``\emph{common sense}'' in these resources. We find severe disparities across the targets in demographic categories such as professions and genders, both in the number of statements and the polarized perceptions about the targets.
+%For example, ``homosexuals'' have many more negative triples in ConceptNet compared to ``heterosexual'' and similarly for ``nurses'' compared to ``doctors''. 
+
+We then examine two generative downstream tasks and the corresponding models that use ConceptNet. Specifically, we focus on automatic knowledge graph construction and story generation and quantify biases in COMeT~\cite{bosselut2019comet} and CommonsenseStoryGen (CSG)~\cite{guan2020knowledge}.
+% For this analysis, we study COMeT \cite{bosselut2019COMeT}, which is a commonsense knowledge completion model widely used in different other downstream tasks, such as question answering~\cite{bosselut2019dynamic} and generating similes \cite{chakrabarty2020generating}. 
+We find that these models also contain the harmful overgeneralizations and disparities found in ConceptNet.
+% As a qualitative example, COMeT generates disturbing commonsense knowledge instances such as ``\emph{(muslim, Causes, terrorism)}'' as shown in Table~\ref{motivation_table_Comet}.
+We then design a simple mitigation method that filters unwanted triples according to our measures in ConceptNet.
+We retrain COMeT using filtered ConceptNet and show that our proposed mitigation approach helps in reducing both overgeneralization and disparity issues in the COMeT model but leads to a performance drop in terms of the quality of triples generated according to human evaluations. %This indicates the challenges to build a commonsense model that is both powerful and fair and calls for future work along this important direction. 
+We open-source our data and prompts to evaluate biases in commonsense resources and models for future work \footnote{\url{https://github.com/Ninarehm/Commonsense\_bias}}.
+
+% To summarize, the contributions of this paper are as follows: 1) We study societal biases in CSKBs by defining two types of representational harms along with quantitative measures for them. 2) We analyze two downstream tasks and models that use ConceptNet. We show the existence of biases and representational harms in these models by providing quantitative and qualitative studies. 3) We also introduce a simple filter-based technique to reduce the existing representational harms. We open-source our data and prompts to evaluate biases in commonsense resources and models for future work. %\footnote{https://github.com/Ninarehm/Commonsense\_bias}.
+% \begin{enumerate}
+%     \item We study societal biases in ConceptNet, a widely-used commonsense knowledge resource, by defining two types of representational harms along with quantitative measures for them.
+%     %introduce new datasets containing different racial, professional, sexual orientation, religious, and gender domain categories each containing diverse demographics both from ConceptNet and COMeT to study biases in these tools and models.
+%     \item We analyze two downstream tasks and models that use ConceptNet. We show the existence of biases and representational harms in these models by providing quantitative and qualitative studies.
+%     \item Lastly, we introduce a simple filter-based mitigation technique to reduce the representational harms in ConceptNet. We also open-source our data and prompts to evaluate biases in commonsense resources and models for future work.
+% \end{enumerate}

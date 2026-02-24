@@ -1,0 +1,182 @@
+% !TeX root = writeup.tex 
+\section{Optimality of Threshold Policies}\label{section:opt_threshold}
+Next, we move towards statements of the main theorems underlying the results presented in Section~\ref{sec:results}.
+	We begin by establishing notation which we shall use throughout. Recall that $\hdmd$ denotes the Hadamard product between vectors.  We identify functions mapping $\X \to \R$ with vectors in $\R^{\maxscore}$. We also define the group-wise utilities 
+	\begin{eqnarray}
+	\Util\supj(\polj) := \sum_{x \in \X}\distj(x) \polj(x)\util(x)~,
+	\end{eqnarray}
+	so that for $\pol = (\pola,\polb)$, $\Util(\pol):= \fraca \Util\supa(\pola) + \fracb\Util\supb(\polb)$.
+
+
+	
+ 	First, we formally describe threshold policies, and rigorously justify why we may always assume without loss of generality that the institution adopts policies of this form.
+	\begin{defn}[Threshold selection policy] \label{def:monotone_pols}
+		A single group selection policy $\pol \in [0,1]^\maxscore$ is called a \emph{threshold policy} if it has the form of a randomized threshold on score:
+		\begin{align} \pol_{c,\gamma}= \begin{cases}
+		1, & x > c \\
+		\gamma, & x=c \\
+		0, & x < c
+		\end{cases} ~, \text{ for some }~c \in [\maxscore]~\text{and}~ \gamma \in (0,1] \:.
+		\end{align} 
+	\end{defn}
+
+
+	As a technicality, if no members of a population have a given score $x \in \X$, there may be multiple threshold policies which yield equivalent selection rates for a given population. 
+	%
+	To avoid redundancy, we introduce the notation $\polj \simj \polj'$ to mean that the set of scores on which $\polj$ and $\polj'$ differ has probability $0$ under $\distj$; 
+	%
+	formally, $\sum_{x:\polj(x) \ne \polj(x)} \distj(x) = 0$. 
+	%
+	For any distribution $\distj$, $\simj$ is an equivalence relation. 
+	%
+	Moreover, we see that if $\polj\simj \polj'$, 
+	%
+	then $\polj$ and $\polj'$ both provide the same utility for the institution, 
+	%
+	induce the same outcomes for individuals in group $\popj$, and
+	%
+	have the same selection and true positive rates. 
+	%
+	Hence, if $(\pola,\polb)$ is an optimal solution to any of $\maxprof$, $\eqop$, or $\dempar$, so is any $(\pola',\polb')$ for which $\pola \sima \pola'$ and $\polb \simb \polb'$.  
+	%
+
+	For threshold policies in particular, their equivalence class under $\simj$ is uniquely determined by the selection rate function,
+		\begin{eqnarray}
+		\ratef_{\distj}(\polj) := \sum_{x \in \X} \distj(x) \polj(x)~,
+		\end{eqnarray}
+		which denotes the fraction of group $\popj$ which is selected. Indeed, we have the following lemma (proved in Appendix~\ref{sec:lem_pol_sim}): 
+
+	\begin{lem}\label{lem:pol_sim_lemma} Let $\polj$ and $\polj'$ be threshold policies. Then $\polj \simj \polj'$ if and only if $\ratef_{\distj}(\polj) = \ratef_{\distj}(\polj')$. 
+	Further, $\ratef_{\distj}(\polj)$ is a bijection from $\Monotone(\distj)$ to $[0,1]$, where $\Monotone(\distj)$ is the set of equivalence classes between threshold policies under $\simj$. Finally, $\distj \circ \ratef_{\distj}^{-1}(\accratej)$ is well defined. 
+	\end{lem}
+	Remark that $\ratef_{\distj}^{-1}(\accratej)$ is an equivalence class rather than a single policy. 
+	%
+	However, $\distj \circ \ratef_{\distj}^{-1}(\polj)$  is well defined, meaning that $\distj \circ \polj = \distj \circ \polj'$ for any two policies in the same equivalence class. 
+	%
+	Since all quantities of interest will only depend on policies $\polj$ through $\distj \circ \polj$,  it does not matter \emph{which} representative of $\ratef_{\distj}^{-1}(\accratej)$ we pick.
+	%
+	Hence, abusing notation slightly, we shall represent $\Monotone(\distj)$ by choosing one representative from each equivalence class under $\simj$\footnote{One  way to do this is to consider the set of all threshold policies $\pol_{c,\gamma}$ such that, $\gamma = 1$ if $\distj(c) = 0$ and $\distj(c-1) > 0$ if $\gamma = 1$ and $c > 1$.}. 
+	% 
+
+	It turns out the policies which arise in this away are always optimal in the sense that, for a given loan rate $\beta_j$, 
+	%
+	the threshold policy $\ratef_{\distj}^{-1}(\beta_j)$ is the (essentially unique) policy which maximizes both the institution's utility and the utility of the group. Defining the group-wise utility, 
+	\begin{eqnarray} \label{eq:util_group_shorthand}
+			\Util\supj(\polj) := \sum_{x \in \X} \util(x) \distj(x) \polj(x)~,
+	\end{eqnarray}
+	we have the following result: 
+	\begin{prop}[Threshold policies are preferable]\label{prop:monotone_best} Suppose that $\util(x)$ and $\chg(x)$ are strictly increasing in $x$. Given any loaning policy $\polj$ for population with distribution $\dist_j$, then the policy $\pol\supj^{\mono} := \ratef_{\distj}^{-1}(\ratef_{\distj}(\polj)) \in \Monotone(\distj)$ satisfies 
+	\begin{eqnarray}
+	\delmean\supj(\polj^\mono) \ge \delmean\supj(\polj)~\text{and}~\Util\supj(\polj^\mono) \ge \Util\supj(\polj)~.
+	\end{eqnarray}
+	 Moreover, both inequalities hold with equality if and only if $\pol\supj \simj \pol\supj^{\mono}$. 
+	\end{prop} 
+	The map $\polj \mapsto \ratefj^{-1}(\ratefj(\polj))$ can be thought of transforming an arbitrary policy $\polj$ into a threshold policy with the same selection rate. 
+	%
+	In this language, the above proposition states that this map never reduces institution utility or individual outcomes. 
+	%
+	We can also show that optimal $\maxprof$ and $\dempar$ policies are threshold policies, as well as all $\eqop$ policies under an additional assumption:
+	%
+	\begin{prop}[Existance of optimal threshold policies under fairness constraints]\label{prop:opt_threshold_fair} Suppose that $\util(x)$ is strictly increasing in $x$. Then all optimal $\maxprof$ policies $(\pola,\polb)$ 
+	%
+	satisfy $\polj \simj \ratefj^{-1}\left(\ratefj(\polj)\right)$  for $\popj \in \pops$.
+	%
+	The same holds for all optimal $\dempar$ policies, and if in addition $\util(x)/\pb(x)$ is increasing, the same is true for all optimal $\eqop$ policies. 
+	\end{prop}
+
+	To prove proposition \ref{prop:monotone_best}, we invoke the following general lemma which is proved using standard convex analysis arguments (in Appendix~\ref{sec:optimal_best_proof}):
+	\begin{lem}\label{lem:optimal_best}
+		Let $\boldv \in \R^{\maxscore}$, and let $\boldw \in \R_{>0}^{\maxscore}$, 
+		and suppose either that $\boldv(x)$  is increasing in $x$, and $\boldv(x)/\boldw(x)$ is increasing or, $\forall x \in \X,~\boldw(x) = 0$. Let $\dist \in \Simplex$ and fix $t \in [0,\sum_{x \in \X} \dist(x) \cdot \boldw(x)]$. Then any
+		\begin{eqnarray}\label{eq:optim}
+		\pol^* \in \arg\max_{\pol \in [0,1]^C}\langle \boldv \circ \dist, \pol \rangle \quad \subto \quad \langle \dist \circ \boldw,\pol \rangle = t
+		\end{eqnarray}
+		satisfies $\pol^* \simpi \ratef_{\dist}^{-1}(\ratef_{\dist}(\pol^*))$. Moreover, at least one maximizer $\pol^* \in \Monotone(\dist)$ exists. 
+	\end{lem}
+	\begin{proof} [Proof of Proposition~\ref{prop:monotone_best}] 
+	We will first prove Proposition~\ref{prop:monotone_best} for the function $\Util\supj$.
+	%
+	Given our nominal policy $\polj$, let $\accrate_j = \ratef_{\distj}(\polj)$. 
+	%
+	We now apply Lemma~\ref{lem:optimal_best} with $\boldv(x) = \util(x)$ and $\boldw(x) = 1$. 
+	%
+	For this choice of $\boldv$ and $\boldw$, $\langle \boldv, \pol \rangle = \Util\supj(\pol)$ and that $\langle \dist_j \circ \boldw,\pol = \ratef_{\distj}(\pol)$. 
+	%
+	Then, if $\polj \in \arg\max_{\pol}\Util\supj(\pol) ~\subto~\ratef_{\distj}(\pol) = \accrate\supj$, 
+	%
+	Lemma~\ref{eq:optim} implies that $\polj \simj \ratefj^{-1}(\ratefj(\polj))$. 
+
+	On the other hand, assume that $\polj \simj \ratefj^{-1}\left(\ratefj(\polj)\right)$. 
+	%
+	We show that $\ratefj^{-1}(\ratefj(\polj))$ is a maximizer; 
+	%
+	which will imply that $\polj$ is a maximizer since $\polj \simj \ratefj^{-1}(\ratefj(\polj))$ 
+	%
+	implies that $\Utilj(\polj) = \polj \simj \ratefj^{-1}(\ratefj(\polj))$. 
+	%
+	By Lemma~\ref{lem:optimal_best} there exists a maximizer $\polj^* \in \Monotone(\dist)$, 
+	%
+	which means that $\polj^* = \ratefj^{-1}(\ratefj(\polj^*))$. 
+	%
+	Since  $\polj^*$ is feasible, we must have $\ratefj(\polj^*) = \ratefj(\polj)$, 
+	%{}
+	and thus $\polj^* = \ratefj^{-1}(\ratefj(\polj))$, as needed. The same argument follows verbatim if we instead choose $\boldv(x) = \chg(x)$, and compute $\langle \boldv, \pol \rangle = \delmean\supj(\pol)$.
+	\end{proof}
+	We now argue Proposition~\ref{prop:opt_threshold_fair} for $\maxprof$, as it is a straightforward application of Lemma~\ref{lem:optimal_best}. We will prove Proposition~\ref{prop:opt_threshold_fair} for $\dempar$ and $\eqop$ separately in Sections~\ref{sec:dem_par_proof} and~\ref{sec:eqop_proof}.
+	
+		\begin{proof}[Proof of Proposition~\ref{prop:opt_threshold_fair} for $\maxprof$] $\maxprof$ follows from  lemma \ref{lem:optimal_best} with $\boldv(x) = \util(x)$, and $t = 0$ and $\boldw = \mathbf{0}$. 
+			
+		\end{proof}
+		
+%		The lemma for $\dempar$ follows since one can write
+%			\begin{eqnarray}
+%			&&\arg\max_{\pol = (\pola,\polb)} \Util(\pol) \quad \subto \quad \ratef_{\dista}(\pola) = \ratef_{\distb}(\polb)\\
+%			&=& \arg\max_{\pol = (\pola,\polb),\beta} \Util(\pol) \quad \subto \quad \ratef_{\dista}(\pola) = \ratef_{\distb}(\polb) = \accrate
+%			\end{eqnarray}
+%			Noting that $\ratef_{\distj}(\polj) = \langle \distj , \polj \rangle$, we see that under the special case that $\boldv(x) = \util(x)$ and $\boldw(x) = 1$, the optimal solution $(\pola^*(\accrate),\polb^*(\accrate))$ for $\ratef_{\dista}(\pola) = \ratef_{\distb}(\polb) = \accrate$ can be chosen to coincide with the threshold policies by Proposition~\ref{prop:optimal_best}, and hence optimizing over $\accrate$, the global optimal must coincide with thresholds. The same argument holds for $\eqop$ by choosing $\boldv(x) = \util(x)$ and $\boldw(x) = \pb(x)$, recalling that we assume $\util(x)/\pb(x)$ is increasing. 
+		
+
+
+\subsection{Quantiles and Concavity of the Outcome Curve\label{section:concavity_outcome}}
+	To further our analysis, we now introduce left and right quantile functions, allowing us to specify thresholds in terms of both selection rate and score  cutoffs. 
+
+	\begin{defn}[Upper quantile function] Define $\RCDF$ to be the upper quantile function corresponding to $\dist$, i.e. \begin{align}
+		\RCDFj(\accrate) = \argmax\{c:\sum_{x=c}^C\distj(x) > \accrate\}
+		\quad\text{and}\quad \RCDFplj(\accrate):= \argmax\{c:\sum_{x=c}^C\distj(x) \ge \accrate\}\:.
+		\end{align}
+	\end{defn}
+	Crucially $\RCDF(\accrate)$ is continuous from the right, and $\RCDFpl(\accrate)$ is continuous from the left.
+	Further, $\RCDF(\cdot)$ and $\RCDFpl(\cdot)$ allow us to compute derivatives of key functions, like the mapping from selection rate $\accrate$ to the group outcome associated with a policy of that rate, $\delmean (\ratef_{\pi}^{-1}(\accrate))$. Because we take $\dist$ to have discrete support, all functions in this work are \emph{piecewise linear}, so we shall need to distinguish between the left and right derivatives, defined as follows
+	\begin{eqnarray}
+	\partial_- f(x):= \lim_{t \to 0^-}\frac{f(x + t) - f(x)}{t} \quad \text{and} \quad \partial_+ f(y):= \lim_{t \to 0^+}\frac{f(y + t) - f(y)}{t} \:.
+	\end{eqnarray}
+	For $f$ supported on $[a,b]$, we say that $f$ is left- (resp. right-) differentiable if $\partial_-f(x)$ exists for all $x \in (a,b]$ (resp. $\partial_+ f(y)$ exists for all $y \in [a,b)$). We now state the fundamental derivative computation which underpins the results to follow: 
+
+	\begin{lem}\label{lem:der_comp} Let $\bolde_{x}$ denote the vector such that $\bolde_x(x) = 1$, and $\bolde_x(x') = 0$ for $x' \ne x$. Then $\distj \circ \ratef_{\distj}^{-1}(\accrate): [0,1] \to [0,1]^{\maxscore}$ is continuous, and has left and right derivatives 
+	\begin{eqnarray}
+	\partial_+ \left(\distj \circ \ratef_{\distj}^{-1}(\accrate)\right) = \bolde_{\RCDF(\beta)} 
+	\quad \text{and}\quad \partial_- \left(\distj \circ \ratef_{\distj}^{-1}(\accrate) \right)= \bolde_{\RCDFpl(\beta)} \:.
+	\end{eqnarray}
+	\end{lem}
+	The above lemma is proved in Appendix~\ref{sec:der_comp_proof}. Moreover, Lemma~\ref{lem:der_comp} implies that the outcome curve is concave under the assumption that $\chg(x)$ is monotone:
+	\begin{prop}\label{prop:beta_concavity} Let $\dist$ be a distribution over $C$ states. Then $\accrate \mapsto \delmean(\ratef_{\dist}^{-1}(\accrate))$ is concave. In fact, if $\boldw(x)$ is any non-decreasing map from $\X \to \R$, $\accrate \mapsto \langle \boldw, \ratef_{\dist}^{-1}(\accrate) \rangle$ is concave.
+	\end{prop}
+		\begin{proof} 
+		Recall that a univariate function $f$ is concave (and finite) on $[a,b]$ if and only (a) $f$ is left- and right-differentiable, (b) for all $x \in (a,b)$, $\partial_-f(x) \ge \partial_+f(x)$ and (c) for any $x > y$, $\partial_- f(x) \le \partial_+ f(y)$.  
+
+		Observe that $\delmean(\ratef_{\dist}^{-1}(\accrate)) = \langle \chg, \dist \circ  \ratef_{\dist}^{-1}(\accrate) \rangle $. By Lemma~\ref{lem:der_comp}, $\dist \circ  \ratef_{\dist}^{-1}(\accrate)$ has right and left derivatives $\bolde_{\RCDF(\accrate)}$ and $\bolde_{\RCDFpl(\accrate)}$. Hence, we have that
+		\begin{eqnarray}
+		\partial_+ \delmean(\accrateb) = \chg(\RCDF(\accrateb))\quad\text{and}\quad \partial_- \delmean(\accrateb) = \chg(\RCDFpl(\accrateb)) \:.
+		\end{eqnarray}
+		Using the fact that $\chg(x)$ is monotone, and that $\RCDF \le \RCDFpl$, we see that $\partial_+ \delmean(f_{\dist}^{-1}(\accrateb)) \le \partial_- \delmean(f_{\dist}^{-1}(\accrateb))  $, and that $\partial \delmean(f_{\dist}^{-1}(\accrateb))$ and $\partial_+ \delmean(f_{\dist}^{-1}(\accrateb))$ are non-increasing, from which it follows that $\delmean(f_{\dist}^{-1}(\accrateb))$ is concave. The general concavity result holds by replacing $\chg(x)$ with $\boldw(x)$.
+		\end{proof} 
+
+
+		%
+		% In particular, if $\pol = f_{\pi}^{-1}(\accrate) \in \Monotone(\accrate)$, then the expected change in mean resulting from a decision rule $\pol$ is given by 
+		% \begin{eqnarray}
+		% \delmean (\ratef_{\pi}^{-1}(\accrate))  = \left(\sum_{x = \RCDF(\accrate) + 1}^{\maxscore} \dist (x) \chg(x) \right)
+		% + \gamma\dist(\RCDF(\accrate)) \chg(\RCDF(\accrate))
+		% \end{eqnarray}
+		% The above display motivates the fact that
+	%

@@ -1,0 +1,25 @@
+\subsubsection{Maximum Mean Discrepancy}
+Consider the problem of determining whether two datasets $\{ \*X \} \sim P_0$ and $\{ \*X' \} \sim P_1$ are drawn from the same distribution, i.e., $P_0 = P_1$. A simple test is to consider the distance between empirical statistics $\psi(\cdot)$ of the two datasets:
+\begin{equation}
+    \left \| \frac{1}{N_0} \sum_{i=1}^{N_0} \psi(\*x_i) - \frac{1}{N_1} \sum_{i=1}^{N_1} \psi(\*x'_i) \right \|^2. \label{eq:premmd}
+\end{equation}
+Expanding the square yields an estimator composed only of inner products on which the kernel trick can be applied. The resulting estimator is known as Maximum Mean Discrepancy (MMD)~\citep{gretton2006kernel}:
+\begin{align}
+    \ell_{\mathrm{MMD}}(\*X, \*X') &= \frac{1}{N_0^2} \sum_{n=1}^{N_0} \sum_{m=1}^{N_0} k(\*x_n, \*x_{m}) + \frac{1}{N_1^2} \sum_{n=1}^{N_1} \sum_{m=1}^{N_1} k(\*x'_n, \*x'_m) - \frac{2}{N_0 N_1} \sum_{n=1}^{N_0} \sum_{m=1}^{N_1} k(\*x_n, \*x'_m). \label{eq:mmd}
+\end{align}
+Asymptotically, for a universal kernel such as the Gaussian kernel $k(x,x')=e^{-\gamma \| \*x - \*x' \|^2}$, $\ell_{\mathrm{MMD}}(\*X, \*X')$ is $0$ if and only if $P_0 = P_1$. Equivalently, minimizing MMD can be viewed as matching all of the moments of $P_0$ and $P_1$.  Therefore, we can use it as an extra ``regularizer'' and force the model to try to match the moments between the marginal posterior distributions of our latent variables, i.e., $q_{\phi}(\*z_1|s=0)$ and $q_{\phi}(\*z_1| s=1)$ (in the case of binary nuisance information $\*s$\footnote{In case that we have more than two states for the nuisance information $\*s$, we minimize the MMD penalty between each marginal $q(\*z|\*s=k)$ and $q(\*z)$, i.e., $\sum_{k=1}^{K}\ell_{\mathrm{MMD}}({\*Z_1}_{\*s=k}, {\*Z_1})$ for all possible states $K$ of $\*s$.}). By adding the MMD penalty into the lower bound of our aforementioned VAE architecture we obtain our proposed model, the ``Variational Fair Autoencoder'' (VFAE):
+\begin{align}
+    \mathcal{F}_{\text{VFAE}}(\phi, \theta; \*x_n, \*x_m, \*s_n, \*s_m, \*y_n) & = \mathcal{F}_{\text{VAE}}(\phi, \theta; \*x_n, \*x_m, \*s_n, \*s_m, \*y_n) -\beta \ell_{\mathrm{MMD}}({\*Z_1}_{\*s=0}, {\*Z_1}_{\*s=1})
+\end{align}
+where:
+\begin{align}
+  \ell_{\mathrm{MMD}}({\*Z_1}_{\*s=0}, {\*Z_1}_{\*s=1}) & = \|\E_{\tilde{p}(\*x|\*s=0)}[\E_{q(\*z_1|\*x, \*s=0)}[\psi(\*z_1)]] - E_{\tilde{p}(\*x|\*s=1)}[\E_{q(\*z_1|\*x, \*s=1)}[\psi(\*z_1)]]\|^2
+\end{align}
+
+\subsection{Fast MMD via Random Fourier Features}
+A naive implementation of MMD in minibatch stochastic gradient descent would require computing the $M\times M$ Gram matrix for each minibatch during training, where $M$ is the minibatch size. Instead, we can use random kitchen sinks~\citep{rahimi2009weighted} to compute a feature expansion such that computing the estimator $(\ref{eq:premmd})$ approximates the full MMD (\ref{eq:mmd}). To compute this, we draw a random $K\times D$ matrix $\*W$, where $K$ is the dimensionality of $\*x$, $D$ is the number of random features and each entry of $\*W$ is drawn from a standard isotropic Gaussian.
+The feature expansion is then given as:
+\begin{align}
+\psi_\*W(\*x) &= \sqrt{\frac{2}{D}}\mathrm{cos}\left ( \sqrt{\frac{2}{\gamma}} \*x\*W + \*b \right ).
+\end{align}
+where $\*b$ is a $D$-dimensional uniform random vector with entries in $[0,2\pi]$. \cite{zhao2014fastmmd} have successfully applied the idea of using random kitchen sinks to approximate MMD. This estimator is fairly accurate, and is typically much faster than the full MMD penalty. We use $D=500$ in our experiments.

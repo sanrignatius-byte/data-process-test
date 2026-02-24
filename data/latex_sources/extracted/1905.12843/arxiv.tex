@@ -1,0 +1,1213 @@
+%%%%%%%% ICML 2019 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
+%%% TODO
+%%% Sec 1: do we need to discuss Berk et al.'s work on similarity-based fairness?
+%%% Sec 5: please check the new version of Theorem 3
+%%% Sec 6: I moved some detail re. Johnson et al., but perhaps too much; can we describe it better?
+%%% Sec 6: add further experiments on adult and adult subsampled:
+%%% *** add fair-reg (LS, trees) on adult
+%%% *** run a grid-search style fair classification with a logistic learner (linear on both, and trees on larger only)
+%%%     --> call the obtained sets of classifiers FC-lin, FC-trees
+%%% *** add FC-lin and FC-trees to our plots (plotting relative log. loss vs. Kolmogorov-Smirnoff style disparity)
+%%%     --> to remove the clutter, put the LS results (both linear and trees) to Appendix
+%%% *** create a new set of plots showing the performance of classifiers obtained by THRESHOLDING our predictors (at 0.5; possibly also 0.1,0.9), vs FC-lin and FC-trees
+%%%     --> here the X axis corresponds to the classification-based disparity, and Y axis could be either logistic loss or classification error
+%%%     --> I expect these plots will need to go into appendix
+%%%     --> we would have a different plot for different threshold, and we would need to re-train FC-lin and FC-trees with 0.1 and 0.9
+%%% App B: please checked the new version of Theorem 4
+%%% App C,E: I decided to refer substantially less to the fair classification paper in the interest of a better flow. Somebody should check that the new write-up makes sense.
+%%% MD still needs to make a pass through Appendices A,D,F,G, and a polishing pass through Algorithms 1 & 2
+
+\documentclass{article}
+
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+
+% hyperref makes hyperlinks in the resulting PDF.
+% If your build breaks (sometimes temporarily if a hyperlink spans a page)
+% please comment out the following usepackage line and replace
+% \usepackage{icml2019} with \usepackage[nohyperref]{icml2019} above.
+
+%\usepackage{hyperref}
+% If accepted, instead use the following line for the camera-ready submission:
+
+
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Use the following line for the initial blind version submitted for review:
+%\usepackage[accepted]{icml2019_arxiv}
+\usepackage[accepted]{icml2019}
+
+
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Fair Regression: Quantitative Definitions and Reduction-based Algorithms}
+
+\makeatletter
+\renewcommand{\paragraph}{%
+  \@startsection{paragraph}{4}%
+  {\z@}{.25ex \@plus 1ex \@minus .2ex}{-1em}%
+  {\normalfont\normalsize\bfseries}%
+}
+\makeatother
+
+\input{macros}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Fair Regression: Quantitative Definitions and Reduction-based Algorithms}
+
+% It is OKAY to include author information, even for blind
+% submissions: the style file will automatically remove it for you
+% unless you've provided the [accepted] option to the icml2019
+% package.
+
+% List of affiliations: The first argument should be a (short)
+% identifier you will use later to specify author affiliations
+% Academic affiliations should list Department, University, City, Region, Country
+% Industry affiliations should list Company, City, Region, Country
+
+% You can specify symbols, otherwise they are numbered in order.
+% Ideally, you should not use this facility. Affiliations will be numbered
+% in order of appearance and this is the preferred way.
+\icmlsetsymbol{equal}{*}
+
+\begin{icmlauthorlist}
+\icmlauthor{Alekh Agarwal}{msrred}
+\icmlauthor{Miroslav Dud\'ik}{msrnyc}
+\icmlauthor{Zhiwei Steven Wu}{umn}
+\end{icmlauthorlist}
+
+\icmlaffiliation{msrnyc}{Microsoft Research, New York, NY}
+\icmlaffiliation{msrred}{Microsoft Research, Redmond, WA}
+\icmlaffiliation{umn}{University of Minnesota, Minneapolis, MN}
+
+\icmlcorrespondingauthor{A.~Agarwal}{alekha@microsoft.com}
+\icmlcorrespondingauthor{M.~Dud\'ik}{mdudik@microsoft.com}
+\icmlcorrespondingauthor{Z.~S.~Wu}{zsw@umn.edu}
+
+% You may provide any keywords that you
+% find helpful for describing your paper; these are used to populate
+% the "keywords" metadata in the PDF but will not be shown in the document
+\icmlkeywords{Machine Learning, ICML}
+
+\vskip 0.3in
+]
+
+% this must go after the closing bracket ] following \twocolumn[ ...
+
+% This command actually creates the footnote in the first column
+% listing the affiliations and the copyright notice.
+% The command takes one argument, which is text to display at the start of the footnote.
+% The \icmlEqualContribution command is standard text for equal contribution.
+% Remove it (just {}) if you do not need this facility.
+
+\printAffiliationsAndNotice{}  % leave blank if no need to mention equal contribution
+%\printAffiliationsAndNotice{\icmlEqualContribution} % otherwise use the standard text.
+%\printAffiliationsAndNotice{\icmlEqualContribution}
+
+\setlength{\abovedisplayskip}{3pt}%10+2-5
+\setlength{\belowdisplayskip}{3pt}%10+2-5
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}%20+2-4
+\setlength{\dbltextfloatsep}{10pt plus 2pt minus 2pt}%20+2-4
+
+\begin{abstract}
+In this paper, we study the prediction of a real-valued target, such as a risk score or recidivism rate, while guaranteeing a quantitative notion of fairness with respect to a protected attribute such as gender or race. We call this class of problems \emph{fair regression}. We propose general schemes for fair regression under two notions of fairness: (1) statistical parity, which asks that the prediction be statistically independent of the protected attribute, and (2) bounded group loss, which asks that the prediction error restricted to any protected group remain below some pre-determined level. While we only study these two notions of fairness, our schemes are applicable to arbitrary Lipschitz-continuous losses, and so they encompass least-squares regression, logistic regression, quantile regression, and many other tasks. Our schemes only require access to standard risk minimization algorithms (such as standard classification or least-squares regression) while providing theoretical guarantees on the optimality and fairness of the obtained solutions. In addition to analyzing theoretical properties of our schemes, we empirically demonstrate their ability to uncover fairness--accuracy frontiers on several standard datasets.\looseness=-1
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+
+%\mdcomment{I've made up the name ``error parity''.  It's not the best name, something like ``error guarantee'' or ``error boundedness'' would be a more descriptive name. We need to dig into literature to find out how it's been referred to before. Maybe look at \citet{chouldechova} or \citet{berk}. I think we will need to introduce it as as a new fairness definition, but motivate it with the gender shades paper \citep{buolamwini2018gender}, with \citep{CorbettDaviesGo18}, and with \citep{chen2018why}.}
+%\aacomment{Reminds me of the max-min fairness notion from systems and networking literature, except that we provide an upper bound on the max error rather than explicitly minimizing it. How about something like Bounded Max Error? While Error Parity has a nice ring to it, I do think that it will lead people to think of really equalizing errors across all subgroups. Actually Berk et al. define Overall Accuracy Equality, which requires that the actual classification error should be identical for each subgroup. They argue that overall accuracy equality is too coarse though as accuracy for positives versus negatives can have different implications and might be better considered separately. I guess technically you could bin the loss and demand that it be the same for each subgroup on each bin, in the general loss case?}
+
+As machine learning touches increasingly critical aspects of our life, including education, healthcare, criminal justice and lending, there is a growing focus to ensure that the algorithms treat various subpopulations fairly (see, e.g., \citealp{barocas16big}; \citealp{podesta2014big}; \citealp{CorbettDaviesGo18}; and references therein). These questions have been particularly extensively researched in the context of classification, where several quantitative measures of fairness have been proposed~\citep{berk,chouldechova,hardt16,kleinberg2017inherent}, leading to a variety of algorithms that aim
+to satisfy them~(see, e.g., \citealp{CorbettDaviesGo18}, for an overview of the literature).\looseness=-1
+
+%\citep{hardt16,Dwork17partition,kamiran12,kamishima2011,woodworth17,zafar2017fairness,CorbettDaviesEtAl17,menon18cost,agarwal2018reductions}. \mdcomment{It is a bit weird to have this shopping list of references; is there a meaningful way to separate them out into groups?} \alekh{I am tempted to cite the Cobett-Davies and Goel writeup based on their tutorial for an overview of this area, rather than these explicit citations.}
+
+These classifier-based formulations
+appear to fit the settings where the decision space is discrete and small, such as accept/reject decisions in hiring, school admissions, or lending. However, in practice, the decision makers work with tools that estimate a continuous quantity, such as success on the job, GPA in the first year of college, or risk of default on a loan.
+Predictions of these quantities are treated as scores, which are used by human decision makers, perhaps in the context of a partly automated workflow, to reach final decisions (see, e.g., \citealp{waters2014grade,federal2007report,compas2010,pcra2012}).
+%, drawn from admissions, lending and criminal justice).
+While, in principle, a fair classification tool could be used to recommend the yes/no decision directly, such tools are often resisted by practitioners, because they limit their autonomy, whereas ranking or scoring tools do not have this drawback~\cite{veale2018fairness}.
+%While it is plausible that prior tools for fair classification can be applied when this eventual decision is discrete, often the designer of the score does not have control over the decision maker, either because it is a third-party, or because it is done by human inspection (see e.g.~\cite{waters2014grade} and~\cite{federal2007report} for instances of this in college admissions and credit availability respectively).
+In such situations, it is desirable to work with real-valued scores that satisfy some notion of fairness.
+%
+%In such situations, it is desirable to ensure some fairness properties of the real-valued scores themselves, such that any reasonable post-processing is also guaranteed to be fair.
+%
+%However, there is a significantly larger set of problems where the decision space is explicitly or implicitly continuous and real-valued. For instance, real-valued fitness scores such as credit ratings are routinely assigned to us and govern several aspects of our everyday lives. Even when the eventual decisions are discrete, a common paradigm is to first assign a real-valued score to each individual and then pick the top few ranked by these scores. In situations when the number of slots for a positive decision is limited, this is arguably the most common approach (can we cite anything here).
+%
+%For instance, consider system for filtering college applications. Given any number of covariates about the applicants, natural prediction targets might be their GPA after the first year or at the point of graduation. We might seek to obtain low mean-squared error (henceforth MSE) in predicting the GPA of college applicants while being fair with respect to protected attributes such as race and gender. We could then score all the applicants based on the predictions of such a system, knowing that any further filtering which is solely based on these predictions will be fair.
+%
+Yet, despite ample motivation and use cases, the prior work on designing fair continuous predictors
+%,discussed in more detail below,
+is quite limited in its scope
+compared with the generality of methods for fair classification~\citep[e.g.,][]{
+%kamiran12,
+hardt16,
+%CorbettDaviesEtAl17,
+%menon18cost,
+agarwal2018reductions}.
+
+This paper seeks to diminish this gap by developing efficient algorithms
+%for two previously considered notions of group fairness, but
+for a substantially broader set of regression tasks and model classes than done before, in many cases
+providing the first method with theoretical performance guarantees.
+
+We consider the problem of predicting a real-valued target,
+%signal,
+where the prediction quality is measured by any Lipschitz-continuous loss function. Each example contains a \emph{protected attribute}, such as race or gender, with respect to which we seek to guarantee fairness.
+%
+We study two definitions of fairness from previous literature: \emph{statistical parity} (\sp), which asks that the prediction be statistically independent of the protected attribute, and
+%similarly to its previously studied variant for classification.
+\emph{\ep} (\epshort), which asks that the prediction error restricted to any protected group stay below some pre-determined level.
+%similarly to the \emph{overall accuracy equality} criterion for classification~\cite{dieterich2016compas}.
+We define \prob as the task of minimizing the expected loss of our real-valued predictions, subject to either of these fairness constraints.
+%As special cases,
+By choosing the appropriate loss, we obtain a wide range of standard prediction tasks including least-squares, logistic, Poisson, and quantile regression (with labels and predictions restricted to a bounded set to obtain Lipschitz continuity). While we seek to solve the regression tasks under fairness constraints, our schemes only require access to standard risk minimization algorithms such as standard classification or least-squares regression.\looseness=-1
+
+Several prior works also seek predictors that exhibit some form of independence from the protected attribute similar to statistical parity. %, which corresponds to full statistical independence.
+\citet{CaldersEtAl13}, \citet{johnson2016impartial} and~\citet{komiyama2018nonconvex} consider a more limited form of independence, expressed via a small number of moment constraints, such as lack of correlation, and design specific algorithms for linear least squares. \citet{berk} study notions of individual and group fairness specialized to linear regression. \citet{perez2017fair} seek zero correlation in a reproducing kernel Hilbert space (RKHS), which can capture statistical independence,
+%~\citep{gretton2005measuring},
+but it only yields predictors in the same RKHS and the loss is limited to least squares. \citet{KamishimaEtAl12} and \citet{FukuchiEtAl13} seek to fit a probabilistic model that satisfies statistical independence, but they do not present efficient algorithms or statistical guarantees. In contrast, we consider full statistical independence, arbitrary model classes and Lipschitz losses, and our algorithms are efficient and come with statistical guarantees.\looseness=-1
+
+Our second fairness definition, bounded group loss, fits into the general framework
+of \citet{alabi2018unleashing}, whose goal is to minimize a general function of group-wise prediction losses, but their algorithm is less efficient (albeit still polynomial), and they do not provide statistical guarantees.
+
+%%% MD: do we need to mention Berk et al.?
+%
+%Finally, \citet{berk2017convex} pursue a separate direction, not captured by either of our approaches, which seeks a similarity-based notion of fairness~\citep{dwork12}.
+
+\iffalse
+Yet, despite ample motivation and use cases, and in contrast with the fair classification literature, there is little prior work on designing fair continuous predictors: \citet{CaldersEtAl13},  \citet{johnson2016impartial} and~\citet{komiyama2018nonconvex} consider parity-based notions of group fairness, framed as moment constraints on the scores, and design specific algorithms for linear least squares. \citet{perez2017fair} enforce parity through the lack of correlation in an RKHS, which can capture statistical independence for a universal kernel~\citep{gretton2005measuring}, but require the prediction functions to also be in the RKHS as opposed to arbitrary regression functions. \citet{fukuchi2015prediction} adopt a generative approach to enforce parity constraints, but do not present efficient algorithms. ~\citet{alabi2018unleashing} minimize a general function of groupwise losses, and their formulation can capture one of the concrete fairness measures we study.  \citet{berk2017convex} propose an alternative approach via similarity-based fairness~\citep{dwork12}.
+%
+%Yet, despite ample motivation and use cases, and in contrast with the fair classification literature, there is little prior work on designing fair continuous predictors, with just a few exceptions~\cite{johnson2016impartial,berk2017convex}.\looseness=-1
+
+Our approach develops two notions of parity-based group fairness, but for a substantial broader set of regression tasks and model classes
+than prior work. We consider the problem of predicting a real-valued target signal, where our prediction performance is measured by any Lipschitz-continuous loss function. Each example contains a special attribute termed the \emph{protected attribute}, such as race or gender, with respect to which we seek to guarantee fairness.
+%and we assume that this attribute takes a small number of discrete values.
+%Recognizing that well-established fairness measures such as \emph{statistical parity} (henceforth \sp)
+%%and \emph{equalized odds} (henceforth \eo)
+%and \mdedit{\emph{\ep}} (henceforth \epshort) meaningfully apply to this broader class of problems, we define the problem of \prob as trying to maximize accuracy of our real-valued predictions, subject to fairness constraints. \aaedit{Rewrite as:
+We study two measures of fairness. The first, \emph{statistical parity} (\sp), asks that the prediction be statistically independent of the protected attribute, which is stronger than just lack of correlation pursued by \citet{CaldersEtAl13} and \citet{johnson2016impartial}, and required when working with non-linear model classes.
+%similarly to its previously studied variant for classification.
+Our second measure, \emph{\ep} (\epshort), asks that the prediction error restricted to any protected group should not exceed some pre-determined level, similarly to the \emph{overall accuracy equality} criterion for classification~\cite{dieterich2016compas}.
+Given these definitions, we define the task of \prob as minimizing the expected loss of our real-valued predictions, subject to fairness constraints. As special cases, this includes standard prediction tasks such as least-squares regression, logistic and Poisson regression, as well as quantile regression.\footnote{To obtain Lipschitz continuity requires to assume that both the labels and predictions are bounded.}
+\fi
+
+We design a separate algorithm for each of the two fairness definitions.
+For \epshort, our insight is that the problem of loss minimization subject to a loss bound in each subpopulation can be algorithmically reduced to a weighted loss minimization problem for which standard approaches exist. For \sp, the main obstacle is that the number of constraints is uncountable. Here, the main insight that allows us to design and analyze the algorithm is that if we discretize the real-valued prediction space, then the task of \prob can be reduced to cost-sensitive classification under certain constraints. We build on the recent work of \citet{agarwal2018reductions}, and use the special structure of our discretization scheme to develop several algorithms reducing to standard classification or regression problems without fairness constraints. We provide theoretical results to bound the computational cost, generalization error and fairness violation of the returned predictor for both of our fairness measures with arbitrary Lipschitz-continuous loss functions and with arbitrary regression-function classes of bounded complexity, again building on the analysis of~\citet{agarwal2018reductions}. Prior works in the regression setting lack such guarantees.
+
+%Notably, our results admit any Lipschitz continuous loss function and any family of regression functions as long as we can computationally solve certain induced classification problems, and we instantiate this general scheme with natural examples. \mdcomment{Add concrete results and perhaps rewrite a bit once the contributions are finalized.} As a high-level summary of our results, the computational cost of our method scales with \mdcomment{TODO}. We also provide results adapted from~\citet{agarwal2018reductions} on the generalization error and fairness violation of the returned predictor.
+
+%\mdcomment{TODO: revise this to reflect new experiments}
+Empirically, we evaluate our method on several standard datasets, on the tasks of least-squares and logistic regression under statistical parity, with linear and tree-ensemble learners, and compare it with the unconstrained baselines as well as the technique of~\citet{johnson2016impartial}. Our method uncovers fairness--accuracy frontiers
+and provides the first systematic scheme for enforcing fairness in a significantly broader class of learning problems than prior work.\looseness=-1
+
+\textbf{Usage guidelines.} We envision the use of our algorithms in uncovering fairness--accuracy frontiers in a variety of applications. %The frontier should serve as a starting point of the conversation before utilizing any specific model.
+%along the frontier.
+Any substantial tradeoffs along the frontier need to be analyzed. They might point to data issues requiring non-algorithmic interventions, such as gathering of additional (less biased) data or introduction of new features~\citep{chen2018my}.
+%
+As with other algorithmic fairness tools, in order to successfully use our algorithms in practice, it is essential to consider the societal context of the application~\cite{selbst2018fairness}.
+In some contexts, the best fairness intervention might be to avoid a technological intervention altogether.\looseness=-1
+
+%on least squares and LAD regression tasks against both unconstrained baselines as well as the method of~\citet{johnson2016impartial} which is specialized to OLS and only enforces lack of correlation rather than independence between the predictions and the protected attribute. We find that our algorithm achieves superior tradeoffs than the baselines between fairness and accuracy
+
+\section{Problem Formulation}
+\label{sec:setting}
+
+We consider a general prediction setting where the training examples consist of triples $(X,A,Y)$, where $X \in \calX$ is a feature vector,
+$A \in \calA$ is a protected attribute and $Y \in \calY\subseteq[0,1]$ is the label. Throughout, we focus on the protected attribute taking a small
+number of discrete values, i.e., $\calA$ is finite, but $\calX$ is allowed to be continuous and high-dimensional. We make no specific assumptions about whether
+the protected attribute is included in the feature vector $X$ or not; also the set of labels $\calY$ can be discrete (but embedded in $[0,1]$) or continuous.
+Given a set of predictors $\calF$ containing functions $f:\calX\to [0,1]$, our goal is to find $f \in \calF$ which is accurate in predicting $Y$ given $X$
+while satisfying some fairness condition such as statistical parity or \ep (formally defined below).
+Note that the functions $f$ do not explicitly depend on $A$ unless it is included in $X$.\looseness=-1
+
+The main departure from prior works on classification is that $Y$ as well as $f(X)$ are allowed to be real-valued rather than just categorical.
+The accuracy
+of a prediction $f(X)$ on a label $Y$ is measured by the loss $\ell(Y,f(X))$. The loss function
+$\ell:\calY\times[0,1]\to [0,1]$ is required to be 1-Lipschitz under the $\ell_1$ norm,\footnote{Our algorithms primarily use covers for $y$ and $u$ such that $\ell(y,u)$ can be approximated using corresponding elements from the cover. We skip this generalization to keep presentation simple.} that is:
+\[
+\left|\ell(y,u) - \ell(y'\!,u')\right| \leq \abs{y-y'}+\abs{u-u'}\;\;\text{for all $y,y'\!,u,u'\!$.}
+\]
+
+\begin{example}[Least-squares regression]
+\label{ex:lsreg}
+%The college admissions scenario from Section~\ref{sec:intro}
+The prediction of GPA in the first year of college
+can be cast as a regression problem where the label $y$ is the normalized GPA so that $\calY = [0,1]$, and the error is measured by the square loss $\ell(y,f(x)) = (y-f(x))^2/2$. Since $y,f(x) \in [0,1]$, the loss is bounded and
+1-Lipschitz.
+\end{example}
+
+\begin{example}[Logistic regression]
+\label{ex:logreg}
+    Consider a system for screening job applicants based on the likelihood of an offer upon interview.
+    We train this system using past data of interviewed candidates where $X$ describes their features and $Y\in\set{0,1}$
+    the hiring decision. The scoring function $f$ can be chosen to maximize the likelihood for
+    the logistic model $p_{f}(Y=1\given x)=1/(1+e^{-f(x)})$.
+    Since we require that $f(x)\in[0,1]$, in order to approximate the full range of probabilities, we use a scaled and shifted version
+    $p_{f}(Y=1\given x)=1/\bigParens{1+e^{-C(2f(x)-1)}}$ with some $C>1$, giving probabilities in the range $[1/(1+e^C),\;1/(1+e^{-C})]$.
+    The loss is a rescaled version of the negative log likelihood to ensure the boundedness and 1-Lipschitz conditions: $\ell(y,f(x)) = \log\bigParens{1 + e^{-C(2y-1)(2f(x)-1)}}/\bigParens{2\log\parens{1+e^C}}$.
+    Here
+    the label is binary, but the prediction is real-valued.
+\end{example}
+
+\subsection{Fairness Definitions}
+\label{sec:defs}
+
+%We now formalize fairness of a real-valued predictor by adapting existing definitions of fairness in classification.
+%
+%Our first definition generalizes a standard definition called \emph{statistical parity} (or demographic parity).
+
+We consider two quantitative definitions of fairness appearing in prior work on fair classification and regression.
+
+The first definition, called \emph{statistical} (or demographic) \emph{parity},
+says that the prediction should be independent of the protected attribute. In classification, it corresponds to the practice of affirmative action
+%instituted to offset barriers of entry faced by women and minorities in university admissions, hiring and government procurement
+(see, e.g., \citealp{HolzerNe06}, and references therein) and it is also invoked to address disparate impact under the US Equal Employment Opportunity Commission's ``four-fifths rule,'' which requires that the ``selection rate for any race, sex, or ethnic group [must be at least] four-fifths (4/5) (or eighty percent) of the rate for the group with the highest rate.''\footnote{See the Uniform Guidelines on Employment Selection Procedures, 29 C.F.R. \S 1607.4(D) (2015).}
+%
+%\footnote{In some prior works~\mdcomment{cites}, statistical parity is also justified by the four-fifths rule \mdcomment{cite}. However, the language of the four-fifths rule talks about parity among qualified applicants, so it effectively allows discrimination based on correlates of the protected attribute as long as they are predictive of success on the job \mdcomment{cite}.}
+%
+\begin{definition}[Statistical parity---\sp]
+A predictor $f$ satisfies statistical parity under a distribution over $(X,A,Y)$ if $f(X)$ is independent of the protected attribute $A$. Since $f(X)\in[0,1]$, this is equivalent to $\P[f(X)\ge z\given A=a]=\P[f(X)\ge z]$ for all $a\in\calA$ and $z\in[0,1]$.%
+\footnote{%
+A standard definition of statistical independence requires that $\P[f(X)\in S\given A=a]=\P[f(X)\in S]$ for all measurable sets $S$.
+Since $f(X)$ is a real-valued random variable under Borel $\sigma$-algebra, it is fully characterized by its cumulative distribution function, and
+so it suffices to consider sets $S=[0,z]$ for $z\in[0,1]$ (see, e.g., Theorem~10.49 of \mbox{\citealp{aliprantis2006infinite}}).}
+\label{defn:dp}
+\end{definition}
+
+%The first part of the definition via statistical independence directly follows the standard definition for fair classification.
+The characterization through the properties of
+the CDF of $f(X)$
+%does not bring anything new when the task is classification, i.e., when $f(X)\in\set{0,1}$, but it is important
+is particularly useful when $f(X)$ can take any real values in $[0,1]$, because it allows us to design efficient algorithms.
+It also makes it obvious that if $f$ satisfies \sp, then any classifier induced by thresholding $f$ will also satisfy \sp.
+%in the subsequent classification problem. %This is particularly appealing in the settings where $f$ is used to rank or score applicants for a job, school, or any other opportunity which we wish to allocate in proportions that match the underlying group proportions.\aacomment{The last part of this sentence is quite cryptic. Probably drop the sentence anyways as the point has been made in the one above.}
+
+Our second fairness definition, called \emph{\ep}, formalizes the requirement that the predictor's loss remain below some acceptable level for each protected group. In settings such as speech or face recognition, this corresponds to the requirement that all groups receive good service (cf.~\citealp{buolamwini2018gender}). In other settings, such as lending and hiring, it aims to prevent situations when the predictor has a high error on some of the groups (cf.~Section~3.3 of~\citealp{CorbettDaviesGo18}).\looseness=-1
+%We now define the notion formally before discussing further properties.
+%
+\begin{definition}[Bounded group loss---\epshort]
+A predictor $f$ satisfies \ep at level $\zeta$ under a distribution over $(X,A,Y)$ if $\E[\ell(Y,f(X))\given A=a]\le\zeta$ for all $a\in\calA$.
+\end{definition}
+%
+%That is, we require the expected loss on each group be bounded by a specified $\zeta$.
+Hence, \prob with \epshort minimizes the overall loss, while controlling the worst loss on any protected group. By Lagrangian duality, this is equivalent to minimizing the worst loss on any group while maintaining good overall loss (referred to as max-min fairness).
+Unlike
+%a more restrictive notion of
+\emph{overall accuracy equality} in classification~\cite{dieterich2016compas}, which requires the losses
+on all groups to be equal, \epshort does not force an artificial decrease in performance on every group just to match the hardest-to-predict group.
+%
+\epshort can be used as a diagnostic for the potential shortcomings of a chosen featurization or dataset. If it is not possible to achieve a loss below $\zeta$ on some group, then to achieve fairness we need to collect more data for that group, or develop more informative features for individuals in that group.\looseness=-1
+
+\begin{comment}
+A second fairness measure which has been prominently discussed in the fairness literature as addressing some drawbacks of \sp is known as \emph{equalized odds}~\cite{hardt16}.
+
+\begin{definition}[Equalized odds---EO]
+A predictor $f$ satisfies equalized odds under a distribution over $(X,A,Y)$ if $f(X)$ is conditionally independent of $A$ given $Y$.
+\label{defn:eo}
+\end{definition}
+%
+Unlike \sp, this definition is not statistically tractable for real-valued $Y$ without additionally regularity conditions. Rather than make such assumptions that allow conditioning on the empirical distribution of $Y$, we instead propose a relaxation of the \eo measure. Intuitively, full conditional independence given $Y$ amounts to independence of $A$ and $f(X)$ given $Y = y$ for any $y \in \calY$. Given an arbitrary quantization function which groups the space $\calY$ into
+a finite number of buckets, we now introduce a discrete version of \eo which we term \emph{quantized equalized odds}.
+
+\begin{definition}[Quantized equalized odds---QEO]
+Assume that we are given a quantization function $q:[0,1]\to\calJ$ which maps a label $Y$ into a finite set of categories $\calJ$. A predictor $f$ satisfies quantized equalized odds under a distribution over $(X,A,Y)$ and quantization $q$ if its prediction $f(X)$ is conditionally independent of the protected attribute $A$ given the quantized label $q(Y)$. Because $f(X)\in[0,1]$, this is equivalent to $\P[f(X)\ge z\given A=a,q(Y)=j]=\P[f(X)\ge z\given q(Y)=j]$ for all $a\in\calA$, $z\in[0,1]$ and $j\in\calJ$.
+\label{defn:qeo}
+\end{definition}
+
+In order to grasp this abstract definition, we note that it agrees with intuitive special cases. By setting $\calJ=\{1\}$ and $q(y)\coloneqq 1$, we recover \sp as a special case. If the set of labels $\calY$ is finite,
+then setting $q(y) = y$ and $\calJ = \calY$ recovers the \eo definition of \citet{hardt16}. More generally, based on the sensitivity to constraint violations and computational considerations, we could choose an appropriate subset of quantiles as the quantization function. For instance, if we pick quartiles, $q(y) = j$ implies that $(j-1)/4 \leq P(Y \leq y) \leq j/4$ for any $j \in \calJ = \{1,2,3,4\}$.
+
+Since \qeo subsumes \sp as a special case like mentioned above, we will focus on obtaining fairness with respect to \qeo given an arbitrary quantization function in the rest of this paper.
+\end{comment}
+
+\subsection{Fair Regression}
+\label{sec:fair-reg}
+
+We begin by defining the problem of fair regression as the minimization of the expected loss $\E[\ell(Y,f(X))]$ over $f \in \calF$, while guaranteeing \sp or \epshort. However, to achieve better fairness--accuracy tradeoffs we then generalize this to the case of randomized predictors.
+
+\textbf{Statistical parity.} Similar to prior works on fair classification~\mbox{\cite{agarwal2018reductions}}, it is frequently desirable to have a tunable knob for navigating the fairness-accuracy tradeoff, such as $\zeta$ in the definition of \ep. To allow such a tradeoff in \sp, we consider slack parameters $\eps_a$ for each attribute and define the fair regression task under \sp as
+%
+\begin{align}
+\notag
+   &\min_{f \in \calF} \E\left[\ell(Y,f(X))\right]
+   \quad\text{such that }\forall a\in\calA, z\in[0,1]{:}
+\\
+\label{eq:fair-reg:sp:0}
+   &\BigAbs{\P[f(X)\ge z\given A=a] - \P[f(X)\ge z]}
+   \leq \eps_a.
+%\\
+%\notag
+%   &\hphantom{\text{subject to }}
+    %\text{.}
+\end{align}
+%
+The slack $\eps_a$ bounds the allowed departure of the CDF of $f(X)$ conditional on $A=a$ from the CDF of $f(X)$. The difference between CDFs is measured in the $\ell_\infty$ norm corresponding
+to the Kolmogorov-Smirnov statistic~\cite{lehmann2006testing}. Choosing different $\eps_a$ allows us to vary the strength of constraint across different protected groups.
+
+\textbf{Bounded group loss.} In this case, the constrained optimization formulation follows directly from the definition. For the sake of flexibility, we allow specifying a different bound $\zeta_a$ for each attribute value, leading to the formulation
+%
+\begin{align}
+\notag
+   &\min_{f \in \calF} \E\bigBracks{\ell(Y,f(X))}
+\\
+\label{eq:fair-reg:ep:0}
+   &\text{such that }\forall a\in\calA{:}\quad
+   \E\bigBracks{\ell(Y,f(X))\bigGiven A=a}\le\zeta_a.
+%   \quad
+%   \text{for $a\in\calA$.}
+\end{align}
+
+\textbf{Randomized predictors.}
+Similar to fair classification, in order to achieve better fairness--accuracy tradeoffs, we consider randomized predictors which first pick $f$ according to some distribution $Q$ and then predict according to $f$. %To formally state the
+%variants of~\eqref{eq:fair-reg:sp:0} and~\eqref{eq:fair-reg:ep:0}
+We first introduce additional notation for the objective and constraints appearing in~\eqref{eq:fair-reg:sp:0} and~\eqref{eq:fair-reg:ep:0}:
+%which we then generalize to randomized predictors:
+%
+\begin{align*}
+&\loss(f)\coloneqq
+  \E[\ell(Y, f(X))],
+\\
+&\gamma_{a,z}(f)\coloneqq
+  \P[f(X)\ge z\given A=a] - \P[f(X)\ge z].
+\\
+&\gammaE_{a}(f)\coloneqq
+  \E\bigBracks{\ell(Y,f(X))\bigGiven A=a}.
+\end{align*}
+%
+For a randomized predictor represented by a distribution~$Q$, we have $\loss(Q) = \sum_f Q(f)\loss(f)$, $\gamma_{a,z}(Q)= \sum_{f} Q(f)\gamma_{a,z}(f)$, and $\gammaE_{a}(Q)= \sum_{f} Q(f)\gammaE_{a}(f)$.
+
+Thus, for \sp we seek to solve
+%
+\begin{align}
+\label{eq:fair-reg:sp}
+&
+  \min_{\mathclap{Q\in\Delta(\calF)}}\;\loss(Q)
+%\\
+%\notag
+\text{ s.t. }
+  \bigAbs{\gamma_{a,z}(Q)}\le\eps_a
+\;\;
+  \text{$\forall a\in\calA, z\in[0,1]$,}\!
+%
+\intertext{%
+where $\Delta(\calF)$ is the set of all probability distributions over $\calF$. For \ep,
+we similarly seek to solve}
+%
+\label{eq:fair-reg:ep}
+&
+ \min_{\mathclap{Q\in\Delta(\calF)}}\;\loss(Q)
+%\\
+%\notag
+\text{ s.t. }
+  \gammaE_{a}(Q)\le\zeta_a
+\;\;
+  \text{$\forall a\in\calA$.}
+\end{align}
+%
+
+\begin{comment}
+Notice that we allow the slack $\eps_{a}$ to depend on the protected attribute and the bin $\calY_j$, but not on the value $z$ defining the constraints. This captures the intuition that we might need to allow greater slack when conditioning on rare events, for instance, in defining the \qeo measure, where we only condition on $A$ and $Y$, but not $f(X)$.
+\end{comment}
+
+\begin{comment}
+Finally, we note that so far we have discussed the population version of \prob where all the expectations and probabilities are exactly measured. However, with finite samples, we can only work with sample-based estimates and hence replace all (conditional) expectations with sample-based averages. In order to allow for sampling errors, we also relax the slack $\eps_{a}$ to $\heps_{a}$ and obtain the empirical fair-regression problem:
+
+\begin{align}
+\label{eqn:fair-reg_emp}
+    &\min_{f \in \calF} \Ehat\left[\ell(Y,f(X))\right], \\\nonumber~~\mbox{s.t.} ~~ &\left|\Phat[f(X)\ge z\given A=a,Y\in\calY_j] - \Phat[f(X)\ge z\given Y \in \calY_j]\right| \leq \heps_{a}~ \forall a\in\calA,~j\in \calJ,~z\in[0,1].
+\end{align}
+
+In the next section, we will show how to reduce this empirical problem to that of fair classification.
+\end{comment}
+
+\section{Supervised Learning Oracles}
+\label{sec:oracles}
+
+In this paper, we show how to transform the fair regression problem into three standard learning problems: cost-sensitive classification, weighted least-squares regression, or weighted risk minimization under $\ell$ (without fairness constraints). All of these learning problems allow different costs per example, which helps incorporate fairness. The specific algorithms to solve these tasks are termed \emph{supervised learning oracles}. These oracles are typically available for representations where regression or classification \emph{without fairness constraints} can be solved, and we show some typical examples in our empirical evaluation.
+
+\textbf{(1) Risk minimization under $\ell$.} This is the most natural oracle  as it implements loss minimization without fairness constraints. Given a dataset
+    $\set{(W_i,X_i,Y_i)}_{i=1}^n$ where $W_i$ are non-negative weights, the oracle returns $f\in\calF$ that minimizes the weighted empirical risk: $\sum_{i=1}^n W_i\ell(Y_i,f(X_i))$.
+
+
+\textbf{(2) Square loss minimization.} Even when the accuracy is measured by $\ell$, we typically have access to a weighted least-squares learner for the same class $\calF$. This oracle takes the data $\set{(W_i,X_i,Y_i)}_{i=1}^n$ and returns $f\in\calF$ that minimizes the weighted squared loss: $\sum_{i=1}^n W_i \bigParens{Y_i-f(X_i)}^2$.
+
+\textbf{(3) Cost-sensitive classification (CS).}
+%Unlike the previous oracles, which optimize over real-valued predictors $f$, o
+Our third type of oracle optimizes over classifiers $h:\calX'\to\set{0,1}$ from some class $\calH$. As input, we are given a dataset $\set{(X'_i,C_i)}_{i=1}^n$, where $X'_i$ is a feature vector and $C_i$ indicates the difference between the cost (i.e., the loss) of predicting 1 versus 0; positive $C_i$ means that 0 is favored, negative $C_i$ means that 1 is favored. The goal is to find a classifier $h\in\calH$, which minimizes the empirical cost relative to the cost of predicting all zeros: $\sum_{i=1}^n C_i h(X'_i)$.
+
+CS reduces to \emph{weighted binary classification} on the data
+$\set{(W_i,X'_i,Y_i)}_{i=1}^n$ with $Y_i=\ind\set{C_i\le 0}$ and $W_i=\abs{C_i}$, where we minimize
+$\sum_{i=1}^n W_i\ind\braces{h(X'_i)\ne Y_i}$. Weighted classification oracles exist for many classifier families $\calH$.
+
+In this paper we consider classifiers obtained by thresholding regressors $f \in \calF$. We define $\calX' = \calX\times \R$ where the new feature specifies a threshold. Our classifiers act on $x' = (x,z)$ and predict $h_f(x,z) = \ind\set{f(x) \geq z}$. This structure of classifiers naturally arises from the \sp constraints. We assume access to a CS oracle for $\calH=\set{h_f:\:f\in\calF}$. While cost-sensitive learners for this representation might not be available off the shelf, learners based on optimization, such as (stochastic) gradient-based learners, can usually be adapted to this structure. In particular, it is easy to adapt learners for logistic regression, SVMs or neural nets.
+
+\section{Fair Regression under Statistical Parity}
+
+We next show how to solve the fair regression problem~\eqref{eq:fair-reg:sp} using
+a CS oracle.
+%for the class $\calH=\set{h_f:\:f\in\calF}$ described above.
+We begin by recasting the problem~\eqref{eq:fair-reg:sp} as a \emph{constrained (and cost-sensitive) classification problem},
+which we then solve via the reduction approach of \citet{agarwal2018reductions}, by repeatedly invoking the CS oracle.\looseness=-1
+
+We proceed in two steps. First we discretize our prediction space and show that a loss function in the discretized space approximates our original loss well, owing to its Lipschitz continuity. We then show how the fair regression problem in this discretized space can be turned into a constrained classification problem, which we solve via reduction.
+
+
+\subsection{Discretization}
+
+We discretize both arguments of the loss function $\ell$. Let $N$ denote the size of the discretization grid for the second argument, let $\alpha=1/N$ denote its granularity, and let  $\calZ=\set{j\alpha:\:j=1,\dotsc,N}$ denote the grid itself. Let $\tcalY$ be the $\frac{\alpha}{2}$-cover of $\calY$, i.e., $\tcalY\subseteq\calY$ such that: (1) for any $y\in\calY$ there exists $\ty\in\tcalY$ such that $\abs{y-\ty}\le\frac{\alpha}{2}$, and (2) for any $\ty,\ty'\in\tcalY$, we have $\abs{\ty-\ty'}>\frac{\alpha}{2}$. Proceeding left-to-right within $\calY$, it is always possible to construct $\tcalY$ such that $\card{\tcalY}\le 2N$. We define the discretized loss as a piece-wise constant approximation of $\ell$:
+%
+\begin{equation}
+\label{eq:discretized}
+  \ell_{\alpha}(y,u)
+\coloneqq
+  \ell\Parens{\undery,\floors{u}_\alpha\!+\tfrac{\alpha}{2}}
+\end{equation}
+% =\ell\Parens{y,\tfrac{\alpha}{2}}
+%\\
+%&\quad{}
+%    +\sum_{j=1}^{N}
+%     \BigBracks{\ell\Parens{y,j\alpha+\tfrac{\alpha}{2}}-\ell\Parens{y,j\alpha-\tfrac{\alpha}{2}}}
+%     \ind\braces{u\ge j\alpha},
+where $\undery$ is the smallest $\ty\in\tcalY$ such that $\abs{y-\ty}\le\frac{\alpha}{2}$,
+and $\floors{u}_\alpha$ rounds down $u$ to the nearest integer multiple of $\alpha$. We use the convention $\ell(y,u)=\ell(y,1)$ for $u\ge 1$. Owing to the Lipschitz continuity of $\ell$, it follows that
+%
+\begin{align}
+%\notag
+&\bigAbs{\ell(y,u) - \ell_\alpha(y,u)} \leq \alpha.
+%=
+%  \bigAbs{\ell(y,u) - \ell(\undery,\floors{u}_\alpha\! + \tfrac{\alpha}{2})}
+%\\
+\label{eq:disc-loss}
+%&\quad{}
+%\le
+%  \abs{y-\undery}+\bigAbs{u - \floors{u}_\alpha\! - \tfrac{\alpha}{2}} \leq\tfrac{\alpha}{2}+\tfrac{\alpha}{2}=\alpha.
+\end{align}
+%
+Thus, for suitably small $\alpha$, or equivalently large $N$, $\ell_\alpha$ provides a close approximation to the original loss function. %In practice, when working with $n$ samples, one might set $N = \order(\sqrt{n})$ so that this error is on par with statistical deviations.
+
+Let $\loss_\alpha(f)\coloneqq\E[\ell_\alpha(Y,f(X))]$ denote the expected discretized loss. When optimizing this loss, it suffices to consider rounded-down variants of predictors. Specifically,
+for ${f\in\calF}$, let $\underf(x)=\floors{f(x)}_\alpha$ denote its rounded-down version.
+Then, by
+the definition of $\ell_\alpha$, $\loss_\alpha(f)=\loss_\alpha(\underf)$. The advantage of rounded-down predictors is that to guarantee that they satisfy \sp, it suffices to consider the fairness constraints $\gamma_{a,z}(\underf)\le\eps_a$ across $z$ taken from the discretization grid $\calZ$. This is because for any $z\in[0,1]$,
+%
+\begin{align}
+\notag
+\gamma_{a,z}(\underf)
+  &=\P[\underf(X)\ge z\given A=a] - \P[\underf(X)\ge z]
+\\
+  &=\P[\underf(X)\ge \bar{z}\given A=a] - \P[\underf(X)\ge\bar{z}],
+\label{eq:gamma:apx}
+\end{align}
+%
+where $\bar{z}=\ceils{z}_\alpha$ is the value of $z$ rounded up to the nearest integer multiple of $\alpha$. This allows us to replace the uncountable set of constraints indexed by %$a\in\calA$ and
+$z\in[0,1]$ with the finite set indexed by $z \in \calZ$. Thus, denoting $\underF=\set{\underf:\:f\in\calF}$, we have argued that the solution of~\eqref{eq:fair-reg:sp}, can be approximated by% the solution of
+%
+\begin{align}
+\label{eq:fair-reg:sp:apx}
+\min_{\mathclap{\underQ\in\Delta(\underF)}}\;\loss_\alpha(\underQ)
+\text{ s.t. }
+  \bigAbs{\gamma_{a,z}(\underQ)}\le\eps_a
+\;\;
+  \text{$\forall a\in\calA, z\in\calZ$.}
+\end{align}
+%
+%while guaranteeing \sp up to $\eps_a$.
+%
+\begin{theorem}
+\label{thm:sp:apx}
+Let $Q^\star$ be any feasible point of~\eqref{eq:fair-reg:sp} and $\underQ^\star$ be the solution of~\eqref{eq:fair-reg:sp:apx}. Then $\loss(\underQ^\star)\le\loss(Q^\star)+\alpha$
+and $\abs{\gamma_{a,z}(\underQ^\star)}\le\eps_a$ for all $a\in\calA$, $z\in[0,1]$.
+\end{theorem}
+
+\begin{comment}
+\begin{proof}
+Let $Q^\star$ be the solution of~\eqref{eq:fair-reg:sp}. Define $\underQ\in\Delta(\underF)$ by $\underQ(\underf)=Q^\star(f)$. Since $Q^\star$ satisfies \sp up to $\eps_a$, we also have that $\underQ$ satisfies \sp up to $\eps_a$, because
+%
+\begin{align*}
+\gamma_{a,z}(\underf)
+  &= \P[\underf(X)\ge \bar{z}\given A=a] - \P[\underf(X)\ge\bar{z}]
+\\
+  &= \P[f(X)\ge \bar{z}\given A=a] - \P[f(X)\ge\bar{z}]
+\end{align*}
+%
+where the first equality follows from \Eq{gamma:apx}, and the second equality follows from the definition of $\underf$ and the fact that $\bar{z}$ is a multiple of $\alpha$.
+Thus, we have $\abs{\gamma_{a,z}(\underQ)}=\abs{\gamma_{a,\bar{z}}(Q^\star)}\le\eps_a$ for all $a\in\calA$ and $z\in[0,1]$,
+so $\underQ$ is a feasible point of \eqref{eq:fair-reg:sp:apx}. Therefore,
+\[
+  \loss_\alpha(\underQ^\star)
+  \le\loss_\alpha(\underQ)
+  =\loss_\alpha(Q^\star)
+  \le\loss(Q^\star)+\tfrac{\alpha}{2},
+\]
+where the middle equality follows, because $\loss_\alpha(f)=\loss_\alpha(\underf)$ for all $f\in\calF$. Finally, note that $\underQ^\star$ satisfies \sp up to $\eps_a$ thanks to \Eq{gamma:apx}.
+\end{proof}
+\end{comment}
+
+\subsection{Reduction to Constrained Classification}
+
+We next show that \eqref{eq:fair-reg:sp:apx} can be rewritten as a constrained classification
+problem for the family of classifiers $\calH=\set{h_f:\:f\in\calF}$ defined
+in \Sec{oracles}.
+
+To turn regression loss $\ell$ into a cost-sensitive loss, we introduce the function
+%
+\begin{equation}
+c(y,z)\coloneqq N\BigParens{\ell\Parens{y,z+\tfrac{\alpha}{2}}-\ell\Parens{y,z-\tfrac{\alpha}{2}}},
+\label{eqn:costs}
+\end{equation}
+%
+which takes values in $[-1,1]$, because $\ell$ is 1-Lipschitz and $\alpha=1/N$.
+%
+%\begin{equation}
+%\abs{c(\undery,z)}/N \leq \alpha = 1/N,~~ \mbox{so that} ~~c(\undery,z) \in [-1,1].
+%\label{eqn:costbound}
+%\end{equation}
+%
+We also extend the $\gamma_{a,z}$ notation to $h_f$:
+\[
+  \gamma_{a,z}(h_f) = \E[h_f(X,z) | A = a] - \E[h_f(X,z)].
+\]
+%
+Now given a distribution $D$ over $(X,A,Y)$, we define a distribution $D'$ over $(X',A,C)$ that additionally samples $Z \in \calZ$ uniformly at random and sets $X' = (X,Z)$ and $C = c(\underY,Z)$. Defining $\cost(h_f) := \E_{D'}[Ch_f(X')]$, we have the following useful lemma.
+
+\begin{lemma}
+\label{lemma:red:hf}
+Given any distribution $D$ over $(X,A,Y)$ and any $f \in \calF$, the cost and constraints  satisfy $\cost(h_f)=\loss_\alpha(\underf)+c_0$, where $c_0$ is independent of $f$, and $\gamma_{a,z}(h_f)=\gamma_{a,z}(\underf)$ for all $a\in\calA$, $z\in\calZ$.
+\end{lemma}
+
+
+
+%
+%Using \Eqs{loss:hf}{gamma:hf}, we can now formally define the correspondence between problem~\eqref{eq:fair-reg:sp:apx} and constrained classification. The examples
+%for the constrained cost-sensitive classification problem are of the form $(X',A,C)$
+%where $X'$ is the feature vector, $A$ is the protected attribute, and $C$ is a real number describing the difference between the costs of predicting 1 and 0. Given a distribution $D$
+%over $(X,A,Y)$ for fair regression, we obtain $(X',A,C)$ by first sampling $(X,A,Y)$ from $D$, then independently drawing $Z$
+%uniformly from $\calZ$, and setting
+%%
+%\begin{equation}
+%\notag
+%  X'=(X,Z),\quad C=c(\underY,Z).
+%\end{equation}
+%%
+%The resulting joint distribution over $(X',A,C)$ is called $D'$.
+%We consider the following cost and constraints under $D'$:
+%%
+%\begin{align}
+%\label{eq:cost:gamma:hf}
+%&
+%  \cost(h_f)\coloneqq\E_{D'}[C h_f(X')]
+%\\
+%\notag
+%&
+%  \gamma_{a,z}(h_f)\coloneqq\E_{D'}[h_f(X')\given A=a,Z=z]
+%\\
+%\notag
+%&\hspace{1.5in}{}- \E[h_f(X')\given Z=z].
+%\end{align}
+%%
+%(The overloading of the notation $\gamma_{a,z}$ is harmless,
+%because $\gamma_{a,z}(h_f)=\gamma_{a,z}(f)$ for all $f\in\calF$, $a\in\calA$, and $z\in[0,1]$.)
+%%
+%%
+By linearity of expectation, the lemma implies analogous equalities also for distributions over $f$. Thus, in problem~\eqref{eq:fair-reg:sp:apx}, we can replace the optimization over $\underQ\in\Delta(\underF)$ with $Q \in\Delta(\calH)$. %is equivalent to
+%%
+%\begin{align}
+%\label{eq:prob:sp}
+% \min_{Q\in\Delta(\calH)} \cost(Q)
+%\text{ s.t. }
+%  \bigAbs{\gamma_{a,z}(Q)}\le\eps_a
+%  \text{ $\forall$ $a\in\calA$, $z\in\calZ$.}
+%\end{align}
+%
+Notice that while we started from discretized regressors in problem~\eqref{eq:fair-reg:sp:apx}, Lemma~\ref{lemma:red:hf} allows us to work with the full classifier family $\set{h_f:\:f \in \calF}$, which is important as we typically only have computational oracles for non-discretized classes $\calH$ and $\calF$.
+We next show how to solve an empirical version of this classification problem.\looseness=-1
+
+\subsection{Algorithm and Generalization Bounds}
+\label{sec:algo}
+
+Let $\Ehat$ denote the empirical distribution over the data $(X_i,A_i,Y_i)$ and let $\E_Z$ denote a uniform distribution among the values in $\calZ$. Then
+define the empirical versions of the cost and constraints:
+%
+\begin{align}
+\label{eq:hcost}
+   \hcost(h_f)&=\Ehat\BigBracks{\E_Z\bigBracks{c(\underY,Z)h_f(X,Z)}}
+\\
+\notag
+   \hgamma_{a,z}(h_f)&=\Ehat\bigBracks{h_f(X,z) \bigGiven A=a} - \Ehat\bigBracks{h_f(X,z)}.
+\end{align}
+%
+We are interested in the following empirical optimization problem, which is, according to  Lemma~\ref{lemma:red:hf}, an empirical approximation of the original problem~\eqref{eq:fair-reg:sp:apx}:
+%
+\begin{align}
+\label{eq:prob:sp:empirical}
+  \min_{\mathclap{Q\in\Delta(\calH)}}\;\hcost(Q)
+\text{ s.t. }
+  \bigAbs{\hgamma_{a,z}(Q)}\le\heps_a
+\;\;
+  \text{$\forall a\in\calA, z\in\calZ$.}
+\end{align}
+%
+The slacks $\heps_a$ are slightly larger than $\eps_a$ to compensate for finite-sample errors in measuring constraint violations (more on that below). This problem is a special case of that studied by \citet{agarwal2018reductions} with a key difference.
+Since the distribution of $Z$ is known, we can take expectation according to $Z$ rather than a sample, which leads
+to substantially better estimates of constraint violations. Thus,
+our objective uses a product of an empirical distribution over $(X,A,Y)$ with the uniform distribution over $Z$ rather than an i.i.d.\ sample as assumed by \citeauthor{agarwal2018reductions}.
+However,
+%Second, our objective is cost-sensitive classification error instead of 0/1 error.
+their algorithm and generalization bounds
+still apply (as we show in our proofs).\looseness=-1
+
+The algorithm begins by forming the Lagrangian with the primal variable $Q\in\Delta(\calH)$ and the dual variable $\vlambda$ with components
+$\lambda_{a,z}^+,\lambda_{a,z}^-\in\R_+$, corresponding to the constraints $\hgamma_{a,z}(Q)\le \heps_{a}$ and $\hgamma_{a,z}(Q)\ge-\heps_{a}$:
+%
+\begin{align*}
+  L(Q,\vlambda)
+&=\hcost(Q)+\sum_{a,z}\Bigl[
+            \lambda^+_{a,z}\bigParens{\hgamma_{a,z}(Q)-\heps_a}
+\\[-12pt]
+&\hspace{1.25in}
+           +\lambda^-_{a,z}\bigParens{-\hgamma_{a,z}(Q)-\heps_a}\Bigr].
+\end{align*}
+%
+It solves the saddle-point problem $\min_Q\max_{\vlambda} L(Q,\vlambda)$
+over $Q\in\Delta(\calH)$ and $\vlambda\ge\vzero$, $\norm{\vlambda}_1\le B$,
+%\[\textstyle
+%\min_{Q\in\Delta(\calH)}\max_{\vlambda\ge\vzero,\,\norm{\vlambda}_1\le B} L(Q,\vlambda),
+%
+%begin{equation}
+%\label{eq:minmax}
+%\adjustlimits\min_{\;\;Q\in\Delta\;\;}\max_{\vlambda\ge\vzero,\,\norm{\vlambda}_1\le B} L(Q,\vlambda),
+%\end{equation}
+%
+%\]
+by treating it as a two-player zero-sum game (see Algorithm~\ref{alg:regred:sp} for details).\looseness=-1
+
+%The algorithm views this as a zero-sum game between the $Q$-player (minimizer) and the $\vlambda$-player (maximizer). The $\vlambda$-player
+%plays a no-regret-algorithm, namely, exponentiated gradient, whereas $Q$-player in each iteration plays the best response
+%to the current move of the $\vlambda$-player. Since the Lagrangian is linear in $Q$, the best response of the $Q$-player can be chosen to be a single $h_f\in\calH$.
+%The average play of the $Q$-player then provides the approximate solution to \eqref{eq:prob:sp:empirical}
+%which in turn approximates the solution of \eqref{eq:prob:sp}. The details are presented in Algorithm~\ref{alg:regred:sp}, where we slightly abuse
+%the notation and write $L(h_f,\vlambda)$ for the value of the Lagrangian with respect to the distribution $Q$ that puts all its mass on $h_f$. The algorithm satisfies the
+%following convergence guarantee:
+%
+%%
+%The proof is in the appendix and directly follows from analysis of \citet{agarwal2018reductions}.
+
+We bound the suboptimality and fairness of the returned solution
+%as a function of the number of samples
+largely following their analysis. Let $R_n(\calH)$ denote the Rademacher complexity of $\calH$ (see Eq.~\ref{eqn:rademacher} in Appendix~\ref{app:thm:main:sp}). To state the bounds, recall an assumption from their paper on the setting of the empirical slacks $\heps_{a}$:
+%
+\begin{assume}
+    There exist $C, C' > 0$ and $\beta \leq 1/2$ such that $R_n(\calH) \leq Cn^{-\beta}$ and $\heps_{a} = \eps_{a} + C'n_{a}^{-\beta}$, where $n_{a}$ is the number of samples with $A = a$.
+\label{ass:samples}
+\end{assume}
+
+Under this assumption, we obtain the following guarantees.\footnote{%
+The notation $\otil(\cdot)$ suppresses polynomial dependence on $\ln n$, $\ln\,\card{\calA}$, and $\ln(1/\delta)$.}
+%
+\begin{theorem}
+\label{thm:main:sp}
+Let Assumption~\ref{ass:samples} hold for $C' \geq 2C + 2 + \sqrt{2\ln(4\cardA\cardZ/\delta)}$, where $\delta > 0$. Let $Q^\star$ be any feasible distribution for the fair regression problem~\eqref{eq:fair-reg:sp}. Then Algorithm~\ref{alg:regred:sp} with $\nu \propto n^{-\beta}$, $B \propto n^\beta$, and $\cardZ\propto n^\beta$ terminates in $\order\left(n^{4\beta}\ln (n^\beta\card{\calA})\right)$ iterations and returns $\hQ$, which, when viewed as a distribution over $\underF$, satisfies with probability at least 1-$\delta$,
+%
+\begin{align*}
+  \loss(\hQ)
+&\leq \loss(Q^\star) + \otil(n^{-\beta})
+\\
+  \left|\gamma_{a,z}(\hQ)\right|
+&\leq \eps_{a} + \otil(n_{a}^{-\beta})
+\quad
+\text{for all $a\in\calA$, $z\in[0,1]$.}
+\end{align*}
+\end{theorem}
+
+Note that the bounds grow with the Rademacher complexity of $\calH$, rather than the complexity of the regressor class $\calF$. Since $\bigAbs{\E_Z[h_f(X,Z)] - f(X)} \leq \alpha$, it can be shown that $R_n(\calH) \geq R_n(\calF) - \alpha$, meaning that the classifiers induce a more complex class. The bound on $\smash{\loss(\hQ)}$ in Theorem~\ref{thm:main:sp} can be stated in terms of the tighter $R_n(\calF)$, but the constraints still deviate by $R_n(\calH)$, which we believe is unavoidable. However, if $\calF$ has a bounded pseudo-dimension, which always equals the VC dimension of $\calH$~\citep{anthony2009neural}, then the pseudo-dimension can be used to bound $R_n(\calH)$ (see Theorem~6 of~\citealp{BartlettMe02}).\looseness=-1
+
+\begin{algorithm}[t!]
+\caption{Fair regression with statistical parity}
+\label{alg:regred:sp}
+  \begin{algorithmic}[1]
+    \Statex{Input:~~training examples $\braces{(X_i,Y_i,A_i)}_{i=1}^n$,}
+    \Statex{~\hphantom{Input:}~slacks $\heps_{a}\in[0,1]$,
+    bound $B$, threshold $\nu$}
+%%%% \eps = \eps^*+c/\sqrt{n}
+%%%% M \propto 1/\eps
+%%%% T \propto 1/\eps^2
+%%%% \eta \propto M/\sqrt{T} = const
+\smallskip
+    \Statex{Define best-response functions:}
+    \Statex{~\hphantom{Input:}~$\BestH(\vlambda)\coloneqq\argmin_{h_f\in\calH} L(h_f,\vlambda)$}
+    \Statex{~\hphantom{Input:}~$\BestLambda(Q)\coloneqq\argmax_{\vlambda\ge 0,\,\norm{\vlambda}_1\le B} L(Q,\vlambda)$}
+\smallskip
+    \State{Set learning rate $\eta=\nu/(8B)$}
+    \State{Set $\vtheta_1^+=\vtheta_1^-=\vzero\in\R^{\card{\calA}\cardZ}$}
+\smallskip
+    \For{$t=1, 2, \ldots$}
+\smallskip
+\Statex{\hspace{\algorithmicindent}%
+        \textit{// Compute $\vlambda_t$ from $\vtheta_t$ and find the best response $h_t$}}
+%\Statex{\hspace{\algorithmicindent}%
+ %       \hphantom{\textit{// }}%
+  %      \textit{play it, and obtain the best response $h_t$}}
+%\smallskip
+    \ForAll{$a,z$ and $\sigma \in \{+,-\}$}
+       \label{step:lambda:update:start}
+%    \State{\textbf{for all} $a,z$ \textbf{do}}
+\vspace{2pt}
+    \State{$\lambda^\sigma_{t,a,z}\gets B\,
+                \frac{\exp\braces{\theta^\sigma_{t,a,z}}}{1+\sum_{a,z}\bigBracks{\exp\braces{\theta^+_{t,a,z}}+\exp\braces{\theta^-_{t,a,z}}}}$}
+    %\State{$\lambda^-_{t,a,z}\gets B\,
+%                \frac{\exp\braces{\theta^-_{t,a,z}}}{1+\sum_{a,z}\bigBracks{\exp\braces{\theta^+_{t,a,z}}+\exp\braces{\theta^-_{t,a,z}}}}$}
+\vspace{-2pt}
+    \EndFor
+       \label{step:lambda:update:end}
+    \State{$h_t\gets\BestH(\vlambda_t)$}
+       \label{step:best:response}
+\smallskip
+\Statex{\hspace{\algorithmicindent}%
+        \textit{// Calculate the current approximate saddle point}}
+%\Statex{\hspace{\algorithmicindent}%
+        %\hphantom{\textit{// }}%
+        %\textit{(the average joint play)}}
+%\medskip
+    \State{$\hQ_t\gets\frac{1}{t}\sum_{t'=1}^t h_{t'},
+      \quad
+            \hvlambda_t\gets\frac{1}{t}\sum_{t'=1}^t \vlambda_{t'}$}
+\smallskip
+\Statex{\hspace{\algorithmicindent}%
+        \textit{// Check the suboptimality of $(\hQ_t,\hvlambda_t)$}}
+%\Statex{\hspace{\algorithmicindent}%
+        %\hphantom{\textit{// }}%
+        %\textit{and terminate if below $\nu$}}
+%\medskip
+    \State{$\overline{\nu}\gets L\bigParens{\hQ_t,\BestLambda(\hQ_t)}\;-\;L(\hQ_t,\hvlambda_t)$}
+       \label{step:conv:check:start}
+       \label{step:L:bestL}
+    \State{$\underline{\nu}\gets L(\hQ_t,\hvlambda_t)\;-\;L\bigParens{\BestH(\hvlambda_t),\hvlambda_t}$}
+       \label{step:L:bestH}
+    \State{\textbf{if} $\max\set{\overline{\nu},\underline{\nu}}\le\nu$ \textbf{then return} $\hQ_t$}
+       \label{step:conv:check:end}
+\smallskip
+\Statex{\hspace{\algorithmicindent}%
+        \textit{// Apply the exponentiated-gradient update}}
+%\medskip
+    \State{Set $\vtheta^\sigma_{t+1}=\vtheta^\sigma_t+\sigma\eta\hvgamma(h_t)-\eta\hveps$, for $\sigma \in \{+,-\}$}
+       \label{step:theta:update}
+    %\State{Set $\vtheta^-_{t+1}=\vtheta^-_t-\eta\hvgamma(h_t)-\eta\hveps$}
+    %\alekh{Should this be a $+ \eta\hveps$?} MD: no
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Efficient Implementation of \Alg{regred:sp}}
+\label{sec:efficient}
+
+It is not too difficult to show that each iteration of \Alg{regred:sp} can be implemented in time $\order(n\log n+\card{\calA}\cardZ)$ plus the complexity of two calls to $\BestH$, on which we focus here, while deferring the remaining details to Appendix~\ref{sec:app:impl}.
+
+\textbf{Reduction to cost-sensitive classification.}
+We first show how to implement $\BestH$ using the CS oracle.
+Letting $\lambda_{a,j}=\lambda^+_{a,j}-\lambda^-_{a,j}$, and dropping terms independent of $h$, the minimization over $h$ only needs to be over $\hcost(h) + \sum_{a,z}\lambda_{a,z}\hgamma_{a,z}(h)$.
+%\]
+%When minimizing $L$ over $h$, the first term does not matter, so it suffices to consider
+%the two remaining terms.
+The first term is already defined as CS error with respect to $\Ehat$ and $\E_Z$ (see Eq.~\ref{eq:hcost}). Let $p_{a}\coloneqq\Phat[A=a]$. Then we show in Appendix~\ref{sec:app:impl} that the minimization over $L(h,\vlambda)$ is equivalent to minimizing
+%
+\begin{align}
+\label{eq:c:lambda}
+&
+  \hcost(h)
+  +
+  \!\sum_{a,z}\lambda_{a,z}\hgamma_{a,z}(h)
+\\
+\notag
+&=
+  \Ehat\biggBracks{
+  \E_Z\biggBracks{
+  \biggParens{
+  \underbrace{
+     c(\underY,Z)+
+     \frac{N\lambda_{A,Z}}{p_A} -\!\sum_a N\lambda_{a,Z}
+  }_{c_{\vlambda}(\underY,A,Z)}
+  }
+  h(X,Z)
+  }}.
+\end{align}
+%
+This corresponds to a CS problem
+with $nN$ instances $\set{(X'_{i,z},C_{i,z})}_{i\le n,\,z\in\calZ}$ defined as
+\[
+  X'_{i,z}=(X_i,z),
+\quad
+  C_{i,z}=c_{\vlambda}(\underY_i,A_i,z)
+.
+\]
+The sum $\sum_a N\lambda_{a,Z}$ in the definition of $c_{\vlambda}$ can
+be precalculated once for each value of $Z$ in the overall time $\order(N\card{\calA})$.
+After that the construction of the dataset takes time $\order(nN)$.
+
+Based on Assumption~\ref{ass:samples} and \Thm{main:sp}, we expect $N\propto n^{\beta}$, so
+this reduction to cost-sensitive classification takes time $\Omega(n^{1+\beta})$ and creates a dataset of size $\Omega(n^{1+\beta})$. This is substantially larger than the original problem of size $n$, given the typical value $\beta\approx 1/2$. We next describe two alternatives that run faster and only create datasets of size $n$. %The construction of this dataset dominates
+%the running time of each iteration, which is otherwise $\order(n\log n+\card{\calA}\sqrt{n})$. What is worse, it creates subproblems that are an order of magnitude larger than the original problem. In the remainder of this section, we describe a heuristic approach which implements $\BestH$ by a single call to the \emph{least-squares oracle} on the dataset of the same size $n$ as the original data.
+
+\textbf{Reduction to least-squares regression.}
+The main overhead in the CS reduction above comes from the summation over $z\in\calZ$, implicit in the expectation over $Z$ in Eq.~\eqref{eq:c:lambda}. In order to eliminate this overhead, suppose we have access to a function $g_{\vlambda}$
+such that
+\[%\textstyle
+g_{\vlambda}(\tY,A,f(X))
+=
+\frac{1}{N} \sum_{z \in \calZ} c_{\vlambda}(\tY, A, z) h_f(X,z)
+\]
+for any $\tY\in\tcalY$, $A \in \calA$, $X \in \calX$ and $f\in\calF$. In Appendix~\ref{sec:app:impl:ls}, we show how to precalculate $g_{\vlambda}(\cdot,\cdot,\cdot)$
+in time $\order(\card{\calA}\card{\tcalY} N)$. Then minimizing Eq.~\eqref{eq:c:lambda} over $h$ is equivalent to finding $\min_{f \in \calF} \sum_{i=1}^n g_{\vlambda}(\underY_i,A_i,f(X_i))$. We heuristically solve this problem by calling a least-squares oracle on a dataset of size $n$. To this end, we replace $g_{\vlambda}$ by the square loss with respect to specific targets $U_i$ (different from $Y_i$). As targets, we choose the minima of $g_{\vlambda}$ for each fixed $\underY_i$ and $A_i$, that is, $U_i\in\argmin_{u\in[0,1]} g_{\vlambda}(\underY_i,A_i,u)$. We seek to solve
+\[
+  \min_{f \in \calF}\,\sum_{i=1}^n (U_i-f(X_i))^2
+.
+\]
+To obtain the values $U_i$ we first calculate $c_{\vlambda}(\ty,a,z)$ across all $\ty$, $a$, and $z$
+in the overall time $\order(\card{\calA}\card{\tcalY} N)$. Then, using the definition of $g_{\vlambda}$, the minimizer
+of $g_{\vlambda}(\ty,a,u)$ over $u$ can be found in time $\order(N)$ for each pair of $\ty$ and $a$, so
+all the minimizers can be precalculated in time $\order(\card{\calA}\card{\tcalY} N)$. Thus, preparing the dataset for
+the least-squares reduction takes time $\order(\card{\calA}\card{\tcalY} N)$ and the resulting regression dataset
+is of size $n$. Since $\card{\tcalY}=O(N)$, and $N\propto n^{\beta}$. The running time of the reduction is $O(n\log n + \card{\calA}n^{2\beta})$, which is substantially faster than $\Omega(n^{1+\beta})$ for typical $\beta\approx 1/2$.
+
+\textbf{Reduction to risk minimization under $\ell$.}
+A similar heuristic as in the least-squares reduction can be used to reduce $\BestH$ to risk minimization under any loss $\ell(y,u)$ that is convex in $u$. The complexity of this reduction is identical to that of the least-squares reduction, but the resulting risk minimization problem might be better aligned with the original problem, yielding a potentially superior oracle as we will see in the experiments. (See Appendix~\ref{app:reduction:ell} for details.)%
+
+%A similar heuristic can be used to reduce $\BestH$ to risk minimization under any loss $\ell(y,u)$ that is convex in $u$. The complexity of this reduction is identical to that of the least-squares reduction above, but the resulting risk minimization problem might be better aligned with the original problem, yielding a potentially superior oracle as we will see in the experiments. This reduction is outlined in Appendix~\ref{app:reduction:ell}.%
+
+\input{max-loss-bound}
+
+\section{Experiments}
+\label{sec:experiments}
+
+\begin{figure*}[!t]
+  \includegraphics[width=\textwidth, height=8cm]{Figure_1}
+\vspace{-8mm}
+\caption{Relative test loss versus the worst constraint violation with respect
+  to SP. Relative losses are computed by subtracting the smallest
+  baseline loss from the actual loss. For our algorithm and fair classification we plot the
+  convex envelope of the predictors obtained on training data at
+  various accuracy--fairness tradeoffs. We show 95\% confidence bands
+  for the relative loss of our method and fair classification, and also show 95\% confidence
+  intervals for constraint violation
+%which is computed using DKW inequality and the same for all methods.
+  (the same for all methods).
+%All datasets have binary protected attributes.
+  Our method dominates or matches the baselines
+  up to statistical uncertainty on all datasets except \emph{adult},
+  where fair classification is slightly better.}
+\label{fig:testset}
+\end{figure*}
+
+We evaluate our method on the tasks of least-squares regression and logistic regression
+under statistical parity. We use the following three datasets:
+
+%We now examine how our method performs at the tasks of least-squares
+%regression and logistic regression under
+%statistical parity. We use the following three datasets:
+
+\iffalse\begin{enumerate}
+\item datasets: data description; protected feature; prediction task;
+  task (loss); subsampling
+\item experiments protocol: discretization 40; oracle implementation
+\item SEO; Johnson et al.; only to linear class (least square objective)
+\item results
+\item SVM versus other linear methods (subsampled dataset); going to
+  non-linear methods.
+\item number of calls comparable
+\item runtime of the call
+\end{enumerate}\fi
+
+
+\emph{Adult}: The adult income dataset~\cite{Lichman:2013}
+  has 48,842 examples. The task is to predict the probability that
+  an individual makes more than \$50k per year via logistic
+  loss minimization, with gender as the protected attribute.
+
+\emph{Law school}: Law School Admissions Council’s National
+  Longitudinal Bar Passage Study~\cite{Wightman} has 20,649
+  examples. The task is to predict a student’s GPA (normalized
+  to $[0,1]$) via square loss minimization, with race as
+  the protected attribute (white versus non-white).
+
+\emph{Communities \& crime}: The dataset contains
+  socio-economic, law enforcement, and crime data about
+  communities in the US~\cite{communities} with 1,994 examples. The
+  task is to predict the number of violent crimes per 100,000
+  population (normalized to $[0, 1]$) via square loss
+  minimization, with race as the protected attribute (whether the
+  majority population of the community is white).
+%\end{itemize}
+
+For the two larger datasets (\emph{adult} and \emph{law school}), we also
+created smaller (subsampled) versions by picking random 2,000 points. Thus we ended up
+with a total of five
+datasets, and split each into 50\% for training and 50\% for testing.\looseness=-1
+
+We ran Algorithm~\ref{alg:regred:sp} on each
+training set over a range of constraint slack values
+$\hat \eps$, with a fixed discretization grid of size 40:
+$\calZ=\{1/40, 2/40, \ldots, 1\}$. Among the solutions for different $\hat\eps$,
+we selected the ones on the Pareto front based on their training losses
+and SP disparity $\max_{a,z}\{\hat \gamma_{a, z}\}$. We
+then evaluated the selected predictors on the test set, and show the resulting Pareto front
+in Figure~\ref{fig:testset}.
+%
+%Per our theory, we discretize the predictions of our algorithms to lie in $\calZ$, while the baselines make continuous predictions.
+
+We ran our algorithm with the three types of
+reductions from Section~\ref{sec:efficient}: reductions to cost-sensitive
+%classification
+(CS) oracles, least-squares
+%regression
+(LS) oracles, and logistic-loss minimization (LR) oracles.
+Our CS oracle sought the linear model minimizing
+weighted hinge-loss (as a surrogate for weighted classification error).
+%
+%This optimization
+%problem, represented as a linear program, was solved with the Gurobi Optimizer~\cite{gurobi}.
+%
+Because of unfavorable scaling
+of the cost-sensitive problem sizes (see Section~\ref{sec:efficient}),
+we only ran the CS oracle on the three small datasets.
+We considered two variants of LS and LR oracles: linear learners from
+scikit-learn \citep{scikit-learn}, and tree ensembles from XGBoost~\cite{xgb}.
+Tree ensembles heavily overfitted smaller datasets, so we only show their performance
+on two larger datasets. We only used LR oracles when the target loss was logistic,
+whereas we used LS oracles across all datasets.
+%
+%Thus, although we evaluated five variants of
+%our algorithm, not all of them were ran on all datasets.
+
+In addition to our algorithm, we also evaluated regression without any fairness constraints,
+and two baselines from the fair classification and fair regression literature.
+
+On the three datasets where the task was least-squares regression, we evaluated the \emph{full
+  substantive equality of opportunity} (SEO) estimate of
+\citet{johnson2016impartial}. It can be obtained in a closed form by solving for the
+linear model that minimizes least-squares error while having zero correlation with
+the protected attribute. In contrast, our method seeks
+to limit not just correlation, but statistical dependence.
+%first regressing $Y$ on $(X, A)$ to obtain a joint linear model $(\beta_X, \beta_A)$,
+%then projecting $X$ off of $A$ to obtain residualized feature
+%$\hat X$, and finally predicting
+%$\hat Y = \beta_X^{\intercal} \hat X$. This technique does not apply to non-linear regression %functions. We also compared our method
+%with the unconstrained regressors without fairness constraints.
+
+On the two datasets where the task was logistic regression, we ran the \emph{fair classification} (FC)
+reduction of~\citet{agarwal2018reductions} with the same LR oracles as in our algorithm.
+For this choice of oracles, the classifiers returned by FC
+are implemented by logistic models and return real-valued scores, which we evaluated.
+We ran FC across a range of trade-offs between classification accuracy
+and statistical parity (in the classification sense) and show the resulting Pareto front.
+Note that
+FC only enforces statistical parity (SP) when the scores are thresholded at zero, whereas our method
+enforces SP across all thresholds.
+
+In Figure~\ref{fig:testset}, we see that all of our reductions are able to significantly reduce disparity, without strongly impacting the overall loss. On \emph{communities \& crime}, there is a more substantial accuracy--fairness tradeoff, which can  be used as a starting point to diagnose the data quality for the two racial subgroups.
+%On the larger data sets, tree ensembles achieve better accuracy than linear learners.
+Our methods dominate SEO in least-squares tasks, but are slightly worse than FC in logistic regression.
+%despite the fact that it enforces SP only at a single threshold.
+The difference is statistically significant only on \emph{adult}, where it points to the limitations of our LS and LR reduction heuristics.
+%(we investigate this in Appendix~\ref{app:exp}).
+However, for the most part, LR and LS reductions achieve tradeoffs on par with the CS reduction, and are substantially faster to run (see Appendix~\ref{app:exp}). The results on \emph{adult} and \emph{adult subsampled} suggest that reducing to a matching loss is preferable over reducing to another loss.\looseness=-1
+
+In summary,
+we have shown that our scheme efficiently handles a range of losses and regressor classes and, where possible, diminishes disparity while maintaining the overall accuracy. The emergence of FC
+as a strong baseline for logistic regression suggests that our regression-based reduction heuristics can be further improved, which we leave open for future research.
+
+%Overall, the experiment demonstrates the ability of our scheme to handle both different types of losses and regressor classes, as well as the competitiveness of the regression-based heuristics to the idealized CS oracle.
+
+%For square loss, we compared our method with the \emph{full
+%  substantive equality of opportunity} (SEO) estimate by
+%\citet{johnson2016impartial}, which is constructed by first regressing
+%$Y$ on $(X, A)$ to obtain a joint linear model $(\beta_X, \beta_A)$,
+%then projecting $X$ off of $A$ to obtain residualized feature
+%$\hat X$, and finally predicting
+%$\hat Y = \beta_X^{\intercal} \hat X$. This technique does not apply to non-linear regression %functions. We also compared our method
+%with the unconstrained regressors without fairness constraints.
+
+%In Figure~\ref{fig:testset}, we see that all of our reductions nearly attain the error of an unconstrained loss minimizer on one extreme, while achieving nearly perfect fairness on the other. In between, we often obtain errors statistically indistinguishable from the unconstrained minimizer, but with a significantly smaller disparity. On the other hand, the SEO baseline does not even lie on our Pareto frontier. Overall, the experiment demonstrates the ability of our scheme to handle both different types of losses and regressor classes, as well as the competitiveness of the regression-based heuristics to the idealized CS oracle.
+
+
+% Acknowledgements should only appear in the accepted version.
+
+\section*{Acknowledgements}
+ZSW is supported in part by a Google Faculty Research Award, a J.P.
+Morgan Faculty Award, and a Facebook Research Award. Part of this work
+was completed while ZSW was at Microsoft Research-New York City.
+
+
+
+
+
+
+\bibliography{arxiv.bbl}
+\bibliographystyle{icml2019}
+
+\appendix
+\input{appendix}
+
+\end{document}
+
+\color{Cerulean}%
+ROUGH OUTLINE
+
+Concerns of fairness are important as machine learning becomes more pervasive. A lot of attention has focused on fair classification, but less on fair regression (give all cites we can find; it shouldn't be too many).
+Fair regression is possibly even more practically important than classification, because in most applications various scores are used to rank candidates and then a threshold on the score is applied to screen
+candidates. In this work, we study fair regression.
+
+We naturally generalize notions of DP and EO to regression. For DP, we guarantee that every thresholding rule (approximately) satisfies DP. For EO, we guarantee that every
+thresholding rule (approximately) satisfies a modified version of EO, we call it the quantile EO (and instead of conditioning on Y, we condition on Y being in the bottom or top 50\%, or possibly by quartile).
+We show how to solve the fair regression problem using a suitable classification algorithm (the classification algorithm
+is treated as a partial black-box; we might need to thoughtfully elaborate on this). We build on recent work on reductions approach for fair classification. Say something about absolute loss, and
+that (hopefully) our experiments demonstrate that our approach effectively reduces disparities.
+
+{\color{Cerulean}%
+ROUGH OUTLINE
+
+The data is $(X,A,Y)\sim D$ with $Y\in[0,1]$. We seek to find a function $f\in\calF$ that predicts $Y$ from $X$.
+
+
+This definition means that if a predictor $f$ satisfies DP then any classifier derived by thresholding $f$ also satisfied DP.
+
+
+Unfortunately, this definition is not constructive for real-valued $Y$, so rather than requiring the equal treatment of individuals at each quantile
+(corresponding to ``conditioning'' on $Y=z$ for all $z\in[0,1]$), we will consider only on a subset of quantiles, e.g., corresponding to quartiles or
+quintiles of the individuals. This translates into requiring a conditional independence given a quantized version of $Y$ as in the following definition:
+
+
+[If we consider finer sequence of quantizations $q_i: \hy\mapsto\floors{\hy}_{2^{-i}}$ and assume that CDF is continuous then if QEO holds with all $q_i$ then EO also
+holds by Monotone Convergence Theorem. If we have atoms, we can just add atoms into our quantization and we should again obtain convergence. This means that discretization
+based on quantiles will also give us convergence I think.]
+
+Let $\ell(Y,f(X))$ be the loss function, assume its Lipschitz constant is 1 (otherwise rescale). Let $\loss(f)=\E[\ell(Y,f(X))]$. We will need
+randomized rules, implemented as distributions $Q$ over $\calF$. For any $Q\in\Delta$, define $\loss(Q)=\sum_{f\in\calF} Q(f)\loss(f)$. The optimization problem is then:
+%
+\begin{align*}
+&\min_{Q\in\Delta} \loss(Q)
+\\
+&\text{s.t.\ } \BigAbs{\P[f(X)\ge z \given A=a,Y\in \calY_j] - \P[f(X)\ge z \given Y\in \calY_j]} \le \eps
+ \text{ for all $a$, $j$, $z\in[0,1]$.}
+\end{align*}
+%
+where the probability is both over $(X,A,Y)\sim D$ and over $f\sim Q$.
+
+[Provide plenty of intuition throughout and highlight how it coincides with classification when $Y\in\set{0,1}$ and $X\in\set{0,1}$. Highlight how our fairness definition
+ensures that any thresholding based on $f(X)$ satisfies DP (or the quantile EO) for classification.]
+}
+
+
+{\color{Cerulean}%
+ROUGH OUTLINE
+
+[This needs to begin with a bit of a roadmap, and the sequence of results might need some rearranging. Lots of explanation needs to be added along the way.]
+
+We will be reducing to a fair classification problem of a specific form, which has been previously considered by [insert reference to our paper], so
+we will be able to leverage their algorithm and the generalization results (we will give more detail in next section).
+In particular, we consider fair classification problems with data composed of
+tuples $(X',Y',A',W',U')$ where $X'\in\calX'$ is the vector of covariates, $Y'\in\set{0,1}$ is a binary label, $A'\in\calA'$ is the protected attribute,
+$W'\in[0,1]$ is the cost of misclassification, and $U'\in\calU'$ is any side information that we may want to use to define a notion of fairness (other than
+the protected attribute itself). We assume that we are given a class $\calH$ of classifiers $h:\calX'\to\set{0,1}$. The quality of a single $h$ is measured
+by weighted misclassification error $\cost(h)\coloneqq{\E\bigBracks{W'\ind\braces{h(X')\ne Y'}}}$, which we also extend to randomized classifiers $Q$,
+i.e., distributions over $\calH$, as $\cost(Q)=\sum_{h\in\calH} Q(h)\cost(h)$. We assume that the fair classification algorithm can solve the problem
+%
+\begin{equation}
+\label{eq:fairclass}
+\begin{aligned}
+&\min_{Q\in\Delta_\calH} \cost(Q)
+\\
+&\text{s.t.\ } \BigAbs{\E[h(X') \given A'=a',U'\in\calU'_{j'}] - \E[h(X')\given U'\in\calU'_{j'}]}\le \eps_{a',j'}
+ \text{ for all $a'\in\calA'$, $j'\in\calJ'$,}
+\end{aligned}
+\end{equation}
+%
+where $\calU'_{j'}$ can be any (possibly overlapping) subsets of $\calU'$, indexed by $j'\in\calJ'$. For instance, if there is only a single $j'$ with $\calU_{j'}=\calU$,
+we recover statistical parity (for classification), and if $U'=Y'$ and there are two sets $\calU'_{0}=\set{0}$ and $\calU'_{1}=\set{1}$ we recover equalized odds (for classification).
+
+We reduce fair regression to fair classification in two steps.
+First discretize $z$ at the level of $\alpha=1/(N+1)$ [mention that $N=\sqrt{n}$]. Let $\calZ=\set{j\alpha:\:j=1,\dotsc,N}$. Introduce a discretized loss
+%
+\begin{equation}
+\label{eq:discretized}
+\begin{aligned}
+  \ell_{\alpha}(y,\hy)=\ell\Parens{y,\,\floors{\hy}_\alpha\!+\tfrac{\alpha}{2}}
+&
+  =\ell\Parens{y,\,\tfrac{\alpha}{2}}
+    +\sum_{j=1}^{N}
+     \BigBracks{\ell\Parens{y,\,j\alpha+\tfrac{\alpha}{2}}-\ell\Parens{y,\,j\alpha-\tfrac{\alpha}{2}}}
+     \ind\braces{\hy\ge j\alpha}
+\\
+&
+  =\ell\Parens{y,\,\tfrac{\alpha}{2}}
+   +\sum_{z\in\calZ}
+    \BigBracks{\ell\Parens{y,\,z+\tfrac{\alpha}{2}}-\ell\Parens{y,\,z-\tfrac{\alpha}{2}}}
+    \ind\braces{\hy\ge z}
+.
+\end{aligned}
+\end{equation}
+%
+The pointwise loss $\ell_\alpha$ then defines the population loss $\loss_\alpha$.
+Thanks to the Lipschitz property of $\ell$, we have $\abs{\ell(y,\hy)-\ell_\alpha(y,\hy)}\le\tfrac{\alpha}{2}$ for all $y$, $\hy$, and thus also $\abs{\loss(Q)-\loss_\alpha(Q)}\le\tfrac{\alpha}{2}$. Consider the discretized problem
+%
+\begin{align*}
+&\min_{Q\in\Delta} \loss_\alpha(Q)
+\\
+&\text{s.t.\ } \BigAbs{\P[f(X)\ge z \given A=a,Y\in \calY_j] - \P[f(X)\ge z \given Y\in \calY_j]} \le \eps
+ \text{ for all $a$, $j$, $z\in\calZ$.}
+\end{align*}
+%
+We will get back to approximation properties of the discretized loss [we could foreshadow, or possibly even present a theorem]. However, a nice property of the discretized problem is
+that it can be reduced to weighted classification over a special set of classifiers.
+
+Specifically, for our given class $\calF$, define the set of classifiers $h_f:\calX\times\calZ\to[0,1]$ indexed by $f\in\calF$ such that
+\[
+  h_f(x,z)=\ind\set{f(x)\ge z}
+.
+\]
+Also, let $w(y,z)=\ell\bigParens{y,\,z+\tfrac{\alpha}{2}}-\ell\bigParens{y,\,z-\tfrac{\alpha}{2}}$ be the terms appearing in the definition of $\ell_\alpha$. Given the sample distribution $D$ over $(X,A,Y)$, we will define
+a surrogate distribution $D'$ over $(X',A',Y',W',U')$ for fair binary classification. A sample from $D'$ is obtained by first sampling $(X,A,Y)\sim D$ and independently
+$Z$ uniformly over $\calZ$. We then set
+\[
+  X'=(X,Z),
+  \quad
+  A'=A,
+  \quad
+  W'=\abs{w(Y,Z)},
+  \quad
+  Y'=\ind\braces{w(Y,Z)<0},
+  \quad
+  U'=(Y,Z).
+\]
+For any $h_f\in\calH$, the weighted
+error with respect to $D'$ is defined as $\cost(h_f)={\E\bigBracks{W'\ind\braces{h_f(X')\ne Y'}}}$, and similarly for any $Q$, we have
+$\cost(Q)=\sum_{f\in\calF} Q(f)\cost(h_f)$. By chasing the definitions, it is easy to check that $\loss_\alpha(Q)=\E\bigBracks{\ell\bigParens{Y,\tfrac{\alpha}{2}}}+N\cost(Q)$, so the minimization
+of $\cost$ over $\calH$ is equivalent to the minimization of $\loss_\alpha$ over $\calF$. Thus, discretized fair regression is equivalent to the following optimization problem:
+%
+\begin{equation}
+\label{eq:problem}
+\begin{aligned}
+&\min_{Q\in\Delta} \cost(Q)
+\\
+&\text{s.t.\ } \BigAbs{\E[h_f(X,Z) \given A=a,Z=z,Y\in \calY_j] - \E[h_f(X,Z)\given Z=z,Y\in \calY_j]} \le \eps
+ \text{ for all $a$, $j$, $z\in\calZ$,}
+\end{aligned}
+\end{equation}
+%
+which is a special case of fair classification problem~\eqref{eq:fairclass}.
+}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

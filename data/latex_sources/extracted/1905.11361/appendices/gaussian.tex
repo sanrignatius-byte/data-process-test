@@ -1,0 +1,164 @@
+\begin{proof}[Proof of Theorem \ref{thm:expectation}]
+
+The crucial step to apply Equation \ref{eq:mean}
+to this data is to work out a simple expression 
+for the inverse of the $n\times n$ submatrix $\Sigma_{22}$.
+We recall that this matrix is symmetrical with all diagonal entries equal to $\sigma_Q^2 + \sigma_\eta^2$ and all off diagonals equal to $\sigma_Q^2$.
+
+We call upon a lemma due to \cite{miller1981inverse}.
+Which states that when $A$ is invertible and $B$ is a rank-1 matrix, the inverse of their sum takes the following form:
+
+\begin{equation}
+(A+B)^{-1} = A^{-1} - \frac{1}{1 + \text{Trace}(B A^{-1})} A^{-1} B A^{-1} 
+\end{equation}
+
+We can decompose $\Sigma_{22}$
+into such an $A$ and $B$
+by defining $B$ to be the matrix
+that takes value $\sigma_Q^2$ everywhere
+and $A$ to be a diagonal matrix that takes values
+$\sigma_\eta^2$ (along the main diagonal). 
+Thus $\Sigma_{22}^{-1}= (A+B)^{-1}$ and we can proceed by applying the lemma.
+
+
+First we note that $A^{-1}$ is a diagonal matrix 
+with all entries on the main diagonal set to 
+$\frac{1}{\sigma_\eta^2}$.
+Then we note that $B A^{-1}$ 
+is an $n \times n$ matrix with all entries 
+set to $\frac{\sigma_Q^2}{\sigma_\eta^2}$.
+Thus, $\text{Trace}(B A^{-1}) = \frac{n \sigma_Q^2}{\sigma_\eta^2}$.
+
+The matrix $A^{-1} B A^{-1}$ has all entries equal to $\frac{\sigma_Q^2}{\sigma_\eta^4}$,
+and thus our desired inverse $\Sigma_{22}^{-1}$ 
+can be expressed as follows:
+%
+$$\Sigma_{22}^{-1} = (A+B)^{-1} 
+=
+\begin{bmatrix}
+    \frac{1}{\sigma_\eta^2}  &    &0 \\
+     & \ddots &   \\
+    0  & & \frac{1}{\sigma_\eta^2}\\
+\end{bmatrix}
+- 
+\frac{1}{
+1 + \frac{n \sigma_Q^2}{ \sigma_\eta^2}}
+\begin{bmatrix}
+    \frac{\sigma_Q^2}{\sigma_\eta^4}  &  \dots & \dots \\
+    \vdots & \ddots & \vdots  \\
+    \vdots  & \dots & \ddots \\
+\end{bmatrix}
+$$
+%
+Thus each off-diagonal entry takes values
+\begin{align}
+-\frac{\frac{\sigma_Q^2}{\sigma_\eta^4}}{
+1 + \frac{n \sigma_Q^2}{ \sigma_\eta^2}} &=
+%
+% multiplying by 1
+%
+-\frac{\frac{\sigma_Q^2}{\sigma_\eta^4}}{
+1 + \frac{n \sigma_Q^2}{ \sigma_\eta^2}} 
+\cdot \frac{\frac{\sigma_\eta^2}{\sigma_Q^2}}
+{\frac{\sigma_\eta^2}{\sigma_Q^2}}\\
+% SIMPLIFYING
+& = -\frac{\frac{1}{\sigma_\eta^2}}{
+\frac{\sigma_\eta^2}{\sigma_Q^2}+ n}\\
+% SIMPLIFYING MORE
+& = -\frac{1}{
+\frac{\sigma_\eta^4}{\sigma_Q^2}+ n \sigma_\eta^2}
+\end{align}
+and each on-diagonal entry has an additional $\frac{1}{\sigma_\eta^2}$ term that comes from $A^{-1}$.
+\begin{equation}
+\frac{1}{\sigma_\eta^2}
+- \frac{1}{
+\frac{\sigma_\eta^4}{\sigma_Q^2}+ n \sigma_\eta^2}
+\end{equation}
+
+Now that we know the precise expression for all entries of $\Sigma_{22}^{-1}$,
+we can calculate the vector-matrix product 
+$\Sigma_{12} \Sigma_{22}^{-1}$.
+Because every entry of $\Sigma_{12}$
+takes value $\sigma_Q^2$, and because 
+every column of $\Sigma_{22}^{-1}$ has the same $n$ values (just in different order),
+the product $\Sigma_{12} \Sigma_{22}^{-1}$
+is an $n$ dimensional vector, where
+all $n$ values are equal:
+\begin{align}
+\Sigma_{12} \Sigma_{22}^{-1} & = 
+\left[
+\frac{\sigma_Q^2}{\sigma_\eta^2}
+- \frac{n \sigma_Q^2}{
+\frac{\sigma_\eta^4}{\sigma^2} + n \sigma_\eta^2
+},
+\dots
+\right] \nonumber \\
+% SIMPLIFY
+ & = \left[
+    \frac{\frac{\sigma_Q^2}{\sigma_\eta^2}
+    \left(
+    \frac{\sigma_\eta^4}{\sigma_Q^2} + n \sigma_\eta^2 \right) n\sigma_Q^2
+    }
+    {\frac{\sigma_\eta^4}{\sigma_Q^2} + n \sigma_\eta^2},
+\dots
+\right]\nonumber \\
+%  SIMPLIFY
+ & = \left[
+    \frac{\sigma_\eta^2 }
+    {\frac{\sigma_\eta^4}{\sigma_Q^2} + n \sigma_\eta^2},
+\dots
+\right] \nonumber \\
+%  SIMPLIFY
+ & = \left[
+    \frac{1}
+    {\frac{\sigma_\eta^2}{\sigma_Q^2} + n },
+\dots
+\right]  \label{eq:quality-mean}
+\end{align}
+This expression for $\Sigma_{12}\Sigma_{22}^{-1}$,
+together with the definition of the conditional expectation 
+of a multivariate Gaussian (Equation \ref{eq:mean}) concludes the proof.
+
+\end{proof}
+
+
+\begin{proof}[Proof of Theorem \ref{thm:variance}]
+
+We can now produce the expression for 
+$\Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21}$.
+Because every entry of the $1 \times n$ matrix $\Sigma_{12} \Sigma_{22}^{-1}$
+takes value
+$$\frac{1}{\frac{\sigma_\eta^2}{\sigma_Q^2} + n }$$
+and because every entry in the $n \times 1$ matrix $\Sigma_{21}$
+takes value $\sigma_Q^2$, 
+\begin{equation}
+\Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21} =
+\frac{n \sigma_Q^2}{\frac{\sigma_\eta^2}{\sigma_Q^2} + n }
+\end{equation}
+The expression for the conditional variance
+$\text{Var}[Q|Y_1,...,Y_n]$ follows:
+
+\begin{align}
+\text{Var}[Q|Y_1,...,Y_n] & = \Sigma_{11} - \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21} \nonumber \\ 
+&=
+\sigma_Q^2 - \frac{n \sigma_Q^2}{\frac{\sigma_\eta^2}{\sigma_Q^2} + n }
+\nonumber \\
+%
+& = 
+\frac{\sigma_Q^2 \left( \frac{\sigma_\eta^2}{\sigma_Q^2} + n \right) 
+- n \sigma_Q^2}{
+\frac{\sigma_\eta^2}{\sigma_Q^2} + n
+} \nonumber \\
+% SIMPLIFY
+& = 
+\frac{\sigma_\eta^2}{
+\frac{\sigma_\eta^2}{\sigma_Q^2} + n
+} \nonumber \\
+% SIMPLIFY
+& = 
+\frac{1}{
+\frac{1}{\sigma_Q^2} + \frac{n}{\sigma_\eta^2}
+} \label{eq:quality-variance}
+\end{align}
+\end{proof}
+

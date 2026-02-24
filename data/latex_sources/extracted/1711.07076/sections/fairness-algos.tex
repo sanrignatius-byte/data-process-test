@@ -1,0 +1,136 @@
+To begin our formal description of the prior work,
+we'll introduce some  notation.  
+A dataset consists of $n$ \emph{examples}, 
+or \emph{data points}
+$\{\vct x_i \in \mathcal{X}, y_i \in \mathcal{Y} \}$,
+each consisting of a feature vector $\vct x_i$ and a label $y_i$.  A supervised learning algorithm $f:\mathcal{X}^n \times \mathcal{Y}^n \rightarrow 
+(\mathcal{X} \rightarrow [0,1])$ is a mapping from datasets to models.  The learning algorithm
+produces a model 
+$\hat{y}: \mathcal{X} \rightarrow \mathcal{Y}$,
+which given a feature vector $\vct x_i$,
+predicts the corresponding output $y_i$.
+% The supervised learning algorithm $f$ 
+% is itself a function,
+% mapping from datasets to models  
+% $f:(\mathcal{X}^n, \mathcal{Y}^n) \rightarrow 
+% (\mathcal{X} \rightarrow [0,1])$.
+In this discussion
+we focus on binary classification
+%the setting in which the label $y$ 
+% takes values from the set 
+($\mathcal{Y} = \{0,1\}$).
+
+We consider probabilistic classifiers
+which produce estimates $\hat{p}(\mathbf{x})$ of the conditional probability 
+$\P(y=1 \mid \vct x)$
+of the label given a feature vector $\mathbf{x}$. 
+To make a prediction $\hat{y}(\vct x) \in \mathcal{Y}$
+given an estimated probability $\hat{p}(\vct x)$ a threshold rule is used: $\hat{y}_i = 1 \text{ iff } \hat{p}_i > t$.
+The optimal choice of the threshold $t$
+depends on the performance metric being optimized.  In our theoretical analysis, we consider optimizing the \textit{immediate utility}
+%, as introduced in 
+\citep{corbett2017algorithmic}, of which classification accuracy (expected $0-1$ loss) is a special case.   We will define this metric more precisely in the next section.  
+
+
+In formal descriptions of discrimination-aware ML,
+a dataset  possesses a protected feature $z_i \in \mathcal{Z}$,
+making each example a three-tuple $(\vct x_i, y_i, z_i)$.
+The protected characteristic may be real-valued, like age, 
+or categorical, like race or gender.  The goal of many methods in discrimination-aware ML is not only to maximize accuracy, but also to ensure some form of impact parity.
+Following related work, 
+we consider binary protected features 
+that divide the set of examples 
+into two groups $a$ and $b$.  Our analysis extends directly to settings with more than two groups.  
+
+
+Of the various measures of impact disparity,
+%that have been proposed, 
+the two that are the most relevant here are the Calders-Verwer gap and the p-\% rule. At a given threshold $t$, let
+\mbox{$q_z = \frac{1}{n_z}\sum_{i : z_i=z}  \mathbbm{1}(\hat p_i > t)$}, where $n_z = \sum_{i}^{n} \mathbbm{1}(z_i = z)$. 
+The \textbf{Calders-Verwer (CV) gap},
+$q_a - q_b$,
+is the difference between the proportions 
+assigned to the positive class 
+in the advantaged group $a$ and the disadvantaged  group $b$ \citep{kamishima2011fairness}.
+The p-\% rule 
+is a related metric\cite{zafar2017fairness}. 
+Classifiers satisfy the \textbf{p-\% rule} 
+if $q_b / q_a \ge p/100$.  
+% This metric is motivated by 
+% fair employment practices \citep{biddle2006adverse}, 
+% in which it is stated that cases where the 
+% ratio $q_b/q_a$ is below $0.8$ are problematic.  
+
+
+Many papers in discrimination-aware ML 
+propose to optimize accuracy (or some other risk) 
+subject to constraints on the resulting 
+level of impact parity 
+as assessed by some metric \citep{pedreshi2008discrimination,kamiran2010discrimination,dwork2017decoupled,bechavod2017learning,hardt2016equality,ritov2017conditional}.  
+% Papers proposing DLPs \citep{pedreshi2008discrimination,kamiran2009classifying, zafar2017fairness} 
+% take as a premise 
+Use of DLPs presupposes
+that using the protected feature $z$ 
+as a model input is impermissible in this effort. 
+% as it amounts to \emph{treatment disparity}.
+Discarding protected features, however, 
+does not guarantee impact parity \cite{dwork2012fairness}.  
+% Instead of discarding the protected features, 
+DLPs incorporate $z$ in the learning algorithm, 
+but without making it an input to the classifier.  
+Formally, a DLP is a mapping: 
+$\mathcal{X}^n \times \mathcal{Y}^n \times \mathcal{Z}^n \rightarrow (\mathcal{X} \rightarrow \mathcal{Y})$.
+% AS $z$ isn't an input 
+% to the classifier model, 
+By definition, DLPs achieve treatment parity.  
+However, satisfying \emph{treatment parity} in this fashion 
+may still violate \emph{disparate treatment}.
+% As we show next (\S \ref{section:theory}), 
+% Under some circumstances, 
+% DLPs can indirectly realize any function 
+% achievable through treatment disparity.  
+
+\paragraph{Alternative approaches.} 
+Researchers have proposed a number of other techniques for reconciling accuracy and impact parity. 
+One approach consists of preprocessing
+the training data 
+to reduce the dependence between 
+the resulting model predictions 
+and the sensitive attribute \citep{kamiran2009classifying,kamiran2012data,
+feldman2015certifying,adler2016auditing,
+johndrow2017algorithm}. 
+These methods differ in terms of 
+which variables they affect
+and the degree of independence achieved.  
+\cite{kamiran2009classifying} 
+proposed flipping negative labels 
+of training examples form the protected group.
+\cite{zemel2013learning} proposed 
+learning representations (cluster assignments)
+so that group membership 
+cannot be inferred from cluster membership. 
+\cite{feldman2015certifying} 
+and \cite{johndrow2017algorithm} 
+also construct representations
+designed to be marginally independent from $Z$.  
+% \citet{johndrow2017algorithm} 
+% demonstrates 
+% how to construct transformations 
+% to ensure that the derived features 
+% are jointly independent of $Z$, 
+% and show that this produces distributional parity 
+% of the resulting fitted model. 
+% A second common approach 
+% is to modify existing classification methods 
+% either through post-hoc corrections 
+% or in the training stage 
+% to constrain the level of impact parity 
+% in the resulting model. 
+% \citet{kamishima2011fairness, goh2016satisfying, calders2010three,kamiran2010discrimination} 
+% consider modifications to methods such as SVM, 
+% logistic regression, Naive Bayes, and decision trees.  
+% \citet{agarwal2017reductions} 
+% show how impact parity constraints 
+% can be framed as a cost-sensitive classification problem. 
+
+

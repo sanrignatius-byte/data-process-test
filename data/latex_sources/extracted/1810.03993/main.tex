@@ -1,0 +1,187 @@
+\documentclass[format=sigconf]{acmart}
+
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10002944.10011123.10011130</concept_id>
+<concept_desc>General and reference~Evaluation</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10003456.10010927</concept_id>
+<concept_desc>Social and professional topics~User characteristics</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011074.10011099.10011105.10011108</concept_id>
+<concept_desc>Software and its engineering~Use cases</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011074.10011111.10010913</concept_id>
+<concept_desc>Software and its engineering~Documentation</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011074.10011111.10011113</concept_id>
+<concept_desc>Software and its engineering~Software evolution</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10003120.10003121.10003122.10010856</concept_id>
+<concept_desc>Human-centered computing~Walkthrough evaluations</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{General and reference~Evaluation}
+\ccsdesc[300]{Social and professional topics~User characteristics}
+\ccsdesc[500]{Software and its engineering~Use cases}
+\ccsdesc[300]{Software and its engineering~Documentation}
+\ccsdesc[300]{Software and its engineering~Software evolution}
+\ccsdesc[300]{Human-centered computing~Walkthrough evaluations}
+
+\keywords{datasheets, model cards, documentation, disaggregated evaluation, fairness evaluation, ML model evaluation, ethical considerations}
+
+\usepackage{booktabs} % For formal tables
+\usepackage{framed} 
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{url}
+ \usepackage{array,multirow,graphicx}
+ \usepackage{float}
+\newcommand\mnote[1]{{\color{blue}{#1 -M}}}
+
+% Copyright
+%\setcopyright{none}
+%\setcopyright{acmcopyright}
+%\setcopyright{acmlicensed}
+\setcopyright{rightsretained}
+%\setcopyright{usgov}
+%\setcopyright{usgovmixed}
+%\setcopyright{cagov}
+%\setcopyright{cagovmixed}
+
+
+\acmYear{2019}\copyrightyear{2019}
+\setcopyright{acmcopyright}
+\acmConference[FAT* '19]{FAT* '19: Conference on Fairness, Accountability, and Transparency}{January 29--31, 2019}{Atlanta, GA, USA}
+\acmBooktitle{FAT* '19: Conference on Fairness, Accountability, and Transparency, January 29--31, 2019, Atlanta, GA, USA}
+\acmPrice{}
+\acmDOI{10.1145/3287560.3287596}
+\acmISBN{978-1-4503-6125-5/19/01}
+\begin{document}
+\title{Model Cards for Model Reporting}
+%\subtitle{\textcolor{red}{Paper in submission! Please do not distribute without author permission. }}
+
+\author{Margaret Mitchell, Simone Wu, Andrew Zaldivar, Parker Barnes, Lucy Vasserman, Ben Hutchinson, Elena Spitzer, Inioluwa Deborah Raji, Timnit Gebru}
+\email{{mmitchellai,simonewu,andrewzaldivar,parkerbarnes,lucyvasserman,benhutch,espitzer,tgebru}@google.com}
+\email{deborah.raji@mail.utoronto.ca}
+
+\begin{abstract}
+Trained machine learning models are increasingly used to perform high-impact 
+tasks in areas such as law enforcement, medicine, education, and employment. In order to clarify the intended use cases of machine learning models and minimize their usage in contexts for which they are not well suited, we recommend that released models be accompanied by documentation detailing their performance characteristics. In this paper, we propose a framework that we call model cards, to encourage such transparent model reporting. Model cards are short documents accompanying trained machine learning models that provide benchmarked evaluation in a variety of conditions, such as across different cultural, demographic, or phenotypic groups (e.g., race, geographic location, sex, Fitzpatrick skin type \cite{fitzpatrick}) and intersectional groups (e.g., age and race, or sex and Fitzpatrick skin type) that are relevant to the intended application domains. Model cards also disclose the context in which models are intended to be used, details of the performance evaluation procedures, and other relevant information. While we focus primarily on human-centered machine learning models in the application fields of computer vision and natural language processing, this framework can be used to document any trained machine learning model. To solidify the concept, we provide cards for two supervised models: One trained to detect smiling faces in images, and one trained to detect toxic comments in text. We propose model cards as a step towards the responsible democratization of machine learning and related artificial intelligence technology, increasing transparency into how well artificial intelligence technology works.  We hope this work encourages those releasing trained machine learning models to accompany model releases with similar detailed evaluation numbers and other relevant documentation.
+\end{abstract}
+
+\maketitle
+
+
+\section{Introduction}
+Currently, there are no standardized documentation procedures to communicate the performance characteristics of trained machine learning (ML) and artificial intelligence (AI) models. This lack of documentation is especially problematic when models are used in applications that have serious impacts on people's lives, such as in health care \cite{nervana,innereye,digital_reasoning}, employment \cite{ideal,avrio,entelo}, education \cite{gooru,turnitin} and law enforcement \cite{FBI2012,garvie2016,ProPublica2016,ftc_2016}.
+
+Researchers have discovered systematic biases in commercial machine learning models used for face detection and tracking \cite{Desi09,Wang2010,buolamwini2016ted}, attribute detection \cite{BuolamwiniGebru2018}, criminal justice \cite{COMPAS2016}, toxic comment detection \cite{DixonEtAl2018}, and other applications. However, these systematic errors were only exposed after models were put into use, and negatively affected users reported their experiences. For example, after MIT Media Lab graduate student Joy Buolamwini found that commercial face recognition systems failed to detect her face \cite{buolamwini2016ted}, she collaborated with other researchers to demonstrate the disproportionate errors of computer vision systems on historically marginalized groups in the United States, such as darker-skinned women \cite{BuolamwiniGebru2018,WakandaScorecard}. 
+In spite of the potential negative effects of such reported biases,  
+documentation accompanying trained machine learning models (if supplied) provide very little information regarding model performance characteristics, intended use cases, potential pitfalls, or other information to help users evaluate the suitability of these systems to their context. 
+This highlights the need to have detailed documentation accompanying trained machine learning models, including metrics that capture bias, fairness and inclusion considerations. 
+
+As a step towards this goal, we propose that released machine learning models be accompanied by short (one to two page) records we call model cards.  Model cards (for model reporting) are complements to ``Datasheets for Datasets'' \cite{GebruEtAl2018} and similar recently proposed documentation paradigms \cite{HollandEtAl2018,statements} that report details of the datasets used to train and test machine learning models. Model cards are also similar to the {\sc tripod} statement proposal in medicine \cite{tripod}.  We provide two example model cards in Section \ref{sec:examples}: A smiling detection model trained on the CelebA dataset \cite{LiuEtAl2015} (Figure \ref{fig:smiling_card}), and a public toxicity detection model \cite{perspective_api} (Figure \ref{fig:toxicity_card}). Where Datasheets highlight characteristics of the data feeding into the model, we focus on trained model characteristics such as the type of model, intended use cases, information about attributes for which model performance may vary, and measures of model performance. 
+
+We advocate for measures of model performance that contain quantitative evaluation results to be broken down by individual cultural, demographic, or phenotypic groups, domain-relevant conditions, and intersectional analysis combining two (or more) groups and conditions. In addition to model evaluation results, model cards should detail the motivation behind chosen performance metrics, group definitions, and other relevant factors. Each model card could be accompanied with Datasheets \cite{GebruEtAl2018}, Nutrition Labels \cite{HollandEtAl2018}, Data Statements \cite{statements}, or Factsheets \cite{factsheets}, describing datasets that the model was trained and evaluated on. Model cards provide a way to inform users about what machine learning systems can and cannot do, the types of errors they make, and additional steps that could create more fair and inclusive outcomes with the technology.
+
+
+\section{Background}
+
+Many mature industries have developed standardized methods of benchmarking various systems under different conditions. 
+For example, as noted in~\cite{GebruEtAl2018}, the electronic hardware industry provides datasheets with detailed characterizations of components' performances under different test conditions. By contrast, despite the broad reach and impact of machine learning models, there are no standard stress tests that are performed on machine learning based systems, nor standardized formats to report the results of these tests. Recently, researchers have proposed standardized forms of communicating characteristics of datasets used in machine learning~\cite{GebruEtAl2018,HollandEtAl2018, statements} to help users understand the context in which the datasets should be used. 
+We focus on the complementary task for machine learning models, proposing a standardized method to evaluate the performance of human-centric models:  Disaggregated by unitary and intersectional groups such as cultural, demographic, or phenotypic population groups.  A framework that we refer to as ``Model Cards'' can present such evaluation supplemented with additional considerations such as intended use.
+
+Outside of machine learning, the need for population-based reporting of outcomes as suggested here has become increasingly evident. For example, in vehicular crash tests, dummies with prototypical female characteristics were only introduced after researchers discovered that women were more likely than men to suffer serious head injuries in real-world side impacts \cite{IIHS2003}. 
+Similarly, drugs developed based on results of clinical trials with exclusively male participants have led to overdosing in women~ \cite{GuardianFDA,FDA2013}. In 1998, the U.S. Food and Drug Administration mandated that clinical trial results be disaggregated by groups such as age, race and gender~\cite{fda1998}.  
+
+While population-based analyses of errors and successes can be provided for unitary groups such as ``men'', ``women'', and ``non-binary'' gender groups, they should also be provided intersectionally, looking at two or more characteristics such as gender and age simultaneously. Intersectional analyses are linked to intersectionality theory, which describes how discrete experiences associated with characteristics like race or gender in isolation do not accurately reflect their interaction~\cite{intersection}. Kimberl\'e Crenshaw, who pioneered intersectional research in critical race theory, discusses the story of Emma DeGraffenreid, who was part of a failed lawsuit against General Motors in 1976, claiming that the company's hiring practices discriminated against Black women. In their court opinion, the judges noted that since General Motors hired many women for secretarial positions, and many Black people for factory roles, they could not have discriminated against Black women. However, what the courts failed to see was that only White women were hired into secretarial positions and only Black men were hired into factory roles. Thus, Black women like Emma DeGraffenreid had no chance of being employed at General Motors. This example highlights the importance of intersectional analyses: empirical analyses that emphasize the interaction between various demographic categories including race, gender, and age.
+
+Before further discussing the details of the model card, it is important to note that at least two of the three characteristics discussed so far, race and gender, are socially sensitive.  Although analyzing models by race and gender may follow from intersectionality theory, how ``ground truth'' race or gender categories should be labeled in a dataset, and whether or not datasets should be labeled with these categories at all, is not always clear. This issue is further confounded by the complex relationship between gender and sex.  When using cultural identity categories such as race and gender to subdivide analyses, and depending on the context, we recommend either using datasets with self-identified labels or with labels clearly designated as {\it perceived} (rather than self-identified).  When this is not possible, datasets of public figures with known public identity labels may be useful.  Further research is necessary to expand how groups may be defined, for example, by automatically discovering groups with similarities in the evaluation datasets.
+
+\section{Motivation}\label{sec:motivation}
+
+As the use of machine learning technology has rapidly increased, so too have reports of errors and failures. 
+Despite the potentially serious repercussions of these errors, those looking to use trained machine learning models in a particular context have no way of understanding the systematic impacts of these models before deploying them.
+
+The proposal of ``Model Cards'' specifically aims to standardize ethical practice and reporting - allowing stakeholders to compare candidate models for deployment across not only traditional evaluation metrics but also along the axes of ethical, inclusive, and fair considerations. This goes further than current solutions to aid stakeholders in different contexts.  For example, to aid policy makers and regulators on questions to ask of a model, and known benchmarks around the suitability of a model in a given setting. 
+
+Model reporting will hold different meaning to those involved in different aspects of model development, deployment, and use.  Below, we outline a few use cases for different stakeholders:
+%\vspace{-1em}
+\begin{itemize}
+ \item {\bf ML and AI practitioners} can better understand how well the model might work for the intended use cases and track its performance over time.
+\item {\bf Model developers} can compare the model's results to other models in the same space, and make decisions about training their own system.
+\item {\bf Software developers} working on products that use the model's predictions can inform their design and implementation decisions.
+\item {\bf Policymakers} can understand how a machine learning system may fail or succeed in ways that impact people.
+\item {\bf Organizations} can inform decisions about adopting technology that incorporates machine learning.
+\item {\bf ML-knowledgeable individuals} can be informed on different options for fine-tuning, model combination, or additional rules and constraints to help curate models for intended use cases without requiring technical expertise. 
+\item {\bf Impacted individuals} who may experience effects from a model can better understand how it works or use information in the card to pursue remedies.
+\end{itemize}
+
+Not only does this practice improve model understanding and help to standardize decision making processes for invested stakeholders, but it also encourages forward-looking model analysis techniques. For example, slicing the evaluation across groups functions to highlight errors that may fall disproportionately on some groups of people, and accords with many recent notions of mathematical fairness (discussed further in the example model card in Figure \ref{fig:smiling_card}).  Including group analysis as part of the reporting procedure prepares stakeholders to begin to gauge the fairness and inclusion of future outcomes of the machine learning system. Thus, in addition to supporting decision-making processes for determining the suitability of a given machine learning model in a particular context,  model reporting is an approach for responsible transparent and accountable practices in machine learning.
+
+People and organizations releasing models may be additionally incentivized to provide model card details because it helps potential users of the models to be better informed on which models are best for their specific purposes.  If model card reporting becomes standard, potential users can compare and contrast different models in a well-informed way.  Results on several different evaluation datasets will additionally aid potential users, although evaluation datasets suitable for disaggregated evaluation are not yet common.  Future research could include creating robust evaluation datasets and protocols for the types of disaggregated evaluation we advocate for in this work, for example, by including differential privacy mechanisms \cite{DworkDifferential} so that individuals in the testing set cannot be uniquely identified by their characteristics.
+
+\section{Model Card Sections}
+
+\input{card_sections.tex}
+
+\section{Examples}\label{sec:examples}
+We present worked examples of model cards for two models: an image-based classification system and a text-based scoring system. 
+
+\subsection{Smiling Classifier}
+To show an example of a model card for an image classification problem, we use the public CelebA dataset~\cite{LiuEtAl2015} to examine the performance of a trained ``smiling'' classifier across both age and gender categories. Figure \ref{fig:smiling_card} shows our prototype.
+
+
+These results demonstrate a few potential issues. 
+For example, the false discovery rate on older men is much higher than that for other groups. This means that many predictions incorrectly classify older men as smiling when they are not. On the other hand, men (in aggregate) have a higher false negative rate, meaning that many of the men that are in fact smiling in the photos are incorrectly classified as not smiling. 
+
+The results of these analyses give insight into contexts the model might not be best suited for. For example, it may not be advisable to apply the model on a diverse group of audiences, and it may be the most useful when detecting the presence of a smile is more important than detecting its absence (for example, in an application that automatically finds `fun moments' in images).  Additional fine-tuning, for example, with images of older men, may help create a more balanced performance across groups.
+
+\subsection{Toxicity Scoring} \label{toxicity}
+
+Our second example provides a model card for Perspective API's TOXICITY classifier built to detect `toxicity' in text \cite{perspective_api}, and is presented in Figure \ref{fig:toxicity_card}. To evaluate the model, we use an intersectional version of the open source, synthetically created Identity Phrase Templates test set published in \cite{DixonEtAl2018}. We show two versions of the quantitative analysis: one for TOXICITY v.~1, the initial version of the this model, and one for TOXICITY v.~5, the latest version.
+
+
+
+This model card highlights the drastic ways that models can change over time, and the importance of having a model card that is updated with each new model release. TOXICITY v.~1 has low performance for several terms, especially ``lesbian'', ``gay'', and ``homosexual''. This is consistent with what some users of the initial TOXICITY model found, as reported by the team behind Perspective API in \cite{false_positive_blog}. Also in \cite{false_positive_blog}, the Perspective API team shares the bias mitigation techniques they applied to the TOXICITY v.~1 model, in order to create the more equitable performance in TOXICITY v.~5. By making model cards a standard part of API launches, teams like the Perspective API team may be able to find and mitigate some of these biases earlier.
+
+\input{smiling_card.tex}
+\input{toxicity_card.tex}
+
+
+\section{Discussion \& Future Work}
+
+We have proposed frameworks called model cards for reporting information about what a trained machine learning model is and how well it works.  Model cards include information about the context of the model, as well as model performance results disaggregated by different unitary and intersectional population groups.  Model cards are intended to accompany a model after careful review has determined that the foreseeable benefits outweigh the foreseeable risks in the model's use or release.  
+
+To demonstrate the use of model cards in practice, we have provided two examples: A model card for a smiling classifier tested on the CelebA dataset, and a model card for a public toxicity detector tested on the Identity Phrase Templates dataset. We report confusion matrix metrics for the smile classifier and Pinned AUC for the toxicity detector, along with model details, intended use, pointers to information about training and evaluation data, ethical considerations, and further caveats and recommendations. 
+
+The framework presented here is intended to be general enough to be applicable across different institutions, contexts, and stakeholders.  It also is suitable for recently proposed requirements for analysis of algorithmic decision systems in critical social institutions, for example, for models used in determining government benefits, employment evaluations, criminal risk assessment, and criminal DNA analysis \cite{LitigatingAlgorithms2018}.
+
+Model cards are just one approach to increasing transparency between developers, users, and stakeholders of machine learning models and systems. They are designed to be flexible in both scope and specificity in order to accommodate the wide variety of machine learning model types and potential use cases. Therefore the usefulness and accuracy of a model card relies on the integrity of the creator(s) of the card itself. It seems unlikely, at least in the near term, that model cards could be standardized or formalized to a degree needed to prevent misleading representations of model results (whether intended or unintended). It is therefore important to consider model cards as one transparency tool among many, which could include, for example, algorithmic auditing by third-parties (both quantitative and qualitative), ``adversarial testing'' by technical and non-technical analysts, and more inclusive user feedback mechanisms. Future work will aim to refine the methodology of creating model cards by studying how model information is interpreted and used by different stakeholders. Researchers should also explore how model cards can strengthen and complement other transparency methods
+\section{Acknowledgements}
+Thank you to Joy Buolamwini, Shalini Ananda and Shira Mitchell for invaluable conversations and insight. 
+
+
+
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\appendix
+
+\end{document}

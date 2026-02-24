@@ -1,0 +1,68 @@
+\section{Related Work}
+We now briefly highlight core related work on (social) graph embeddings and algorithmic fairness, which our research builds upon.
+
+\subsection{Graph Embedding}
+At the core of our proposed methodology is the notion of learning low-dimensional embeddings of graph-structured data, especially social data.
+Graph embedding techniques have a long history in the social sciences, with connections to early research on ``sociograms'' (small hand-constructed social networks) and latent variable models of social interactions \cite{faust1988comparison,majone1972social}.
+%The key motivation behind these early works---which continues to permeate and influence even recent work in the area---is the idea that the likelihood of observed social interactions can be approximated by geometric relationships in some underlying latent, social space. 
+In more recent years, the task of embedding graph-structured data has received increasing attention from the machine learning and data mining communities \cite{cai2018comprehensive,hamilton2017representation}. 
+Generally, the goal of these works is to map graph nodes to low-dimensional vector embeddings, such that the original graph can be reconstructed from these embeddings.
+Traditional approaches to this problem include Laplacian eigenmaps \cite{belkin2002laplacian} and matrix factorization techniques \cite{ng2001spectral}, with recent years witnessing a surge in methods that rely on random-walk based objectives \cite{grover2016node2vec,perozzi2014deepwalk}, deep autoencoders \cite{wang2016structural}, and graph neural networks \cite{hamilton2017inductive,kipf2016variational}. 
+
+Learned graph embeddings can be used for a wide variety of tasks, including node classification, relation prediction, and clustering \cite{hamilton2017representation}.
+Here, we focus on the relation prediction task, i.e., using the learned representations to predict previously unobserved relationships between the input nodes.
+The relation prediction task is exceptionally general---for example, it generalizes basic recommender systems, knowledge base completion, and even node classification (\textit{ibid.}).%\footnote{For instance, one can simply associate each class label with a node and define edges to these nodes as indicating class membership}
+%Moreover, the majority of graph embedding approaches use a relation prediction loss to train the representations \cite{cai2018comprehensive}, which makes this setting a natural focus for our exploration of fairness. 
+
+\subsection{Algorithmic Fairness}\label{sec:relatedfair}
+Unlike previous research on graph embedding, in this work we focus on the challenge of enforcing fairnes or invariance constraints on the learned representations. 
+Recent work on fairness in machine learning, including work on fairness in collaborative filtering, involves making predictions that are balanced or invariant with respect to certain sensitive variables (e.g., age or gender) \cite{chouldechova2017fair,gajane2017formalizing,kamishima2012fairness,madras2018learning,zemel2013learning,yao2017new}. 
+Formally, in the standard ``fair classification'' setting we consider a data point $\mb{x} \in \mathbb{R}^n$, its class label $y \in \mathcal{Y}$, and a binary sensitive attribute $a \in \{0,1\}$ (e.g., indicating gender). 
+The high-level goal is then to train a model to predict $y$ from $\mb{x}$, while making this prediction invariant or fair with respect to $a$ \cite{madras2018learning}.
+There are many specific definitions of fairness, such as whether fairness refers to parity or satisfying certain preferences (see \cite{gajane2017formalizing} for a detailed discussion).
+%In this paper, we consider a pragmatic measure of group fairness or demographic parity, which imposes the condition that the prediction algorithm should predict the same outcome across different groups with equal probability. For instance, in the binary classification setting demographic parity corresponds to $P(\hat{y}=1|a = 0) = P(\hat{y}=1|a = 1)$. Note that when there are multiple sensitive attributes satisfying demographic parity for each individual sensitive attribute can lead to undesired behavior for subsets of attributes \cite{kearns2017preventing} and our approach is individually fair for multiple sensitive attributes. 
+In the context of fair machine learning, our core contribution is motivating, implementing, and evaluating an approach to enforce fairness within the context of graph embeddings.
+There are a number of complications introduced by this setting---for instance, rather than one classification task, we instead have thousands or even millions of interdependent edge relationships. 
+
+\section{Preliminaries}
+We consider the general case of embedding a heterogeneous or multi-relational (social) graph $\G = (\V, \E)$, which consists of a set of directed edge triples $e=\langle u, r, v \rangle \in \E$, where $u, v \in \V$ are nodes and $r \in \R$ is a relation type.
+We further assume that each node is of a particular type, $\T \subseteq \V$, and that relations may have constraints regarding the types of nodes that they can connect. 
+
+\xhdr{Relation Prediction}
+The general {\em relation prediction} task on such a  graph is as follows.
+Let $\E_{\textrm{train}}\subset \E$ denote a set of observed {\em training} edges and let $\bar{\E} = \{\langle v_i, r, v_j \rangle : v_i, v_j \in \V, r \in R\} \setminus \E$ denote the set of {\em negative} edges that are not present in the true graph $\G$.
+Given $\E_{\textrm{train}}$, we aim to learn a scoring function $s$ such that
+\begin{equation}\label{eq:score}
+    s(e) > s(e'), \forall e \in \E, e' \in \bar{\E}.
+\end{equation}
+In other words, the learned scoring function should ideally score any true edge higher than any negative edge. 
+
+\xhdr{Embedding-based Models}
+In the context of graph embeddings, we aim to solve this relation prediction task by learning a function $\enc : \V \mapsto \mathbb{R}^d$ that maps each node $v \in \V$ to an embedding $\mb{z}_v = \enc(v)$.
+In this case, the signature of the score function becomes $s : \mathbb{R}^d \times \R \times \mathbb{R}^d \mapsto \mathbb{R}$, i.e., it takes two node embeddings $\mb{z}_u, \mb{z}_v \in \mathbb{R}^d$ and a relation $r \in \R$ and scores the likelihood that the edge $e=<u, r, v>$ exists in the graph. 
+Generally, the intuition in embedding-based approaches is that the distance between two node embeddings should encode the likelihood that there is an edge between the nodes.%, with the distance computation depending on the relation in question.
+%As we will illustrate in Section \ref{sec:experiments}, the framework we propose for enforcing invariance or fairness is compatible with a wide variety of scoring functions, as long as they are differentiable and depend on the input nodes only through their embeddings.
+\cut{
+For instance, a concrete example of this embedding-based approach is the TransE \cite{bordes2013translating} model, where each relation $r \in \R$ is associated with an embedding $\mb{r} \in \mathbb{R}^{d}$ and the scoring function is defined as
+\begin{align}
+    s(\mb{z}_u, r, \mb{z}_v) &=  - \|\mb{z}_u^\top + \mb{r} - \mb{z}_v\|_2,
+\end{align}
+i.e., the likelihood of a relation holding between two nodes is proportional to their distance, after translating one of the node embeddings by a learned relation embedding. 
+TransE is just one of many possible instantiations of this general approach, and many scoring functions have been proposed in recent years---including RESCAL \cite{nickel2011three}, ComplexE \cite{trouillon2016complex} and TransD \cite{ji2015knowledge}.
+%The framework we propose for enforcing invariance or fairness is compatible with any of these scoring functions, as long as they are differentiable and depend on the input nodes only through their embeddings. 
+}
+Following standard practice, we consider the optimization of these scoring functions using contrastive learning methods that make use of a corruption distribution such as {\em noise contrastive estimation} \cite{dyer2014notes,mnih2012fast} and similar variants \cite{bose2018adversarial}, where the loss over a batch of edges 
+$\E_{\textrm{batch}} \subseteq \E_{\textrm{train}}$ is given by:
+\begin{equation}\label{eq:genericloss}
+    \sum_{e \in \E_{\textrm{edge}}} L_{\textrm{edge}}(s(e), s(e^{-}_1), ..., s(e^{-}_m)),
+\end{equation}
+where $L_{\textrm{edge}}$ is a per-edge loss function and $e^{-}_1, ..., e^{-}_m \in \bar{\E}$ are ``negative samples'', i.e., randomly sampled edges that do not exist in the graph.
+Loss functions of this form generally attempt to maximize the likelihood of true edges compared to the negative samples. 
+
+
+\xhdr{Fairness}
+In order to incorporate the notion of fairness into the graph embedding setup, we assume that for exactly one node type $\T^*$, all nodes of this type, i.e. all $u \in \T^*$, have $K$ categorical sensitive attributes, $a^k_u \in \A_k, k=1...,K$, and for simplicity, we assume that there are no other features or attributes associated with the nodes and edges in the graph.\footnote{Though this assumption can easily be relaxed.}
+The challenge in enforcing fairness is thus to ensure that the learned node embeddings, $\mb{z}_u$, are not biased or unfair with respect to these sensitive attributes---a point which we formalize in the next section. 
+\cut{For example, in a simple social recommendation setting, we may have one type of node, $\T = \{\texttt{users}\}$ and one type of relation, $\mathcal{R} = \{\texttt{friends}\}$.
+In the basic graph embedding setting, our goal would be to learn embeddings of the users, which we could use to make friend recommendations. 
+However, in the case of enforcing fairness, we might further assume that all the users have a categorical attributes indicating their age and gender, and our goal would to be recommend friends in such a way that does not depend on these attributes. }

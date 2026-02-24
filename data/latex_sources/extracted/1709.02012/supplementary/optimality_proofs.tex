@@ -1,0 +1,231 @@
+\section{Proof of \autoref{alg:method} Optimality and Approximate Optimality}
+\label{sec:optimality-proofs}
+
+In \autoref{sec:relaxation}, we claim that \autoref{alg:method} produces
+optimal non-discriminatory classifiers in exact calibration scenarios,
+and near-optimal classifiers in approximate calibration scenarios.
+
+We begin with classifiers $h_1$ and $h_2$ be classifiers for groups $G_1$ and
+$G_2$, with calibrations $\epsilon(h_1) \le \delta_{cal}$ and $\epsilon(h_2)
+\le \delta_{cal}$. As before, assume that we cannot strictly
+improve the cost of either $h_1$ or $h_2$ without worsening calibration: i.e. $h_1$ and
+$h_2$ is $\fairconstname$ and calibration. We will now show that
+\autoref{alg:method} produces classifiers that are
+near-optimal with respect to both the false-positive and false-negative rates
+among calibrated classifiers satisfying the equal-cost constraint.
+
+First, we show that interpolation preserves approximate calibration:
+\begin{thm}[Approximate Optimality of \autoref{alg:method}]
+  Given $\fair h_2$, which is the classifier produced by \autoref{alg:method},
+  we have that $\calib{\fair h_2} \leq \left( 1 - \alpha \right) \calib{h_2}$, where
+  $\alpha \in [0, 1]$ is the interpolation parameter in \eqref{eqn:interpolation}.
+  \label{thm:calibration}
+\end{thm}
+%
+\begin{proof}
+  %Again, let $h_t$ be a classifier for group $G_t$, and let $h^{\br_t}$ be the
+  %trivial classifier for $G_t$.
+  %Finally, we assume that $\fair h_t$ randomizes between the two classifiers, i.e.
+  %\[
+    %\fair h_t(\x) = (1-B) h_t(\x) + B h^{\br_t}(\x)
+  %\]
+  %where $B$ is a Bernoulli random variable with parameter $\alpha$.
+  We can calculate the calibration of $\fair h_2(\x)$ as follows:
+  %
+  \begin{align*}
+    \calib{\fair h_2}
+    &= \mathop{\ev}_{B, G_2} \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid \fair
+    h_2(\x)\!=\!p \bigr] - p \Bigr\rvert
+    \\
+    &= \int_{0}^1 \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid \fair
+    h_2(\x) \!=\!p \bigr] - p \Bigr\rvert
+    %\\ &\phantom{=} \times
+    \Pr_{G_2} \bigl[ \fair h_2(\x)\!=\!p\bigr] dp
+    %\\
+    %&= \int_{0}^1 \Biggl( \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid h_2(\x)
+    %\!=\!p \bigr] - p \Bigr\rvert \Pr_{G_2} \bigl[ h_2(\x)\!=\!p, B\!=\!1 \bigr]
+    %%\\ &\phantom{=}
+    %+ \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid h^{\br_2}(\x) \!=\!p
+    %\bigr] - p \Bigr\rvert \Pr_{G_2} \bigl[ h^{\br_2}(\x)\!=\!p, B\!=\!0 \bigr] \Biggr) dp
+    %\\
+    %&= \int_{0}^1 \Biggl( \alpha \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid
+    %h_2(\x) \!=\!p \bigr] - p \Bigr\rvert \Pr_{G_2} \bigl[ h_2(\x)\!=\!p \bigr]
+    %%\\ &\phantom{=}
+    %+  \bigl( 1 \! - \! \alpha \bigr) \Bigl\lvert \Pr_{G_2}
+    %\bigl[ y\!=\!1 \mid h^{\br_2}(\x) \!=\!p \bigr] - p \Bigr\rvert \Pr_{G_2}
+    %\bigl[ h^{\br_2}(\x)\!=\!p \bigr] \Biggr) dp
+    %\\
+    %&= (1-\alpha) \calib{h_2} + \alpha \calib{h^{\br_2}}.
+  \end{align*}
+  For $p \ne \mu_2$, $|\Pr_{G_2} \bigl[ y\!=\!1 \mid \fair h_2(\x) \!=\!p \bigr]
+  - p| = |\Pr_{G_2} \bigl[ y\!=\!1 \mid h_2(\x) \!=\!p \bigr] - p|$ and
+  $\Pr_{G_2} \bigl[ \fair h_2(\x)\!=\!p\bigr] = (1-\alpha)\Pr_{G_2} \bigl[
+  h_2(\x)\!=\!p\bigr]$.
+
+  For $p = \mu_2$, let $\beta = \Pr_{B,G_2}\bigl[B \!=\! 1 \mid \fair h_2(\x) =
+  p\bigr]/\Pr_{G_2} \bigl[\fair h_2(\x) = p\bigr]$. Note that $\beta \ge
+  \alpha$. Then,
+  \begin{align*}
+    \Pr_{G_2} \bigl[ y\!=\!1 \mid \fair h_2(\x) \!=\!p \bigr] &=
+    (1-\beta) \Pr_{G_2} \bigl[ y\!=\!1 \mid h_2(\x) \!=\!p \bigr] + \beta
+    \Pr_{G_2} \bigl[ y\!=\!1 \mid h^{\br_2}(\x) \!=\!p \bigr] \\
+    &= (1-\beta) \Pr_{G_2} \bigl[ y\!=\!1 \mid h_2(\x) \!=\!p \bigr] + \beta p
+    %&= (1-\alpha) |\Pr_{G_2} \bigl[ y\!=\!1 \mid h_2(\x) \!=\!p \bigr] - p|
+  \end{align*}
+  because $h^{\br_2}$ is perfectly calibrated. Moreover, note that $\Pr_{G_2}
+  \bigl[ \fair h_2(\x)\!=\!p\bigr] = \Pr_{G_2} \bigl[ h_2(\x)\!=\!p\bigr] /
+  (1-\beta)$
+  Using this, we have
+  $|\Pr_{G_2} \bigl[ y\!=\!1 \mid \fair h_2(\x) \!=\!p
+  \bigr] - p | \Pr_{G_2} \bigl[ \fair h_2(\x)\!=\!p\bigr] =
+  |\Pr_{G_2} \bigl[ y\!=\!1 \mid h_2(\x) \!=\!p
+  \bigr] - p | \Pr_{G_2} \bigl[ h_2(\x)\!=\!p\bigr]$.
+  Thus,
+  \begin{align*}
+    \calib{\fair h_2}
+    &= \int_{0}^1 \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid \fair
+    h_2(\x) \!=\!p \bigr] - p \Bigr\rvert
+    \Pr_{G_2} \bigl[ \fair h_2(\x)\!=\!p\bigr] dp \\
+    &\le \int_{0}^1 \Bigl\lvert \Pr_{G_2} \bigl[ y\!=\!1 \mid
+    h_2(\x) \!=\!p \bigr] - p \Bigr\rvert
+    \Pr_{G_2} \bigl[ h_2(\x)\!=\!p\bigr] dp \\
+    &= \calib{h_2}
+  \end{align*}
+\end{proof}
+
+Next, we observe that by \autoref{lma:cost_error}, for any
+classifiers $h_1'$ and $h_2'$ with $\epsilon(h_1') \le \delta_{cal}$ and
+$\epsilon(h_2') \le \delta_{cal}$ satisfying the equal-cost constraint, it must be
+the case that $\fp{h_t'} \ge \fp{\fair h_t} - \frac{4 \delta_{cal}}{1-\mu_t}$
+and $\fn{h_t'} \ge \fp{\fair h_t} - \frac{4 \delta_{cal}}{\mu_t}$ for $t = 1, 2$.
+
+%\begin{thm}[Approximate false-positive optimality for \autoref{alg:method}]
+  %\label{thm:approx-fp-optimality}
+  %Let $\fair h_1^{*fp}$ and $\fair h_2^{*fp}$ be the false-positive-optimal non-discriminatory
+  %classifiers under the constraint $\epsilon(\fair h_1^{*fp}) \leq \delta_{cal}^{(1)}$
+  %and $\epsilon(\fair h_2^{*fp}) \leq \delta_{cal}^{(2)}$.
+  %Then we have that
+  %$$\fp{h_1} - \fp{\fair h_1^{*fp}} \leq
+  %\frac{4 \delta_{cal}^{(1)}}{1 - \mu_1}.$$
+  %and
+  %$$\fp{\fair h_2} - \fp{\fair h_2^{*fp}} \leq
+    %4 b_2 \delta_{cal}^{(2)}
+    %+ \left( \frac{4 a_1 \delta_{cal}^{(1)}}{(1 - \mu_1) \left( \mu_2 a_2 + (1-\mu_2)b_2 \right)} \right),$$
+  %%
+  %where $\fair h_2$ is the derived classifier from \autoref{alg:method}.
+%\end{thm}
+%%
+%\begin{proof}
+  %Because $h_1$ is Pareto-dominant, we have that if $\fp{\fair h_1^{*fp}}$ is less than $\fp{h_1}$,
+  %then $\fn{h_2} \leq \fn{\fair h_1^{*fp}}$.
+  %We can use this fact together with \autoref{lem:fpfn} to lower-bound $\fp{\fair h_1^{*fp}}$:
+  %%
+  %$$\fp{\fair h_1^{*fp}} - \fp{h_1} \leq \frac{4 \delta_{cal}^{(1)}}{1 - \mu_1}.$$
+  %%
+  %This in turn leads to a lower bound on $\fairconst{\fair h_1^{*fp}}{1}$:
+  %%
+  %\begin{align*}
+    %\fairconst{\fair h_1^{*fp}}{1} - \fairconst{h_1}{1}
+    %&= a_1 \left( \fp{\fair h_1^{*fp}} - \fp{h_1} \right)
+    %+ b_1 \left( \fn{\fair h_1^{*fp}} - \fn{h_1} \right)
+      %\\
+      %&\leq a_1 \left( \frac{4 \delta_{cal}^{(1)}}{1 - \mu_1} \right)
+      %+ b_1 \left( \fn{h_1^{*fp}} - \fn{h_1} \right)
+      %\\
+      %&\leq a_1 \left( \frac{4 \delta_{cal}^{(1)}}{1 - \mu_1} \right).
+  %\end{align*}
+
+  %Now we will derive a relationship between $\fairconst{\fair h_2}{2}$ and $\fp{\fair h_2}$.
+  %Using \autoref{lem:approx-linear-cal}, we can generate lower and upper bounds only
+  %in terms of the generalized false-positive rate:
+  %%
+  %\begin{align*}
+    %\fairconst{\fair h_2}{2} &= a_2 \fp{\fair h_2} + b_2 \fn{\fair h_2}.
+    %\\
+    %&\leq \left( \frac{\mu_2 a_2 + (1-\mu_2)b_2}{\mu_2} \right) \fp{\fair h_2}
+    %+ \frac{2 b_2 \delta_{cal}^{(2)}}{\mu_2}
+  %\end{align*}
+  %%
+  %and
+  %\begin{align*}
+    %\fairconst{\fair h_2}{2}
+    %&\geq \left( \frac{\mu_2 a_2 + (1-\mu_2)b_2}{\mu_2} \right) \fp{\fair h_2}
+    %- \frac{2 b_2 \delta_{cal}^{(2)}}{\mu_2}
+  %\end{align*}
+  %%
+  %Note that these same equations hold for $\fair h_2^{*fp}$. Using these
+  %equations, we can derive an upper bound for $\fp{\fair h_2}$ and a lower
+  %bound for $\fp{\fair h_2^{*fp}}$:
+  %%
+  %\begin{align*}
+    %\fp{\fair h_2}
+    %&\leq \left( \frac{\mu_2 \fairconst{\fair h_2}{2}}{\mu_2 a_2 + (1-\mu_2)b_2} \right)
+    %+ 2 b_2 \delta_{cal}^{(2)}
+    %\\
+    %\fp{\fair h_2^{*fp}}
+    %&\geq \left( \frac{\mu_2 \fairconst{\fair h_2^{*fp}}{2}}{\mu_2 a_2 + (1-\mu_2)b_2} \right)
+    %- 2 b_2 \delta_{cal}^{(2)}.
+  %\end{align*}
+  %%
+  %By the no-disparity constraint, we have that
+  %$\fairconst{\fair h_2}{2} = \fairconst{h_1}{1}$. Similarly,
+  %we know that $\fairconst{\fair h_2^{*fp}}{2} \geq \fairconst{\fair h_1^{*fp}}{1} \geq
+  %\fairconst{h_1}{1} - a_1 \left( \frac{4 \delta_{cal}^{(1)}}{1 - \mu_1} \right)$.
+  %Putting this all together, we have:
+  %%
+  %\begin{align*}
+    %\fp{\fair h_2}
+    %&\leq \left( \frac{\mu_2 \fairconst{h_1}{1}}{\mu_2 a_2 + (1-\mu_2)b_2} \right)
+    %+ 2 b_2 \delta_{cal}^{(2)}
+    %\\
+    %&= \left( \frac{\mu_2 \fairconst{h_1}{1} - 4 a_1 \delta_{cal}^{(1)} / (1 - \mu_1)}
+    %{\mu_2 a_2 + (1-\mu_2)b_2} \right)
+    %+ 2 b_2 \delta_{cal}^{(2)}
+    %+ \left( \frac{4 a_1 \delta_{cal}^{(1)}}{(1 - \mu_1) \left( \mu_2 a_2 + (1-\mu_2)b_2 \right)} \right)
+    %\\
+    %&\leq \left( \frac{\mu_2 \fairconst{\fair h_2^{*fp}}{2}}
+    %{\mu_2 a_2 + (1-\mu_2)b_2} \right)
+    %+ 2 b_2 \delta_{cal}^{(2)}
+    %+ \left( \frac{4 a_1 \delta_{cal}^{(1)}}{(1 - \mu_1) \left( \mu_2 a_2 + (1-\mu_2)b_2 \right)} \right)
+    %\\
+    %&\leq \fp{\fair h_2^{*fp}}
+    %+ 4 b_2 \delta_{cal}^{(2)}
+    %+ \left( \frac{4 a_1 \delta_{cal}^{(1)}}{(1 - \mu_1) \left( \mu_2 a_2 + (1-\mu_2)b_2 \right)} \right)
+  %\end{align*}
+%\end{proof}
+%%
+%Similarly, we can derive a result for false-negative optimality.
+%%
+%\begin{thm}[Approximate false-negative optimality for \autoref{alg:method}]
+  %\label{thm:approx-fn-optimality}
+  %Let $\fair h_1^{*fn}$ and $\fair h_2^{*fn}$ be the false-negative-optimal non-discriminatory
+  %classifiers under the constraint $\epsilon(\fair h_1^{*fn}) \leq \delta_{cal}^{(1)}$
+  %and $\epsilon(\fair h_2^{*fn}) \leq \delta_{cal}^{(2)}$.
+  %Then we have that
+  %$$\fn{h_1} - \fn{\fair h_1^{*fp}} \leq
+  %\frac{4 \delta_{cal}^{(1)}}{\mu_1}.$$
+  %and
+  %$$\fn{\fair h_2} - \fn{\fair h_2^{*fp}} \leq
+    %4 b_2 \delta_{cal}^{(2)}
+    %+ \left( \frac{4 a_1 \delta_{cal}^{(1)}}{\mu_1 \left( (1 - \mu_2) a_2 + \mu_2 b_2 \right)} \right),$$
+  %%
+  %where $\fair h_2$ is the derived classifier from \autoref{alg:method}.
+%\end{thm}
+%%
+%It is important to note that both bounds degrades linearly with respect to calibration.
+Thus, approximately calibrated classifiers will be approximately optimal. From
+this result, it is easy to derive the optimality result for perfectly-calibrated
+classifiers.
+%
+\begin{thm}[Exact Optimality of \autoref{alg:method}]
+  \label{thm:optimality}
+  \autoref{alg:method} produces the classifiers $h_1$ and $\fair h_2$ that
+  satisfy both perfect calibration and the equal-cost constraint with the lowest
+  possible generalized false positive and false negative rates.
+  %Let $h_1$ and $h_2$ be (discriminatory) classifiers which achieve the
+  %minimum false-positive and false-negative rates for groups $G_1$ and $G_2$, respectively
+  %(i.e. cannot be strictly improved).
+  %If $h_1$ and $h_2$ are perfectly calibrated, then \autoref{alg:method} produces
+  %the optimal perfectly calibrated non-discriminatory classifiers with respect
+  %to false-positive/false-negative rates.
+\end{thm}

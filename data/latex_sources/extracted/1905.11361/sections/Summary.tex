@@ -1,0 +1,30 @@
+Consider two groups with identically-distributed skills
+and characterized by different noise levels in screening. 
+Our results demonstrate that if a regulatory body
+(e.g., policymakers or a regulator) 
+insists on the same number of tests 
+and the same decision rule for both groups, 
+this would yield higher false positive rates in any threshold policy. 
+As a result, hired candidates from the noisier group 
+would suffer higher rates of firing.
+In turn, this might lead employers to erroneously conclude 
+that this group's skill level is lower than it actually is.
+This paper presents a policy that handles this problem 
+by minimizing the false positive rates of both groups, 
+in the form of a greedy policy. 
+Moreover the greedy policy is efficient,
+minimizing the expected number of tests per hire
+among all policies that achieve a specified false positive rate and continue testing every candidates that appear better than the a new one.
+However, the dynamic policy will still suffer 
+(as does the simple threshold policy)
+from higher false negative rates for the noisier group,
+violating a notion of fairness dubbed 
+\emph{equality of opportunity} in the recent literature 
+on fairness in machine learning \cite{hardt2016equality}. 
+We addressed this problem by modifying the greedy policy 
+to reject candidate
+% Namely, we reject a candidate 
+iff 
+$\Pr[y_i=+1|\hat{y}_{i,1}\dots \hat{y}_{i,\tau}]<\epsilon'$ by setting $\epsilon' < p$.
+Our greedy policy can be made  forgiving and equalize false negative rates across groups.
+In future work, we plan to explore extensions to the Gaussian model.

@@ -1,0 +1,1286 @@
+%%%%%%%%%%%%%%%%%%%%%%% file template.tex %%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This is a general template file for the LaTeX package SVJour3
+% for Springer journals.          Springer Heidelberg 2010/09/16
+%
+% Copy it to a new file with a new name and use it as the basis
+% for your article. Delete % signs as needed.
+%
+% This template includes a few options for different layouts and
+% content for various journals. Please consult a previous issue of
+% your journal as needed.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% First comes an example EPS file -- just ignore it and
+% proceed on the \documentclass line
+% your LaTeX will extract the file if required
+\begin{filecontents*}{example.eps}
+%!PS-Adobe-3.0 EPSF-3.0
+%%BoundingBox: 19 19 221 221
+%%CreationDate: Mon Sep 29 1997
+%%Creator: programmed by hand (JK)
+%%EndComments
+gsave
+newpath
+  20 20 moveto
+  20 220 lineto
+  220 220 lineto
+  220 20 lineto
+closepath
+2 setlinewidth
+gsave
+  .4 setgray fill
+grestore
+stroke
+grestore
+\end{filecontents*}
+%
+\RequirePackage{fix-cm}
+%
+%\documentclass{svjour3}                     % onecolumn (standard format)
+%\documentclass[smallcondensed]{svjour3}     % onecolumn (ditto)
+%\documentclass[smallextended]{svjour3}       % onecolumn (second format)
+\documentclass[twocolumn]{svjour3}          % twocolumn
+%
+\smartqed  % flush right qed marks, e.g. at end of proof
+%
+\usepackage{graphicx}
+%
+% \usepackage{mathptmx}      % use Times fonts if available on your TeX system
+%
+
+\usepackage[toc,title]{appendix}
+\usepackage{multirow}
+\usepackage{ifthen}
+\usepackage{latexsym}
+\usepackage{color}
+\usepackage{array}
+\usepackage{algorithm2e}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{rotating}
+\usepackage{bbold}
+\usepackage{makeidx}
+\usepackage{natbib}
+\usepackage{pdflscape}
+\usepackage{afterpage}
+\usepackage{float}
+
+\newcommand{\todo}[1]{{ \color{blue} #1 }}
+%\newcommand{\todo}[1]{ }
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\side}[2]{\rotatebox{90}{\makebox[#1in][c]{#2}}}
+\newcommand{\oi}{$^\dagger$}
+\newcommand{\oii}{$^\ddag$}
+\newcommand{\oiii}{$^\mp$}
+\newcommand{\oiv}{$^\S$}
+\newcommand{\ov}{$^\varsigma$}
+
+% ILSVRC2010-2012 submissions table format
+\newcommand{\nv}{0.8in}
+\newcommand{\iv}{2.5in}
+\newcommand{\crv}{4.5in}
+
+% ILSVRC2013 submissions table format
+\newcommand{\nw}{0.8in}
+\newcommand{\nwe}{0.8in}
+\newcommand{\ciw}{2.75in}
+\newcommand{\crw}{3.75in}
+
+% ILSVRC2014 submissions table format
+\newcommand{\nz}{0.6in}
+\newcommand{\nze}{0.8in}
+\newcommand{\ciz}{1.6in}
+\newcommand{\crz}{4.3in}
+\newcommand{\cz}{0.2in}
+\newcommand{\zl}{$\circ$}
+
+% ILSVRC submission table font size
+\newcommand{\crf}{\tiny}
+\newcommand{\nf}{\footnotesize}
+
+% Insert the name of "your journal" with 
+% \journalname{myjournal}
+%
+\begin{document}
+
+\title{ImageNet Large Scale Visual Recognition Challenge}
+
+%\title{Insert your title here%\thanks{Grants or other notes
+%about the article that should go on the front page should be
+%placed here. General acknowledgments should be placed at the end of the article.}
+%}
+%\subtitle{Do you have a subtitle?\\ If so, write it here}
+
+\titlerunning{ImageNet Large Scale Visual Recognition Challenge}        % if too long for running head
+
+\author{Olga Russakovsky*         \and
+        Jia Deng* \and
+Hao Su \and 
+Jonathan Krause \and \\
+Sanjeev Satheesh \and
+Sean Ma \and
+Zhiheng Huang \and
+Andrej Karpathy \and 
+Aditya Khosla \and
+Michael Bernstein \and 
+Alexander C. Berg \and
+Li Fei-Fei
+}
+
+% 2010: Alex, Jia, FF
+% 2011: Alex, Jia, Sanjeev, Hao, FF
+% 2012: Jia, Alex, Sanjeev, Hao, Aditya, FF
+% 2013: Olga, Jia, Jon, Alex, FF
+% 2014: Olga, Sean, Jon, Jia, Alex, FF
+
+%\authorrunning{Short form of author list} % if too long for running head
+
+\institute{O. Russakovsky* \at
+Stanford University, Stanford, CA, USA \\
+\email {olga@cs.stanford.edu} 
+\and
+J. Deng* \at
+University of Michigan, Ann Arbor, MI, USA \\
+(* = authors contributed equally)
+\and
+H. Su \at
+Stanford University, Stanford, CA, USA 
+\and
+J. Krause \at
+Stanford University, Stanford, CA, USA 
+\and
+S. Satheesh \at
+Stanford University, Stanford, CA, USA 
+\and
+S. Ma \at
+Stanford University, Stanford, CA, USA 
+\and
+Z. Huang \at
+Stanford University, Stanford, CA, USA 
+\and
+A. Karpathy \at
+Stanford University, Stanford, CA, USA 
+\and
+A. Khosla \at
+Massachusetts Institute of Technology, Cambridge, MA, USA
+\and
+M. Bernstein \at
+Stanford University, Stanford, CA, USA 
+\and
+A. C. Berg \at
+UNC Chapel Hill, Chapel Hill, NC, USA
+\and
+L. Fei-Fei \at
+Stanford University, Stanford, CA, USA 
+%F. Author \at
+ %             first address \\
+  %            Tel.: +123-45-678910\\
+   %           Fax: +123-45-678910\\
+    %          \email{fauthor@example.com}           %  \\
+%             \emph{Present address:} of F. Author  %  if needed
+      %     \and
+       %    S. Author \at
+         %     second address
+}
+
+\date{Received: date / Accepted: date}
+% The correct dates will be entered by the editor
+
+
+\maketitle
+
+\begin{abstract}
+The ImageNet Large Scale Visual Recognition Challenge is a
+benchmark in object category classification and detection on hundreds of 
+object categories and millions of images. The challenge has been run
+annually from 2010 to present, attracting participation from
+more than fifty institutions.
+
+This paper describes the creation of this benchmark dataset and 
+the advances in object recognition
+that have been possible as a result. 
+We discuss the challenges of collecting large-scale ground truth annotation, 
+highlight key breakthroughs in categorical object recognition,
+provide a detailed analysis of the current state of the field of large-scale image classification and object detection,
+and compare the state-of-the-art computer vision accuracy with human accuracy.
+We conclude with lessons learned in the five years of the challenge, and propose
+future directions and improvements.
+
+\keywords{Dataset \and Large-scale \and Benchmark \and Object recognition \and Object detection}
+% \PACS{PACS code1 \and PACS code2 \and more}
+% \subclass{MSC code1 \and MSC code2 \and more}
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%             INTRODUCTION      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\label{intro}
+
+\paragraph{Overview.} The ImageNet Large Scale Visual Recognition Challenge (ILSVRC) has been running annually for five years (since 2010) and has
+become the standard benchmark for large-scale object recognition.\footnote{In this paper, we will be using the term \emph{object recognition}
+broadly to encompass  both \emph{image classification} (a task requiring an algorithm to determine what object classes are present in the image) as well as \emph{object detection} (a task
+requiring an algorithm to localize all objects present in the image).}
+ ILSVRC follows in the footsteps of
+the PASCAL VOC challenge~\citep{PASCALVOC}, established in 2005, which set the precedent for 
+standardized evaluation of recognition algorithms in the form of yearly competitions. As in PASCAL VOC, ILSVRC consists of two components:
+(1) a publically available \emph{dataset}, and (2) an annual \emph{competition} and corresponding workshop.
+The dataset allows for the development and comparison of categorical object recognition algorithms, and the
+competition and workshop provide a way to track the progress and discuss the lessons learned from the most successful and innovative
+entries each year.
+
+The publically released dataset contains a  set of manually annotated \emph{training} images. A set of \emph{test} images is also released, with the manual annotations withheld.\footnote{ In 2010, the test annotations were later released publicly;
+since then the test annotation have been kept hidden.} Participants train their algorithms using the training images and then automatically annotate the test images. These predicted annotations are submitted to the  \emph{evaluation server}. Results of the evaluation are revealed at the end of the competition period and authors are invited to share insights at the workshop held at the International Conference on Computer Vision (ICCV) or European Conference on Computer Vision (ECCV) in alternate years. 
+
+ILSVRC annotations fall into one of two categories: (1) \emph{image-level annotation} of a binary label for the presence or absence of an object class in the image, e.g., ``there are cars in this image'' but ``there are no tigers,'' and (2) \emph{object-level annotation} of a tight bounding box and class label around an object instance in the image, e.g., ``there is a screwdriver centered at position (20,25) with width of 50 pixels and height of 30 pixels''.  
+
+\paragraph{Large-scale challenges and innovations.} In creating the dataset, several challenges had to be addressed. Scaling up from 19,737 images in PASCAL VOC 2010 to 1,461,406
+in ILSVRC 2010 and  from 20 object classes to 1000 object classes brings with it several challenges. It is no longer feasible for a small group of annotators to annotate the data
+as is done for other datasets~\citep{Caltech101,MSRC,PASCALVOC,SUN}.  Instead we turn to designing novel crowdsourcing approaches for collecting large-scale annotations~\citep{Su12,ImageNet,Deng14}.
+
+Some of the 1000 object classes may not be as easy to annotate as the 20 categories of PASCAL VOC: e.g., bananas which appear in bunches may not be as easy to delineate as the basic-level categories of aeroplanes or cars. Having more than a million images makes it infeasible to annotate the locations of all objects (much less with object segmentations, human body parts, and other detailed annotations that subsets of PASCAL VOC contain). New evaluation criteria  have to be defined to take into account the facts that obtaining perfect manual annotations in this setting may be infeasible.
+
+Once the challenge dataset was collected, its scale allowed for
+unprecedented opportunities both in evaluation of object recognition
+algorithms and in developing new techniques. Novel algorithmic innovations emerge with the availability of large-scale training data.  The broad spectrum of object categories motivated the 
+need for algorithms that are even able to distinguish classes which are visually very similar. We highlight the most successful of these algorithms in this paper, and compare their performance with human-level accuracy.
+
+Finally, the large variety of object classes in ILSVRC allows us to perform an analysis of statistical properties of objects and their impact on recognition algorithms. This type of analysis allows for a deeper understanding of object recognition, and for designing the next generation of general object recognition algorithms.
+
+\paragraph{Goals.} This paper has three key goals:
+\begin{enumerate}
+\item To discuss the challenges of creating this large-scale object recognition benchmark dataset,
+\item To highlight
+the developments in  object classification and detection that have resulted from this effort, and 
+\item To take a closer look at the current state of the field
+of categorical object recognition.
+\end{enumerate}
+The paper may be of interest to researchers working on creating large-scale datasets, as well as to anybody interested in better understanding the history and the current state of large-scale object recognition.
+
+The collected dataset and additional information about ILSVRC can be found at:
+{\begin{center}
+\url{http://image-net.org/challenges/LSVRC/}
+\end{center}
+}
+
+\subsection{Related work}
+\label{sec:rel}
+
+We briefly discuss some prior work in constructing benchmark image datasets.
+
+\paragraph{Image classification datasets.} Caltech 101~\citep{Caltech101} was among the first 
+standardized datasets for multi-category image classification, with 101 object classes and commonly 15-30 training images per class. Caltech 256~\citep{Caltech256} increased the number of object classes to 256 and added images with greater scale and background variability.  The TinyImages dataset~\citep{TinyImages} contains 80 million 32x32 low resolution images collected from the internet using synsets in WordNet~\citep{WordNet} as queries. However, since this data has not been manually verified, there are many errors, making it less suitable for algorithm evaluation. Datasets such as 15 Scenes~\citep{Oliva01,BoW, Lazebnik06} or recent Places~\citep{Zhou14} provide a single scene category label (as opposed to an object category).
+
+The ImageNet dataset~\citep{ImageNet} is the backbone of ILSVRC. 
+ImageNet is an image dataset organized according to the WordNet hierarchy~\citep{WordNet}. Each  concept in WordNet, possibly described by multiple words or word phrases, is called a ``synonym set'' or ``synset''. ImageNet populates 21,841 synsets of WordNet with an average of 650 manually verified and full resolution images. As a result, ImageNet contains 14,197,122 annotated images organized by the semantic hierarchy of WordNet (as of August 2014). ImageNet is larger in scale and diversity than the other image classification datasets. ILSVRC uses a subset of ImageNet images for training the algorithms and some of ImageNet's image collection protocols for annotating additional images for testing the algorithms.
+
+%MNIST, COIL, CIFAR
+
+% Caltech Pedestrian Datasets
+
+\paragraph{Image parsing datasets.} Many datasets aim to provide richer image annotations beyond image-category labels. LabelMe~\citep{LabelMe}  contains general photographs with multiple objects per image. It has bounding polygon annotations around objects, but the object names are not standardized: annotators are free to choose which objects to label and what to name each object. The SUN2012~\citep{SUN} dataset contains 16,873 manually cleaned up and fully annotated images more suitable for standard object detection training and evaluation. SIFT Flow~\citep{Liu11} contains 2,688 images labeled using the LabelMe system. The LotusHill dataset~\citep{LotusHill} contains very detailed annotations of objects in 636,748 images and video frames, but it is not available for free.  Several datasets provide pixel-level segmentations: for example, MSRC dataset~\citep{MSRC} with 591 images and 23 object classes, Stanford Background Dataset \citep{Gould09} with 715 images and 8 classes, and the Berkeley Segmentation dataset~\citep{Arbelaez11} with 500 images annotated with object boundaries. OpenSurfaces segments surfaces from consumer photographs and annotates them with surface properties, including material, texture, and contextual information~\citep{Bell13} . 
+
+%It has been used in nonparametric, data-driven approaches~\citep{Tighe14, malisiewicz-cvpr08, 
+
+
+
+The closest to ILSVRC is the PASCAL VOC dataset \citep{PASCALIJCV,PASCALIJCV2}, which provides a standardized test bed for object detection, image classification, object segmentation, person layout, and action classification. Much of the design choices in ILSVRC have been inspired by PASCAL VOC and the similarities and differences between the datasets are discussed at length throughout the paper. 
+ILSVRC scales up  PASCAL VOC's goal of standardized training and evaluation of recognition algorithms by more than an order of magnitude in number
+of object classes and images: PASCAL VOC 2012 has 20 object classes and 21,738 images compared to ILSVRC2012 with 1000 object classes and 1,431,167 annotated images.
+
+% in ILSVRC2012, and 127,931 fully annotated images in ILSVRC2014. 
+
+The recently released COCO dataset~\citep{COCO} contains more than 328,000 images with 2.5 million object instances manually segmented. It has fewer object categories than ILSVRC (91 in COCO versus 200 in ILSVRC object detection) but more instances per category (27K on average compared to about 1K in ILSVRC object detection). Further, it contains object segmentation annotations which are not currently available in ILSVRC. COCO is likely to become another important large-scale benchmark.
+
+\paragraph{Large-scale annotation.} ILSVRC makes extensive use of Amazon Mechanical Turk to obtain accurate
+annotations~\citep{Sorokin08}. Works such as~\citep{Welinder10,GAL,Vittayakorn11} describe quality control mechanisms for this marketplace. \citep{Vondrick12} provides a detailed overview of crowdsourcing video annotation. A related line of work is to obtain annotations through well-designed games, e.g.~\citep{vonAhn05}. 
+Our novel approaches to crowdsourcing accurate image annotations are in Sections~\ref{sec:AnnotClsAnnot}, \ref{sec:AnnotLocBbox} and \ref{sec:AnnotDetList}.
+
+\paragraph{Standardized challenges.} There are several datasets with standardized online evaluation 
+similar to ILSVRC: the aforementioned PASCAL VOC~\citep{PASCALVOC}, Labeled Faces in the Wild~\citep{LFW} for unconstrained face recognition, 
+Reconstruction meets Recognition~\citep{RR} for 3D reconstruction and KITTI~\citep{KITTI} for computer vision in autonomous driving. These datasets along with ILSVRC help benchmark progress in different areas of computer vision.
+Works such as~\citep{Torralba11} emphasize the importance of examining the bias inherent in any standardized dataset.
+
+
+% harvesting image databases from the web?
+ 
+%\iffalse
+\subsection{Paper layout} 
+
+%\todo{jia: I in general think description of paper layout is useless and can be removed.  }
+
+We begin with a brief overview of ILSVRC challenge tasks in Section~\ref{sec:Tasks}. Dataset
+collection and annotation are described at length in Section~\ref{sec:Annot}. 
+Section~\ref{sec:Evaluation} discusses the evaluation criteria of algorithms in the large-scale recognition setting. 
+Section~\ref{sec:Methods} provides an overview of the methods developed by ILSVRC participants.
+%, with Section~\ref{sec:MethodsDeep} focusing
+%on a notable paradigm shift in object recognition that has occurred over the years. 
+
+Section~\ref{sec:Results} contains an in-depth  analysis of ILSVRC results:
+ Section~\ref{sec:ResultsYears} documents the progress of large-scale recognition over the years, Section~\ref{sec:ResultsStats} concludes that ILSVRC results are statistically significant,
+Section~\ref{sec:ResultsICCV}  thoroughly analyzes the current state of the field of object recognition, and Section~\ref{sec:ResultsHuman} compares state-of-the-art computer vision accuracy with human accuracy. We conclude and
+discuss lessons learned from ILSVRC in Section~\ref{sec:Conclusion}.
+%\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%             TASKS                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Challenge tasks}
+\label{sec:Tasks}
+
+The goal of ILSVRC is to estimate the content of photographs for the purpose of retrieval and automatic annotation.
+Test images are presented with no initial annotation, and algorithms  have to produce labelings specifying what objects are present in the images. New test images are collected and labeled especially for this competition and are not part of the previously published ImageNet dataset~\citep{ImageNet}. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{table*}
+\begin{tabular}{|p{1in}|m{1.5in} | >{\centering}m{1in} | >{\centering}m{1.4in} | >{\centering\arraybackslash}m{1in}  |}
+\hline
+\multicolumn{2}{|l|}{Task} & 
+\parbox[t]{1in}{\centering {\bf Image \\ classification}} 
+&
+ \parbox[t]{1in}{\centering {\bf Single-object \\ localization}}
+&
+\parbox[t]{1in}{\centering {\bf Object \\ detection}} 
+\\[3ex]
+\hline
+\multirow{2}{*}{\parbox[t]{1in}{Manual labeling \\ on training set}}
+& Number of object classes annotated per image
+&1
+& 1
+& 1 or more
+\\
+\cline{2-5}
+&
+\parbox[t]{1in}{Locations of \\ annotated classes}
+& ---
+& \parbox[t]{1in}{\centering all instances \\ on some images} 
+& \parbox[t]{1in}{\centering all instances \\ on all images} 
+\\
+\hline
+\multirow{2}{*}{\parbox[t]{1in}{Manual labeling \\ on validation \\ and test sets}} &
+Number of object classes annotated per image
+&1
+& 1
+& all target classes 
+\\
+\cline{2-5}
+&
+\parbox[t]{1in}{Locations of \\ annotated classes}
+& ---
+& \parbox[t]{1in}{\centering all instances \\ on all images} 
+& \parbox[t]{1in}{\centering all instances \\ on all images} 
+\\
+\hline
+\iffalse
+\multirow{2}{*}{\parbox[t]{1in}{Labeling returned \\ by the ideal \\ algorithm}} &
+\parbox[t]{1.5in}{Number of object class \\ labels per image}
+& 1-5 
+& 1-5
+& all target classes \\
+\cline{2-5}
+&
+\parbox[t]{1in}{Object locations  }
+& ---
+& \parbox[t]{1.5in}{\centering 1 instance per class label \\ on all images}
+& \parbox[t]{1in}{\centering all instances \\ on all images} \\
+\hline
+\fi
+\end{tabular}
+\caption{Overview of the provided annotations for each of the tasks in ILSVRC.}
+\label{table:tasks}
+\end{table*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+ILSVRC  over the years has consisted of one or more of the following tasks (years in parentheses):\footnote{In addition, ILSVRC in 2012 also included a taster fine-grained classification task, where algorithms would classify dog photographs into one of 120 dog breeds~\citep{Khosla11}. Fine-grained classification has evolved into its own Fine-Grained classification challenge in 2013~\citep{FGcomp}, which is outside the scope of this paper.}
+\begin{enumerate}
+\item {\bf Image classification} (2010-2014): Algorithms produce a list of object categories present in the image. 
+\item {\bf Single-object localization} (2011-2014): Algorithms produce a list of object categories present in the image, along with an axis-aligned bounding box indicating the position and scale of \emph{one} instance of each object category. 
+\item {\bf Object detection} (2013-2014): Algorithms produce a list of object categories present in the image along with an axis-aligned bounding box indicating the position and scale of \emph{every} instance of each object category.
+\end{enumerate}
+This section provides an overview and history of each of the three tasks. Table~\ref{table:tasks} shows summary statistics.
+
+
+%The image classification task is arguably the most basic recognition tasks, with a rich history including Caltech 101~\cite{Caltech101} and PASCAL VOC~\cite{PASCALVOC}. 
+
+%\todo{there should be some discussion about why these tasks are used and about why it evolved in this way. Maybe contrast it with PASCAL. }
+
+
+%The later Sections~\ref{sec:Annot} and \ref{sec:Evaluation} provide details about the annotation and evaluation procedures respectively.
+
+\subsection{Image classification task}
+\label{sec:TasksCls}
+
+Data for the image classification task consists of photographs collected from Flickr\footnote{\url{www.flickr.com}} and other search engines, manually labeled with the presence of one of 1000 object categories. Each image contains one ground truth label. 
+
+For each image, algorithms  produce a list of object categories present in the image. The quality of a labeling is evaluated based on the label that best matches the ground truth label for the image (see Section~\ref{sec:EvaluationCls}).
+
+Constructing ImageNet was an effort to scale up an image classification dataset to cover most nouns in English using tens of millions of manually verified photographs~\citep{ImageNet}. The image classification task of ILSVRC came as a direct extension of this effort. A subset of categories and images was chosen and fixed to provide a standardized benchmark while the rest of ImageNet continued to grow. 
+
+\subsection{Single-object localization task}
+\label{sec:TasksLoc}
+
+The single-object localization task, introduced in 2011, built off of the image classification task to evaluate the ability of algorithms to learn the appearance of the target object itself rather than its image context.
+
+Data for the single-object localization task consists of the same photographs collected for the image classification task, hand
+labeled with the presence of one of 1000 object categories.  Each image contains one ground truth label. Additionally, 
+every instance of this category is annotated with an axis-aligned bounding box.
+
+For each image, algorithms produce a list of object categories present in the image, along with a bounding box  
+ indicating the position and scale of one instance of each object category. The quality of a labeling is evaluated based on
+the object category label that best matches the ground truth label, with the additional requirement that the location of the predicted instance is also accurate (see Section~\ref{sec:EvaluationLoc}).
+
+\subsection{Object detection task}
+\label{sec:TasksDet}
+
+The object detection task went a step beyond single-object localization and tackled the problem of localizing multiple object categories in the image. This task has been a part of the PASCAL VOC for many years on the scale of 20 object categories and tens of thousands of images, but scaling it up by an order of magnitude in object categories and in images proved to be very challenging from a dataset collection and annotation point of view (see Section~\ref{sec:AnnotDet}). 
+
+
+Data for the detection tasks consists of new photographs collected from Flickr using scene-level queries. The images
+are annotated with axis-aligned bounding boxes indicating the position and scale of every instance of each target object category. 
+The training set is additionally supplemented with (a) data from the single-object localization task, which contains annotations
+for all instances of  just one object category, and (b) negative images known not to contain any instance of some object categories.
+
+For each image, algorithms produce bounding boxes indicating the position and scale of all instances of all target
+object categories. The quality of labeling is evaluated by \emph{recall}, or number of target object instances detected, and
+\emph{precision}, or the number of spurious detections produced by the algorithm (see Section~\ref{sec:EvaluationDet}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        ANNOTATION              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{dataset}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        EVALUATION               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Evaluation at large scale}
+\label{sec:Evaluation}
+
+Once the dataset has been collected, we need to define a standardized evaluation procedure for algorithms. 
+Some measures have already been established by datasets such as the Caltech 101~\citep{Caltech101} for image
+classification and PASCAL VOC~\citep{PASCALVOC} for both image classification and object detection. 
+To adapt these procedures to the large-scale setting we had to address three key challenges.
+First, for the image classification and single-object localization tasks only one object category could be labeled in each image due to the scale of the dataset. This created potential ambiguity during evaluation (addressed in Section~\ref{sec:EvaluationCls}). 
+Second, evaluating localization of object instances is inherently difficult in some images which contain a cluster of objects
+(addressed in Section~\ref{sec:EvaluationLoc}). Third, evaluating localization of object instances which occupy  few pixels in the image is challenging (addressed in Section~\ref{sec:EvaluationDet}).
+
+%. To address this we relaxed the object detection evaluation criteria pioneered by the PASCAL VOC (Section~\ref{sec:EvaluationDet}). 
+
+In this section we describe the standardized evaluation criteria for each of the three ILSVRC tasks. We elaborate further  on these and other more minor challenges with large-scale evaluation. Appendix~\ref{sec:AppCompetition} describes the submission protocol and other details of running the competition itself.
+
+
+
+
+
+
+%The second difference is in how algorithms are evaluated in inherently ambiguous cases. We adapt  the same approach as in the single-object localization %setting: we label entire (image, class) pairs as ``difficult'' and ignore them during evaluation.
+
+% and manually mark individual instances (as opposed to entire object classes) as "difficult." 
+
+
+
+\begin{figure*}
+\includegraphics[width=\linewidth]{tasks.png}
+\caption{Tasks in ILSVRC. The first column shows the ground truth labeling on an example image, and the next three show three sample outputs with the corresponding
+evaluation score.}
+\label{fig:tasks}
+\end{figure*}
+
+\subsection{Image classification}
+\label{sec:EvaluationCls}
+
+The scale of ILSVRC classification task (1000 categories and more than a million of images) makes it very expensive to label every instance of every object in every image.  Therefore, on this dataset only one object category is labeled in each image. This creates ambiguity in evaluation. For example, an image might be labeled as a ``strawberry'' but contain both a strawberry and an apple. Then an algorithm would not know which one of the two objects to name. For the image classification task we allowed an algorithm to identify multiple (up to 5) objects in an image and not be penalized as long as one of the objects indeed corresponded to the ground truth label. Figure~\ref{fig:tasks}(top row) shows some examples.
+
+Concretely, each image $i$ has a single class label $C_i$. An algorithm is allowed to return 5 labels $c_{i1},\dots c_{i5}$, and is considered correct if $c_{ij} = C_i$ for some $j$. 
+%The idea is to allow an algorithm to identify multiple objects in an image and not be penalized if one of the objects identified was in fact present, but %not included in the ground truth. 
+%Figure~\ref{fig:tasks}(top) shows some examples.
+
+Let the error of a prediction $d_{ij} = d(c_{ij},C_i)$ be $1$ if $c_{ij} \neq C_i$ and $0$ otherwise. The error of an algorithm
+is the fraction of test images on which the algorithm makes a mistake:
+\begin{align}
+\label{eq:clserror}
+\mbox{error } &= \frac{1}{N} \sum_{i=1}^N \min_j d_{ij} %(c_{ij}, C_i)
+\end{align}
+
+We used two additional measures of error. First, we evaluated top-1 error. In this case algorithms were penalized if their highest-confidence output label $c_{i1}$ did not match ground truth class $C_i$. Second, we evaluated hierarchical error. The intuition is that confusing two nearby classes (such as two different breeds of dogs) is not as harmful as confusing a dog for a container ship. For the hierarchical criteria, the cost of one misclassification, $d(c_{ij},C_i)$, is defined as the height of the lowest common ancestor of $c_{ij}$
+and $C_i$ in the ImageNet hierarchy.  The height of a node is the
+length of the longest path to a leaf node (leaf nodes have height
+zero). 
+
+However, in practice we found that all three measures of error (top-5, top-1, and hierarchical) produced the same ordering of results. Thus, since ILSVRC2012 we have been exclusively using the top-5 metric which is the simplest and most suitable to the dataset.
+
+\subsection{Single-object localization}
+\label{sec:EvaluationLoc}
+
+The evaluation for single-object localization is similar to object classification, again using a top-5 criteria to allow the algorithm to return unannotated object classes without penalty. However, now the algorithm is considered correct only if it both correctly identifies the target class $C_i$ and accurately localizes one of its instances. Figure~\ref{fig:tasks}(middle row) shows some examples.
+
+Concretely, an image is associated with object class $C_i$, with all instances of this object class annotated with bounding boxes $B_{ik}$. An algorithm returns $\{(c_{ij},b_{ij})\}_{j=1}^5$ of class labels $c_{ij}$ and associated locations $b_{ij}$. The error of a prediction $j$ is:
+\begin{align}
+%d(c_{ij},b_{ij},C_i,\{B_{ik}\}) = 
+d_{ij} &= \max(d(c_{ij},C_i),\min_{k}d(b_{ij},B_{ik}))
+\end{align}
+Here $d(b_{ij},B_{ik})$ is the error of localization, defined as $0$ if the area of intersection of boxes $b_{ij}$ and $B_{ik}$ divided by the areas of their union is greater than $0.5$, and $1$ otherwise.~\citep{PASCALIJCV} The error of an algorithm is computed as in  Eq.~\ref{eq:clserror}.
+
+Evaluating localization is inherently difficult in some images. Consider a picture of a bunch of bananas or a carton of apples. It is easy to classify these images as containing bananas or apples, and even possible to localize a few instances of each fruit. However, in order for evaluation to be accurate \emph{every} instance of banana or apple needs to be annotated, and that may be impossible.
+To handle the images where localizing individual object instances is inherently ambiguous we manually discarded $3.5\%$ of images  since ILSVRC2012.  Some examples of discarded images are shown in Figure~\ref{fig:diff}.
+
+% In PASCAL VOC individual object instances which are considered too challenging to detect are manually
+%marked as ``difficult'' and excluded from evaluation. Due to the scale of ILSVRC obtaining these (subjective) labels in a crowdsourced %setting quickly becomes infeasible. 
+
+%During data collection we crowdsourced annotation of up to 10 instances of each object class on each image, and then manually verified all images with 10 instances to determine which ones are ``difficult''. This resulted in  images being discarded from the single-object localization validation and test set. 
+
+\begin{figure*}
+\includegraphics[width=\linewidth]{diff.png}
+\caption{Images marked as ``difficult'' in the ILSVRC2012 single-object localization validation set. Please refer to Section~\ref{sec:EvaluationLoc} for details.}
+\label{fig:diff}
+\end{figure*}
+
+
+
+
+\subsection{Object detection}
+\label{sec:EvaluationDet}
+
+The criteria for object detection was adopted from PASCAL VOC~\citep{PASCALIJCV}. It is designed to penalize the algorithm for
+missing object instances, for duplicate detections of one instance, and for false positive detections. Figure~\ref{fig:tasks}(bottom row) shows examples.
+
+For each object class and each image $I_i$, an algorithm returns predicted detections $(b_{ij},s_{ij})$ of predicted locations $b_{ij}$ with confidence scores $s_{ij}$. These detections are greedily matched to the ground truth boxes $\{B_{ik}\}$ using Algorithm~\ref{algo:deteval}. For every detection $j$ on image $i$ the algorithm returns $z_{ij} = 1$ if the detection is matched to a ground truth box according to the threshold criteria, and $0$ otherwise. For a given object class, let $N$ be the total number of ground truth instances across all images. Given a threshold $t$, 
+define \emph{ recall} as the fraction of the $N$ objects  detected by the algorithm, and \emph{precision} as
+the fraction of correct detections out of the total detections returned by the algorithm. Concretely,
+\begin{align}
+Recall(t) &= \frac{\sum_{ij}  1[s_{ij} \geq t] z_{ij} }{N} \\
+Precision(t) &= \frac{\sum_{ij}  1[s_{ij} \geq t] z_{ij} }{\sum_{ij}  1[s_{ij} \geq t]} 
+\end{align}
+
+\begin{algorithm}[t]
+ \SetAlgoLined
+ \KwIn{Bounding box predictions with confidence scores $\{(b_j,s_j)\}_{j=1}^M$ and ground truth boxes $\mathcal{B}$ on image $I$ for a given object class.}
+ \KwOut{Binary results $\{z_j\}_{j=1}^M$ of whether or not prediction $j$ is a true positive detection}
+Let $\mathcal{U} = \mathcal{B}$ be the set of unmatched objects\;
+%Let $\mbox{thr}(B_k) = \min(0.5, \frac{w_k h_k}{(w_k+10)(h_k+10)}$\;
+Order $\{(b_j,s_j)\}_{j=1}^M$ in descending order of $s_j$\;
+\For{j=1 \dots M}{
+	Let $\mathcal{C} = \{B_k \in \mathcal{U} \; : \; \mbox{IOU}(B_k,b_j) \geq \mbox{thr}(B_k)\}$\;
+	\uIf{$\mathcal{C} \neq \emptyset$}{
+		Let $k^* = \argmax_{\{k \; : \; B_k \in \mathcal{C}\}}  \mbox{IOU}(B_k,b_j)$\;
+		Set $\mathcal{U} = \mathcal{U} \backslash B_{k*}$\;
+Set $z_j = 1$ since true positive detection\;	
+	} \Else {
+	Set $z_j = 0$ since false positive detection\;
+}
+}
+ \caption{The algorithm for greedily matching object detection outputs to ground truth labels. The standard $\mbox{thr}(B_k) = 0.5$~\citep{PASCALIJCV}. ILSVRC computes  $\mbox{thr}(B_k)$  using Eq.~\ref{eq:thr} to better handle low-resolution objects.
+}
+ \label{algo:deteval} 
+\end{algorithm}
+
+
+The final metric for evaluating an algorithm on a given object class is \emph{average precision}
+over the different levels of recall achieved by varying the threshold $t$. The winner of each object class 
+is then the team with the highest average precision, and then winner of the challenge is the team that wins on the most
+object classes.\footnote{In this paper we focus on the mean average precision across all categories as the measure of a team's performance. This is done for simplicity and is justified since the ordering of teams by mean average precision was always the same as the ordering by object categories won.}
+
+\paragraph{Difference with PASCAL VOC.} 
+Evaluating localization of object instances which occupy very few pixels in the image is challenging. The PASCAL VOC approach was to label such instances as ``difficult'' and ignore them during evaluation. However, since ILSVRC contains a more diverse set of object classes including, for example, ``nail'' and ``ping pong ball'' which have many very small instances, it is important to include even very small object instances in evaluation. 
+
+%For the object detection evaluation, where every instance of every object had to be detected, we relaxed the criteria for a detection to be considered ``correct'' on ground truth object instances which occupy very few pixels
+
+%To better evaluate how well small object instances are localized we had to relax the object detection evaluation criteria pioneered by %the PASCAL VOC. 
+
+In Algorithm~\ref{algo:deteval}, a predicted bounding box $b$ is considered to have properly localized by a
+ground truth bounding box $B$ if $IOU(b,B) \geq \mbox{thr}(B)$. The PASCAL VOC metric uses the threshold $\mbox{thr}(B) = 0.5$.
+However,  for small objects even deviations of a few pixels would be unacceptable
+  according to this threshold. For example, consider an object $B$ of size
+  $10 \times 10$ pixels, with a detection window of $20 \times 20$ pixels which fully
+  contains that object.  This would be an error of approximately $5$ pixels on each
+  dimension, which is average human annotation error. However, the IOU
+  in this case would be $100/400 = 0.25$, far below the threshold of $0.5$. Thus for
+  smaller objects we loosen the threshold in ILSVRC to allow for the annotation
+  to extend up to 5 pixels on average in each direction around the
+object. Concretely, if the ground truth box $B$ is of dimensions $w \times h$ then
+\begin{equation}
+\label{eq:thr}
+\mbox{thr}(B) = \min \left (0.5, \frac{w h}{(w+10)(h+10)} \right )
+\end{equation}
+ In practice, this changes the threshold only on objects which are
+  smaller than approximately $25\times 25$ pixels, and affects $5.5\%$ of objects in the
+ detection validation set.
+
+\iffalse
+The second difference is in how algorithms are evaluated in inherently ambiguous cases. In PASCAL VOC individual object instances which are considered too challenging to detect are manually
+marked as ``difficult'' and excluded from evaluation. Due to the scale of ILSVRC obtaining these (subjective) labels in a crowdsourced setting quickly becomes infeasible. We adapt  the same approach as in the single-object localization setting: we label entire (image, class) pairs as ``difficult'' and ignore them during evaluation.
+\fi 
+\iffalse
+The second difference is in how algorithms are evaluated in inherently ambiguous cases.
+In PASCAL VOC object instances which are considered too challenging to detect are manually
+marked as ``difficult'' and excluded from evaluation: the algorithm is allowed to detect the instance without
+it being counted as a false positive detection, and is allowed not to detect it without being penalized for 
+a missed object. However, the scale of ILSVRC makes this evaluation approach difficult for two reasons. First, 
+obtaining the inherently subjective ``difficult'' label in a crowdsourcing setting is challenging. Second, for some object classes in some settings, such as a bunch of bananas or box of nails, it may be inherently impossible to annotate every single instance of the object in the ground truth. Thus, we adapt the same approach as on the single-object localization setting:
+instead of labeling an object instance as ``difficult'' we label entire (image, class) pair as ``difficult'' and ignore it during evaluation. During data collection we annotate up to 7 instances of each object class on each image, and then manually verify all images with 7 instances to determine which ones should be blacklisted.
+\fi
+
+\paragraph{Practical consideration.}
+One additional practical consideration for ILSVRC detection evaluation is subtle and comes directly as a result of the 
+scale of ILSVRC. In PASCAL, algorithms would often return many detections per class 
+on the test set, including ones with low confidence scores. This allowed the algorithms to reach the level of 
+high recall at least in the realm of very low precision. On ILSVRC detection test set if an algorithm returns 10 bounding boxes per object
+per image this would result in  $10 \times 200 \times 40K = 80$M detections. Each detection contains an image index, a class index, 4 bounding box coordinates, and the confidence score, so it takes on the order of 28 bytes. The full set of detections would then require $2.24$Gb to store and submit to the evaluation server, which is impractical. This means that  algorithms are implicitly required to limit their predictions to only the most confident locations. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        METHODS                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Methods}
+\label{sec:Methods}
+
+The ILSVRC dataset and the competition has allowed significant algorithmic advances in large-scale image recognition and retrieval. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        Challenge participation                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                          	             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Challenge entries}
+\label{sec:MethodsEntries}
+
+
+This section is organized chronologically, highlighting the particularly innovative and successful methods which participated in the ILSVRC each year. Tables~\ref{table:sub10-12}, \ref{table:sub13} and \ref{table:sub14} list all the participating teams. We see a turning point in 2012
+with the development of large-scale convolutional neural networks.
+
+\paragraph{ILSVRC2010.} The first year the challenge consisted of just the classification task. The winning entry from NEC team~\citep{Lin11} used SIFT~\citep{Lowe04} and LBP~\citep{LBP} features with two non-linear coding representations~\citep{Zhou10,LLC} and a stochastic SVM. The honorable mention XRCE team~\citep{Perronnin10} used an improved Fisher vector representation~\citep{Perronnin07} along with PCA dimensionality reduction and data compression followed by a linear SVM. Fisher vector-based methods have evolved over five years of the challenge and continued performing strongly in every ILSVRC from 2010 to 2014.
+
+\paragraph{ILSVRC2011.} The winning classification entry in 2011 was the 2010 runner-up team XRCE, applying high-dimensional image signatures~\citep{Perronnin10} with compression using product quantization~\citep{Sanchez11} and one-vs-all linear SVMs. The single-object localization competition was held for the first time, with two brave entries. The winner was the UvA team using a selective search approach to generate class-independent object hypothesis regions~\citep{vanDeSande11}, followed by dense sampling and vector quantization of several color SIFT features~\citep{vanDeSande10}, pooling with spatial pyramid matching~\citep{Lazebnik06}, and classifying with a histogram intersection kernel SVM~\citep{Maji09} trained on a GPU~\citep{vanDeSande11b}.
+
+
+\paragraph{ILSVRC2012.} This was a turning point for large-scale object recognition, when large-scale deep neural networks entered the scene. The undisputed winner of both the classification and localization tasks in 2012 was the SuperVision team. They trained a large, deep convolutional neural network on RGB values, with 60 million parameters using an efficient GPU implementation and a novel hidden-unit dropout trick~\citep{Krizhevsky12,Hinton12}. The second place in image classification went to the ISI team, which used Fisher vectors~\citep{Sanchez11} and a streamlined version of Graphical Gaussian Vectors~\citep{Harada12}, along with linear classifiers using Passive-Aggressive (PA) algorithm~\citep{Crammer06}.  The second place in single-object localization went to the VGG, with an image classification system including dense SIFT features and color statistics~\citep{Lowe04}, a Fisher vector representation~\citep{Sanchez11}, and a linear SVM classifier, plus additional insights from~\citep{Arandjelovic12,Sanchez12}. Both ISI and VGG used \citep{Felzenszwalb10} for object localization; SuperVision used a regression model trained to predict bounding box locations. Despite the weaker detection model, SuperVision handily won the object localization task. 
+A detailed analysis and comparison of the SuperVision and VGG submissions on the single-object localization task can be found in~\citep{Russakovsky13}.
+The influence of the success of the SuperVision model can be clearly seen in ILSVRC2013 and ILSVRC2014. 
+
+
+
+\paragraph{ILSVRC2013.} There were 24 teams participating in the ILSVRC2013 competition, compared to 21 in the previous three years \emph{combined}. Following the success of the deep learning-based method in 2012, the vast majority of entries in 2013 used deep convolutional neural networks in their submission. The winner of the classification task was Clarifai, with several large deep convolutional networks averaged together. The network architectures were chosen using the visualization technique of~\citep{Zeiler13}, and they were trained on the GPU following~\citep{Zeiler11} using the dropout technique~\citep{Krizhevsky12}.
+
+The winning single-object localization OverFeat submission was based on an integrated framework for using convolutional networks for classification, localization and detection with a multiscale sliding window approach~\citep{Sermanet13}. They were the only team tackling all three tasks. 
+
+The winner of object detection task was UvA team, which utilized a new way of efficient encoding~\citep{vanDeSande14} densely sampled color descriptors~\citep{vanDeSande10} pooled using a multi-level spatial pyramid in a selective search framework \citep{Uijlings13}. The detection results were rescored using a full-image convolutional network classifier.
+
+
+\paragraph{ILSVRC2014.} 2014 attracted the most submissions, with 36 teams submitting 123 entries compared to just 24 teams in 2013 -- a 1.5x increase in participation.\footnote{Table~\ref{table:sub14} omits 4 teams which submitted results but chose not to officially participate in the challenge.} As in 2013 almost all teams used convolutional neural networks as the basis for their submission. Significant progress has been made in just one year: image classification error was almost halved since ILSVRC2013 and object detection mean average precision almost doubled compared to ILSVRC2013. Please refer to Section~\ref{sec:ResultsYears} for details.
+
+In 2014 teams were allowed to use outside data for training their models in the competition, so there were six tracks: provided and outside data tracks in each of image classification, single-object localization, and object detection tasks.  
+
+\afterpage{
+\begin{landscape}
+\clearpage
+\input{table_ilsvrc10}
+\end{landscape}
+}
+
+\afterpage{
+\begin{landscape}
+\clearpage
+\input{table_ilsvrc13}
+\end{landscape}
+}
+
+\afterpage{
+\begin{landscape}
+\clearpage
+\input{table_ilsvrc14}
+\end{landscape}
+}
+
+The winning image classification with provided data team was GoogLeNet, which explored an improved convolutional neural network architecture combining the multi-scale idea with intuitions gained from the Hebbian principle. Additional dimension reduction layers allowed them to increase both the depth and the width of the network significantly without incurring significant computational overhead. In the image classification with external data track, CASIAWS won by using weakly supervised object localization from only classification labels to improve image classification. MCG region proposals~\citep{Arbelaez14} pretrained on PASCAL VOC 2012 data are used to extract region proposals, regions are represented using convolutional networks, and a multiple instance learning strategy is used to learn weakly supervised object detectors to represent the image.
+
+ In the single-object localization with provided data track, the winning team was VGG, which explored the effect of convolutional neural network depth on its accuracy by using three different architectures with up to 19 weight layers with rectified linear unit non-linearity, building off of the implementation of Caffe~\citep{caffe}. For localization they used per-class bounding box regression similar to OverFeat~\citep{Sermanet13}. In the single-object localization with external data track, Adobe used 2000 additional ImageNet classes to train the classifiers in an integrated convolutional neural network framework for both classification and localization, with bounding box regression. At test time they used k-means to find bounding box clusters and rank the clusters according to the classification scores.
+
+In the object detection with provided data track, the winning team  NUS used the RCNN framework~\citep{Girshick13} with the network-in-network method \citep{Lin14}  and improvements of \citep{Howard14}. Global context information was incorporated following~\citep{Chen14}. In the object detection with external data track, the winning team was GoogLeNet (which also won image classification with provided data). It is truly remarkable that the same team was able to win at both image classification and object detection, indicating that their methods are able to not only classify the image based on scene information but also accurately localize multiple object instances. Just like most teams participating in this track, GoogLeNet used the image classification dataset  as extra training data.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        Algorithmic innovation                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                          	             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Large scale algorithmic innovations}
+\label{sec:MethodsDeep}
+
+ILSVRC over the past five years has paved the way for several breakthroughs in computer vision. 
+
+The field of categorical object recognition has dramatically evolved in the large-scale setting. 
+Section~\ref{sec:MethodsEntries} documents the progress, starting from coded SIFT features and evolving to large-scale
+convolutional neural networks dominating at all three tasks of image classification, single-object localization, and object detection. With the availability of so much training data (along with an efficient algorithmic implementation and GPU computing resources) it became possible to learn neural networks directly from the image data, without needing to create  multi-stage hand-tuned pipelines of extracted features and discriminative classifiers. The major breakthrough came in 2012 with the win of the SuperVision team on image classification and single-object localization tasks~\citep{Krizhevsky12}, and by 2014 all of the top contestants were relying heavily on convolutional neural networks. 
+
+%The success of convolutional neural networks inspired a variety of innovations in that field, such as %\todo{visualization methods, etc.}
+
+Further, over the past few years there has been a lot of focus on large-scale recognition in the computer vision community . Best paper awards at top vision conferences in 2013 were awarded to large-scale recognition methods: at CVPR 2013 to "Fast, Accurate Detection of 100,000 Object Classes on a Single Machine" \citep{Dean13} and at ICCV 2013 to "From Large Scale Image Categorization to Entry-Level Categories" \citep{Ordonez13}. Additionally, several influential lines of research have emerged, such as large-scale weakly supervised localization work of~\citep{Kuettel12}
+which was awarded the best paper award in ECCV 2012 and large-scale zero-shot learning, e.g.,~\citep{Frome13}. 
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        RESULTS                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Results and analysis}
+\label{sec:Results}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        Improvements over years              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                          	             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Improvements over the years}
+\label{sec:ResultsYears}
+
+State-of-the-art accuracy has improved significantly from ILSVRC2010 to ILSVRC2014, showcasing the massive progress that has been made in large-scale object recognition over the past five years. The performance of the winning ILSVRC entries for each task and each year are shown in Figure~\ref{fig:years}. The improvement over the years is clearly visible. In this section we quantify and analyze this improvement. 
+
+
+\begin{figure}
+\includegraphics[width=\linewidth]{years.png}
+\caption{Performance of winning entries in the ILSVRC2010-2014 competitions in each of the three tasks (details about the entries and numerical results are in Section~\ref{sec:MethodsEntries}). There is a steady reduction of error every year in object classification and single-object localization tasks, and a 1.9x improvement in mean average precision in object detection. There are two considerations in making these comparisons. (1) The object categories used in ISLVRC changed between years 2010 and 2011, and between 2011 and 2012. However,
+the large scale of the data (1000 object categories, 1.2 million training images) has remained the same, making it possible to compare results. Image classification and single-object localization entries shown here use only provided
+training data.  (2) The size of the object detection training data has increased significantly between years 2013 and 2014 (Section~\ref{sec:AnnotDet}).
+Section~\ref{sec:ResultsYears} discusses the relative effects of training data increase versus algorithmic improvements.  
+ }
+\label{fig:years}
+\end{figure}
+
+
+\subsubsection{Image classification and single-object localization improvement over the years}
+
+There has been a 4.2x reduction in image classification error (from $28.2\%$ to $6.7\%$) and a 1.7x reduction
+in single-object localization error (from $42.5\%$ to $25.3\%$) since the beginning of the challenge. 
+For consistency, here we consider only teams that use the provided training data.
+Even though the exact object categories have changed (Section~\ref{sec:AnnotClsObjects}), the large scale of the dataset has remained the same (Table~\ref{table:clslocstats}), making the results comparable across the years. The dataset has not changed since 2012, and there has been a 2.4x reduction in image classification error (from $16.4\%$ to $6.7\%$) and a 1.3x in single-object localization error (from $33.5\%$ to $25.3\%$) in the past three years.
+
+\subsubsection{Object detection improvement over the years}
+
+Object detection accuracy as measured by the mean average precision (mAP) has increased 1.9x since the introduction of this task, from $22.6\%$ mAP in ILSVRC2013 to $43.9\%$ mAP in ILSVRC2014. However, these results are not directly comparable for two reasons. First, the size of the object detection training data has increased significantly from 2013 to 2014 (Section~\ref{sec:AnnotDet}). 
+Second, the $43.9\%$ mAP result was obtained with the addition of the image classification and single-object localization training data. Here we attempt to understand the relative effects of the training set size increase versus algorithmic improvements. All models are evaluated on the same ILSVRC2013-2014 object detection test set.
+
+First, we quantify the effects of increasing detection training data between the two challenges by comparing the same model trained on ILSVRC2013 detection data versus ILSVRC2014 detection data.  The UvA team's framework from 2013 achieved $22.6\%$ with ILSVRC2013 data  (Table~\ref{table:sub13}) and $26.3\%$ with ILSVRC2014 data and no other modifications.\footnote{Personal communication with members of the UvA team.} The absolute increase in mAP was $3.7\%$.
+The RCNN model  achieved $31.4\%$ mAP with ILSVRC2013 detection plus image classification data~\citep{Girshick13} and $34.5\%$ mAP with ILSVRC2014 detection plus image classification data (Berkeley team in Table~\ref{table:sub14}). The absolute increase in mAP by expanding ILSVRC2013 detection data to ILSVRC2014 was $3.1\%$. 
+
+Second, we quantify the effects of adding in the external data for training object detection models. The NEC model in 2013 achieved $19.6\%$ mAP trained on ILSVRC2013 detection data alone and $20.9\%$ mAP trained on ILSVRC2013 detection plus classification data (Table~\ref{table:sub13}). The absolute increase in mAP was $1.3\%$. The UvA team's best entry in 2014 achieved $32.0\%$ mAP trained on ILSVRC2014 detection data and  $35.4\%$ mAP trained on ILSVRC2014 detection plus classification data. The absolute increase in mAP was $3.4\%$. 
+
+Thus, we conclude based on the evidence so far that expanding the ILSVRC2013 detection set to the ILSVRC2014 set, as well as adding in additional training data from the classification task, all account for approximately $1-4\%$ in absolute mAP improvement for the models. For comparison, we can also attempt to quantify the effect of algorithmic innovation. The UvA team's 2013 framework achieved $26.3\%$ mAP on ILSVRC2014 data as mentioned above, and their improved method in 2014 obtained $32.0\%$ mAP (Table~\ref{table:sub14}). This is $5.8\%$ absolute increase in mAP over just one year from algorithmic innovation alone. 
+
+In summary, we conclude that the absolute $21.3\%$ increase in mAP between winning entries of ILSVRC2013 ($22.6\%$ mAP) and of ILSVRC2014 ($43.9\%$ mAP) is the result of impressive algorithmic innovation and not just a consequence of increased training data. However, increasing the ISLVRC2014 object detection training dataset further \emph{is} likely to produce additional improvements in detection accuracy for current algorithms.
+
+
+
+ % For comparison, 
+
+
+
+%We can
+%again see that even this additional increase in training data is extremely unlikely to account for the $21.3\%$ absolute increase between the winning entries of %ILSVRC2013 and ILSVRC2014. Further, 
+
+
+
+
+%Finally, to the best of our knowledge the highest reported object detection performance on ILSVRC2013 data alone to date is $31.4\%$ mean AP with the RCNN %model~\citep{Girshick13}, significantly improved from state-of-the-art of $22.6\%$ mAP in ILSVRC2013. In conclusion, the rate of progress in object detection %and classification has been truly astounding since the inception of ILSVRC!
+
+%The increase in absolute mAP is $3.4\%$. Thus we conclude that
+%(1) even the addition of this extra data is extremely unlikely to account for the  %ILSVRC2014, and (2) 
+
+%Finally, we can also loosely quantify the rate of algorithmic improvements. The UvA team's 2013 entry trained on ILSVRC2014 data achieved $26.2\%$ mAP,  %Further, 
+
+%Additionally, the $22.6\%$ mAP in 2013 was obtained by the UvA team, which achieved up to $35.4\%$ by ILSVRC2014. 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        Statistical significance?                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                          	             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Statistical significance}
+\label{sec:ResultsStats}
+
+
+
+\begin{table}
+%\begin{center}Image Classification\end{center}
+\centering
+{\bf Image classification}
+\begin{tabular}{llcc}
+\hline
+Year & Codename & Error (percent) & $99.9\%$ Conf Int\\
+\hline
+{\bf 2014} & {\bf GoogLeNet} & {\bf 6.66}  & {\bf 6.40 - 6.92}\\
+2014 & VGG & 7.32  & 7.05 - 7.60\\
+2014 & MSRA & 8.06  & 7.78 - 8.34\\
+2014 & AHoward & 8.11  & 7.83 - 8.39\\
+2014 & DeeperVision & 9.51  & 9.21 - 9.82\\  %%%%%%%%%%%%%%%%%%%%%%
+2013 & Clarifai\oi & 11.20  & 10.87 - 11.53\\
+2014 & CASIAWS\oi & 11.36  & 11.03 - 11.69\\
+2014 & Trimps\oi & 11.46  & 11.13 - 11.80\\
+2014 & Adobe\oi & 11.58  & 11.25 - 11.91\\
+{\bf 2013} & {\bf Clarifai} & {\bf 11.74}  & {\bf 11.41 - 12.08}\\
+2013 & NUS & 12.95  & 12.60 - 13.30\\
+2013 & ZF & 13.51  & 13.14 - 13.87\\
+2013 & AHoward & 13.55  & 13.20 - 13.91\\
+2013 & OverFeat & 14.18  & 13.83 - 14.54\\  %%%%%%%%%%%%%%%%%%%%%%
+2014 & Orange\oi & 14.80  & 14.43 - 15.17\\
+2012 & SuperVision\oi & 15.32  & 14.94 - 15.69\\
+{\bf 2012} & {\bf SuperVision} & {\bf 16.42}  & {\bf 16.04 - 16.80}\\
+2012 & ISI & 26.17  & 25.71 - 26.65\\
+2012 & VGG & 26.98  & 26.53 - 27.43\\
+2012 & XRCE & 27.06  & 26.60 - 27.52\\
+2012 & UvA & 29.58  & 29.09 - 30.04\\  %%%%%%%%%%%%%%%%%%%%%%
+\hline
+\end{tabular}
+
+%\begin{center}Single-object localization\end{center}
+{\bf Single-object localization}
+\begin{tabular}{llcc}
+\hline
+Year & Codename & Error (percent) &  $99.9\%$ Conf Int\\
+\hline
+{\bf 2014} & {\bf VGG} & {\bf 25.32}  & {\bf 24.87 - 25.78}\\
+2014 & GoogLeNet & 26.44  & 25.98 - 26.92\\
+{\bf 2013} & {\bf OverFeat} & {\bf 29.88}  & {\bf 29.38 - 30.35}\\
+2014 & Adobe\oi & 30.10  & 29.61 - 30.58\\
+2014 & SYSU & 31.90  & 31.40 - 32.40\\
+2012 & SuperVision\oi & 33.55  & 33.05 - 34.04\\
+2014 & MIL & 33.74  & 33.24 - 34.25\\
+{\bf 2012} & {\bf SuperVision} & {\bf 34.19}  & {\bf 33.67 - 34.69}\\
+2014 & MSRA & 35.48  & 34.97 - 35.99\\ %%%%%%%%%%%%%%%%%%%%%%
+2014 & Trimps\oi & 42.22  & 41.69 - 42.75\\
+2014 & Orange\oi & 42.70  & 42.18 - 43.24\\
+2013 & VGG & 46.42  & 45.90 - 46.95\\
+2012 & VGG & 50.03  & 49.50 - 50.57\\
+2012 & ISI & 53.65  & 53.10 - 54.17\\
+2014 & CASIAWS\oi & 61.96  & 61.44 - 62.48\\
+\hline
+\end{tabular}
+
+%\begin{center}Object detection\end{center}
+{\bf Object detection}
+\begin{tabular}{llcc}
+\hline
+Year & Codename & AP (percent) &  $99.9\%$ Conf Int\\
+\hline
+2014 & GoogLeNet\oi & 43.93  & 42.92 - 45.65\\
+2014 & CUHK\oi & 40.67  & 39.68 - 42.30\\
+2014 & DeepInsight\oi & 40.45  & 39.49 - 42.06\\
+{\bf 2014} & {\bf NUS} & {\bf 37.21}  & {\bf 36.29 - 38.80}\\
+2014 & UvA\oi & 35.42  & 34.63 - 36.92\\
+2014 &MSRA & 35.11  & 34.36 - 36.70\\
+2014 & Berkeley\oi & 34.52  & 33.67 - 36.12\\  %%%%%%%%%%%%%%%%%%%%%%
+2014 & UvA & 32.03  & 31.28 - 33.49\\
+2014 & Southeast & 30.48  & 29.70 - 31.93\\
+2014 & HKUST & 28.87  & 28.03 - 30.20\\  %%%%%%%%%%%%%%%%%%%%%%
+{\bf 2013} & {\bf UvA} & {\bf 22.58}  & {\bf 22.00 - 23.82}\\
+2013 & NEC\oi & 20.90  & 20.40 - 22.15\\
+2013 & NEC & 19.62  & 19.14 - 20.85\\
+2013 & OverFeat\oi & 19.40  & 18.82 - 20.61\\
+2013 & Toronto & 11.46  & 10.98 - 12.34\\
+2013 & SYSU & 10.45  & 10.04 - 11.32\\
+2013 & UCLA & 9.83  & 9.48 - 10.77\\  %%%%%%%%%%%%%%%%%%%%%%
+\hline
+\end{tabular}
+
+\caption{We use bootstrapping to construct $99.9\%$ confidence intervals around the
+result of up to top 5 submissions to each ILSVRC task in 2012-2014. \oi means the entry used external training data. The winners using the provided data for each track and each year are bolded. The difference between the winning method and the runner-up each year is significant even at the $99.9\%$ level. }
+\label{table:bootstrap}
+\end{table}
+
+One important question to ask is whether results of different submissions to ILSVRC are statistically significantly different from each other.
+Given the large scale, it is no surprise that even minor differences in accuracy are statistically significant; 
+we seek to quantify exactly how much of a difference is enough.
+
+Following the strategy employed by  PASCAL VOC \citep{PASCALIJCV2}, for each method we obtain a 
+confidence interval of its score using bootstrap sampling. During each bootstrap round, we sample $N$ images with replacement
+from all the available $N$ test images and evaluate the performance of the algorithm 
+on those sampled images. This can be done very efficiently by precomputing the accuracy on each image. 
+Given the results of all the bootstrapping rounds we discard the lower and the upper
+ $\alpha$ fraction. The range of the remaining results represents the $1-2\alpha$ confidence interval.
+We run a large number of bootstrapping rounds
+(from 20,000 until convergence).   Table~\ref{table:bootstrap} shows
+the results of the top entries to each task of ILSVRC2012-2014. The winning methods are statistically significantly different
+from the other methods, even at the $99.9\%$ level.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        Per-class evaluation                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                          	             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{Current state of categorical object recognition}
+\label{sec:ResultsICCV}
+
+Besides looking at just the average accuracy across hundreds of object categories and tens of thousands of images, we can also delve deeper to understand where mistakes are being made and where researchers' efforts should be focused to expedite progress. 
+
+To do so, in this section we will be analyzing an ``optimistic'' measurement of state-of-the-art recognition performance instead of focusing on the differences in individual algorithms. For each task and each object class, we compute the best performance of \emph{any} entry submitted to \emph{any} ILSVRC2012-2014, including methods using additional training data. Since the test sets have remained the same, we can directly compare all the entries in the past three years to obtain the most ``optimistic'' measurement of state-of-the-art accuracy on each category. 
+
+For consistency with the object detection metric (higher is better), in this section we will be using image classification and single-object localization \emph{accuracy} instead of error, where $accuracy = 1-error$. 
+
+\begin{figure}
+\includegraphics[width=\linewidth]{opt_cats.png}
+\caption{For each object class, we consider the best performance of any entry submitted to ILSVRC2012-2014, including entries using additional training data. The plots show the distribution of these ``optimistic'' per-class results.  Performance is measured as accuracy for image classification (left) and for single-object localization (middle), and as average precision for object detection (right). While the results are very promising in image classification, the ILSVRC datasets are far from saturated: many object classes continue to be challenging for current algorithms. }
+\label{fig:yearscats}
+\end{figure}
+
+\subsubsection{Range of accuracy across object classes}
+
+Figure~\ref{fig:yearscats} shows the distribution of accuracy achieved by the ``optimistic'' models across the object categories. The image classification model achieves $94.6\%$ accuracy on average (or $5.4\%$ error), but there remains a $41.0\%$ absolute difference inaccuracy between the most and least accurate object class. The single-object localization model achieves $81.5\%$ accuracy on average (or $18.5\%$ error), with a $77.0\%$  range in accuracy across the object classes. The object detection model achieves $44.7\%$ average precision, with an $84.7\%$ range across the object classes. It is clear that the ILSVRC dataset is far from saturated: performance on many categories has remained poor despite the strong overall performance of the models. 
+
+
+
+
+\begin{figure*}
+\centering \large
+\begin{tabular}{c}
+{\bf  Image classification} \\
+Easiest classes \\
+\includegraphics[height=1.6in]{cls_best_cats.png} \\
+Hardest classes \\
+\includegraphics[height=1.9in]{cls_worst_cats.png} \\
+\vspace{0.1in} \\
+{\bf  Single-object localization} \\
+Easiest classes \\
+\includegraphics[height=1.5in]{loc_best_cats.png} \\
+Hardest classes \\
+\includegraphics[height=1.9in]{loc_worst_cats.png} \\
+\end{tabular}
+\caption{For each object category, we take the best performance of any entry submitted to ILSVRC2012-2014 (including entries using additional training data). Given these ``optimistic'' results we show the easiest and harder classes for each task. The numbers in parentheses indicate classification and localization accuracy. For image classification the 10 easiest classes are randomly selected from among 121 object classes with $100\%$ accuracy. Object detection results are shown in Figure~\ref{fig:bestworstdetcats}.} 
+\label{fig:bestworstclscats}
+\end{figure*}
+
+\begin{figure*}
+\centering \large
+\begin{tabular}{c}
+{\bf Object detection} \\
+Easiest classes \\
+\includegraphics[width=0.7\linewidth]{det_best_cats.png} \\
+Hardest classes \\
+\includegraphics[width=0.7\linewidth]{det_worst_cats.png} \\
+\hline
+\end{tabular}
+\caption{For each object category, we take the best performance of any entry submitted to ILSVRC2012-2014 (including entries using additional training data). 
+Given these ``optimistic'' results we show the easiest and harder classes for the object detection task, i.e., classes with best and worst results. The numbers in parentheses indicate average precision. Image classification and single-object localization results are shown in Figure~\ref{fig:bestworstclscats}.}
+\label{fig:bestworstdetcats}
+\vspace{0.5in}
+\end{figure*}
+
+\subsubsection{Qualitative examples of easy and hard  classes}
+
+Figures~\ref{fig:bestworstclscats} and~\ref{fig:bestworstdetcats} show the easiest and hardest classes for each task, i.e., classes with the best and worst results obtained with the ``optimistic'' models.
+
+For image classification, 121 out of 1000 object classes have $100\%$ image classification accuracy according to the optimistic estimate. Figure~\ref{fig:bestworstclscats} (top) shows a random set of 10 of them. They contain a variety of classes, such as mammals like ``red fox'' and animals with distinctive structures like ``stingray''.  The hardest classes in the image classification task, with accuracy as low as $59.0\%$, include metallic and see-through man-made objects, such as ``hook''  and ``water bottle,'' the material ``velvet''  and the highly varied scene class ``restaurant.''
+
+For single-object localization, the 10 easiest classes with $99.0-100\%$ accuracy are all mammals and birds. The hardest classes include metallic man-made objects such as ``letter opener'' and ``ladle'', plus thin structures such as ``pole'' and ``spacebar'' and highly varied classes such as ``wing''. The most challenging class ``spacebar'' has a only $23.0\%$ localization accuracy. 
+
+Object detection results are shown in Figure~\ref{fig:bestworstdetcats}. The easiest classes are living organisms such as ``dog'' and ``tiger'', plus ``basketball'' and ``volleyball''  with distinctive shape and color, and a somewhat surprising ``snowplow.'' The easiest class ``butterfly'' is not yet perfectly detected but is very close with $92.7\%$ AP. The hardest classes are as expected small thin objects such as  ``flute''  and ``nail'', and the highly varied ``lamp'' and ``backpack'' classes, with as low as $8.0\%$ AP.
+
+
+
+\subsubsection{Per-class accuracy as a function of image properties}
+\label{sec:imageproperties}
+
+We now take a closer look at the image properties to try to understand why current algorithms perform well on some object classes but not others. One hypothesis is that variation in accuracy comes from the fact that instances of some classes tend to be much smaller in images than instances of other classes, and smaller objects may be harder for computers to recognize. In this section we argue that while accuracy is correlated with object scale in the image, not all variation in accuracy can be accounted for by scale alone.
+
+For every object class, we compute its \emph{average scale}, or 
+the average fraction of image area occupied by an instance of the object class on the ILSVRC2012-2014 validation set.
+Since the images and object classes in the image classification and single-object localization tasks are the same,  we use the bounding box annotations of the single-object localization dataset for both tasks. In that dataset the object classes range from ``swimming trunks'' with scale of $1.5\%$ to ``spider web'' with scale of $85.6\%$. In the object detection validation dataset the object classes range from ``sunglasses'' with scale of $1.3\%$ to ``sofa'' with scale of $44.4\%$.
+
+Figure~\ref{fig:scalecats} shows the performance of the ``optimistic'' method as a function of the average scale of the object in the image. Each dot corresponds to one object class. We observe a very weak positive correlation between object scale and image classification accuracy: $\rho = 0.14$. For single-object localization and object detection the correlation is stronger, at $\rho = 0.40$ and $\rho = 0.41$ respectively. It is clear that not all variation in accuracy can be accounted for by scale alone. Nevertheless, in the next section we will normalize for object scale to ensure that this factor is not affecting our conclusions.
+
+\begin{figure*}
+\includegraphics[width=\linewidth]{opt_vs_scale.png}
+\caption{Performance of the ``optimistic'' method  as a function of object scale in the image, on each task. Each dot corresponds to one object class. Average scale (x-axis) is computed as the average fraction of the image area occupied by an instance of that object class on the ILSVRC2014 validation set.  ``Optimistic'' performance (y-axis) corresponds to  
+the best performance on the test set of any entry submitted to ILSVRC2012-2014 (including entries with additional training data). The test set has remained the same over these three years.
+We see that accuracy tends to increase as the objects get bigger in the image. However, it is clear that
+far from all the variation in accuracy on these classes can be accounted for by scale alone.
+}
+\label{fig:scalecats}
+\end{figure*}
+
+\subsubsection{Per-class accuracy as a function of object properties.}
+\label{sec:objectproperties}
+
+\iffalse
+\begin{figure}
+\begin{tabular}{c|c}
+\hline
+\multirow{2}{*}{{\bf Real-world size}} \\
+\hline
+XS: \includegraphics[width=0.48\linewidth]{ex_cls_real_size_1.png} &
+\includegraphics[width=0.32\linewidth]{ex_det_real_size_1.png} \\
+\hline
+
+\end{tabular}
+
+\end{figure}
+\fi
+
+Besides considering image-level properties we can also observe  how accuracy changes as a function of intrinsic object properties. We define three properties inspired by human vision: the real-world size of the object, whether it's deformable within instance, and how textured it is. For each property, the object classes are assigned to one of a few bins (listed below). These properties are illustrated in Figure~\ref{fig:diversity}.
+
+Human subjects annotated each of the 1000 image classification and single-object localization object classes from ILSVRC2012-2014 with these properties.~\citep{Russakovsky13}. By construction (see Section~\ref{sec:AnnotDetObjects}), each of the 200 object detection classes is either also one of 1000 object classes or is an ancestor of one or more of the 1000 classes in the ImageNet hierarchy. To compute the values of the properties for each object detection class, we simply average the annotated values of the descendant classes.
+
+
+In this section we draw the following  conclusions about state-of-the-art recognition accuracy as a function of these object properties:
+\begin{itemize}
+\item {\bf Real-world size:}  \emph{XS for extra small (e.g. nail), small (e.g. fox), medium (e.g. bookcase), large (e.g. car) or XL for extra large (e.g. church)} \\
+The image classification and single-object localization ``optimistic'' models performs better on large and extra large real-world objects than on smaller ones. The ``optimistic'' object detection model surprisingly performs better on extra small objects than on small or medium ones.
+\item {\bf Deformability within instance:} \emph{Rigid (e.g., mug) or deformable (e.g., water snake)}\\
+The ``optimistic'' model on each of the three tasks performs statistically significantly better on deformable objects compared to rigid ones. However, this effect disappears when analyzing natural objects separately from man-made objects.
+\item {\bf Amount of texture:} \emph{none (e.g. punching bag),  low (e.g. horse), medium (e.g. sheep) or high (e.g. honeycomb)}\\
+The ``optimistic'' model on each of the three tasks is significantly better on objects with at least low level of texture compared to  untextured objects.
+\end{itemize} 
+These and other findings are justified and discussed in detail below.
+
+
+
+
+\paragraph{Experimental setup.}
+We observed in Section~\ref{sec:imageproperties} that objects that occupy a larger area in the image tend to be somewhat easier to recognize. To make sure that differences in object scale are not influencing results in this section, we normalize each bin by object scale. We discard object classes with the largest scales from each bin as needed until the average object scale of  object classes in each bin across one property is the same (or as close as possible). For real-world size property for example, the resulting average object scale in each of the five bins is $31.6\%-31.7\%$ in the image classification and single-object localization tasks, and $12.9\%-13.4\%$ in the object detection task.\footnote{For rigid versus deformable objects, the average scale in each bin is $34.1\%-34.2\%$ for classification and localization, and $13.5\%-13.7\%$ for detection. For texture, the average scale in each of the four bins is $31.1\%-31.3\%$ for classification and localization, and $12.7\%-12.8\%$ for detection.}
+
+Figure~\ref{fig:props} shows the average performance of the ``optimistic'' model on the object classes that fall into each bin for each property. We analyze the results in detail below. Unless otherwise specified, the reported accuracies below are after the scale normalization step. 
+
+To evaluate statistical significance, we compute the $95\%$ confidence interval for accuracy using bootstrapping: we repeatedly sample the object classes within the bin with replacement, discard some as needed to normalize by scale, and compute the average accuracy of the ``optimistic'' model on the remaining classes. We report the $95\%$ confidence intervals (CI) in parentheses. 
+
+\begin{figure*}
+\centering \large
+\begin{tabular}{c}
+{\bf Real-world size} \\
+\includegraphics[width=0.57\linewidth]{opt_vs_real_size_bootstrap.png} 
+\vspace{0.02in} \\
+\vspace{0.01in}\\
+{\bf Deformability within instance}\\
+\includegraphics[width=0.57\linewidth]{opt_vs_is_deformable_bootstrap.png} \\
+\includegraphics[width=0.57\linewidth]{opt_vs_natural_deformable_bootstrap.png} 
+\vspace{0.02in}\\
+\vspace{0.01in}\\
+{\bf Amount of texture}\\
+\includegraphics[width=0.57\linewidth]{opt_vs_texture_bootstrap.png} \\
+\includegraphics[width=0.57\linewidth]{opt_vs_natural_texture_bootstrap.png} \\
+\end{tabular}
+\caption{Performance of the ``optimistic'' computer vision model as a function of object properties. The x-axis corresponds to object properties annotated by human labelers for each object class~\citep{Russakovsky13} and illustrated in Figure~\ref{fig:diversity}. The y-axis is the average accuracy of the ``optimistic'' model. Note that the range of the y-axis is different for each task to make the trends more visible. The black circle is the average accuracy of the model on all object classes that fall into each bin. We  control for the effects of object scale by normalizing the object scale within each bin (details in Section~\ref{sec:objectproperties}). The color bars show the model accuracy averaged across the remaining classes. Error bars show the $95\%$ confidence interval obtained with bootstrapping. Some bins are missing color bars because less than 5 object classes remained in the bin after scale normalization. For example, the bar for XL real-world object detection classes is missing because that bin has only 3 object classes (airplane, bus, train) and after normalizing by scale no classes remain. }
+\label{fig:props}
+\end{figure*}
+
+\paragraph{Real-world size.} In Figure~\ref{fig:props}(top, left) we observe that in the image classification task the ``optimistic'' model tends to perform significantly better on objects which are larger in the real-world.  The classification accuracy is $93.6\%-93.9\%$ on XS, S and M objects compared to $97.0\%$ on L and $96.4\%$ on XL objects. Since this is after normalizing for scale and thus can't be explained by the objects' size in the image, we conclude that either (1) larger real-world objects are easier for the model to recognize, or (2) larger real-world objects usually occur in images with very distinctive backgrounds.
+
+To distinguish between the two cases we look Figure~\ref{fig:props}(top, middle). We see that in the single-object localization task, the L objects are easy to localize at $82.4\%$ localization accuracy. XL objects, however, tend to be the hardest to localize with only $73.4\%$ localization accuracy. We conclude that the appearance of L objects must be easier for the model to learn, while XL objects tend to appear in distinctive backgrounds. The image background make these XL classes easier for the image-level classifier, but the individual instances are difficult to accurately localize. Some examples of L objects are ``killer whale,'' ``schooner,'' and ``lion,'' and some examples of XL objects are ``boathouse,'' ``mosque,'' ``toyshop'' and ``steel arch bridge.''
+
+In Figure~\ref{fig:props}(top,right) corresponding to the object detection task, the influence of real-world object size is not as apparent. One of the key reasons is that many of the XL and L object classes of the image classification and single-object localization datasets were removed in constructing the detection dataset (Section~\ref{sec:AnnotDetObjects}) since they were not basic categories well-suited for detection. There were only 3 XL object classes remaining in the dataset (``train,'' ``airplane'' and ``bus''), and none after scale normalization.We omit them from the analysis. The average precision of XS, S, M objects ($44.5\%$, $39.0\%$, and $38.5\%$ mAP respectively) is statistically insignificant from average precision on L objects: $95\%$ confidence interval of L objects is $37.5\%-59.5\%$. This may be due to the fact that there are only 6 L object classes remaining after scale normalization; all other real-world size bins have at least 18 object classes. 
+
+Finally, it is interesting that performance on XS objects of $44.5\%$ mAP (CI $40.5\%-47.6\%$) is statistically significantly better than performance on S or M objects with $39.0\%$ mAP and $38.5\%$ mAP respectively. Some examples of XS objects are ``strawberry,'' ``bow tie'' and ``rugby ball.''
+
+
+
+\paragraph{Deformability within instance.} In Figure~\ref{fig:props}(second row) it is clear that the ``optimistic'' model performs statistically significantly worse on rigid objects than on deformable objects. Image classification accuracy is $93.2\%$ on rigid objects (CI $92.6\%-93.8\%$), much smaller than $95.7\%$ on deformable ones. Single-object localization accuracy is $76.2\%$ on rigid objects (CI $74.9\%-77.4\%$), much smaller than $84.7\%$ on deformable ones. 
+Object detection mAP is $40.1\%$ on rigid objects (CI $37.2\%-42.9\%$), much smaller than $44.8\%$ on deformable ones.
+
+%For object detection, before scale normalization deformable objects are much easier than rigid ($52.2\%$ AP for deformable, $40.1\%$ AP for rigid), but after normalizing by scale the two bins %become much more similar at 
+
+We can further analyze the effects of deformability after separating object classes into ``natural'' and ``man-made'' bins based on the ImageNet hierarchy. Deformability is highly correlated with whether the object is natural or man-made: $0.72$ correlation for image classification and single-object localization classes, and $0.61$ for object detection classes. Figure~\ref{fig:props}(third row) shows the effect of deformability on performance of the model for man-made and natural objects separately.
+
+Man-made classes are significantly harder than natural classes: classification accuracy $92.8\%$ (CI $92.3\%-93.3\%$) for man-made versus $97.0\%$ for natural, localization accuracy $75.5\%$ (CI $74.3\%-76.5\%$) for man-made versus $88.5\%$ for natural, and detection mAP $38.7\%$ (CI $35.6-41.3\%$) for man-made versus $50.9\%$ for natural. However, whether the classes are rigid or deformable within this subdivision is no longer significant in most cases. For example, the image classification accuracy is $92.3\%$ (CI $91.4\%-93.1\%$) on man-made rigid objects and $91.8\%$ on man-made deformable objects -- not statistically significantly different. 
+
+There are two cases where the differences in performance \emph{are} statistically significant. First, for single-object localization, natural deformable objects are easier than natural rigid objects: localization accuracy of $87.9\%$ (CI $85.9\%- 90.1\%$) on natural deformable objects is higher than $85.8\%$ on natural rigid objects -- falling slightly outside the $95\%$ confidence interval. This difference in performance is likely because deformable natural animals tend to be easier to localize than rigid natural fruit.
+
+Second, for object detection, man-made rigid objects are easier than man-made deformable objects: $38.5\%$ mAP (CI $35.2\%-41.7\%$) on man-made rigid objects is higher than $33.0\%$ mAP on man-made deformable objects. This is because man-made rigid objects include classes like ``traffic light'' or ``car'' whereas the man-made deformable objects contain challenging classes like ``plastic bag,'' ``swimming trunks'' or ``stethoscope.''
+
+
+\paragraph{Amount of texture.} Finally, we analyze the effect that object texture has on the accuracy of the ``optimistic'' model. Figure~\ref{fig:props}(fourth row) demonstrates that the model performs better as the amount of texture on the object increases. The most significant difference is between
+the performance on untextured objects and the performance on objects with low texture. Image classification accuracy is $90.5\%$ on untextured objects (CI $89.3\%-91.6\%$),  lower than $94.6\%$ on low-textured objects. Single-object localization accuracy is $71.4\%$  on untextured objects (CI $69.1\%-73.3\%$),  lower
+than $80.2\%$ on low-textured objects. Object detection mAP is $33.2\%$  on untextured objects (CI $29.5\%-35.9\%$),  lower than $42.9\%$ on low-textured objects.
+
+Texture is correlated with whether the object is natural or man-made, at $0.35$ correlation for image classification and single-object localization, and $0.46$ correlation for object detection. To determine if this is a contributing factor, in Figure~\ref{fig:props}(bottom row) we break up the object classes into natural and man-made and show the accuracy on objects with no texture versus objects with low texture. We observe that the model is still statistically significantly better on low-textured object classes than on untextured ones, both on man-made and natural object classes independently.\footnote{Natural object detection classes are removed from this analysis because there are only 3 and 13 natural untextured and low-textured classes respectively, and none remain after scale normalization. All other bins contain at least 9 object classes after scale normalization.}
+
+\input{human}
+
+
+
+\iffalse
+
+Real-world size of the object has little influence on the accuracy of the model. 
+For image classification the model tends to perform slightly better on larger objects ($97.0\%$ accuracy on L objects and $96.4\%$ accuracy on XL objects) than on smaller ones ($93.6\%-93.9\%$ accuracy on XS, S and M objects) even after normalizing by average object scale in the image.  
+
+\fi
+
+\iffalse
+For image classification, the model tends to perform slightly better on large objects ($97.0\%$ accuracy) and extra large objects ($95.8\%$ accuracy) compared to $93.6-94.6\%$ accuracy on the extra small, small and medium objects. We can hypothesize that this is because the larger objects tend to occupy a larger part of the image, but this is actually not the case. While the average scale\footnote{Object scale is defined as the average fraction of image area occupied by an instance of that object class as in Section~\ref{sec:imageproperties}.} of extra small objects is  $31.7\%$, the average scale  of the other four bins is in the narrow range of $37.3\%-41.1\%$. Just to be sure that object scale is not influencing the results  we normalize the bins by object scale. We do so by 
+discarding object classes with the biggest scales from each bin until the bin has object classes with an average scale of $31.6\%-31.7\%$. The range of accuracy of extra small, small and medium real-world objects becomes smaller than before: $93.6-93.9\%$ accuracy compared to $93.6-94.6\%$ before, indicating that object scale plays a role for these objects. However, large and extra large objects continue to perform substantially better at $97.0\%$ accuracy and $96.4\%$ accuracy respectively, even after normalizing by object scale.
+
+For single-object localization we observe a different trend but also conclude that real-world size has little influence on performance, especially after normalizing by object scale. The single-object localization accuracy is $76.0\%$ for extra large objects, and $80.0-83.8\%$ for all others. After normalizing object scale, the accuracy on extra small and small objects becomes very close at at $80.0\%$ and $79.4\%$ respectively, 
+\fi
+
+\iffalse
+\todo{starting here}
+Figure~\ref{fig:props}
+
+Evaluate performance of this optimistic model as a function of 
+\begin{itemize}
+\item real-world size -- some pattern
+\item real-world size with normalized scale
+
+\item natural vs. man-made: natural are always easier, why?
+\item consider scale, are some smaller than others? normalize for scale within each group
+\item textured vs. non-textured: textured always easier
+\item is the natural vs. man-made trend just because of texture?
+\item plot, conclude that no, natural vs. man-made holds regardless of texture
+\item object texture (use labels from ICCV13 paper, merged together for detection categories) [[bar graph]]
+\item object real-world size [[bar graph]]
+\item deformability within instance (controlled by texture) [[bar graph]]
+\end{itemize}
+Plot each of these for each of the three tasks, write a paragraph or two of summary analysis
+
+
+\paragraph{Per-class accuracy as a function of object properties.}
+Besides looking at a small selection of easiest and hardest object classes we can also observer how
+accuracy changes as a function of intrinsic object properties. 
+
+\fi
+
+\iffalse
+
+
+
+\paragraph{Analysis of individual object instances.} 
+For every task
+\begin{itemize}
+\item show examples of images which the top 5 teams from ILSVRC2012-2014 all got correct (for detection, show specific instances)
+\item show examples of images which none of the teams got correctly
+\end{itemize}
+
+Take the winning detection entry of ILSVRC2014 and run Derek Hoiem's analysis on it
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%        CONCLUSIONS             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%                                           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conclusions}
+\label{sec:Conclusion}
+
+In this paper we described the large-scale data collection process of ILSVRC, provided a summary of the most successful algorithms on this data, and analyzed the success and failure modes of these algorithms. In this section we discuss some of the key lessons we learned over the years of ILSVRC, strive to address the key criticisms of the datasets and the challenges we encountered over the years, and conclude by looking forward into the future.
+
+\subsection{Lessons learned}
+
+The key lesson of collecting the datasets and running the challenges for five years is this: {\bf All human intelligence tasks need to be exceptionally well-designed.} We learned this lesson both when annotating the dataset using Amazon Mechanical Turk workers (Section~\ref{sec:Annot}) and even
+when trying to evaluate human-level image classification accuracy using expert labelers (Section~\ref{sec:ResultsHuman}).  The first iteration of the labeling interface was always bad -- generally meaning \emph{completely unusable}. If there was any inherent ambiguity in the questions posed (and there almost always was), workers found it and accuracy suffered. If there is one piece of advice we can offer to future research, it is to very carefully design, continuously monitor, and extensively sanity-check all crowdsourcing tasks. 
+
+The other lesson, already well-known to large-scale researchers, is this: {\bf Scaling up the dataset always reveals unexpected challenges}. From designing complicated multi-step annotation strategies (Section~\ref{sec:AnnotLocBbox}) to having to modify the evaluation procedure (Section~\ref{sec:Evaluation}), we had to continuously adjust to the large-scale setting. On the plus side, of course, the major breakthroughs in object recognition accuracy (Section~\ref{sec:Methods}) and the analysis of the strength and weaknesses of current algorithms as a function of object class properties ( Section~\ref{sec:ResultsICCV}) would never have been possible on a smaller scale.
+
+\subsection{Criticism}
+
+In the past five years, we encountered three major criticisms of the ILSVRC dataset and the corresponding challenge: (1) the ILSVRC dataset is insufficiently challenging, (2) the ILSVRC dataset contains annotation errors, and (3) the rules of ILSVRC competition are too restrictive. We discuss these in order.
+
+The first criticism is that the objects in the dataset tend to be large and centered in the images, making the dataset insufficiently challenging. In Sections~\ref{sec:LocStats} and \ref{sec:AnnotDetStats}  we tried to put those concerns to rest by analyzing the statistics of the ILSVRC dataset and concluding that it is comparable with, and in many cases much more challenging than, the long-standing PASCAL VOC benchmark~\citep{PASCALIJCV}.
+
+The second is regarding the errors in ground truth labeling. We went through several rounds of in-house post-processing of the annotations obtained using crowdsourcing, and corrected many common sources of errors (e.g., Appendix~\ref{sec:AppDetBbox}). The major remaining source of annotation errors stem from fine-grained object classes, e.g., labelers failing to distinguish different species of birds. This is a tradeoff that had to be made: in order to annotate data at this scale on a reasonable budget, we had to rely on non-expert crowd labelers. However, overall the dataset is encouragingly clean. By our estimates, $99.7\%$ precision is achieved in the image classification dataset (Sections~\ref{sec:AnnotClsAnnot} and~\ref{sec:ResultsHuman}) and $97.9\%$ of images that went through the bounding box annotation system have all instances of the target object class labeled with bounding boxes (Section~\ref{sec:AnnotLocBbox}).
+
+ The third criticism we encountered is over the rules of the competition regarding using external training data. In ILSVRC2010-2013, algorithms had to only use the provided training and validation set images and annotations for training their models. With the growth of the field of large-scale unsupervised feature learning, however, questions began to arise about what exactly constitutes ``outside'' data: for example, are  image features trained on a large pool of ``outside'' images in an unsupervised fashion allowed in the competition? After much discussion, in ILSVRC2014 we took the first step towards addressing this problem. We followed the PASCAL VOC strategy and created two tracks in the competition: entries using only ``provided'' data and entries using ``outside'' data, meaning \emph{any} images or annotations not provided as part of ILSVRC training or validation sets. However, in the future this strategy will likely need to be further revised as the computer vision field evolves. For example, competitions can consider allowing the use of any image features which are publically available, even if these features were learned on an external source of data.
+
+
+%Many traditional computer vision features, like SIFT~\citep{Lowe04}, were tuned to perform well on other image classification datasets. So by the same reasoning, one can %argue that. 
+ 
+
+\subsection{The future}
+
+Given the massive algorithmic breakthroughs over the past five years, we are very eager to see what will happen in the next five years. There are many potential directions of improvement and growth for ILSVRC and other large-scale image datasets.
+
+First, continuing the trend of moving towards richer image understanding (from image classification to single-object localization to object detection), the next challenge would be to tackle pixel-level object segmentation. The recently released large-scale COCO dataset~\citep{COCO} is already taking a step in that direction. 
+
+Second, as datasets grow  even larger in scale, it may become impossible to fully annotate them manually. The 
+scale of ILSVRC is already imposing limits on the manual annotations that are feasible to obtain: for example, we had to restrict the number of objects labeled per image in the image classification and single-object localization datasets. In the future, with billions of images, it will become impossible to obtain even one clean label for every image.  Datasets such as Yahoo's Flickr Creative Commons 100M,\footnote{\url{http://webscope.sandbox.yahoo.com/catalog.php?datatype=i&did=67}} released with weak human tags but no centralized annotation, will become more common.
+
+The growth of unlabeled or only partially labeled large-scale datasets implies two things. First, algorithms will have to rely more on weakly supervised training data. Second, even evaluation might have to be done \emph{after} the algorithms make predictions, not before. This means that rather than evaluating \emph{accuracy} (how many of the test images or objects did the algorithm get right) or \emph{recall} (how many of the desired images or objects did the algorithm manage to find), both of which require a fully annotated test set, we will be focusing more on \emph{precision}: of the predictions that the algorithm made, how many were deemed correct by humans. 
+
+We are eagerly awaiting the future development of object recognition datasets and algorithms, and are grateful that ILSVRC served as a stepping stone along this path. 
+
+
+\begin{acknowledgements}
+We thank Stanford University, UNC Chapel Hill, Google and Facebook for sponsoring the challenges, and NVIDIA for providing computational resources to participants of ILSVRC2014. 
+We thank our advisors over the years: Lubomir Bourdev, Alexei Efros, Derek Hoiem, Jitendra Malik, Chuck Rosenberg and Andrew Zisserman. We thank the PASCAL VOC organizers for partnering with us in running ILSVRC2010-2012.
+We thank all members of the Stanford vision lab for supporting the challenges and putting up with us along the way. Finally, and most importantly, we thank all researchers that have made the ILSVRC effort a success by competing in the challenges and by using the datasets to advance  computer vision. 
+\end{acknowledgements}
+
+\input{appendices}
+
+% BibTeX users please use one of
+\bibliographystyle{apalike}
+%\bibliographystyle{spbasic}      % basic style, author-year citations
+%\bibliographystyle{spmpsci}      % mathematics and physical sciences
+%\bibliographystyle{spphys}       % APS-like style for physics
+\bibliography{template}   % name your BibTeX data base
+
+% Non-BibTeX users please use
+%\begin{thebibliography}{}
+%
+% and use \bibitem to create references. Consult the Instructions
+% for authors for reference list style.
+%
+%\bibitem{RefJ}
+% Format for Journal Reference
+%Author, Article title, Journal, Volume, page numbers (year)
+% Format for books
+%\bibitem{RefB}
+%Author, Book title, page numbers. Publisher, place (year)
+% etc
+%\end{thebibliography}
+
+\end{document}
+% end of file template.tex

@@ -1,0 +1,40 @@
+\appendix
+
+\section{A Survey of Discrimination Types}
+Previous work has introduced many seemingly dissimilar notions of discrimination.  Here, we give a categorization of these in terms of disparate treatment or disparate impact.  Note that the notion of disparate impact is \emph{outcome focused}, i.e., it is determined based on a discriminatory outcome and, until a question of the legality of the process comes into play in court, is less concerned with \emph{how} the outcome was determined.  In the cases where previous literature has focused on the process, we will try to explain how we believe these processes would be caught under the frameworks of either disparate impact or disparate treatment, hence justifying both our lack of investigation into processes separately as well as the robustness of the existing legal framework.
+
+\subsection{Disparate Treatment}
+
+Disparate treatment is the legal name given to outcomes that are discriminatory due to choices made explicitly based on membership in a protected class.  In the computer science literature, this has previously been referred to as \textbf{blatant explicit discrimination} \cite{Dwork12Fairness}.  When the protected class is used directly in a model, this has been referred to as \textbf{direct discrimination} \cite{Kamishima12Fairness}.
+
+\paragraph{Reverse tokenism}  Dwork et al. describe a situation in which a strong (under the ranking measure) member of the majority class might be purposefully assigned to the negative class in order to refute a claim of discrimination by members of the protected class by using the rejected candidate as an example \cite{Dwork12Fairness}.  Under a disparate treatment or impact theory, this would \emph{not} be an effective way to hide discrimination, since many qualified members of the majority class would have to be rejected to avoid a claim of \textbf{disparate impact}.  If the rejection of qualified members of the majority class was done explicitly based on their majority class status, this would be categorized as \textbf{disparate treatment} \`{a} la the recent Ricci v. DeStefano decision \cite{Ricci09}.
+
+Note that the Ricci decision specifically focuses on an instance in which disparate impact was found and, as a response, the results of a promotion test were not put into place.  This was found to have disparate treatment against the majority class and presents an interesting circularity that any repair to disparate impact needs to address.
+
+\paragraph{Reduced utility}  Dwork et al. also describe a scenario in which outcomes would be more accurate and more beneficial to the protected class if their membership status was taken into account in the model \cite{Dwork12Fairness}.  Here there are two possible decisions.  If the membership status is explicitly used to determine the outcome then this \emph{may} be \textbf{disparate treatment}, however since the law is largely driven by the cases that are brought, if no individual was unjustly treated, then there might be no-one to bring a case, and so it's possible that explicitly using the protected status would not be considered disparate treatment.
+
+If the membership status is \emph{not} used and the protected class and majority class are not represented in close to equal proportion in the positive outcome, then this is \textbf{disparate impact}.  In either case, Dwork et al. might argue that individual fairness has not been maintained, since even if the protected class is proportionally represented, the wrong \emph{individuals} of that class may be systemically receiving the positive outcome.  It is possible to use the disparate impact framework to test for this as well.  Suppose that $X$ is the protected attribute, with classes $x_1$ and $x_2$.  Suppose that $P$ is the attribute which, when combined with $X$, determined who \emph{should} receive a positive outcome, such that the ``correct" outcomes are positive with values $x_1$ and $p_1$ or $x_2$ and $p_2$.  Then by considering the disparate impact over the classes $(x, p)$ in the joint distribution $(X, P)$, the disparate impact to some subset of population $X$ can be detected.  However, $P$ may be a status that is not legally protected, e.g., if $P$ are the grades of a student applying to college it is legal to take those grades into account when determining their acceptance status, so no illegal disparate impact has occurred.
+
+
+
+\subsection{Disparate Impact}
+
+Disparate impact (described formally earlier in this paper), is the legal theory that outcomes should not be different based on individuals' protected class membership, even if the process used to determine that outcome does not explicitly base the decision on that membership but rather on proxy attribute(s).  This idea has been a large point of investigation already in computer science and has appeared under many different names with slightly differing definitions, all of which could be measured as disparate impact.  These other names for disparate impact are listed below.
+
+\paragraph{Redlining}  A historic form of discrimination that uses someone's neighborhood as a proxy for their race in order to deny them services \cite{Dwork12Fairness, Kamishima12Fairness, Calders10NaiveBayes}.
+
+\paragraph{Discrimination Based on Redundant Encoding}  Membership in the protected class is not explicitly used, but that information is encoded in other data that is used to make decisions, resulting in discriminatory outcomes \cite{Dwork12Fairness}.
+
+\paragraph{Cutting off business with a segment of the population in which membership in the protected set
+is disproportionately high}  The generalized version of redlining \cite{Dwork12Fairness}.
+
+\paragraph{Indirect Discrimination} A model uses attributes that are not independent of membership in the protected class and generates a discriminatory outcome \cite{Kamishima12Fairness}.
+
+\paragraph{Self-fulfilling prophecy}  
+Under this scenario, candidates are brought in for interviews at equal rates based on their class status, but are hired at differing rates.  Dwork et al. state that this may be perceived as fair (by looking solely at the rates of interviews granted) and then could be later used to justify a lower rate of hiring among the protected class based on this historical data \cite{Dwork12Fairness}.  We avoid this problem by concentrating throughout on the \emph{outcomes}, i.e., the percent of each class actually hired.  With this perspective, this issue would be identified using the disparate impact standard.
+
+\paragraph{Negative Legacy}  Kamishima et al. discuss the issue of unfair sampling or labeling in the training data based on protected class status \cite{Kamishima12Fairness}.  If such negative legacy causes the outcomes to differ by membership in the protected class, then such bias will be caught under the disparate impact standard.  If negative legacy does not cause any differences to the outcome, then the bias has been overcome and no discrimination has occurred. 
+
+\paragraph{Underestimation}  Kamishima et al. also discuss the impact of a model that has not yet converged due to the data set's small size as a possible source of discrimination \cite{Kamishima12Fairness}.  Similarly to our understanding of negative legacy, we expect to catch this issue by examining the resulting model's outcomes under the disparate impact standard.
+
+\paragraph{Subset targeting}  Dwork et al. point out that differentially treated protected subgroups could be hidden within a larger statistically neutral subgroup \cite{Dwork12Fairness}.  This is a version of Simpson's paradox \cite{Pearl14Simpson}.  We can find such differential treatment by conditioning on the right protected class subset.  In other words, this is the same as one of our suggestions for how to choose $X$ in the repair process - consider multiple classes over their joint distribution as the protected attribute.
