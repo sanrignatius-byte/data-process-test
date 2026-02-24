@@ -1,0 +1,360 @@
+%\documentclass[twocolumn]{article}
+\documentclass[usenatbib]{mnras}
+%\usepackage{graphicx,fleqn,times,color}
+%\usepackage{multicol}
+%\usepackage[francais]{babel}
+\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+%\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+%\usepackage{hyperref}
+%\usepackage{pgfSweave}
+%\usepackage{wrapfig}
+%\usepackage{fancyhdr}
+%\setlength\parindent{0pt}
+%\usepackage{multirow}
+%\usepackage{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{ae,aecompl}
+\usepackage{subfig}
+
+
+\title[Yule-Simpson's paradox in Galactic Archaeology]
+  {Yule-Simpson's paradox in Galactic Archaeology}
+
+
+\author[I.~Minchev et al.]
+{I.~Minchev,$^{1}$
+G.~Matijevic,$^{1}$
+D.~W.~Hogg,$^{2,3,4,5,}$
+G.~Guiglion,$^{1}$
+M.~Steinmetz,$^{1}$
+\newauthor
+F.~Anders,$^{1}$
+C.~Chiappini,$^{1}$
+M.~Martig,$^6$
+A.~Queiroz,$^{1}$
+C.~Scannapieco$^{7}$ 
+\\
+$^{1}$Leibniz-Institut f\"ur  Astrophysik Potsdam (AIP), An der Sternwarte 16, 14482 Potsdam, Germany\\
+$^{2}${Center for Cosmology and Particle Physics, Department of Physics, New York University, 726 Broadway, New York, NY 10003, USA}\\
+$^{3}${Center for Data Science, New York University, 60 Fifth Ave, New York, NY 10011, USA}\\
+$^{4}${Max-Planck-Institut f\"ur Astronomie, K\"onigstuhl 17, D-69117 Heidelberg}\\
+$^{5}${Flatiron Institute, Simons Foundation, 162 Fifth Ave, New York, NY 10010, USA}\\
+$^6$Astrophysics Research Institute, Liverpool John Moores University, 146 Brownlow Hill, Liverpool L3 5RF, UK\\
+$^7$Universidad de Buenos Aires, Facultad de Ciencias Exactas y Naturales, Departamento de F\'sica. Buenos Aires, Argentina
+}
+
+
+
+\pagerange{\pageref{firstpage}--\pageref{lastpage}} \pubyear{2019}
+
+
+
+\pubyear{2019}
+
+\begin{document}
+\label{firstpage}
+\pagerange{\pageref{firstpage}--\pageref{lastpage}}
+\maketitle
+
+
+\begin{abstract}
+
+
+Simpson's paradox, or Yule-Simpson effect, arises when a trend appears in different subsets of data but disappears or reverses when these subsets are combined. We describe here seven cases of this phenomenon for chemo-kinematical relations believed to constrain the Milky Way disk formation and evolution. We show that interpreting trends in relations, such as the radial and vertical chemical abundance gradients, the age-metallicity relation, and the metallicity-rotational velocity relation (MVR), can lead to conflicting conclusions about the Galaxy past if analyses marginalize over stellar age and/or birth radius. It is demonstrated that the MVR in RAVE giants is consistent with being always strongly negative, when narrow bins of [Mg/Fe] are considered. This is directly related to the negative radial metallicity gradients of stars grouped by common age (mono-age populations) due to the inside-out disk formation. The effect of the asymmetric drift can then give rise to a positive MVR trend in high-[$\alpha$/Fe] stars, with a slope dependent on a given survey's selection function and observational uncertainties. We also study the variation of lithium abundance, A(Li), with [Fe/H] of AMBRE:HARPS dwarfs. A strong reversal in the positive A(Li)-[Fe/H] trend of the total sample is found for mono-age populations, flattening for younger groups of stars. Dissecting by birth radius shows strengthening in the positive A(Li)-[Fe/H] trend, shifting to higher [Fe/H] with decreasing birth radius; these observational results suggest new constraints on chemical evolution models.
+This work highlights the necessity for precise age estimates for large stellar samples covering wide spatial regions. 
+\end{abstract}
+
+
+\begin{keywords}
+Galaxy: abundances -- Galaxy: disc -- Galaxy: kinematics and dynamics -- Galaxy:
+stellar content -- Galaxy: evolution.
+\end{keywords}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+\label{sec:intro}
+
+Galactic Archaeologists use the observed stellar kinematics, chemical abundances, and derived ages as fossil records to recover the chemo-dynamical history of the Milky Way \citep{freeman02, bland-hawthorn10, rix13, binney13, minchev16a, hogg16}. Age information is by far the hardest one to obtain, yet extremely important to break degeneracies among different chemical evolution models \citep{miglio17}.
+
+To infer the Galactic disk history, we rely on observed correlations, such as  the mean stellar metallicity\footnote{As commonly done in the literature, throughout this work we use 'metallicity' to mean the iron fraction [Fe/H], not [M/H] - the overall metallicity of a star, defined as the total amount of elements heavier than Helium.}, [Fe/H], as a function of Galactic disk radius. The negative metallicity gradient observed today suggests that the disk has formed inside out \citep{matteucci89}. The observational situation is improving rapidly: With the expansion of the disk coverage around the Sun thanks to a number of Galactic surveys, it has become possible in recent years to identify a number of new chemo-kinematical trends. 
+
+For example, an inversion of the radial metallicity gradient from negative to positive (and in [$\alpha$/Fe] gradient from positive to negative) for samples at increasingly larger distance from the disk midplane, $|z|$, has been observed in most large Milky Way surveys (e.g., SEGUE - \citealt{cheng12a}, RAVE - \citealt{boeche13b}, APOGEE - \citealt{anders14}, Gaia-ESO - \citealt{recio-blanco14}, LAMOST - \citealt{wang19}), explained by \cite{mcm14} (see also \citealt{rahimi14, miranda16, ma17, schonrich17}) as the effect of inside-out disk formation and disk flaring (increasing disk thickness with Galactocentric radius) of mono-age populations (Fig.~10 in \citealt{mcm14}). It was shown that gradient inversion can result from the variation in the stellar age distribution with radius: at large $|z|$ stars that are old, metal-poor, and  [$\alpha$/Fe]-rich dominate in the inner disk (due to the inside-out formation), while younger, more metal-rich, and more [$\alpha$/Fe]-poor stars are more abundant in the outer disk (present at large $|z|$ thanks to disk flaring). This naturally results in a positive metallicity (and a negative [$\alpha$/Fe]) gradient at large $|z|$, although for groups of stars of common age (mono-age populations) the gradient is always negative.
+
+Another example of a trend that can be linked to the Galaxy's past is disk flaring (e.g., \citealt{kazantzidis08, bovy16, kawata17, wang18, bland-hawthorn16}). Disk flaring can be related to the dynamical effect of merging satellites, e.g., the Sagittarius dwarf \citep{laporte18a, thomas19}. Using two suites of simulations of galactic disk formation in the cosmological context, \cite{minchev15} showed that flaring is always present for mono-age populations. When considering the total stellar population, however, it was found that the disk flaring was lost or at least significantly decreased. This was explained by a combination of the nested flares of mono-age populations, where younger groups of stars flare and dominate in density at progressively larger radii as a result of the inside-out disk formation.
+
+As a final example, \cite{mcm13} (hereafter MCM13) found that in the solar vicinity resulting from their chemo-dynamical model the variation of [Fe/H] with vertical distance from the disk midplane, $|z|$, showed a strong negative gradient ($\sim-0.3$~dex/kpc) but almost flat relations for mono-age populations (see their Fig.~9, top). This phenomenon could be understood by taking into account that the fraction of metal-poor old stars increases with $|z|$, thus giving rise to a negative gradient for the total population (see results with SEGUE G-dwarfs -- \citealt{schlesinger12}, RAVE -- \citealt{boeche13b}, and LAMOST data -- \citealt{wang19}).
+
+What all of the above examples have in common is that a relation resulting from the total sample is weakened, erased, or even inverted, compared to the trends in subsets grouped by considering a third variable (in this case, age).
+
+This phenomenon is known as Simpson's, or Yule-Simpson's, paradox (hereafter, YSP), in classical statistics (e.g., \citealt{yule02, simpson51,smith12, thompson06}). It has mostly been described in social sciences, medicine, biology, and baseball batting averages, but also in quantum mechanics \citep{li13, selvitella17}. YSP arises when both the independent and dependent variables of a given relation depend on yet a third variable, often referred to as a "lurking" or "confounding" variable (in the above cases  - age). A lurking variable is one for which data are unavailable, but it nevertheless has influence on other variables in the study. See, for example, \cite{brase16} for more information on the topic.
+
+Five cases of the YSP, although not identified as such, occurring in the field of Galactic Archaeology have been described in several works in the last five years \citep{mcm13,mcm14,minchev14,minchev15,minchev18}. We here elaborate on those and discuss two new cases. We will refer to a "weak" case of Simpson's paradox when a relation is simply flattened or weakened and a "strong" case when it is completely inverted.
+
+In \S\S\ref{sec:grad}-\ref{sec:mvr} we make use of the Milky Way chemo-dynamical model by MCM13, who used a hybrid technique to combine a classical semi-analytical chemical evolution model \citep{chiappini09a} with a simulation in the cosmological context \citep{martig12}. The model has been shown to comply with a range of observational constraints, as well as predict new ones (for a summary, see \citealt{minchev16a}). In \S\ref{sec:grad} and \S\ref{sec:flaring} we present YSP cases for global Galactic disk chemo-kinematical trends. In \S\S\ref{sec:rb}-\ref{sec:li} we will be concerned with relations of samples confined to the solar neighborhood.
+
+
+\begin{figure}
+\centering
+\includegraphics[width=0.9\linewidth, angle=0]{flaring2.png}
+\caption{
+{\bf Top:} Variation of disk scale-height, $h_z$, with galactic radius for a cosmological simulation (see text).
+Color lines show mono-age populations, as indicated. Bins of width one~Gyr are used and exponential models at different radii are fited out to $|z|=h_d$, where $h_d$ is the disk scale-length. Overlaid also are the thin (short-dash curve) and thick (long-dash curve) disks obtained by fitting a sum of two exponentials to stars of all ages. No significant flaring is found for the thin and thick disks. 
+{\bf Bottom:} Disk surface density for mono-age populations showing that older samples are confined to the inner disk as a result of the inside-out disk formation. Flaring is lost in the total population since younger disks dominate in density at progressively larger radii. 
+}
+\label{fig:flaring}
+\end{figure}
+
+
+\section{Examples of Simpson's paradox}
+
+
+\subsection{Variation of disk thickness with Galactocentric radius}
+\label{sec:flaring}
+
+
+As a first illustration of YSP, we consider a cosmological zoom-in hydrodynamical simulation, using initial conditions from one of the Aquarius Project haloes \citep{springel08, scannapieco09} and a Tree-PM SPH code. The spatial and mass resolutions are 300~pc and $4.4\times10^5$~M$_{\odot}$, respectively. The stellar mass is $5.5\times10^{10} M_{\odot}$ and the disk scale-length is $h_d=4$~kpc. More details about this simulation can be found in \cite{aumer13b} (model Aq-D-5).
+
+In the top panel of Fig.~\ref{fig:flaring} color curves show the variation of disk scale-height, $h_z$, with galactic radius, $r$, for mono-age populations of width 1~Gyr and median values as seen in the color bar. Single exponential models were fitted to get $h_z$ in radial bins of width $0.5h_d$ and distance from the disk midplane $h_d$ (see details in \citealt{minchev15}). Strong disk flaring (an increase of scale-height with radius) can be seen for the oldest mono-age populations, decreasing for younger subsamples. When the total stellar population is considered, the vertical disk density at all radii requires a sum of two exponentials for a proper fit \citep{gilmore83}. Intriguingly, the resulting thin (short-dash curve) and thick (long-dash curve) disks do not show much flaring, even though they are composed of the strongly flared mono-age subsamples. This is an example of geometrical (also referred to as structural or morphological) definition of galactic thin and thick disks, as opposed to separation by age or by chemistry in the [$\alpha$/Fe]-[Fe/H] plane for which "low-" and "high-[$\alpha$/Fe] sequences", respectively, are more appropriate names (see discussion in \citealt{martig16b}).
+
+This figure highlights a simple example of a "weak" case of YSP, where the strong variation in $h_z$ with radius for mono-age subsamples is lost when the total population is considered. As discussed by \cite{minchev15}, this results because the flaring of younger samples typically dominate at larger radii due to the inside-out disk formation. These "nested flares" constitute a geometric thick disk which does not flare, or in which the flaring is strongly reduced, consistent with the lack of disk flaring found in observations of external galaxies \citep{vanderkruit82, degrijs98, comeron11}. It can be seen in the bottom panel of Fig.~\ref{fig:flaring} that, indeed, the density of older mono-age groups drops much faster with radius and it flattens for younger populations.
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.8\linewidth, angle=0]{mg_grad.png}
+\caption{
+$\bf Top:$ Variation of azimuthally averaged [Mg/Fe] gradient with distance from the disk midplane for the MCM13 model. Dashed black curves show the [Mg/Fe] variation with Galactic radius for stellar samples at two different distances from the disk midplane, $|z|$, as marked in each panel. Different colors correspond to different age groups, as indicated in the color bar. The height of the colored rectangles reflects the stellar surfaces density of each radial bin. The positive gradient seen in the total population close to the plane (left panel) is reversed at high $|z|$ (right panel). The gradient of each individual age-bin, however, is positive or flat (for the oldest age group). 
+{\bf Bottom:} Same as above, but with convolved uncertainties as expected from precise observations: $\rm\delta[Mg/Fe]=0.05$~dex and $\rm\delta age=20\%$. 
+This figure illustrates both a weak (left column) and a strong case (right column) of Simpson's paradox.
+}
+\label{fig:mgfe}
+\end{figure*}
+
+
+This model of thick disk formation predicts a negative radial age gradient in geometrically-defined thick disks, which was found to be indeed the case for the Milky Way using APOGEE data \citep{martig16b}. Flaring in Milky Way stellar populations of limited age range has been found by \cite{kalberla14} (Red Clump), \cite{feast14} (Cepheids), \cite{carraro15} (young clusters) and in LAMOST \citep{wan17,wang18, xiang18} and APOGEE \citep{mackereth17} mono-age populations. A proper Milky Way disk mass model is needed to asses the interplay among the flares of different mono-age populations on the overall scale-height variation with radius (that of the total disk mass).
+
+Flaring in mono-age populations from a theoretical point of view appears to be unavoidable, shown to result from merger perturbations \citep{kazantzidis08, villalobos08, martig14a}, misaligned gas infall \citep{scannapieco09, roskar10}, and reorientation of the disk rotation axis \citep{aumer13a}. A thick disk model incorporating disk flaring is attractive because flaring becomes a necessity rather than a nuisance (as often seen in numerical works in the past).
+
+As will be shown next, inside-out disk formation combined with disk flaring can also explain the inversion of chemical abundance gradients with distance from the disk midplane.
+
+$\bullet$ {\bf Possible erroneous interpretation in the absence of age measurements:} The Milky Way disk presents no flaring and thus dynamical mechanisms known to flare disks were not at work during its evolution. This is not true if you slice by age - a better interpretation is that mono-age disks always flare but flaring is lost in the total (or wide age range) sample due to the inside-out forming disk. This is a weak YSP case.
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.8\linewidth, angle=0]{rb_sigz.png}
+\caption{
+{\bf Left:} Predicted vertical velocity dispersion, $\sigma_z$, as a function of mean birth radius, $r_{birth}$, for the simulated solar neighborhood stellar sample of the MCM13 model ($d<0.5$~kpc). The black-dashed line shows the total population, suggesting that the hottest stars were born in the inner disk. Curves of different colors correspond to different age groups, with medians shown in the color bar. For the oldest samples stars arrive at the solar vicinity much cooler than stars born in-situ, due to the stronger effect of mergers on the outer disk and the decreasing probability of migration with increasing velocity dispersion. The large positive gradient found for old populations (red colors) turns negative for the youngest samples (blue and black), indicating a quiescent regime, where stars arriving from the inner disk heat slightly the local velocity distribution. {\bf Right:} Same as top but resulting from HARPS-GTO dwarf stars (ages from \citealt{anders18}, birth radii from \citealt{minchev18}). This plot, resulting from observations, is remarkably similar to the model shown in the left panel.
+}
+\label{fig:rbsigz}
+\end{figure*}
+
+
+\subsection{Inversion in radial abundance gradients}
+\label{sec:grad}
+
+As discussed in \S\ref{sec:intro}, inversion in the [$\alpha$/Fe] (e.g., [Mg/Fe]) gradient with distance from the disk midplane has been found in a number of Galactic surveys. We investigate the origin of this in the MCM13 model.
+
+The top left panel of Fig.~\ref{fig:mgfe} shows the radial [Mg/Fe] gradient for the MCM13 model (similar to Fig.~10 by \citealt{mcm14}). The black-dashed curve results from the total stellar population with a maximum distances from the disk midplane of $|z|=0.3$~kpc. Different colors correspond to different mono-age populations, as indicated. Although the younger mono-age groups have well-defined positive slopes, that of the total population is strongly flattened inside $r\lesssim8$~kpc. This can be understood if we consider the relative stellar surface density as a function of radius for each mono-age population, which is indicated by the height of the colored rectangles (conveying the same information as the disk surface density variations with radius shown in the bottom panel of Fig.~\ref{fig:flaring}). The old stars -- red and orange bins -- dominate in the inner disk, causing the mean [Mg/Fe] at $r\lesssim8$~kpc to go up. On the other hand, the younger populations dominate in the outer disk, as evident from the total mean closely following the $\rm age=5$~Gyr line.
+
+The top right panel of Fig.~\ref{fig:mgfe} is similar to the left one, but for a sample at $0.8<|z|<1.5$~kpc. For this significantly higher distance from the disk midplane, the density of old stars is found to strongly dominates at small radii, causing an increase in mean [Mg/Fe] by about $0.2$~dex compared to the sample confined to the disk plane and, thus, a negative gradient.
+
+The bottom row of Fig.~\ref{fig:mgfe} presents the effect of uncertainties, as expected from high-resolution spectroscopy (e.g., APOGEE - \citealt{majewski17}, WEAVE - \citealt{dalton12}, 4MOST - \citealt{dejong12}) $\rm\delta[Mg/Fe]=0.05$~dex and asteroseismic ages (e.g., CoRoT, K2 - \citealt{howell14}, TESS - \citealt{ricker15} and PLATO - \citealt{rauer14}) $\rm\delta age=20\%$, drawn from a Gaussian distribution. Interestingly, the gradient of the total sample is only minimally affected, while a decrease of $\sim0.05$~dex is found in the oldest mono-age group.
+
+The above illustrates a "strong" YSP case, resulting from the effect of inside-out disk formation combined with disk flaring (see \S\ref{sec:flaring}), giving rise to a different mixture of ages as a function of Galactic radius at different $|z|$ -- older, [$\alpha$/Fe]-rich stars are confined to the inner disk and large $|z|$, while younger, [Mg/Fe]-poor stars dominate above the disk plane in the outer disk. Similar explanation holds for the inversion of [Fe/H] gradient from negative close to the disk plane, to positive above it.
+
+$\bullet$ {\bf Possible erroneous interpretation in the absence of age measurements:} 
+(1) The sign shift in the [$\alpha$/Fe] and [Fe/H] radial gradients found in observations at larger distance form the disk midplane resulted from an outside-in (thick) disk formation or a dominating accreted population at large $|z|$. A better interpretation, according to our model, may be that [Mg/Fe] ([Fe/H]) depends negatively (positively) on $r$ only when one marginalizes over age. This is a strong YSP case. (2) The flattened gradient close to the disk plane is in disagreement with classical chemical evolution models. Steeper gradients are expected in mono-age populations. This is a weak YSP case.
+
+
+\subsection{Birth radius vs vertical velocity dispersion}
+\label{sec:rb}
+
+We now demonstrate that disk flaring and heating as a function of radius can be seen in the local velocity distribution thanks to the effect of stellar radial migration.
+
+In the left panel of Fig.~\ref{fig:rbsigz} we show the variation of the vertical velocity dispersion, $\sigma_z$, with birth radius, $r_{birth}$, for stars found in the simulated solar neighborhood of the MCM13 model. $\sigma_z$ is computed as the standard deviation of the vertical velocity in each radial bin. The black-dashed curve shows the total population, giving the impression that the hottest stars in the solar vicinity today have arrived from the inner disk. Looking at this relation it may be tempting to conclude that it is radial migration of hot inner disk stars that give rise to a thick disk. However, dissecting by age (color-coded curves) an opposite relation is revealed for the oldest stellar populations showing that stars born at 2-3 kpc have half the velocity dispersion of coeval populations born at the solar radius. This predicts that the kinematically hottest stars near the Sun today were born locally or in the outer disk - a natural result of the flaring in mono-age disks (see \S\ref{sec:flaring}), which is unavoidable in simulations for different reasons, the most likely possibly being perturbations from orbiting satellites.
+
+The strong positive slope seen in old stars flattens toward redshift zero (present time), becoming slightly negative for age $\lesssim4$~Gyr, in agreement with the expected effect of migration in quiescent disks \citep{minchev12b,roskar13}. Note that the flaring induced by outward migration of stars with larger vertical actions and inward migration of outer-disk-born-stars with small vertical actions ($\sim50\%$ increase in $h_z$ in $\sim4$ disk scale-lengths, see \citealt{minchev12b}) is trumped by the impact of mergers and the effect of a cosmological context in general, in which case flaring results from locally born stars, i.e., non-migrators.
+
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.8\linewidth, angle=0]{fe_z.png}
+\caption{
+{\bf Left:} Mean [Fe/H] as a function of distance from the disk midplane, $|z|$, for stars in the simulated solar vicinity of the MCM13 model. The strong negative trend seen in the total population (black-dashed curve) is consistent with SEGUE G-dwarf data (see Fig.~14 in MCM13). In contrast, mono-age populations show much weaker variations. 
+{\bf Right:} Same as left, but including uncertainties of $\rm\delta age=20\%$ and $\rm\delta[Fe/H]=0.1$~dex, considering a Gaussian probability distribution. While the mean of the total sample is not much affected, a notable negative gradient has appeared for mono-age population older than $\sim4$~Gyr (cyan through red curves).
+}
+\label{fig:fez}
+\end{figure*}
+
+The $r_{birth}-\sigma_z$ relation was first presented in order to understand why the velocity dispersion increase with [Mg/Fe] in RAVE Giants and SEGUE G-dwarfs showed an abrupt drop at the highest [Mg/Fe] end \citep{minchev14}. It was found that the observations could be explained by kinematically cool, old (thus low metallicity and high [Mg/Fe]) stars arriving to the solar neighborhood from low Galactic radii ($\sim2-4$ kpc). Indeed, larger changes in guiding radii (or angular momenta) are expected for the coldest subpopulations in a given age group (e.g., \citealt{vera-ciro14, daniel18}).  
+
+\cite{minchev18} recently presented a largely model-independent method for estimating stellar birth radii based on age and [Fe/H] measurements, using AMBRE:HARPS \citep{delaverny13,depascale14, hayden17} and HARPS-GTO data \citep{adibekyan12, delgadomena17} combined with stellar ages computed with the StarHorse code \citep{santiago16, queiroz18}, as described in \cite{anders18}. This opened the possibility to test the $r_{birth}-\sigma_z$ relation in observations. 
+
+In the right panel of Fig.~\ref{fig:rbsigz} we show $\sigma_z$ vs $r_{birth}$ using HARPS-GTO data for six mono-age populations with median values indicated in the color bar and a bin width $\rm \Delta age=2$~Gyr. Also shown are typical error bars, corresponding to two standard deviations of 1000 realizations in a bootstrapping calculation. As in \cite{minchev18}, we imposed the following quality criteria on ages and abundances: $\rm\delta[Mg/Fe]<0.07$~dex, $\rm\delta age/age<0.25$ or $\rm\delta age<1$~Gyr, resulting in a sample of 603 stars.
+
+The trends in the data seen in the right panel of Fig.~\ref{fig:rbsigz} are remarkably similar to the MCM13 model expectation shown in the left panel. The result that stars born at larger radii are kinematically hotter than those born at smaller radii is remarkable as it provides, for the first time, observational evidence that outward migration cools the local disk, rather than heating it, as has been proposed in the past (e.g., \citealt{schonrich09b, roskar13}). This finding supports work showing that migration does not contribute to thick disk formation (e.g., \citealt{minchev12b, mcm14, vera-ciro14, grand16}, see also discussion in \S\ref{sec:intro}), except in redistributing stars heated by external mechanisms \citep{quinn93, villalobos08} or turbulent gas clouds at high redshift \citep{bournaud09,forbes12}.
+
+$\bullet$ {\bf Possible erroneous interpretation in the absence of age measurements:} The trend in the total population of the $r_{birth}-\sigma_z$ relation suggests that migration from the inner disk created the (local) Milky Way thick disk. This is not true if we slice by age, finding exactly the opposite trend for old and intermediate ages in both model and data. A better interpretation is that hotter stars arrived from outer radii due to disk flaring. The outward migrators kinematically cool the local disk. This is a strong YSP case.
+
+
+\subsection{The vertical metallicity gradient}
+\label{sec:fez}
+
+The left panel of Fig.~\ref{fig:fez} presents the mean [Fe/H] as a function of distance from the disk midplane, $|z|$, for stars in the simulated solar vicinity of the MCM13 model. A negative trend in the total population (black-dashed curve) is seen, consistent with SEGUE G-dwarf \citep{schlesinger12, rix13} and RAVE data \citep{boeche13b}. In contrast, mono-age populations (color-coded curves) show much weaker variations - some decrease for old and an increase for the two youngest age bins. 
+
+In the right panel of Fig.~\ref{fig:fez} we show the effect of observational uncertainties, considering $\rm\delta age=20\%$ and $\rm\delta[Fe/H]=0.1$~dex and a Gaussian probability distributions (as in Fig.~\ref{fig:mgfe}). Similarly to the radial [Mg/Fe] gradients (\S\ref{sec:grad}), the observational error does not seem to affect much the total sample, however, notable negative trends appear for mono-age populations older than $\sim4$~Gyr (cyan through red curves). A remarkable drop of $\approx0.3$ and $\approx0.4$ dex at high $|z|$ is seen for the green and cyan curves, respectively. Recently, \cite{ciuca18} found similar negative trends in the older populations in RAVE DR5 \citep{kunder17} data, which, given the results of this section, may be caused by observational uncertainties.
+
+The explanation for the negative vertical metallicity gradient in the total population is again related to the interplay among stellar ages, chemical enrichment, and stellar density, similarly to the radial [Mg/Fe] gradient inversion with $|z|$ (\S\ref{sec:grad}). Younger metal-rich mono-age groups dominate closer to the disk midplane, while older metal-poor ones are more abundant at larger $|z|$. The fraction of younger to older stars varies with Galactic radius. This both causes a variation in the vertical metallicity gradient (see, e.g., \citealt{hayden14} using APOGEE data) and an inversion of [Fe/H] and [Mg/Fe] gradients with increasing $|z|$ discussed in \S\ref{sec:grad}. Depending on the observational biases of different dataset, different slopes in [Fe/H] (or [M/H]) with $|z|$ would be measured in the total population as summarized by \cite{schlesinger14}, which may result in different interpretations.
+
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.9\linewidth, angle=0]{mvr.png}
+\caption{
+Comparison between the metallicity-rotational velocity relation (MVR) in RAVE-TGAS giants and the MCM13 model. 
+{\bf Left column:} RAVE-TGAS data with S/N$>70$ and $d<1$ kpc. The black-dashed curve in the top panel shows the rotational velocity as a function of metallicity for the total population, while color-coded solid curves correspond to different median [Mg/Fe] bins, as indicated in the color bar. The bottom panel shows the distribution of the total (black-dashed) and [Mg/Fe] sub-populations. Stars with $V_\phi<100$~km/s have been discarded in both data and model.
+{\bf Middle column:} Same as left, but for the MCM13 model simulated neighborhood, including velocity and abundance uncertainties (see text). For both the data and model an S-shape in the total population MVR is seen, as well as a remarkably good match among different sub-populations.
+%
+{\bf Right column:} Same as middle, but {\it excluding} uncertainties. It can be seen that for each [Mg/Fe] sub-population the slope is negative. The MVR can become positive at [Fe/H]$<0$ if (1) a sample spans a large range of [Mg/Fe] or (2) uncertainties are not sufficiently small.
+}
+\label{fig:mvr}
+\end{figure*}
+
+
+\cite{ciuca18} reasoned that the mild negative gradient seen in the oldest population suggested mono-age disks must have been born flared, which after radial mixing would bring hotter, metal-poor stars from the outer disk to the solar neighborhood, for a given mono-age population. The effect will be the same, however, even if mono-age disks were heated subsequently by external perturbations, i.e., the same scenario producing the nested flares in Fig.~\ref{fig:flaring}. The slightly positive gradient in the youngest populations then signifies the opposite effect - migrators from the inner disk weakly heat the local disk, while those arriving from the outer disk cool it, mostly cancelling the overall contribution (as seen in Fig.~5 by \citealt{minchev12b} and in the negative slope of the youngest stars in Fig.~\ref{fig:rbsigz}). The latter effect results only in disk evolution lacking external perturbations. 
+
+This section presents a weak YSP case.
+
+
+\subsection{The metallicity-velocity relation (MVR)}
+\label{sec:mvr}
+
+
+A correlation between the observed total metallicity, [M/H], and rotational velocity in the Galactic plane, $V_\phi$, of stars in the solar neighborhood was already reported by \cite{carney90}. \cite{haywood08} suggested that this metallicity-velocity relation (MVR), can serve as a test for the amount of stars migrated into the solar neighborhood. He showed that metal-poor solar neighborhood stars at low [$\alpha$/Fe] possess large angular momenta. This meant that they were visitors from the outer disk, currently near the Sun on their pericenters. \cite{schonrich09a} argued that the presence of a negative correlation in the MVR for stars in the chemically defined thin disk (or more correctly, the low-[$\alpha$/Fe] sequence) is an indication of migration. Using a compilation of data for stars in the solar neighborhood, \cite{navarro11} found a flat MVR for low-[$\alpha$/Fe] stars, concluding that migration in the solar neighborhood was unimportant. \cite{lee11} found a negative relation for low-[$\alpha$/Fe] stars, in contrast to \cite{navarro11}. A positive slope in the MVR for high-[$\alpha$/Fe] stars was described by \cite{spagna10}, \cite{lee11}, \cite{kordopatis11}, and \cite{adibekyan13}. More recently, \cite{allende-prieto16} used the APOGEE-TGAS sample which utilizes the Gaia DR1 data \citep{gaia16}, confirmed the positive and negative slopes of the high- and low-[$\alpha$/Fe] stellar populations in the local disk, respectively. 
+
+It will be shown below that the positive slope in the MVR of high-[$\alpha$/Fe] stars spanning a wide range in age is just another strong YSP case resulting from the combination of MVRs of mono-age (or mono-[Mg/Fe]\footnote{[$\alpha$/Fe] is a good proxy for age for samples confined to a small radial bin \citep{haywood13, bergemann14}, but not for data sets spanning large Galactic radii \citep{minchev17}.}) populations with well-defined negative slopes.\footnote{These results were first presented at the RAVE collaboration meeting in Ljubliana, Slovenia in 2014, using RAVE-DR4 \citep{kordopatis13b}.}
+
+We use a subsample from RAVE DR5 \citep{kunder17} with high-quality chemical and kinematical information. We selected a sample of giant stars close to a random magnitude-limited sample as done in \cite{minchev14}. We excluded giants with $\rm log(g) < 0.5$ to avoid  possible effects due to the boundaries of the learning grid used for the automated parameterization, and considered stars in the temperature range $\rm 4000 < T_{eff} < 5500$~K (thus avoiding horizontal branch stars; see \citealt{boeche13a}). Our final sample consists of stars with signal to noise S/N$>70$ and a distance from the Sun $d<1$ kpc.
+
+The top-left panel of Fig.~\ref{fig:mvr} presents the MVR for our RAVE-TGAS sample. The total population (black-dashed curve) shows a distinct S-shape rotated by $\sim90^\circ$. A positive trend is found in the range ${\rm-1<[Fe/H]<0}$, while a negative one can be seen at ${\rm[Fe/H]>0}$ and ${\rm[Fe/H]<-1}$~dex. When we consider narrow bins in [Mg/Fe] (color-coded curves), however, the MVRs of low-[Mg/Fe] groups show strong negative slopes, flattening and inverting as [Mg/Fe] increases. A V-shape is seen in the highest [Mg/Fe] bin. 
+
+The top-middle panel of Fig.~\ref{fig:mvr} is similar to the left one, but showing the MCM13 model, including uncertainties similar to what we expect for the data: $\rm\delta[Mg/Fe]=0.12$~dex, $\rm\delta[Fe/H]=0.1$~dex, and $\rm\delta V_\phi=2$~km/s. A remarkable match is seen to the RAVE-TGAS data for both the total population and the subsamples, notably, the gradual inversion from negative to positive with increasing [Mg/Fe] and the V-shape of the highest [Mg/Fe] bin.
+
+Finally, in the top-right panel of Fig.~\ref{fig:mvr} we present the model {\it excluding} the uncertainties, which shows a drastic change in shape for individual sub-populations. The MVR trend is always negative, slightly decreasing in steepness for the highest [Mg/Fe] bin. The slope measures $\rm dV_\phi/d[Fe/H]=-127$~km/s/dex for stars with median [Mg/Fe] of 0.13~dex (cyan curve), flattening to $\rm dV_\phi/d[Fe/H]=-50$~km/s/dex for the highest [Mg/Fe] bin with median value of 0.34~dex (maroon curve).
+
+\subsubsection{Effect of observational uncertainties}
+
+To understand the effect of observational uncertainties seen in the model, in the bottom row of Fig.~\ref{fig:mvr} we show the [Fe/H] distributions of the total samples and the corresponding mono-[Mg/Fe] populations. In both data and model we see similar shifts in the peaks to lower [Fe/H] with increasing [Mg/Fe], as expected. 
+
+The small pink circles in the top-right panel of Fig.~\ref{fig:mvr} indicate the approximate [Fe/H] values at which the density peaks for each mono-[Mg/Fe] population. We see that those act as pivot points around which the MVR flattens when neighboring bins are allowed to communicate, i.e., when uncertainties are convolved with the model (middle column). The only exception is the highest-[Mg/Fe] bin, because it is significantly lower in density than the intermediate bins, and it lacks a clear peak.
+
+In a range of [Fe/H] over which the densities of two adjacent mono-[Mg/Fe] populations are comparable, both MVRs are deflected similarly. For example, the two highest-[Mg/Fe] bins in the range $-1.0<$[Fe/H]$<-0.5$~dex show similar densities, consequently, the maroon curve shifts upwards and red curve downwards as error is implemented. More generally, the MVRs of density tails are affected by the neighboring bin's peaks in the corresponding direction: since the slope is always negative, metal-poor tails are shifted toward larger $V_\phi$ and vice versa. It should be noted that relatively similar densities in the observations are not to be taken at face value due to the selection function of a particular survey. For example, the RAVE survey is known to favor low-[$\alpha$/Fe] stars \citep{boeche13b}, which is evident in the distributions of mono-[Mg/Fe] populations in the bottom left panel of Fig.~\ref{fig:mvr}. 
+
+
+
+The negative MVR slope at [Fe/H]$<-0.9$~dex is minimally affected, as these are the stars with the highest [Mg/Fe] values and the uncertainties are not large enough to allow other [Mg/Fe] bins to reach that end of the metallicity distribution. This distinct shape is present in both data and model, as well as seen in other works, although not acknowledged. For example, such an inversion can be found (1) in the bottom panel of Fig.~7 by \cite{lee11}, if one focussed on the mean values, rather than the line fit, and (2) in the top panel of Fig.~4 by \cite{adibekyan13} at $\rm [Fe/H]\approx -1.1$~dex.
+
+Similarly to the effect of errors, using wider [Mg/Fe] ranges would result in overlapping between the neighboring bins (all of which show clearly negative MVRs), approaching the black-dashed line in the right panel of Fig.~\ref{fig:mvr}. If we split into the high- and low-[Mg/Fe] sequences, as often done in the literature, we would end up with a positive and a negative MVR, respectively.
+
+In summary, the genuinely negative MVR can become positive if (1) a sample spans a large range of [Mg/Fe] or (2) uncertainties are not sufficiently small.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.8\linewidth]{amr.png}
+\caption{  
+The local age-metallicity relation (AMR) using our local HARPS-GTO data. The black-dashed curve shows the mean resulting from the total population. The color-coded lines represent five mono-$r_{birth}$ populations, with median values indicated in the color bar and a bin width $\Delta r_{birth}=2$~kpc. Well-defined AMRs exist for stars with common birth radii. The AMR is shifted downward for outer radii, which is a result of the negative ISM radial metallicity gradient. Note that there is no galactic model involved here.
+}
+\label{fig:amr}
+\end{figure}
+
+\subsubsection{What causes the invariantly negative MVR?}
+
+The negative trends for all mono-[Mg/Fe] populations (right panel of Fig.~\ref{fig:mvr}) are easy to understand. While a star at the solar radius, $r_0$, moving on a perfectly circular orbit rotates with the value of the circular velocity (here $V_0=220$ km/s), stars with guiding radii inside/outside $r_0$ will rotate slower/faster than that. Due to the exponential stellar surface density decrease with radius, however, more low-angular momentum stars are present in the solar neighborhood (this is the asymmetric drift effect, see \citealt{bt08}). Consequently, the mean tangential velocity, $V_\phi$, of the total population is always below $V_0$. Since our sample is selected from a narrow radial range, the angular momentum is given by $L\approx V_\phi r_0$ and in terms of the stellar guiding radius, $r_g$, as $L\approx V_0 r_g$. Therefore, $V_\phi\approx (V_0/r_0) r_g$, i.e., $V_\phi$ can be thought of as a proxy for $r_g$. We will not find the youngest stars with guiding radii far away from $r_0$, as those will be on orbits too close to circular to be able to reach our sample. The total population shows a peak at solar [Fe/H] because these are the youngest stars near the solar radius, thus having the most circular orbits. 
+
+Splitting the model sample in narrow bins of [Mg/Fe] in the top-right panel of Fig.~\ref{fig:mvr} showed that the MVR is always negative. This simply reflects the radial negative metallicity gradient of a mono-age, or in this case, a mono-[Mg/Fe] population. Since $V_\phi\sim r_g$, for a given [Mg/Fe] bin, a negative metallicity gradient is reflected into a negative MVR gradient. 
+
+In summary, the positive MVR gradient in the high-[$\alpha$/Fe] stars measured in a number of works \citep{carney90,rocha-pinto06,spagna10,lee11,adibekyan13,allende-prieto16} is simply the result of the asymmetric drift and the negative radial metallicity gradient of mono-age populations.
+
+$\bullet$ {\bf Possible erroneous interpretation in the absence of age measurements:} The MVR slope of a mixed-age population tells us something about the Milky Way migration history. In fact the MVR slope is strongly dependent on the sample selection function and the age range of the sample. When dissected by age (or [$\alpha$/Fe]), one finds that all groups have negative slopes closely related to the radial metallicity gradients of mono-age populations. This is a strong YSP case.
+
+
+\subsection{The age-metallicity relation (AMR)}
+\label{sec:amr}
+
+The age-metallicity relation (AMR) in the solar vicinity is believed to give us a measure of how fast the iron content of stars has increased with cosmic time. It has been found somewhat confusing that the AMR is quite flat, or even reversed, for stars with $\rm age\lesssim10$~Gyr (e.g., \citealt{edvardsson93, lin18,vickers18}). This has been taken sometimes as evidence that stars at the solar radius have not enriched in iron during that period, which is in disagreement with predictions from Milky Way chemical evolution models, or thought to result from the target selection of a given sample. While it is widely accepted now that radial migration is responsible for the scatter in [Fe/H] at the same age \citep{sellwood02,roskar08a, schonrich09a}, it has only recently been suggested that stars migrating from different radii present well-defined AMRs but conspire to flatten the relation resulting from the total population \citep{minchev18}.
+
+
+
+In Fig.~\ref{fig:amr} we plot the AMR for the local HARPS-GTO data, which was used in the right panel of Fig.~\ref{fig:rbsigz}. The black-dashed curve shows the relation for the total sample. The color-coded lines represent five mono-$r_{birth}$ populations, as color-coded, of width 2~kpc and median values given in the color bar. Birth radii were estimated from the stellar age and [Fe/H], as described by \cite{minchev18}. This is not an unbiased result since the $r_{birth}$ estimate is based on age and [Fe/H]. Nevertheless, this figure reflects how the functional form of the ISM metallicity evolution with radius and cosmic time (also estimated by \citealt{minchev18}) determines the shape of the mono-$r_{birth}$ AMRs.
+
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.8\linewidth]{li2.png}
+\caption{  
+{\bf Left:} Lithium abundance, A(Li), vs [Fe/H] for the local AMBRE:HARPS data \citep{guiglion16}. The black-dashed curve shows the mean resulting from the total population. The color-coded lines represent six mono-age populations, with median values indicated in the color bar and a bin width 2.5~Gyr. Mono-age populations show typically negative trends while the total populations has a positive slope.
+{\bf Right:} Same as left, but color curves show mono-$r_{birth}$ populations. As in the case of the AMR, steeper slopes are found for stars coming from similar radii, compared to the total sample. This figure presents a strong (left panel) and a weak (right panel) YSP cases.
+}
+\label{fig:li}
+\end{figure*}
+
+In Fig.~\ref{fig:amr} we measure a gradient of 0.02 dex/Gyr for $\rm age<8.5$~Gyr in the total population (black-dashed curve). However, the slope in the AMR of stars born in the range $6<r_{birth}<8$~kpc (blue curve) is 0.04 dex/Gyr and is similar for the other $r_{birth}$ bins. This figure provides an explanation for the flatness of the local AMR, when radial migration is not taken into account. The slope of the total population will depend crucially on selection effects of a particular survey and the quality cuts applied. In this particular case we find quite a steep one compared to other data sets. For example, from Fig.~7 by \cite{lin18} we estimated $\sim0.013$~dex/Gyr for $\rm age<10$~Gyr, while \cite{vickers18} find a double peak at $\sim3$ and $\sim8$~Gyr. While the shape indeed depends on the particular target selection when the total sample is considered \cite{casagrande16}, such effects will be significantly reduced if we split in mono-$r_{birth}$ populations, relying on the assumption that stars with a particular value of [Fe/H] and age were born at roughly the same radius. Therefore, we do not expect the AMRs of mono-$r_{birth}$ populations to deviate much in other data sets from what we show here.
+
+
+
+In summary, the chemical enrichment and the radial migration history are so closely entwined in the data that they can only be inferred together, as showed by \cite{minchev18} and \cite{frankel18}.
+
+$\bullet$ {\bf Possible erroneous interpretation in the absence $r_{birth}$ measurements:} The metallicity at the solar radius has not increased in the last 8-10 Gyr of evolution. This is not true if mono-$r_{birth}$ populations are considered, showing well defined slopes in the AMR of stars born at a given radial bin. This is a weak YSP case.
+
+
+
+\subsection{Lithium abundance variation with [Fe/H] }
+\label{sec:li}
+
+The left panel of Fig.~\ref{fig:li} shows the abundance of lithium, A(Li), vs [Fe/H] for our local HARPS data used in \S\ref{sec:rb} and \S\ref{sec:amr}. The difference here is that the lithium is estimated from the AMBRE:HARPS sample (as detailed by \citealt{guiglion16b,guiglion16}) and crossmatched with the ages derived from HARPS-GTO stellar parameters (\citealt{anders18}, using the StarHorse code), resulting in 326 dwarf stars. The black-dashed curve shows the mean resulting from the total population and the color-coded lines represent six mono-age populations, as in Fig.~\ref{fig:rbsigz}. While the relation from the total sample has a positive slope, mono-age populations show negative trends, except for the two youngest age bins. The variation of mean A(Li) with [Fe/H] for mono-age groups, to our knowledge, has not been shown before in observations, although it could be argued would result from the scatter plots shown in Figures~5 and 7 by \cite{ramirez12} and should correspond to bins of common stellar mass, shown in several works (e.g., \citealt{nissen12, ramirez12, delgadomena15, bensby18}). The flattening we find in A(Li)-[Fe/H] for younger groups of stars is very similar to the flattening seen with increasing stellar mass in Fig.~6 by \cite{bensby18}, as expected from the correspondence between stellar mass and age. This is, once again, a clear strong case of YSP, akin to the $r_{birth}-\sigma_z$ relation of \S\ref{sec:rb} and the MVR of \S\ref{sec:mvr}, which all show a dramatic reversal of the trend in the total local population.
+
+Studies are usually concerned with the {\it upper envelope} (not shown here) in the A(Li)-[Fe/H] relation of dwarf stars, reasoning that this is closer to the original lithium abundance in the ISM, since depletion over the lifetime of stars takes place (e.g., \citealt{rebolo88, romano99, lambert04, guiglion16, cescutti19, guiglion19}). This {\it upper envelope}, which will be traced by extending the metal-poor tails of the mono-age populations in Fig.~\ref{fig:li}, is found to delineate stars from old to young when moving from low to high [Fe/H]. Further work is needed to understand if this is simply due to the inability of young stars to reach the solar neighborhood on apo- and peri-centers as their orbits are close to circular, and the insufficient time for migration.
+
+Splitting the same data by birth radius (right panel of Fig.~\ref{fig:li}), we find that mono-$r_{birth}$ populations exhibit mostly positive trends as in the total sample, but with significantly steeper slopes (a weak YSP case, similar to the AMR relation, see Fig.~\ref{fig:amr}). This general shift from high to low [Fe/H] for inner to outer $r_{birth}$ bins is also seen in the chemical evolution models by \cite{prantzos17} and \cite{chiappini09a} (shown by \citealt{guiglion19}). In those models, however, the variation of A(Li) with [Fe/H] is shown for the gas, i.e., at the time of stellar birth. Since lithium is depleted throughout stars' lifetime, we need to consider the {\it upper envelope} for each $r_{birth}$ bin. The above models provide a good match to the trends seen in the right panel of Fig.~\ref{fig:li} assuming the scatter around the mean for all mono-$r_{birth}$ groups is similar. 
+
+\cite{delgadomena15} described a lithium decrease at $\rm[Fe/H] > 0$ using HARPS data, a result subsequently confirmed by \cite{guiglion16} using a larger dataset. Recently \cite{guiglion19} reasoned that the observed decline in lithium abundance at super-solar metallicity can be explained as the effect radial migration, as stars in the metal-rich tail are expected to have been born roughly in the range $2<r<5$ kpc (see Fig.~8 by \citealt{minchev18}). The right panel of Fig.~\ref{fig:li} shows this is indeed the case, using our estimated birth radii for HARPS data.
+
+It should be noted that our results are not dependent on any chemical evolution or dynamical modeling, except for a simple assumption on keeping the mono-$r_{birth}$ distributions physically meaningful (see for details \citealt{minchev18}). It is clear that, depending on the birth radius bin, the {\it upper envelope} will have different shape, notably, shifting to higher [Fe/H] and having a faster drop at the [Fe/H]-poor tail, as $r_{birth}$ decreases. This opens up the possibility to study the production/destruction of lithium as a function of birth radius, that will provide stronger constraints on chemical evolution models.
+
+
+$\bullet$ {\bf Possible erroneous interpretation in the absence of age and $r_{birth}$ measurements:}
+In the total sample the {\it upper envelope} in the A(Li)-[Fe/H] plane will be biased toward older stars at the higher and (especially) lower [Fe/H] tails (see Fig.~2 by \citealt{minchev18}), in which case the inferred ISM evolution of lithium will be incorrect. This problem can be resolved with the help of age and $r_{birth}$ estimates. Dissecting the A(Li)-[Fe/H] relation by age presents a strong YSP case and that by $r_{birth}$ - a weak one.
+
+
+\section{Conclusions}
+
+We showed in this work that Yule-Simpson's paradox (YSP) is omnipresent in the field of Galactic Archaeology. Chemo-kinematical relations believed to constrain the Milky Way past can look completely different, depending on whether a subset of stars with common age or a mixture of ages is considered (and similarly for birth radius). In other words, a statistical relationship between two variables does not necessarily represent a cause-and-effect relationship. 
+We can summarize our results as follows:
+
+$\bullet$ We described seven YSP cases, which we classified as "weak" if a relation was flattened or weakened, or "strong" if it was completely reversed. Weak cases were found in the variation of galactic disk thickness with Galactocentric radius (\S\ref{sec:flaring}), the vertical metallicity gradient (\S\ref{sec:fez}), the age-metallicity relation (AMR, \S\ref{sec:amr}), and the A(Li)-[Fe/H] relation when split by birth radius (\S\ref{sec:li}). Strong cases appeared in the inversion of radial abundance gradients with distance from the disk midplane (\S\ref{sec:grad}), the $r_{birth}-\sigma_z$ relation (\S\ref{sec:rb}), the metallicity-rotational velocity relation (MVR, \S\ref{sec:mvr}), and the A(Li)-[Fe/H] relation when split by age (\S\ref{sec:li}).
+
+$\bullet$ YSP is found in both global (\S\ref{sec:flaring} and \S\ref{sec:grad}) and local (samples confined to the solar neighborhood, \S\S\ref{sec:rb}-\ref{sec:li}) chemo-kinematical trends.
+
+$\bullet$ The shape of the MVR of stars in the solar vicinity has been suggested as a discriminant for the amount of radial migration suffered by the local disk, where a flat (inverse) relation has been argued to signify the unimportance (importance) of migration. Using RAVE data and the MCM13 chemodynamical model, we showed that the slope in the MVR for any narrow [Mg/Fe] subpopulation (used as a proxy for age) is always negative. An inversion from a negative to a positive slope of high-[$\alpha$/Fe] stars can be caused by the increasingly lower angular momentum of older, kinematically hotter stars at [Fe/H]$\lesssim-0.5$~dex with a slope measurement dependent on the selection function of a particular survey, as well as the observational uncertainties. The persistent MVR negative slope for any [$\alpha$/Fe] bin simply reflects the Milky Way negative metallicity gradient of mono-age populations due to the inside-out disk formation, combined with the effect of the asymmetric drift.
+
+$\bullet$ Using estimates of stellar birth radii for AMBRE:HARPS data, we showed that the A(Li)-[Fe/H] relation in the solar neighborhood looks different for different mono-$r_{birth}$ populations. This can provide new constraints on chemical evolution models by requiring to match the {\it upper envelope} of the relation in different $r_{birth}$ bins, as well as their combination at a given final radius expected from the effect of radial migration.
+
+Depending on the observational biases of different dataset, different trends can be measured in the total population of a given relation, thus resulting in various interpretations. Dissecting by age, however, decreases strongly such biases, as coeval stars will be affected by dynamical processes similarly, for a given radius. Moreover, one need not worry what age a particular stellar sample is biased toward, as long as the relation of interest does not involve the stellar density. For example, in the case of the vertical metallicity gradient, assuming stars with the same metallicity and age are born at the same radius (i.e., no significant intrinsic abundance scatter at the time of star formation, cf, \citealt{spitoni19}), the only effect we need to worry about is radial migration. 
+
+We demonstrated that splitting a stellar sample by age or birth radius is of utmost importance for recovering the Galaxy evolution. Given that our birth radius estimate depends crucially on precise ages measurements, we conclude that ages are urgently needed to make progress in the field of Galactic Archaeology. We expect to get those form the K2 \citep{howell14}, TESS \citep{ricker15} and PLATO \citep{rauer14} asteroseismic missions in the near future, as well as isochrone age determination from spectroscopic surveys, such as GALAH \citep{desilva15}, Gaia-ESO \citep{gilmore12}, APOGEE, WEAVE, SDSS-V's Milky Way Mapper \citep{kollmeier17}, and 4MOST, combined with Gaia astrometry. 
+
+Simpson's paradox undoubtedly exists in other Galactic Archaeology relations, as well as other areas of astrophysics. There may be other lurking variables in addition to age and birth radius we discussed here, which must be accounted for in statistical experiments, in order to avoid non-meaningful results. We hope this work brings awareness to different communities and helps advance our understanding of the Milky Way formation and evolution.
+
+
+%\section*{Acknowledgments}
+
+
+
+\bibliographystyle{mnras}
+\bibliography{myreferences}
+
+\end{document}

@@ -1,0 +1,51 @@
+\begin{table}[t]
+\centering
+    \begin{tabular}{|@{ }c@{ }|@{ }c@{ }|@{ }c@{ }|@{ }c@{ }|@{ }c@{ }|}
+    \hline
+    \bf Dataset  & \bf Task &  \bf Images & \bf $O$-Type & \bf $\|O\|$ \\ \hline
+        imSitu  &  vSRL  & 60,000 & verb  & 212 \\ \hline
+        MS-COCO    & MLC  & 25,000 & object & 66 \\ \hline
+    \end{tabular}
+    \caption{Statistics for the two recognition problems. In vSRL, we consider gender bias relating to verbs, while in MLC we consider the gender bias related to objects.}
+    \label{tab:two_datasets}
+\end{table}
+
+In this section, we provide details about the two visual recognition tasks we evaluated for bias: visual semantic role labeling (vSRL), and multi-label classification (MLC). 
+We focus on gender, defining $G = \{\texttt{man}, \texttt{woman}\}$ and focus on the \texttt{agent} role in vSRL, and any occurrence in text associated with the images in MLC.
+%In each case we select a subset of the data strongly associated with humans, and build on %previous work to create a Conditional Random Field (CRF) for performing the recognition problem. 
+Problem statistics are summarized in Table~\ref{tab:two_datasets}.
+We also provide setup details for our calibration method.
+
+\subsection{Visual Semantic Role Labeling}
+\paragraph{Dataset}
+We evaluate on imSitu~\cite{yatskar2016situation} where activity classes are drawn from verbs and roles in FrameNet~\cite{baker1998berkeley} and noun categories are drawn from WordNet~\cite{MillerBeFeGrMi90}. The original dataset includes about 125,000 images with 75,702 for training, 25,200 for developing, and 25,200 for test. However, the dataset covers many non-human oriented activities (e.g., \texttt{rearing}, \texttt{retrieving}, and \texttt{wagging}), so we filter out these verbs, resulting in 212 verbs, leaving roughly 60,000 of the original 125,000 images in the dataset. 
+%For example, we filter away verbs such as \texttt{waddling} or \texttt{flapping}.
+
+\paragraph{Model}
+We build on the baseline CRF released with the data, which has been shown effective compared to a non-structured prediction baseline~\cite{yatskar2016situation}. The model decomposes the probability of a realized situation, $y$, the combination of activity, $v$, and realized frame, a set of semantic (role,noun) pairs $(e,n_e)$, given an image $i$ as :
+$$ p(y |i; \theta) \propto \psi(v,i; \theta)\prod_{(e,n_e) \in R_f} \psi(v,e,n_e,i; \theta)$$
+where each potential value in the CRF for subpart $x$, is computed using features $f_i$ from the VGG convolutional neural network~\cite{simonyan2014very} on an input image, as follows: $$\psi(x, i; \theta) = e^{w_x^{T}f_i + b_x},$$ where $w$ and $b$ are the parameters of an affine transformation layer. The model explicitly captures the correlation between activities and nouns in semantic roles, allowing it to learn common priors. 
+We use a model pretrained on the original task with 504 verbs. 
+
+\subsection{Multilabel Classification}
+\paragraph{Dataset}
+We use MS-COCO~\cite{lin2014microsoft}, a common object detection benchmark, for multi-label object classification.
+The dataset contains 80 object types but does not make gender distinctions between man and woman.
+We use the five associated image captions available for each image in this dataset to annotate the gender of people in the images. 
+If any of the captions mention the word man or woman we mark it, removing any images that mention both genders. 
+Finally, we filter any object category not strongly associated with humans by removing objects that do not occur with man or woman at least 100 times in the training set, leaving a total of 66 objects.
+\paragraph{Model}
+For this multi-label setting, we adapt a similar model as the structured CRF we use for vSRL. 
+We decompose the joint probability of the output $y$, consisting of all object categories, $c$, and gender of the person, $g$, given an image $i$  as:
+$$p(y |i ; \theta) \propto \psi(g,i; \theta)\prod_{c \in y} \psi(g,c,i; \theta)$$
+where each potential value for $x$, is computed using features, $f_i$, from a pretrained ResNet-50 convolutional neural network evaluated on the image, $$\psi(x, i; \theta) = e^{w_x^{T}f_i + b_x}.$$
+We trained a model using SGD with learning rate $10^{-5}$, momentum $0.9$ and weight-decay $10^{-4}$, fine tuning the initial visual network, for $50$ epochs.
+
+\subsection{Calibration}
+The inference problems for both models are: $$\arg\max_{y\in Y} f_\theta(y, i) = \log p(y|i; \theta).$$ 
+
+We use the algorithm  in Sec. \eqref{sec:calibration} to calibrate the predictions using model $\theta$.
+Our calibration tries to enforce gender statistics derived from the training set of corpus applicable for each recognition problem. 
+For all experiments, we try to match gender ratios on the test set within a margin of $.05$ of their value on the training set. 
+While we do adjust the output on the test set, we never use the ground truth on the test set and instead working from the assumption that it should be similarly distributed as the training set.
+When running the debiasing algorithm, we set $\eta = 10^{-1}$ and optimize for $100$ iterations.

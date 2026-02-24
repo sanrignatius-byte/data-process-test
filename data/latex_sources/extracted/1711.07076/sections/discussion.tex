@@ -1,0 +1,192 @@
+% Now that we have expressed our primary technical arguments,
+% We now return to the critical questions  
+% driving research in discrimination-aware classification.
+% The arguments in this portion of the paper
+% address the difficulty of communicating across disciplines, 
+% the relationship between classification and decision-making, 
+% and promising research directions 
+% in discrimination-aware ML. 
+
+
+% \vspace{5px}
+% \noindent\textbf{Coming to Terms with Treatment Disparity \enskip}
+% \paragraph{Coming to terms with treatment disparity}
+
+%JULIAN: I like this stuff but I dunno if there's room in NIPS
+% At present, academic work in law and machine learning
+% tends to take place in a disjoint set of journals,
+% and with notable exceptions researchers 
+% typically attend a disjoint set of conferences. 
+% These communities occasionally intersect
+% when some paper, such as the widely-influential California Law Review article due to \citet{barocas2016big},
+% reaches a cross-disciplinary audience and captures popular attention.
+% %
+% However, the subsequent interdisciplinary 
+% work is often again siloed by discipline.
+% Technical work tends to be published in technical conferences,
+% where the peer-reviewers 
+% may be ill-equipped to identify 
+% shortcomings in problem formulation.
+
+% For instance, in our reading 
+% of the technical literature
+% on discrimi\-nation-aware ML, 
+% authors seem unaware that the
+% technical ``definitions'' misleadingly named
+% for legal theories of \emph{disparate treatment}
+% and \emph{disparate impact} in anti-discrimination law,
+% are categorically distinct from their legal antecedents.
+% The failure to distinguish 
+% between parity measures and legal doctrine, 
+% together with the failure of peer review to correct the record,
+% creates an environment in which lines of research
+% might flourish despite producing ill-motivated contributions destined never to be used in practice.
+% This sort of disciplinary isolation enables legal terms such as
+% \emph{disparate treatment} and \emph{disparate impact} to be 
+% overloaded to mean something different from their legal antecedents.
+% As a result, metho\-dological solutions 
+% guided by technical interpretations 
+% of legal criteria might nevertheless 
+% turn out to be incompatible 
+% with the policy desiderata they are designed to satisfy.  
+% Such solutions
+% are unlikely to be adopted in practice.  
+% In the present context, we argue that (i) DLPs would enjoy no better legal standing
+% than explicit treatment disparity 
+% if tested under the law (as supported in \citet{grimmelmann2017incomprehensible}); and, 
+% (ii) some form of treatment disparity may already be tolerated under the law in order to ensure more fair outcomes. 
+% The latter view is supported by Pauline Kim in her paper \emph{Data-driven discrimination at work} \citep{kim2017data}:
+% \begin{displayquote}
+% A formalist reading of Title VII might appear to prohibit any use of variables capturing sensitive characteristics in a data model. Certainly, a simple model that relied on race or other protected characteristics as the basis for adverse decisions would run afoul of Title VII’s prohibitions. However, when dealing with a complex statistical model involving multiple variables, the appropriate treatment of these sensitive variables is more complicated. If the goal is to reduce biased outcomes, then a simple prohibition on using data about race or sex could be either wholly ineffective or actually counterproductive due to the existence of class proxies and the risk of omitted variable bias.  Instead, avoiding classification bias may sometimes call for excluding sensitive demographic variables and at other times call for including them. Any response to biased data models must be sensitive to these nuances.
+% \end{displayquote}
+
+% On the balance of these considerations, 
+% there are several compelling reasons for practitioners 
+% to promote equality more transparently 
+% through direct treatment disparity, 
+% rather than through hidden changes to the learning algorithm.  
+
+\vspace{-2mm}
+
+%JULIAN: Replaced a page's worth of arguments with one sentence
+\paragraph{Coming to terms with treatment disparity.}
+Legal considerations aside, 
+treatment disparity approaches 
+have three advantages over DLPs: 
+they optimally trade accuracy for representativeness, preserve rankings among members of each group,
+and do no harm to members of the disadvantaged group. 
+%
+In addition,
+%to these three properties,
+treatment disparity has another advantage:
+by setting class-dependent thresholds,
+it's easier to understand
+how treatment disparity impacts individuals. 
+It seems plausible that policy-makers
+could reason about thresholds 
+to decide on the right trade-off
+between group equality and individual fairness. 
+% With indirect methods for increasing impact parity,
+By contrast the tuning parameters of DLPs
+may be harder to reason about from a policy standpoint.
+% it might be harder to reason about the intervention. 
+% As an example, it seems harder to express policy
+% in terms of the value of a regularization coefficient 
+% (compared to a threshold).
+%
+Several key challenges remain.  
+Our theoretical arguments demonstrate 
+that thresholding approaches are optimal 
+in the setting where we assume complete knowledge 
+of the data-generating distribution.  
+It is not always clear how best 
+to realize these gains in practice, 
+where imbalanced or unrepresentative datasets 
+can pose a significant obstacle to accurate estimation.
+% Furthermore, some of our results are tailored 
+% to the CV or the $p$-\% rule notions of group parity.  
+% As shown in \cite{hardt2016equality, woodworth2017learning} and \cite{dwork2017decoupled}, 
+% satisfying other parity criteria can be more difficult. 
+
+\vspace{-2mm}
+
+% \vspace{5px}
+% \noindent\textbf{Separating Estimation and Decision-Making \enskip}
+\paragraph{Separating estimation from decision-making.}
+In the context of algorithmic, 
+or algorithm-supported decision-making, 
+it's often useful to obtain not just a classification, 
+but also an accurate probability estimate.  
+These estimates could then be incorporated 
+into the decision-theoretic part of the pipeline 
+where appropriate measures could be taken to
+align decisions with social values.   
+By intervening at the modeling phase, 
+DLPs distort the predicted probabilities themselves.  
+It's not clear what the outputs of 
+the resulting classifiers actually signify.
+In unconstrained learning approaches, 
+even if the label itself 
+may reflect historical prejudice, 
+one at least knows 
+what is being estimated. 
+This leaves open the possibility of intervening at decision time to promote more equal outcomes.  
+
+\vspace{-2mm}
+
+\paragraph{Fairness beyond disparate impact}
+How best to quantify discrimination and unfairness 
+remains an important open question.  
+The CV scores and $p-\%$ rules 
+% addressed in this paper  
+offer one set of definitions,
+but there are many other parity criteria
+to which our results do not directly apply,
+e.g., equality of opportunity \cite{hardt2016equality}.
+% ---requiring equality of true positive rates across groups---has received considerable attention. 
+Other  notions of fairness and the trade-offs between them 
+have been studied \citep{joseph2016rawlsian,kleinberg2016inherent,chouldechova2017fairlong,berk2017fairness,ritov2017conditional}.  
+In a recent paper, \citet{zafar2017parity} 
+depart from parity-based definitions 
+and propose instead a preference-based notion of fairness. \citet{dwork2017decoupled} address the problem 
+of how best to incorporate information 
+about protected characteristics 
+for several of these other fairness criteria.
+
+Problematically, research into fairness in ML 
+is often motivated by the case 
+in which our ground-truth data is tainted,
+capturing existing discriminatory patterns.  
+% It's not clear what we can do 
+% absent unbiased ground truth data.
+Characterizing different forms of data bias, how to detect them, and how to draw valid inference from such data
+remain important outstanding challenges.
+
+% Even if we accept that the solution 
+% for many proportional representation problems 
+Even in settings where treatment disparity in favor of disadvantaged groups is an acceptable solution, 
+questions remain of ``how'', ``how much?'' and ``when?''.
+% How can we say when treatment disparity
+% is correcting for recent discrimination manifested, e.g.~as biased labels? 
+% When does it amount to affirmative action, 
+While in some cases treatment disparity may arguably be correcting for omitted variable bias historical discrimination, in other settings it may be viewed as itself a form of discrimination.
+For example, in the United States, 
+Asian students are simultaneously 
+over-represented and discriminated 
+against in higher education \citep{AsianNYT}.
+% For now, it seems that these judgments 
+% must be exogenously specified 
+% by people cognizant of the social context 
+% in which algorithms operate. 
+Such policy judgments require a keen understanding 
+and awareness of the social and historical context 
+in which the algorithms are developed and meant to operate. 
+Recent work on identifying proxy discrimination \citep{datta2017proxy} and causal formulations of fairness \citep{nabi2017fair,kilbertus2017avoiding,kusner2017counterfactual} 
+offer some promising approaches to translating such understanding into technological solutions.  
+% To answer these questions,
+% it would help to have a better understanding of by what mechanisms and to what degree 
+% the data has been influenced by prejudice. 
+% Perhaps data mining and machine learning 
+% have some role to play in asking these questions? 
+% The answers could guide decisions about where and how strongly to intervene. 
+

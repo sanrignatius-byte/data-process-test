@@ -1,0 +1,290 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+```{r}
+library(reshape2)
+library(sm)
+library(lme4)
+library(sjstats)
+library(lsmeans)
+library(Matching)
+library(gplots)
+library(stats)
+```
+
+```{r}
+# READING CSV FILE WITH DATA FROM SURVEY 2, PART 1, WHERE THE WHITE INDIVIDUAL HAS A HIGHER LOAN REPAYMENT RATE
+
+f21 <- f2_1_model
+f21b <- f21
+```
+```{r}
+# CREATING DFs WITH DATA OF ONLY ONE SIMILARITY METRIC/TREATMENT
+
+f70 <- f21[!is.na(f21$X7040_1),]
+f100 <- f21[!is.na(f21$X10020_1),]
+f90 <- f21[!is.na(f21$X9010_1),]
+f55 <- f21[!is.na(f21$X5550_1),]
+```
+
+```{r}
+# CREATING DFs IN WIDE FORMAT
+
+f70 <- f70[-c(226), ]
+f100 <- f100[-c(226), ]
+f90 <- f90[-c(224), ]
+f55 <- f55[-c(228), ]
+```
+
+```{r}
+# CREATING BACKUP DFs
+
+f100b <- f100
+keeps <- c("ResponseId", "X10020_1","X10020_2","X10020_3", "State", "Gender", "Race",  "Education",  "Community", "Age",  "Political.Affiliation")
+f100 <- f100[ , keeps, drop = FALSE]
+f100b <- f100
+```
+```{r}
+f90b <- f90
+keeps <- c("ResponseId", "X9010_1","X9010_2","X9010_3", "State", "Gender", "Race",  "Education",  "Community", "Age",  "Political.Affiliation")
+f90 <- f90[ , keeps, drop = FALSE]
+f90b <- f90
+
+f70b <- f70
+keeps <- c("ResponseId", "X7040_1","X7040_2","X7040_3", "State", "Gender", "Race",  "Education",  "Community", "Age",  "Political.Affiliation")
+f70 <- f70[ , keeps, drop = FALSE]
+f70b <- f70
+
+f55b <- f55
+keeps <- c("ResponseId", "X5550_1","X5550_2","X5550_3", "State", "Gender", "Race",  "Education",  "Community", "Age",  "Political.Affiliation")
+f55 <- f55[ , keeps, drop = FALSE]
+f55b <- f55
+```
+
+
+
+```{r}
+# CONVERTING INTO LONG FORMAT 
+
+library(reshape2)
+f55l <- melt(f55)
+View(f55l)
+```
+```{r}
+f55l <- f55l[,c(1,9,10,2:8)]
+```
+
+```{r}
+f70l <- melt(f70)
+f70l <- f70l[,c(1,9,10,2:8)]
+```
+
+```{r}
+f90l <- melt(f90)
+f90l <- f90l[,c(1,9,10,2:8)]
+```
+
+```{r}
+f100l <- melt(f100)
+f100l <- f100l[,c(1,9,10,2:8)]
+```
+
+```{r}
+# PLOTTING THE DISTRIBUTIONS OF THE DIFFERENT DECISIONS FOR EACH SIMILARITY METRIC/TREATMENT
+
+# TREATMENT 1
+
+library(sm)
+#xticks=c(0,1,2,3,4,5,6,7,8,9)
+#yticks=c(0, 0.05, 0.10, 0.15, 0.20, 0.25)
+#sm.density.compare(f55l$value, f55l$variable, xlab="Ratings of the different decisions", lty = c(1,1,1), scales=list(x=list(at=xticks), y=list(at=yticks)))
+
+#par(mar=c(5.1, 4.1, 4.1, 8.1), xpd=TRUE)
+#par(xpd = T, mar = par()$mar + c(0,0,0,3))
+
+par(mar=c(5.1, 4.1, 4.1, 0.1), xpd=TRUE, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+sm.density.compare(f55l$value, f55l$variable, xlab="Fairness rating", lty = c(1,1,1))
+axis(1, at=seq(1, 10, by=1))
+title(main="Treatment 1: Distributions of the ratings for different decisions")
+legend("topright",  bg = "transparent", legend=c("All A", "Equal", "Ratio"), col=c("red", "green", "blue"), lty=1:1, box.lty = 0, text.font=4)
+```
+
+```{r}
+# TREATMENT 2 
+
+par(mar=c(5.1, 4.1, 4.1, 0.1), xpd=TRUE, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+sm.density.compare(f70l$value, f70l$variable, xlab="Fairness rating", lty = c(1,1,1))
+axis(1, at=seq(1, 10, by=1))
+title(main="Treatment 2: Distributions of the ratings for different decisions")
+legend("topright",  bg = "transparent", legend=c("All A", "Equal", "Ratio"), col=c("red", "green", "blue"), lty=1:1, box.lty = 0, text.font=4)
+```
+```{r}
+# TREATMENT 3 
+
+par(mar=c(5.1, 4.1, 4.1, 0.1), xpd=TRUE, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+sm.density.compare(f90l$value, f90l$variable, xlab="Fairness rating", lty = c(1,1,1))
+axis(1, at=seq(1, 10, by=1))
+title(main="Treatment 3: Distributions of the ratings for different decisions")
+legend("topright",  bg = "transparent", legend=c("All A", "Equal", "Ratio"), col=c("red", "green", "blue"), lty=1:1, box.lty = 0, text.font=4)
+```
+```{r}
+# TREATMENT 4
+
+par(mar=c(5.1, 4.1, 4.1, 0.1), xpd=TRUE, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+sm.density.compare(f100l$value, f100l$variable, xlab="Fairness rating", lty = c(1,1,1))
+axis(1, at=seq(1, 10, by=1))
+title(main="Treatment 4: Distributions of the ratings for different decisions")
+legend("topright",  bg = "transparent", legend=c("All A", "Equal", "Ratio"), col=c("red", "green", "blue"), lty=1:1, box.lty = 0, text.font=4)
+```
+
+
+```{r}
+# PLOTTING THE MEANS OF THE DIFFERENT DECISIONS FOR EACH SIMILARITY METRIC/TREATMENT
+# TREATMENT 1
+
+library(gplots)
+plotmeans(f55l$value ~ f55l$variable, data = f55l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 1: Comparison of means (with 95% CI)")
+```
+
+
+```{r}
+# TREATMENT 2
+
+
+plotmeans(f70l$value ~ f70l$variable, data = f70l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 2: Comparison of means (with 95% CI)")
+```
+```{r}
+# TREATMENT 3 
+
+plotmeans(f90l$value ~ f90l$variable, data = f90l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 3: Comparison of means (with 95% CI)")
+```
+```{r}
+# TREATMENT 4
+plotmeans(f100l$value ~ f100l$variable, data = f100l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 4: Comparison of means (with 95% CI)")
+```
+
+```{r}
+
+attach(mtcars)
+par(mfrow=c(2,2))
+
+plotmeans(f55l$value ~ f55l$variable, data = f55l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 1")
+plotmeans(f70l$value ~ f70l$variable, data = f70l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 2")
+plotmeans(f90l$value ~ f90l$variable, data = f90l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 3")
+plotmeans(f100l$value ~ f100l$variable, data = f100l, mean.labels = TRUE, n.label = FALSE, xlab = "Possible decisions to split the $50,000", ylab = "Workers' fairness rating", legend=c("All A", "Equal", "Ratio"))
+title(main = "Treatment 4")
+##tiff("survey2part1means.tiff", res = 300)
+#png(file="survey2part1means.png",width=400,height=350)
+dev.copy(png,filename="survey2part1means.png", width=600,height=600);
+dev.off ();
+
+```
+
+```{r}
+mean(f100b$`10020_1`)
+```
+```{r}
+## T tests 
+
+print("T Tests")
+print("TREATMENT 1 (55/50)")
+
+print("Give all money to A versus Split 50/50")
+t55a <- t.test(f55b$X5550_1,f55b$X5550_2, paired=T)
+print(t55a)
+print("Give all money to A versus Split in Ratio")
+t55b <- t.test(f55b$X5550_1,f55b$X5550_3, paired=T)
+print(t55b)
+print("Split 50/50 versus Split in Ratio")
+t55c <- t.test(f55b$X5550_2,f55b$X5550_3, paired=T)
+print(t55c)
+```
+
+```{r}
+## T tests 
+
+print("T Tests")
+
+print("TREATMENT 2 (70/40)")
+
+print("Give all money to A versus Split 50/50")
+t70a <- t.test(f70b$X7040_1,f70b$X7040_2, paired=T)
+print(t70a)
+print("Give all money to A versus Split in Ratio")
+t70b <- t.test(f70b$X7040_1,f70b$X7040_3, paired=T)
+print(t70b)
+print("Split 50/50 versus Split in Ratio")
+t70c <- t.test(f70b$X7040_2,f70b$X7040_3, paired=T)
+print(t70c)
+```
+
+```{r}
+## T tests 
+
+print("T Tests")
+
+print("TREATMENT 3 (90/10)")
+
+print("Give all money to A versus Split 50/50")
+t90a <- t.test(f90b$X9010_1,f90b$X9010_2, paired=T)
+print(t90a)
+print("Give all money to A versus Split in Ratio")
+t90b <- t.test(f90b$X9010_1,f90b$X9010_3, paired=T)
+print(t90b)
+print("Split 50/50 versus Split in Ratio")
+t90c <- t.test(f90b$X9010_2,f90b$X9010_3, paired=T)
+print(t90c)
+```
+```{r}
+## T tests 
+
+print("T Tests")
+
+print("TREATMENT 4 (100/20)")
+
+print("Give all money to A versus Split 50/50")
+t100a <- t.test(f100b$X10020_1,f100b$X10020_2, paired=T)
+print(t100a)
+print("Give all money to A versus Split in Ratio")
+t100b <- t.test(f100b$X10020_1,f100b$X10020_3, paired=T)
+print(t100b)
+print("Split 50/50 versus Split in Ratio")
+t100c <- t.test(f100b$X10020_2,f100b$X10020_3, paired=T)
+print(t100c)
+```
+```{r}
+h3 <- t.test(f100b$`10020_1`,f90b$`9010_1`)
+print(h3)
+```
+
+```{r}
+# Kolmogorov–Smirnov test
+# ks.boot (bootstrapped version of the Kolmogorov–Smirnov test, which allows for ties
+# with nboots = 10000
+
+ks.boot(f55$`5550_3`, f55$`5550_2`, nboots=10000)
+
+```
+
+```{r}
+ks.boot(f100$`10020_1`, f100$`10020_1`, nboots=10000)
+
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).

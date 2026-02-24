@@ -1,0 +1,55 @@
+\vspace{-1pt}
+\section{Proposed Method}
+% After observing flaws in the discussed methods through our experiments, we decided to come up with a method that would address the following flaws:
+We have confirmed that ignoring low-degree users introduces bias into the resulting analysis of the data. In light of this, we propose a community detection approach that addresses the following issues:
+\begin{algorithm}[H]
+\caption{CLAN}
+\begin{algorithmic} 
+\STATE \textbf{Input:}
+\STATE 1: Network
+\STATE 2: Threshold
+\STATE \textbf{Output:} Communities
+\STATE  // Step 1: Finding the communities
+\STATE $C$ = find\_communities(Network)
+\STATE // Step 2: Classifying minority users into significant communities
+\FOR{$C_i$ in $C$}
+\IF{count($C_i$) $>$ Threshold}
+\STATE Add $C_i$ to training set
+\ELSE
+\STATE Add $C_i$ to test set
+\ENDIF
+
+\STATE model = train(training set)
+\ENDFOR
+\STATE predictions = model.inference(test set)
+\FOR{p in predictions}
+\IF{p.label == $C_i$}
+\STATE Add p.data to $C_i$
+\ENDIF
+\ENDFOR
+\STATE return C
+\end{algorithmic}
+\end{algorithm}
+\begin{quote}
+\begin{enumerate}
+\item Bias against low-degree nodes: Creating numerous small communities from putting introverted users in them results in the exclusion of those users from many data analysis tasks which creates a bias against these lowly-connected users. This bias is in favor of bots that would get potential falsified retweets and attention in the network, while it would exclude introverted users with less friends entirely.
+\item Bias from low recall: Having low recall may mean exclusion of some users which is not desirable since we want to be able to maintain all the users for a more accurate study of the dataset no matter how hard it is to put them into their appropriate communities. We should not be able to only identify the popular users correctly but all the users regardless of their popularity in the network.
+\item Higher predictive accuracy of the resulting communities. While addressing these issues, we simultaneously want to improve the accuracy of the communities discovered by our method. %Higher predictive accuracy of the 
+%NM: Fixed this
+\end{enumerate}
+\end{quote}
+We introduce CLAN: Communities from Lowly-connected Attributed Nodes which addresses the mentioned above issues as follows:
+\begin{quote}
+\begin{enumerate}
+\item CLAN uses additional node attributes other than network attributes, such as text, to classify the lowly-connected users that were put into the small communities, those are the communities that are small in terms of containing users but large in number since they contain introverted and disconnected users who are mostly ignored due to the false belief that introverted users have irrelevant content in their text compared to the highly-connected users, into the significant communities that contain highly-connected users who get most of the attention in methods that solely focus on the network structure. %FM: You should define small and large.
+%NM: fixed but I think the sentence is too wordy!!!!!!!!!!????????
+\item By not changing the network structure and only adding information to this structure through the additional node attributes, such as text utilization, results obtained from CLAN would tend to have higher recall values.
+\item From the reasons given in 1 and 2, we will show in our results through experimentation that CLAN has a superior performance and in a higher agreement with the ground truth communities.
+\end{enumerate}
+\end{quote}
+CLAN uses node attributes to incorporate the introverted and lowly-connected users into their correct communities. Therefore, instead of creating small communities and putting these users into these insignificant communities by mistake, CLAN tends to utilize node attributes, in our case text attributes, to correctly put users into major communities that are significant to different down stream tasks. This would reduce the bias that will cause these users to be excluded from the data analysis tasks. In addition to that, by correctly utilizing these additional node attributes without changing the network structure, CLAN would obtain higher recall values and generally more accurate results that would be in a higher agreement with the ground truth communities while staying computationally more efficient.
+The CLAN algorithm is a two step process, in which we first use unsupervised learning to develop communities using network attributes and modularity value. Once we have the communities, we would then turn the problem into a supervised classification problem in which we would classify the introverted users from insignificant communities into the major communities using additional node attributes that were held out in the first step, such as text attributes associated to a user. The first step of this process is a straightforward process in which we utilized the Louvain method discussed in~\cite{blondel2008fast}. Note that any community detection task that only utilizes the network, such as BigCLAM and DEMON~\cite{yang2013overlapping,coscia2012demon}, can replace this step which makes our algorithm flexible,general, and also capable of handling overlapping communities. 
+Once this method is applied and the communities are obtained, we train a classifier on the majority communities using node attributes as features. The introvert users will then be classified into the majority groups that were used in our training process. The features can be any held out node features, such as text or hashtags that each user used in their tweets.
+Unlike most of the generative methods that create new networks by combining network attributes and node attributes, we do not recreate the whole network structure, % FM: Let's not compare to CESNA so directly. What is meant by "recreate the whole network"? 
+%NM: fixed this! Let me know if it is still unclear!
+but we only add information to the existing network without changing its fundamental structure. This can also make our algorithm computationally more efficient than generative models which recreate the network.

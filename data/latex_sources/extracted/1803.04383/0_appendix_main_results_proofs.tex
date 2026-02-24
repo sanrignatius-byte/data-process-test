@@ -1,0 +1,162 @@
+% !TeX root = writeup.tex 
+
+
+\section{Proofs of Main Results\label{app:main_results_proofs}}
+We remark that the proofs in this section rely crucially on the characterizations of the optimal fairness-constrained policies developed in Section~\ref{sec:main_thm_proofs}.
+We first define the notion of CDF domination, which is referred to in a few of the proofs. Intuitively, it means that for any score, the fraction of group $\popb$ above this is higher than that for group $\popa$. It is realistic to assume this if we keep with our convention that group $\popa$ is the disadvantaged group relative to group $\popb$.
+\begin{defn}[CDF domination]
+	$\dista$ is said to be \emph{dominated by} $\distb$ if $\forall a \ge 1, \sum_{x>a}\dist\supa < \sum_{x>a}\dist\supb$. We denote this as $\dista \prec \distb$.
+\end{defn}
+We remark that the $\prec$ notation in this section is entirely unrelated to the the partial order on intervals from Section~\ref{sec:soft_constraints}. Frequently, we shall use the following lemma:
+\begin{lem} Suppose that $\dista \prec \distb$. Then, for all $\accrate > 0$, it holds that $\RCDF\supa(\beta) \le \RCDF\supb(\accrate)$ and $\util(\RCDF\supa(\accrate)) \le \util(\RCDF\supa(\accrate))$
+\end{lem}
+\begin{proof}
+The fact that $\RCDF\supa(\accrate) \le \RCDF\supb(\accrate)$ follows directly from the definition of monotonicty of $\util$ implies that $\util(\RCDF\supa(\accrate)) \le \util(\RCDF\supb(\accrate))$. 
+\end{proof}
+
+\subsection{Proof of Proposition \ref{prop:mp_noharm}}
+	The $\maxprof$ policy for group~$\popj$ solves the optimization
+	\begin{eqnarray*}
+	\max_{\polj \in [0,1]^{\maxscore}} \Util\supj(\polj) = \max_{\accratej \in [0,1]} \Util\supj(\ratef_{\distj}^{-1}(\accratej))\:.
+	\end{eqnarray*}
+	Computing left and right derivatives of this objective yields
+	\begin{align*}
+		\partial_+ \Util\supj(\ratef_{\distj}^{-1}(\accratej)) &= \util(\RCDF\supj(\beta)), \qquad \partial_- \Util\supj(\ratef_{\distj}^{-1}(\accratej)) = \util(\RCDFpl\supj(\beta))\:.
+	\end{align*}
+		By concavity, solutions $\accrate^*$ satisfy
+		\begin{align}
+		\begin{split}\label{eq:max_prof_sol_char}
+		\accrate < \accrate^* \quad&\text{if}\quad \util(\RCDF\supj(\beta)) > 0 \:,\\
+		\accrate > \accrate^* \quad&\text{if}\quad \util(\RCDFpl\supj(\beta)) < 0 \:.
+		\end{split}
+		\end{align}
+	Therefore, we conclude that the $\maxprof$ policy loans only to scores $x$ s.t. $\util(x) > 0$, which implies $\chg(x) > 0$ for all scores loaned to. Therefore we must have that $ 0\leq \delmean^{\maxprof} $. By definition $\delmean^{\maxprof} \leq \delmean^*$.
+	
+\subsection{Proof of Corollary \ref{cor:fairness_rel_imp} }
+	
+		We begin with proving part (a), which gives conditions under which $\dempar$ cases relative improvement. Recall that $\overline{\accrate}$ is the largest selection rate for which $\Util(\overline\accrate) = \Util(\accratea^\maxprof)$. First, we derive a condition which bounds the selection rate $\beta^\dempar\supa$ from below. Fix an acceptance rate $\accrate$ such that $\accrate\supa^{\maxprof}<\accrate<\min\{\accrate\supb^{\maxprof}, \overline{\accrate}\}$. By Theorem~\ref{thm:dem_par_selection}, we have that $\dempar$ selects to group~$\popa$ with rate higher than $\accrate$ as long as
+		\begin{eqnarray*}
+		\fraca \leq g_1 := \frac{1}{1-\frac{\util(\RCDF\supa(\accrate))}{\util(\RCDF\supb(\accrate))}}\:.
+		\end{eqnarray*}
+		By \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$, $\util(\RCDF\supa(\accrate))<0$ and $\util(\RCDF\supb(\accrate))>0$, so $0<g_1<1$. 
+
+		Next, we derive a condition which bounds the selection rate $\accrate^\dempar\supa$ from above. First, consider the case that $\accrate\supb^{\maxprof}<\overline{\accrate}$, and fix $\accrate'$ such that $\accrate\supb^{\maxprof}<\accrate'<\overline\accrate$. 
+		Then $\dempar$ selects group~$\popa$ at a rate $\accratea < \accrate'$ for any proportion $\fraca$. This follows from applying Theorem~\ref{thm:dem_par_selection} since we have that  $\util(\RCDFpl\supa(\accrate'))<0$ and $\util(\RCDFpl\supb(\accrate'))<0$ by \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$. 
+
+		Instead, in the case that $\accrate\supb^{\maxprof}>\overline{\accrate}$, fix $\accrate'$ such that $\overline\accrate<\accrate'<\accrate\supb^{\maxprof}$. Then $\dempar$ selects group~$\popa$ at a rate less than $\accrate'$ as long as 
+		\begin{align*}
+		\fraca\geq g_0:=\frac{1}{1-\frac{\util(\RCDFpl\supa(\accrate'))}{\util(\RCDFpl\supb(\accrate'))}}\:.
+		\end{align*} 
+		By \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$, $0<g_0<g_1$. Thus for $\fraca\in[g_0,g_1]$, the $\dempar$ selection rate for group~$\popa$ is bounded between $\accrate$ and $\accrate'$, and thus $\dempar$ results in relative improvement.
+
+		Next, we prove part (b), which gives conditions under which $\eqop$ cases relative improvement. First, we derive a condition which bounds the selection rate $\accrate^\eqop\supa$ from below. Fix an acceptance rate $\accrate$ such that $\accrate\supa^{\maxprof}<\accrate$ and $\accrate\supb^{\maxprof} > \transfer(\accrate)$.  
+		By Theorem~\ref{thm:eqop_selection}, $\eqop$ selects group~$\popa$ at a rate higher than $\accrate$ as long as
+		\begin{align*}
+		\fraca>g_3 := \frac{1}{1-\frac{1}{\kappa}\cdot\frac{\pb(\RCDF\supb(\transfer(\accrate)))}{\util(\RCDF\supb(\transfer(\accrate)))}\frac{\util(\RCDF\supa(\accrate))}{\pb(\RCDF\supa(\accrate))}}\:.
+		\end{align*} 
+		By \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$, $\util(\RCDF\supa(\accrate))<0$ and $\util(\RCDF\supb(\transfer(\accrate)))>0$, so $g_3>0$.
+
+		Next, we derive a condition which bounds the selection rate $\accrate^\eqop\supa$ from above. First, consider the case that there exists $\accrate'$ such that $\accrate'<\overline\accrate$ and $\accrate\supb^{\maxprof} < \transfer(\accrate')$ .
+		Then $\eqop$ selects group~$\popa$ at a rate less than this $\accrate'$ for any $\fraca$. This follows from Theorem~\ref{thm:eqop_selection} since we have that  $\util(\RCDFpl\supa(\accrate'))<0$ and $\util(\RCDFpl\supb(\transfer(\accrate')))<0$ by \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$. 
+
+		In the other case, fix $\accrate'$ such that $\accrate<\accrate'<\overline\accrate$ and $\accrate\supb^{\maxprof} > \transfer(\accrate')$. By Theorem~\ref{thm:eqop_selection}, $\eqop$ selects group~$\popa$ at a rate lower than $\accrate'$ as long as
+		$$\fraca>g_2 := \frac{1}{1-\frac{1}{\kappa}\cdot\frac{\pb(\RCDFpl\supb(\transfer(\accrate')))}{\util(\RCDFpl\supb(\transfer(\accrate')))}\frac{\util(\RCDFpl\supa(\accrate'))}{\pb(\RCDFpl\supa(\accrate'))}}\:.$$
+
+		By \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$, $0<g_2<g_3$. Thus for $\fraca\in[g_2,g_3]$, the $\eqop$ selection rate for group~$\popa$ is bounded between $\accrate$ and $\accrate'$, and thus $\eqop$ results in relative improvement.
+
+
+	\subsection{Proof of Corollary \ref{cor:dp_overeager}}
+	
+	Recall our assumption that $\accrate > \accrate\supa^{\maxprof}$ and  $\accrate\supb^{\maxprof} > \accrate$.
+	As argued in the above proof of Corollary \ref{cor:fairness_rel_imp}, by \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$, $\util(\RCDF\supa(\accrate))<0$ and $\util(\RCDF\supb(\accrate))>0$. 
+	 Applying Theorem~\ref{thm:dem_par_selection}, $\dempar$ selects at a higher rate than $\accrate$ for any population proportion $g_\popa \leq g_0$, where $g_0 = 1/(1-\frac{\util(\RCDF\supa(\accrate))}{\util(\RCDF\supb(\accrate))}) \in (0,1)$. In particular, if $\accrate=\accrate_0$, which we defined as the harm threshold (i.e. $\delmean_\popa(\ratef^{-1}_{\dista} (\accrate_0))=0$ and $\delmean_\popa$ is decreasing at $\accrate_0$), then by the concavity of $\delmean_\popa$, we have that  $\delmean_\popa(\ratef^{-1}_{\dista}(\accrate^\dempar_\popa))< 0$, that is, $\dempar$ causes active harm.
+
+
+\subsection{Proof of Corollary \ref{cor:eqop_overeager}}
+
+		By Theorem~\ref{thm:eqop_selection}, $\eqop$ selects at a higher rate than $\accrate$ for any population proportion $g_\popa \leq g_0$, where $g_0 =  1/(1-\frac{1}{\kappa}\cdot\frac{\pb(\RCDF\supb(\transfer(\accrate)))}{\util(\RCDF\supb(\transfer(\accrate)))}\frac{\util(\RCDF\supa(\accrate))}{\pb(\RCDF\supa(\accrate))})$. Using our assumptions $\accrate\supb^{\maxprof} > \transfer(\accrate)$ and $\accrate > \accrate\supa^{\maxprof}$, we have that $\util(\RCDF\supb(\transfer(\accrate))) > 0$ and $\util(\RCDF\supa(\accrate)) < 0$, by \eqref{eq:max_prof_sol_char} and the monotonicity of $\util$. This verifies that $g_0 \in (0,1)$. In particular, if $\accrate=\accrate_0$, then by the concavity of $\delmean_\popa$, we have that  $\delmean_\popa(\ratef^{-1}_{\dista}(\accrate^\eqop_\popa))< 0$, that is, $\eqop$ causes active harm.
+
+\subsection{Proof of Corollary \ref{cor:avoid_harm} }
+	
+	Applying Theorem~\ref{thm:dem_par_selection}, we have
+		\[-\frac{1-\fraca}{\fraca} \util(\RCDFone(\accrate))  < \util(\RCDFtwo(\accrate)) \implies \accrate_{\dempar} > \accrate\:. \]
+		Applying Theorem~\ref{thm:eqop_selection}, we have:	\[\util(\RCDFtwo(\transfer(\accrate)))\cdot \frac{\langle \pb, \distb\rangle}{ \langle \pb, \dista\rangle} \cdot  \frac{\pb(\RCDF^+\supa(\accrate))}{\pb(\RCDF^+\supb(\transfer(\accrate)))} < -\frac{1-\fraca}{\fraca} \util(\RCDFone^+(\accrate)) \implies \accrate_{\eqop} < \accrate\:. \] 
+	By Corollaries~\ref{cor:dp_overeager} and \ref{cor:eqop_overeager}, choosing $\fraca < g_2:= 1/(1-\frac{\util(\RCDF\supa(\accrate))}{\util(\RCDF\supb(\accrate))})$ and $\fraca > g_1 :=1/(1-\frac{1}{\kappa}\cdot\frac{\pb(\RCDF^+\supb(\transfer(\accrate)))}{\util(\RCDF^+\supb(\transfer(\accrate)))}\frac{\util(\RCDF^+\supa(\accrate))}{\pb(\RCDF^+\supa(\accrate))})$ satisfies the above.
+	
+	It remains to check that $g_1 < g_2$. Since we assumed $\accrate > \sum_{x > \mean \supa } \dist\supa$, we may apply Lemma~$\ref{cor:compare_dp_eo}$ to verify this.
+	
+	Thus we indeed have sufficient conditions for $\accrate_{\dempar} > \accrate > \accrate_\eqop$. In particular, if $\accrate=\accrate_0$, then by the concavity of $\delmean_\popa$, we have that  $\delmean_\popa(\ratef^{-1}_{\dista}(\accrate^\eqop_\popa))> 0$, that is, $\eqop$ causes improvement, and $\delmean_\popa(\ratef^{-1}_{\dista}(\accrate^\dempar_\popa))< 0$, that is, $\dempar$ causes active harm. 
+	
+	
+	Lastly, because $\accrate_{\dempar} >  \accrate_\eqop$, it is always true that $\delmean_\popa(\ratef^{-1}_{\dista}(\accrate^\dempar_\popa)) > 0 \implies \delmean_\popa(\ratef^{-1}_{\dista}(\accrate^\eqop_\popa))> 0$, using the concavity of the outcome curve. 
+	
+	
+	
+	
+	\begin{lem}[Comparison of $\dempar$ and $\eqop$ selection rates]\label{cor:compare_dp_eo}
+		
+		Fix $\accrate \in[0,1]$. Suppose $\dist\supa, \dist\supb$ are identical up to a translation with $\mean\supa < \mean\supb$. Also assume $\pb(x)$ is affine in $x$. Denote $\kappa =\frac{\langle \pb, \distb\rangle}{ \langle \pb, \dista\rangle}$.
+		Then, \[\accrate > \sum_{x > \mean \supa } \dist\supa \]
+		implies $\util(\RCDFtwo(\transfer(\accrate)))\cdot\kappa \cdot  \frac{\pb(\RCDF\supa(\accrate))}{\pb(\RCDF\supb(\transfer(\accrate)))}  < \util(\RCDFtwo(\accrate))$.
+		\begin{proof}
+			
+			If we have $\accrate > \sum_{x > \mean \supa } \dist\supa$, by lemma \ref{lem:geometry_shifted_dist}, we must also have $\frac{\mean\supb}{\mean\supa} < \frac{\RCDFtwo(\accrate_0)}{\RCDFone(\accrate_0)}$. This implies $\kappa=\frac{\sum_x\dist\supb(x)\pb(x)}{\sum_x\dist\supa(x)\pb(x)} <\frac{\pb(\RCDFtwo(\accrate))}{\pb(\RCDFone(\accrate_0))}  $ by linearity of expectation and linearity of $\pb$. Therefore, 
+			\begin{equation}
+			\kappa \cdot \frac{\pb(\RCDFone(\accrate))}{\pb(\RCDFtwo(\accrate_0))} <1 \label{eqn:kappa_geom}
+			\end{equation} 
+			
+			Further, using $\transfer(\accrate) > \accrate$ from lemma \ref{lem:geometry_shifted_dist} and the fact that $\frac{\util(x)}{\pb(x)}$ is increasing in $x$, we have $\frac{\util(\RCDFtwo(\transfer(\accrate)))}{ \pb(\RCDFtwo(\transfer(\accrate)))}<\frac{\util(\RCDFtwo(\accrate))}{ \pb(\RCDFtwo(\accrate))}  $. Therefore, $ \util(\RCDFtwo(\transfer(\accrate)))\cdot \kappa \cdot  \frac{\pb(\RCDF\supa(\accrate_0))}{\pb(\RCDF\supb(\transfer(\accrate_0)))} < \kappa \cdot \frac{\util(\RCDFtwo(\accrate))}{ \pb(\RCDFtwo(\accrate))}  \cdot \pb(\RCDF\supa(\accrate)) <\util(\RCDFtwo(\accrate))$ where the last inequality follows from \eqref{eqn:kappa_geom}.
+			
+		\end{proof}
+	\end{lem}
+	
+	We use the following technical lemma in the proof of the above lemma.
+	
+	\begin{lem}\label{lem:geometry_shifted_dist}
+		If $\dist\supa, \dist\supb$ that are identical up to a translation with $\mean\supa < \mean\supb$, then 
+		\begin{align}
+		G(\accrate)&> \accrate ~~\forall~ \accrate\:, \label{eqn:shifted_dist_claim1}\\
+		\accrate &> \sum_{x > \mean } \dist\supa \implies \frac{\mean\supb}{\mean\supa} < \frac{\RCDFtwo(\accrate)}{\RCDFone(\accrate)} \:.\label{eqn:shifted_dist_claim2}
+		\end{align}
+		\begin{proof}
+			For \eqref{eqn:shifted_dist_claim1}, observe that $\tpr\supa = \pb(\mean\supa) < \tpr\supb = \pb(\mean\supb)$. For any $\accrate$, we can write $\RCDFtwo(\accrate) = \mean\supb + c$ and $\RCDFone(\accrate) = \mean\supa + c$ for some $c$, since $\dist\supa, \dist\supb$ that are identical up to translation by $\mean\supa -\mean\supb$. Thus, by computation, we can see that for $\RCDF(\beta) < \mean$, $\partial_+\transfer(\beta) > 1$ and for $\RCDF(\beta) < \mean$, $\partial_+\transfer(\beta) < 1$. Since $\transfer$ is monotonically increasing on $[0,1]$, we must have $\transfer(\accrate) > \accrate$ for every $\accrate \in[0,1]$.
+			
+			For \eqref{eqn:shifted_dist_claim2}, we have $\accrate> \sum_{x > \mean } \dist\supa$, we can again write $\RCDFtwo(\accrate) = \mean\supb - c$ and $\RCDFone(\accrate) = \mean\supa - c$, for some $c > 0$. Then it is clear than we have $\frac{\mean\supb}{\mean\supa} < \frac{\RCDFtwo(\accrate)}{\RCDFone(\accrate)} $.
+		\end{proof}
+		
+	\end{lem}
+		
+\subsection{Proof of Corollary \ref{cor:eqop_underloan}}
+	\begin{proof}
+		$\accrate^\maxprof\supa < \accrate^\maxprof\supb$ implies $\fraca \cdot  \util(\RCDF\supa(\accrate^\maxprof\supa)) + \fracb \cdot \util(\RCDF\supb(\accrate^\maxprof\supa)) > 0$, which by Theorem~\ref{thm:dem_par_selection}, implies $\accrate\supa^\maxprof < \accrate\supa^\dempar$.
+		
+		$\oppa(\pol^\maxprof) > \oppb(\pol^\maxprof)$ implies	$\transfer(\accrate^\maxprof\supa) >\accrate^\maxprof\supb$ and so
+		
+		 $\util(\RCDF\supb(\transfer(\accrate^\maxprof\supa)))<0$. %This in turn implies $\partial_+ \Util(\accrate^\maxprof\supa) < 0$.
+		 Therefore by Theorem~~\ref{thm:eqop_selection}, we have that $\accrate^\maxprof\supa > \accrate^\eqop\supa$.
+	\end{proof}
+	We now give a very simple example of $\dista\prec \distb$ where Theorem 3.5 holds. The construction of the example exemplifies the more general idea of using large in-group inequality in group $\popa$ to skew the true positive rate at $\maxprof$, making $\oppa(\pol^\maxprof) > \oppb(\pol^\maxprof)$.
+	
+	\begin{exmp}[$\eqop$ causes relative harm]
+		Let $C=6$, and let the utility function be such that 
+		$\util(4) = 0$. 
+		Suppose $\dist\supa(5) = 1-2\epsilon, \dist\supa(1) =  2\epsilon$ and $\dist\supb(5) = 1-\epsilon, \dist\supb(3) = \epsilon$.
+		
+		We can easily check that $\dista\prec \distb$. However, for any $\epsilon \in (0,1/4)$, we have that $\oppb(\pol^\maxprof) = \frac{5(1-\epsilon)}{5(1-\epsilon)+3\epsilon} < \oppa(\pol^\maxprof) = \frac{5(1-2\epsilon)}{5(1-2\epsilon)+2\epsilon}$.
+		 
+	\end{exmp}
+	
+	
+	 \subsection{Proof of Proposition \ref{prop:underestim}}
+	 
+	 Denote the upper quantile function under $\widehat{\dist}$ as $\widehat{\RCDF}$.
+	 Since $\widehat{\dist} \prec \dist$, we have $\widehat{\RCDF}(\beta)\leq\RCDF(\beta)$. The conclusion follows for $\maxprof$ and $\dempar$ from Theorem~\ref{thm:dem_par_selection} by the monotonicity of $\util$.
+	 % that $\accrate_\maxprof>\widehat\accrate_\maxprof$ and $\accrate_\dempar>\widehat\accrate_\dempar$.
+	 
+	If we have that $\oppa(\pol) > \widehat{\oppa}(\pol)~\forall~\tau$, that is, the true TPR dominates estimated TPR, the conclusion for $\eqop$ follows from Theorem~\ref{thm:eqop_selection}, by the same argument as in the proof of Corollary~\ref{cor:eqop_underloan}.
+	 
+	\subsection{Proof of Proposition \ref{prop:outcome}}
+
+	
+	 By Proposition \ref{prop:beta_concavity}, $\accrate^*=\argmax_\accrate \delmean\supa(\accrate)$ exists and is unique. $\accrate_0=\max\{\accrate \in [\accrate\supa^\maxprof,1]:\Util(\accrate\supa^{\maxprof}) - \Util\supa(\accrate) \leq \delta \}$  which exists and is unique, by the continuity of $\delmean\supa$ and Proposition \ref{prop:beta_concavity}.
+	

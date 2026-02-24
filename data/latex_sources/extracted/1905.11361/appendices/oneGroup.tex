@@ -1,0 +1,368 @@
+\begin{proof}[Proof of Theorem \ref{thm:minErrorThresholdgeneralAlpha}]
+To prove the theorem, we show that the loss function $l_{\alpha}(\tau,\theta)$, as a function of $\theta$  is quasi-convex and achieves its minimum value at $\left\lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})})\right\rceil$.\\
+Namely, we show that the loss is monotone increasing for  $\left\lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})})\right\rceil\leq \theta \leq \tau-1$, i.e.,
+increasing $\theta$ increases the loss: $l_{\alpha}(\theta)<l_{\alpha}(\theta+1)$.\\
+Similarly, we show that for $1\leq  \theta\leq \left\lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})}) \right\rceil$, we have
+$l_{\alpha}(\theta)<l_{\alpha}(\theta-1)$.\\
+Indeed,
+\[
+l_{\alpha}(\theta+1,\tau)-l_{\alpha}(\theta,\tau)=
+-\alpha\Pr[y=0,S_{\tau}=\theta] +(1-\alpha)\Pr[y=+1,S_{\tau}=\theta] \]
+\[
+=-\alpha \Pr[S_{\tau}=\theta|y=0]
+\Pr[y=0]+
+(1-\alpha)\Pr[S_{\tau}=\theta|y=+1]
+\Pr[y=+1]\]
+Since $\Pr[y=0]=1-p$ and $\Pr[y=+1]=p$,  we have
+\[
+l_{\frac{1}{2}}(\theta+1,\tau)-l_{\frac{1}{2}}(\theta,\tau)=-(1-p)\alpha\Pr[S_{\tau}=\theta|y=0]+
+p(1-\alpha)\Pr[S_{\tau}=\theta|y=+1].
+\]
+The above expression is positive iff
+\begin{equation}\label{positiveiffgeneral}
+    (1-p)\alpha\Pr[S_{\tau}=\theta|y=0]<
+p(1-\alpha)\Pr[S_{\tau}=\theta|y=+1]
+\end{equation}
+Since $\Pr[S_{\tau}=\theta|y=0]$ is the probability of exactly $\theta$ flips, and $\Pr[S_{\tau}=\theta|y=+1]$ is the probability of exactly $\tau-\theta$ flips, we can calculate those probabilities as follows: 
+\[
+\Pr[S_{\tau}=\theta|y=0]={\tau \choose \theta}(\frac{1-\sigma}{2})^\theta(\frac{1+\sigma}{2})^{\tau-\theta}
+\]
+\[
+\Pr[S_{\tau}=\theta|y=+1]={\tau \choose \tau-\theta}(\frac{1-\sigma}{2})^{\tau-\theta}(\frac{1+\sigma}{2})^{\theta}
+\]
+Substituting expression in (\ref{positiveiffgeneral}), we get
+\[
+(1-p)\alpha{\tau \choose \theta}(\frac{1-\sigma}{2})^\theta(\frac{1+\sigma}{2})^{\tau-\theta}<
+p(1-\alpha){\tau \choose \tau-\theta}(\frac{1-\sigma}{2})^{\tau-\theta}(\frac{1+\sigma}{2})^{\theta}.
+\]
+Rearranging, we get
+\[
+(\frac{1-\sigma}{1+\sigma})^{2\theta}<(\frac{1-\sigma}{1+\sigma})^{\tau}(\frac{p}{1-p})(\frac{1-\alpha}{\alpha}).
+\]
+Applying $\log$ on both sides gets us
+\[
+2\theta\log(\frac{1-\sigma}{1+\sigma})<\tau\log(\frac{1-\sigma}{1+\sigma})+\log(\frac{p}{1-p})+\log(\frac{1-\alpha}{\alpha}).
+\]
+Solving for $\theta$, we find that the inequality holds if
+\[
+\theta>\frac{\tau\log(\frac{1-\sigma}{1+\sigma})+\log(\frac{p}{1-p})+\log(\frac{1-\alpha}{\alpha})}{2\log(\frac{1-\sigma}{1+\sigma})}=\left\lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})})\right \rceil
+\]
+
+For $\theta\geq \left \lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})})\right\rceil$,
+we have $$(1-p)\alpha\Pr[S_{\tau}=\theta|y=0]<
+p(1-\alpha)\Pr[S_{\tau}=\theta|y=+1],$$ 
+and for $\theta\leq \left \lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})})\right \rceil$, we have $$\alpha(1-p)\Pr[S_{\tau}=\theta|y=0]>
+(1-\alpha)p\Pr[S_{\tau}=\theta|y=+1].$$ This implies that the maximum is
+$\theta^*_{p,\alpha}=\left \lceil \frac{1}{2}(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})})\right \rceil$.
+
+
+\end{proof}
+
+
+
+\begin{proof}[Proof of Theorem \ref{thm:majorityLowerBound}]
+We start with a skilled candidate. 
+The expected number of tests 
+that a skilled candidate passes is $\E[S_{\tau}|y=+1]=\tau(\frac{1+\sigma}{2})>\frac{\tau}{2}$.
+
+By using Hoeffding's inequality for Bernoulli distributions, for every $\epsilon>0$,
+\[
+\Pr[\E[S_{\tau}]-S_{\tau}\geq \epsilon|y=+1]=\Pr[\tau(\frac{1+\sigma}{2})-S_{\tau}\geq \epsilon|y=+1]\leq e^{-2\epsilon^2 \tau}<\delta.
+\]
+Choosing $\epsilon=\frac{\sigma}{2}$ yields $S_\tau\leq \frac{\tau}{2}<\ceil{\frac{\tau}{2}}$ (as $\tau$ is odd), which holds iff a majority threshold policy would predict that this is an unskilled candidate (false negative). Solving for $\tau$, we get $\tau>\frac{1}{\sigma^2}\ln(\frac{1}{\delta})$.
+
+We now repeat the process for an unskilled candidate. The expected number of tests that an unskilled candidate passes is $\E[S_{\tau}|y=0]=\tau(\frac{1-\sigma}{2})<\frac{\tau}{2}$.
+
+By using Hoeffding's inequality again, we have
+\[
+\Pr[S_{\tau}-\E[S_{\tau}]\geq \epsilon|y=0]=\Pr[S_{\tau}-\tau(\frac{1-\sigma}{2})\geq \epsilon|y=0]\leq e^{-2\epsilon^2 \tau} <\delta
+\]
+Choosing $\epsilon=\frac{\sigma}{2}$ yields $S_\tau>\frac{\tau}{2}$, 
+which holds iff a majority threshold falsely predicts 
+that this is a skilled candidate (false positive). 
+Solving for $\tau$ again, we get
+$\tau>\frac{1}{\sigma^2}\ln(\frac{1}{\delta})$.\\
+Overall, $\tau>\frac{\alpha(1-p)}{\sigma^2}\ln(\frac{1}{\delta})+\frac{p(1-\alpha)}{\sigma^2}\ln(\frac{1}{\delta})=\Omega(\frac{\alpha+p-2p\alpha}{\sigma^2}\ln(\frac{1}{\delta}))$
+%\]
+\end{proof} 
+\begin{proof}[Proof of Theorem \ref{thm:minFPwithBudget}]
+Let $\pi'$ be any optimal policy for (\ref{optimization1}) (not necessarily threshold) with a fixed number of tests, $\tau$. 
+We will show, in two steps, how to transform it 
+into an optimal randomized threshold policy. 
+The first step is to symmetrize $\pi'$. 
+Let $r_k=\Pr[\pi(\hat{y})=1|S_\tau=k]$. 
+Define a policy $\pi''$, which performs $\tau$ tests, 
+and accepts with probability $r_k$ where $k=S_\tau$. 
+Clearly, 
+% the 
+both $\pi'$ and $\pi''$ have the same accept probability. 
+In addition, since condition on $S_\tau=k$, 
+any sequence of outcomes is equally likely. 
+Furthermore, and the probability that $y=1$ 
+given any sequence of outcomes with $S_\tau=k$, is identical. (Technically, $S_\tau$ is a sufficient statistics.) 
+This implies that the false discovery rate is also unchanged.
+
+This yields that $\pi$ with the randomization vector $r$ is also optimal.
+
+The second step is to suppose---for sake of contradiction---that $\pi''$ 
+is not a randomized threshold policy. 
+We will show that we can improve the FDR of $\pi''$ 
+while keeping the probability of acceptance unchanged. 
+This will contradict the hypothesis that $\pi'$ is optimal. 
+
+If $\pi''$ is not a randomized threshold policy, 
+then there is no $\theta$ and $k$, 
+such that 
+\[
+r_k=\Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}) =1|S_\tau=k\ne \theta]=
+ \begin{cases}
+       0, &\quad\text{if } k<\theta \\
+       1 &\quad\text{if } k>\theta\\
+     \end{cases}.
+\] 
+Now, let $k$ be the minimal value such that $r_k>0$ 
+and let $0<i<\tau-k$ be the minimal value 
+for which  $0<r_{k+i}<1$.
+Clearly, the FDR is lower at $S_\tau=k+i$ than at $S_\tau=k$.
+Intuitively, we can shift some probability mass, $\epsilon_k>0$ from $r_k$ to $r_{k+i}$ 
+in a way that maintains the acceptance probability of $\pi$ and decreases the false positive rates.
+
+Let $\epsilon_{k+i}>0$ be such that 
+$\epsilon_k\cdot r_k=\epsilon_{k+i}\cdot r_{k+i}$.
+Let $r'$ be a modified randomization vector for $\pi$ 
+such that $r_k'=r_k(1-\epsilon_k), r_{k+i}'= r_{k+i}(1+\epsilon_{k+i})$ 
+and for every $l\notin \{k,k+i\}$ $r_l'=r_l$. 
+Since $\Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}) =1]=\sum_{l=1}^\tau r_l=\sum_{l\notin \{k,k+i\}} r_l+r_k'+r_{k+i}'$, 
+the acceptance probability remains the same. 
+As for the false discovery rate, since
+$\Pr[y_i=0|S_\tau=k+i]<\Pr[y_i=0|S_\tau=k]$, 
+$\Pr[S_\tau=k+i]$ is higher with $r'$ than with $r$, $\Pr[S_\tau=k]$ is lower with $r'$  than with $r$ 
+and for any $l\notin \{k,k+i\}$, 
+$\Pr[S_\tau=l]$ with $r'$ is the same as with $r$, 
+the false discovery rate with $r'$ is lower, 
+which contradicts the optimality of $\pi$ 
+with $r$ as the randomization vector.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:posteriorBetter}]
+
+Using Bayes' theorem, the conditional probability can be decomposed as
+\[
+\Pr[y_i=+1|S_{\tau}=\theta]=\frac{\Pr[y_i=+1]\Pr[S_{\tau}=\theta|y_i=+1]}{\Pr[S_{\tau}=\theta]}=\]
+\[
+\frac{  p{\tau \choose \theta}(\frac{1-\sigma}{2})^{\tau-\theta}(\frac{1+\sigma}{2})^\theta}
+{ p{\tau \choose \theta}(\frac{1-\sigma}{2})^{\tau-\theta}(\frac{1+\sigma}{2})^\theta+
+ (1-p){\tau \choose \tau-\theta}(\frac{1+\sigma}{2})^{\tau-\theta}(\frac{1-\sigma}{2})^\theta}.
+ \]
+ Since $\tau-\theta<\theta$ and ${\tau \choose \theta}={\tau \choose \tau-\theta}$, we get
+ \[
+\frac{p(1+\sigma)^{2\theta-\tau}}
+{ p(1+\sigma)^{2\theta-\tau}+
+(1-p)(1-\sigma)^{2\theta-\tau}}=
+\frac{p(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}}
+{ p(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}+
+1-p}.
+\]
+Since $(\frac{1+\sigma}{1-\sigma})>1$ it holds that $(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}>1$, 
+\[
+(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}(1-p)>
+1-p.
+\]
+So,
+\[
+(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}>p(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}+
+1-p,
+\]
+And finally,
+\[
+\Pr[y_{i'}=+1]=p<\frac{p(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}}
+{ p(\frac{1+\sigma}{1-\sigma})^{2\theta-\tau}+
+1-p}=\Pr[y_i=+1|S_{\tau}=\theta].
+\]
+\end{proof}
+
+\begin{proof}[Proof of Lemma \ref{lemma:beta}]
+Let $S'_{\tau}=\sum_{j=1}^\tau (2\hat{y}_{i,j}-1)$, and let $s_{\tau}\in\{-\tau,\dots,\tau\}$ be any of the possible values of $S'_\tau$. Note that
+\[
+\frac{\Pr[\hat{y}_{i,j}=1|y_i=1]}{\Pr[\hat{y}_{i,j}=1|y_i=0]}=\frac{1+\sigma}{1-\sigma}.
+\]
+Since the $\hat{y}_{i,j}$  are i.i.d., we have
+\begin{align*}
+X_{\tau}=&X_0+\sum_{j=1}^\tau(2\hat{y}_{i,j}-1)\cdot
+    \log(\frac{\Pr[\hat{y}_{i,j}=+1|y_i=+1]}{\Pr[\hat{y}_{i,j}=+1|y_i=0]})\\
+%
+= &\log(\frac{p}{1-p})+S_{\tau}\log(\frac{1+\sigma}{1-\sigma})\\
+%
+%X_\tau
+=& \log((\frac{p}{1-p}) (\frac{1+\sigma}{1-\sigma})^{S_{\tau}}).
+\end{align*}
+Since
+\[
+\frac{\Pr[S_{\tau}=s_{\tau}|y_i=1]}{\Pr[S_{\tau}=s_{\tau}|y_i=0]}=(\frac{1+\sigma}{1-\sigma})^{s_\tau},
+\]
+we have
+\begin{equation}\label{eq:Xtau}
+X_\tau= \log((\frac{p}{1-p}) (\frac{\Pr[S_{\tau}=s_{\tau}|y_i=1]}{\Pr[S_{\tau}=s_{\tau}|y_i=0]})).
+\end{equation}
+Since 
+\[
+\Pr[S_{\tau}=s_{\tau}|y_i=1]=\frac{\Pr[S_{\tau}=s_{\tau}]\cdot \Pr[y_i=1|S_{\tau}=s_{\tau}]}{\Pr[y_i=1]}
+\]
+and 
+\[
+\Pr[S_{\tau}=s_{\tau}|y_i=0]=\frac{\Pr[S_{\tau}=s_{\tau}]\cdot \Pr[y_i=0|S_{\tau}=s_{\tau}]}{\Pr[y_i=0]},
+\]
+assigning $\Pr[y_i=0]=1-p$ and $\Pr[y_i=1]=p$, 
+we get
+\begin{equation}\label{eq:Odds}
+\frac{\Pr[S_{\tau}=s_{\tau}|y_i=1]}{\Pr[S_{\tau}=s_{\tau}|y_i=0]}=
+\frac{(1-p)\cdot\Pr[y_i=1|S_{\tau}=s_{\tau}]}{p\cdot\Pr[y_i=0|S_{\tau}=s_{\tau}]}.
+\end{equation}
+Applying (\ref{eq:Odds}) in (\ref{eq:Xtau}) and adding $X_\tau\geq\log \beta$ gives us
+\[
+X_\tau= \log \left(\frac{\Pr[y_i=1|S_{\tau}=s_{\tau}]}{\Pr[y_i=0|S_{\tau}=s_{\tau}]}\right)=\log\left(\frac{\Pr[y_i=1|S_{\tau}=s_{\tau}]}{1-\Pr[y_i=1|S_{\tau}=s_{\tau}]}\right)\geq \log \beta
+\]
+\[
+\frac{\Pr[y_i=1|S_{\tau}=s_{\tau}]}{1-\Pr[y_i=1|S_{\tau}=s_{\tau}]}\geq  \beta
+\]
+\[
+\Pr[y_i=1|S_{\tau}=s_{\tau}]\geq  \beta(1-\Pr[y_i=1|S_{\tau}=s_{\tau}])
+\]
+\[
+\Pr[y_i=1|S_{\tau}=s_{\tau}]\geq  \frac{\beta}{1+\beta}
+\]
+
+Applying (\ref{eq:Odds}) in (\ref{eq:Xtau}) and adding $X_\tau<\log \beta'$ gives us
+\[
+\frac{\Pr[y_i=1|S_{\tau}=s_{\tau}]}{1-\Pr[y_i=1|S_{\tau}=s_{\tau}]}<  \beta'
+\]
+Hence
+\[
+\Pr[y_i=1|S_{\tau}=s_{\tau}]< \frac{\beta'}{1+\beta'}
+\]
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:expectedNumOfTests}]
+First recall that given a skilled candidate, for every test $j$,
+\[
+\Pr[\hat{y}_{i,j}=+1|y_i=+1]=\frac{1+\sigma}{2}
+\]
+\[
+\Pr[\hat{y}_{i,j}=0|y_i=+1]=\frac{1-\sigma}{2}
+\]
+Hence
+\[
+\Pr[\hat{y}_{i,j}=0|y_i=1]-\Pr[\hat{y}_{i,j}=+1|y_i=1]=-\sigma.
+\]
+The lower absorbing barrier is reached 
+when a candidate's posterior skill level is lower than the prior of the skill level, i.e.,
+\[
+\log \frac{\epsilon'}{1-\epsilon'}-\log \left(\frac{1+\sigma}{1-\sigma}\right)
+\]
+and the starting point is just one step away from the lower absorbing barrier: 
+\[
+X_0=\log \frac{p}{1-p}.
+\]
+According to Corollary \ref{cor:piGreedy}, the upper absorbing barrier is in
+\[
+\log(\frac{1-\epsilon}{\epsilon}).
+\]
+To derive the results for the expected duration of the random walk for skilled and unskilled candidates, we shift the locations of the absorbing points so that the lower barrier would be in 0 and also divide them by a step size (so now we have that every step is of size $1$). The new upper absorbing barrier is at 
+\[
+a=\left\lceil\frac{\log(\frac{1-\epsilon}{\epsilon})-
+(\log \frac{\epsilon'}{1-\epsilon'}-\log(\frac{1+\sigma}{1-\sigma}))}{\log(\frac{1+\sigma}{1-\sigma})}\right\rceil=
+\left\lceil\frac{\log(\frac{(1-\epsilon)(1-\epsilon')(1+\sigma)}{\epsilon \epsilon'(1-\sigma)})}{\log(\frac{1+\sigma}{1-\sigma})}\right\rceil.
+\]
+And we also shift the starting point:
+\[
+z=\left\lceil\frac{\log \frac{p}{1-p}-
+(\log \frac{ \epsilon'}{1- \epsilon'}-\log(\frac{1+\sigma}{1-\sigma}))}{\log(\frac{1+\sigma}{1-\sigma})}\right\rceil=
+\left\lceil\frac{\log (\frac{p(1-\epsilon')(1+\sigma)}{\epsilon'(1-p)(1-\sigma)})}{\log(\frac{1+\sigma}{1-\sigma})}\right\rceil
+\]
+
+As stated in \cite{feller1}, the expected duration of a random walk with absorbing barriers of $0$ and $a$ from $z=1$ is (equation 3.4, chapter XIV [page 348]):
+\[
+\E[\tau_{s}]=\E[D_{z=1}]=\frac{1}{q-p}\left(z-a\cdot\frac{1-(\frac{q}{p})^{z}}{1-(\frac{q}{p})^{a}}\right)=
+\frac{1}{-\sigma}\left(z-a\cdot\frac{1-(\frac{1-\sigma}{1+\sigma})^z}{1-(\frac{1-\sigma}{1+\sigma})^{a}}\right).\]
+Hence,
+\[
+\E[\tau_{s}]=\frac{1}{\sigma}\left(a\cdot\frac{1-(\frac{1-\sigma}{1+\sigma})^{z}}{1-(\frac{1-\sigma}{1+\sigma})^{a}}-z\right).
+\]
+As for unskilled candidates, the absorbing points and the starting point are the same, the only difference is that \[
+\Pr[\hat{y}_{i,j}=+1|y_i]=\frac{1-\sigma}{2}
+\]
+and
+\[
+\Pr[\hat{y}_{i,j}=0|y_i=+1]=\frac{1+\sigma}{2}.
+\]
+Therefore,
+\[
+\Pr[\hat{y}_{i,j}=0|y_i=0]-\Pr[\hat{y}_{i,j}=+1|y_i=0]=\sigma 
+\]
+and we deduce
+\[
+\E[\tau_{u}]=\frac{1}{\sigma}\left(z-a\cdot\frac{1-(\frac{1+\sigma}{1-\sigma})^{z}}{1-(\frac{1+\sigma}{1-\sigma})^{a}}\right).
+\]
+\end{proof}
+
+\begin{proof}[Deviations for the confusion matrix (Table \ref{tab:confMat})]
+We split the claim in the confusion matrix (Table \ref{tab:confMat}) into two parts.
+First, using equation (2.4) from chapter XIV [page 345] in \cite{feller1}, we get
+\[
+\text{FNR}=\Pr[\pi_{\text{Greedy}}(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=0|y_i=+1]=\frac{(\frac{1-\sigma}{1+\sigma})^a-(\frac{1-\sigma}{1+\sigma})^z}{(\frac{1-\sigma}{1+\sigma})^a-1}
+\]
+and
+\[
+\text{TNR}=\Pr[\pi_{\text{Greedy}}(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=0|y_i=0]=\frac{(\frac{1+\sigma}{1-\sigma})^a-(\frac{1+\sigma}{1-\sigma})^z}{(\frac{1+\sigma}{1-\sigma})^a-1}.
+\]
+
+The second part follows from the fact the gambler's ruin must end in case of absorbing barriers. 
+\[
+\text{TPR}=\Pr[\pi_{\text{Greedy}}(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=1|y_i=+1]=1-\frac{(\frac{1-\sigma}{1+\sigma})^a-(\frac{1-\sigma}{1+\sigma})^z}{(\frac{1-\sigma}{1+\sigma})^a-1}=\]
+\[
+\frac{(\frac{1-\sigma}{1+\sigma})^z-1}{(\frac{1-\sigma}{1+\sigma})^a-1}=
+\frac{\frac{\epsilon'(1-p)(1-\sigma)}
+{p(1-\epsilon')(1+\sigma)}-1}
+{\frac{\epsilon'\epsilon(1-\sigma)}{(1-\epsilon')(1-\epsilon)(1+\sigma)}-1}=
+\frac{\frac{\mu(1-p)}{p}-1}
+{\frac{\epsilon\mu}{(1-\epsilon)}-1}=
+\frac{(1-\epsilon)(\mu(1-p)-p)}
+{p(\epsilon\mu-(1-\epsilon))},
+\]
+Where $\mu:=\frac{\epsilon'(1-\sigma)}{(1-\epsilon')(1+\sigma)}$. For $\epsilon\leq 1/4$ and $p< 1/2$ we get $0\leq\mu \leq 1/3$ and $\mu=\Theta(\epsilon'(1-\sigma))$, therefore
+\[
+\text{TPR}=\Theta \left(\frac{p-\mu}{p}\right)=
+\Theta\left(1-\frac{\epsilon'}{p}(1-\sigma)\right).
+\]
+
+Hence $\text{FNR}=\Theta(\frac{\epsilon'}{p}(1-\sigma))$.
+
+\[
+\text{FPR}=\Pr[\pi_{\text{Greedy}}(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=1|y_i=0]=\frac{(\frac{1+\sigma}{1-\sigma})^{z}-1}{(\frac{1+\sigma}{1-\sigma})^{a}-1}=
+\frac{\frac{p(1-\epsilon')(1+\sigma)}{(1-p)\epsilon'(1-\sigma)}-1}
+{\frac{(1-\epsilon')(1-\epsilon)(1+\sigma)}{\epsilon'\epsilon(1-\sigma)}-1}=\]
+\[
+=
+\frac{\frac{p}{(1-p)\mu}-1}
+{\frac{(1-\epsilon)}{\epsilon \mu}-1}\frac{\epsilon(p-(1-p)\mu)}{(1-p)(1-\epsilon-\epsilon\mu)}
+=\Theta\left(\epsilon(p-\mu) \right)
+=\Theta\left(\epsilon(p-\epsilon'+\epsilon'\sigma) \right)
+\]
+Hence $\text{TNR}=\Theta\left(1-\epsilon(p-\epsilon'+\epsilon'\sigma) \right)$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem \ref{thm:expectedNumOfTestsUntilDecision}]
+
+\[
+\E[\tau]=\E[\tau_{s}]p+\E[\tau_{u}](1-p)=
+\]
+
+\[
+=\frac{1}{\sigma}\left(a\cdot\frac{1-(\frac{1-\sigma}{1+\sigma})^{z}}{1-(\frac{1-\sigma}{1+\sigma})^{a}}-z\right)p+
+\frac{1}{\sigma}\left(z-a\cdot\frac{1-(\frac{1+\sigma}{1-\sigma})^{z}}{1-(\frac{1+\sigma}{1-\sigma})^{a}}\right)(1-p)=
+\]
+\[
+\approx\frac{1}{\sigma}\left(a\cdot(1-\frac{\epsilon'}{p}(1-\sigma))-z\right)p+
+\frac{1}{\sigma}(z-a(\epsilon(p-\epsilon'+\epsilon'\sigma)))(1-p)\approx \frac{ap}{\sigma}
+\]
+\end{proof}

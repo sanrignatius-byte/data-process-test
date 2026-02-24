@@ -1,0 +1,139 @@
+\section{Optimality}
+\label{sec:optimality}
+
+\gp{A troublesome optimality result}
+
+\gp{Uniqueness + implications}
+
+\gp{Can't do better than a random coin toss.}
+
+In this section, we prove that the post-processing method \autoref{alg:method}
+produces a solution which is not only feasible but also near-optimal over
+\emph{all} non-discriminatory classifiers with respect to generalized
+false-positive and false-negative rates. Intuitively, this holds because,
+under the calibration constraint, the cost of a classifier uniquely determines
+the false-positive/false-negative rates for a given base rate $\mu_t$:
+%
+\begin{lemma}
+  Let $h_t$ and $h'_t$ be perfectly calibrated classifiers with cost
+  $\fairconst{h_t}{t} \leq \fairconst{h'_t}{t}$ for some
+  cost function $\fairconstname$. Then $\fp{h_t} \leq \fp{h'_t}$
+  and $\fn{h_t} \leq \fn{h'_t}$, with equality only if $\fairconst{h_t}{t} = \fairconst{h'_t}{t}$.
+  \label{lem:fpfn_exact}
+\end{lemma}
+%
+This also holds in an approximate sense if $h_t$ and $h'_t$ are approximately
+calibrated (see \autoref{lem:fpfn} in \autoref{sec:cost_and_error}).
+As described in \autoref{sec:setup}, the false-positive rate of a calibrated classifier
+determines the false-negative rate, and vice versa. Because cost functions
+of the form given by \eqref{eqn:cost_general} are positive combinations of
+the false-positive/false-negative rates, it can be seen that there is only one
+false-positive/false-negative solution for a given cost value, and improving one
+of the values strictly improves the others.
+The geometric intuition of this can be seen in \autoref{fig:postprocess}:
+the level-order curves of $\fairconstname$ intersect the set of
+calibrated classifiers in one point on the false-positive/false-negative plane.
+
+Our goal is to find classifiers that simultaneously minimize the
+false-positive/false-negative costs for both groups $G_1$ and $G_2$, subject to a
+calibration constraint and non-disparity.
+We continue with the assumption that, given a finite set of data and features,
+we cannot strictly improve the cost (and therefore the
+false-positive/false-negative rates) of the discriminatory classifiers $h_1$ and $h_2$.
+Therefore, non-discriminatory classifiers with cost lower than that of
+$\fairconst{h_1}{1}$ are infeasible (again assuming without loss of
+generality that $\fairconst{h_1}{1} \geq \fairconst{h_2}{2}$).
+Note that \autoref{alg:method} produces a classifier $\fair h_2$ with cost equal
+to $\fairconst{h_1}{1}$, therefore achieving the minimum possible
+cost for non-discriminatory classifiers. If we assume that $h_1$ and $\fair h_2$
+are perfectly calibrated, then by \autoref{lem:fpfn_exact} $h_1$ and $\fair h_2$
+must also achieve the minimum possible false-positive and false-negative rates
+for non-discriminatory classifiers, and thus are optimal. This is summarized below:
+%
+\begin{thm}[Optimality of \autoref{alg:method}]
+  Let $h_1$ and $h_2$ be (discriminatory) classifiers which achieve the
+  minimum false-positive and false-negative rates for groups $G_1$ and $G_2$, respectively
+  (i.e. cannot be strictly improved).
+  If $h_1$ and $h_2$ are perfectly calibrated, then \autoref{alg:method} produces
+  the optimal perfectly calibrated non-discriminatory classifiers with respect
+  to false-positive/false-negative rates.
+  \label{thm:optimality}
+\end{thm}
+%
+\autoref{thm:optimality} holds in an approximate sense as well:
+if $h_1$ and $h_2$ are approximately (but not perfectly) calibrated, then
+\autoref{alg:method} produces non-discriminatory classifiers which are
+near-optimal among classifiers that are just as calibrated as $h_1$ and $h_2$.
+We formalize this in \autoref{thm:approx-fp-optimality} and
+\autoref{thm:approx-fn-optimality} in \autoref{sec:optimality-proofs}.
+
+%\paragraph{Bounding Generalized False-Positive and False-Negative Rates.}
+%We can show that our postprocessing technique is near-optimal with respect
+%to generalized false-positive and false-negative rates.
+%We assume that the given classifier $h_1$ is Pareto-dominant in the sense that
+%we cannot find a strictly better classifier $h_1'$ that is at least as
+%calibrated as $h_1$ but has strictly smaller generalized false-positive or false-negative
+%rate. As a consequence, $\fairconst{h_1}{1}$ and $\fairconst{\fair
+%h_2}{2}$ must both be at least $\fairconst{h_1}{1}$. (We formalize this with \autoref{lem:fpfn}
+%in the supplementary material).
+%As a result, assuming that $h_1$ was
+%Pareto-dominant, any classifiers satisfying our calibration and disparity
+%constraints must have generalized false-positive and false-negative rates
+%approximately equal to those of our derived classifiers $h_1$ and $\fair
+%h_2$.
+
+\paragraph{Relation to Equalized Odds post-processing.}
+It is worth noting that \autoref{thm:optimality} implies that
+the classifiers produced by \autoref{alg:method} are optimal not
+only for post-processing methods but among \emph{all}
+calibrated classifiers.
+\gp{How to word this better?}
+%
+This is in contrast this with the (uncalibrated) Equalized Odds
+framework, in which post-processing methods do not always produce
+the optimal non-discriminatory classifier.
+\citet{woodworth2017learning} show that the post-processing method
+of \citet{hardt2016equality} may be suboptimal when group membership
+is more predictive than any other feature.
+It is worth noting that this result does not directly apply to
+\methodname{} non-discrimination.
+Firstly, \methodname{} is infeasible when group membership is the
+most predictive feature (\autoref{crly:infeasible_predictive}), and
+therefore the suboptimality result of \cite{woodworth2017learning} does
+not apply.
+Moreover, the feasibility region of classifiers for \methodname{}
+is sufficiently more restrictive than that of Equalized Odds, which
+makes optimization through post-processing tractable.
+Equalized Odds solutions may lie anywhere in the false-positive/false-negative
+plane, as the framework affords two degrees of freedom. As the post-processing
+method of \cite{hardt2016equality} confines solutions to a limited subregion of the
+plane it is possible that the derived classifiers may not be optimal. However,
+solutions to \methodname{} are restricted to a line in the false-positive/false-negative
+plane. As \autoref{alg:method} can derive all possible classifiers in this subspace
+(again assuming we cannot strictly improve upon $h_1$ and $h_2$), then a solution
+solution which is optimal with respect to the post-processing method \autoref{alg:method}
+must be optimal over all (achievable) non-discriminatory solutions.
+
+\paragraph{Implications.}
+The optimality of \autoref{alg:method} is beneficial for many reasons.
+Beyond ease of implementation, post-processing algorithms offer visibility into
+the performance/disparity trade-off, whereas training-time constraints make
+this tradeoff harder to see. It is therefore easy for a practitioner to change
+the post-processing parameters to select a desirable balance between
+performance and non-disparity. \gp{Copied directly from the rebuttal. Does it belong here?}
+
+However, in some applications, the cost of randomizing predictions for the
+stronger group ($G_2$) may not be a suitable option. In such cases, the only path towards
+non-discrimination is improving the classifier for the weaker group ($G_1$)
+either by collecting more data, using additional features, or denoising existing
+data. When this extra work is not possible, achieving non-discrimination will
+require a sacrifice in performance, as is the case with other frameworks
+of fairness
+\cite{berk2017fairness,corbett2017algorithmic,hardt2016equality,zliobaite2015relation}.
+\gp{Trying to hammer the point home here, but a bit overkill maybe?}
+In these settings, \autoref{alg:method} is
+the best solution to achieve non-discrimination with calibration.
+
+%such that $\epsilon(h_1') \le
+%\epsilon(h_1)$
+%and $\fp{h_1'} < \fp{h_1}$ or $\fn{h_1'} < \fn{h_1}$.

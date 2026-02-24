@@ -1,0 +1,78 @@
+
+
+ \begin{table}[t]
+ \small
+ \centering
+ \begin{tabular}{|l|c|c|}
+         \hline 
+          Model & Original & Gender-reversed \\
+         \hline
+         E2E & 66.4 &65.9 \\
+         \hline
+         Feature & 61.3 & 60.3\\
+         \hline
+         %Rule & 56.3  & 55.8 \\
+         %\hline
+     \end{tabular}
+     \caption{ \small Performance on the original and the gender-reversed developments dataset (anonymized).}
+     \label{tab:ontonotes_swapped}
+ \end{table}
+
+
+%In this section we present evaluation of three representative co-reference systems on both  OntoNotes 5.0 and ~\dataset~.
+
+
+%We present evaluations on both OntoNotes 5.0 and on ~\dataset~.   
+ %We have shown the gender bias issue in the coreference systems. 
+ %In this section, we are going to propose methods to reduce the gender bias.
+% What we do here is that we have the access to the training dataset and we will try to fix the problem by just adding some redundant information based on the original training dataset. 
+%The first method is to add some redundant information based on the original training dataset. Without changing any training procedure or losing any useful information, we can show that this algorithm  can help to reduce the gender bias in the coreference systems.
+%As the word embeddings also shows implicit gender bias issue~\cite{BCWS16}, the coreference systems using the word embeddings will also inherit such problem.  Besides the data augmentation method, we also  incorporate the debiased word embeddings for the calibration.
+
+%\subsection{Results}
+In this section we evaluate of three representative systems: 
+rule based, \Stanford ,~\cite{raghunathan2010multi}, feature-rich, \Berkeley, ~\cite{DurrettKlein2013}, and end-to-end neural (the current state-of-the-art), \UW, ~\cite{lee2017end}.
+The following sections show that performance on \dataset~reveals gender bias in all systems, that our methods remove such bias, and that systems are less biased on OntoNotes data. 
+
+\paragraph{WinoBias Reveals Gender Bias}
+Table~\ref{tab:results} summarizes development set evaluations using all three systems.
+Systems were evaluated on both types of sentences in~\dataset~(T1 and T2), separately in pro-stereotyped and anti-stereotyped conditions ( T1-p vs. T1-a, T2-p vs T2-a).
+We evaluate the effect of named-entity anonymization (Anon.), debiasing supporting resources\footnote{Word embeddings for \UW~and gender lists for \Berkeley} (Resour.) and using data-augmentation through gender swapping (Aug.).
+\UW~and \Berkeley~were retrained in each condition using default hyper-parameters while \Stanford~was not debiased because it is untrainable. 
+%Debiasing techniques were not applied to the rule based system because it is not trainable.
+We evaluate using the coreference scorer v8.01~\cite{pradhan2014scoring} and compute the average (Avg) and absolute difference (Diff) between pro-stereotyped and anti-stereotyped conditions in \dataset.
+
+All initial systems demonstrate severe disparity between pro-stereotyped and anti-stereotyped conditions. 
+Overall, the rule based system is most biased, followed by the neural approach and feature rich approach. 
+Across all conditions, anonymization impacts \UW~ the most, while all other debiasing methods result in insignificant loss in performance on the OntoNotes dataset.
+Removing biased resources and data-augmentation reduce bias independently and more so in combination, allowing both \UW~and \Berkeley~to pass \dataset~ without significantly impacting performance on either OntoNotes or \dataset~. 
+Qualitatively, the neural system is easiest to de-bias and %, requiring little knowledge of it's inner workings.
+our approaches could be applied to future end-to-end systems.
+Systems were evaluated once on test sets, Table~\ref{tab:test_results}, supporting our conclusions.
+
+\paragraph{Systems Demonstrate Less Bias on OntoNotes} 
+While we have demonstrated co-reference systems have severe bias as measured in \dataset~, this is an out-of-domain test for systems trained on OntoNotes.
+Evaluating directly within OntoNotes is challenging because sub-sampling documents with more female entities would leave very few evaluation data points.
+Instead, we apply our gender swapping system (Section \ref{sec:visualizing_bias}), to the OntoNotes development set and compare system performance between swapped and unswapped data.\footnote{This test provides a lower bound on OntoNotes bias because some mistakes can result from errors introduce by the gender swapping system.}
+If a system shows significant difference between original and gender-reversed conditions, then we would consider it gender biased on OntoNotes data.
+
+Table~\ref{tab:ontonotes_swapped} summarizes our results.
+The \UW~system does not demonstrate significant degradation in performance, while \Berkeley~loses roughly 1.0-F1.\footnote{We do not evaluate the \Stanford~ system as it cannot be train for anonymized input.}
+This demonstrates that given sufficient alternative signal, systems often do ignore gender biased cues.
+%For example, in , the models do not show bias on in-domain OntoNotes data which is indicated by the similar performance on the gender reversed dataset as  sufficient cues are covered in the dataset.
+On the other hand, \dataset~provides an analysis of system bias in an adversarial setup, showing, when examples are challenging, systems are likely to make gender biased predictions.
+
+
+%While systems are less accurate in the gender-reversed setting, the effect is small, likely because either ambiguous situations are infrequent or there is sufficient alternative signal.
+
+
+%word vectors and gender lists 
+
+%We show the performance of the three coreference resolution systems before and after retraining using our calibration in Table~\ref{tab:cluster_gender_ratio}.
+%Before adopting our calibration method, the UW system shows $21\%$ difference on the type1 wino dataset.
+%After the ART method, the difference shrinks to $5.95$. Also, with the DRT method, we can  reduce the gap to $7.94\%$ which means both method can help to mitigate the gender bias issue in the system. However the DART method, which makes the difference to $1.1\%$, shows the best performance in reducing the gender bias.
+
+%To make the results more straightforward, we only evaluate the models on the subset that we have changed the gender. The results are shown in Table~\ref{tab:changed_only}.
+%All the systems achieve sub-optimal performance on the gender-reversed corpus.
+%The performance of Stanford CoreNLP system drops $1.6\%$. The performance of Berkeley and UW systems also drops $1.46\%$, $1.23\%$, respectively. 
+%It indicates that the model is sensitive to the gender of entities and treats male and female entities differently which is mainly due to the model fails to identify entities that are referred by female pronouns in the gender-reversed corpus.

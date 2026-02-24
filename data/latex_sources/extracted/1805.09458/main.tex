@@ -1,0 +1,115 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2017
+%
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2017}
+
+\usepackage[final,nonatbib]{neurips_2018}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{nips_2017}
+\usepackage[english]{babel}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+
+\usepackage{latexsym,amssymb,amstext,amsfonts,amsmath,graphicx,setspace,mathtools,bm}
+
+\definecolor{graph_orred}{RGB}{212, 71, 74}
+
+\newcommand{\BlueComment}[1]{\color{blue}{#1}\color{black}}
+\newcommand{\NewText}[1]{\color{red}{#1}\color{black}~}
+\newcommand{\ToBeRemoved}[1]{\color{green}{#1}\color{black}~}
+\newcommand{\CiteNeeded}{\color{blue}{$[$Citation Needed$]$}\color{black}}
+\newcommand{\CiteLater}[1]{\color{blue}{$[$#1$]$}\color{black}}
+\newcommand{\DM}[1]{~\color{purple}{Dan: #1}\color{black}~}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\diag}{diag}
+\DeclareMathOperator*{\tr}{tr}
+\DeclareMathOperator*{\sign}{sign}
+\newcommand*\dif{\mathop{}\!\mathrm{d}}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+\newcommand\symeq{\stackrel{\mathclap{\tiny\mbox{sym}}}{=}}
+\DeclareMathOperator*{\A}{\mathbb{A}}
+\DeclareMathOperator*{\B}{\mathbb{B}}
+
+
+%\title{A Variational Bound for Invariant Representation}
+\title{Invariant Representations without Adversarial Training}
+
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+\author{
+  Daniel Moyer, Shuyang Gao, Rob Brekelmans, Greg Ver Steeg, and Aram Galstyan\\
+  Information Sciences Institute\\
+  University of Southern California\\
+  \texttt{\{moyerd, gaos, brekelma\}@usc.edu~~\{gregv, galstyan\}@isi.edu} \\
+  %% examples of more authors
+  %% \And
+  %% Shuyang Gao \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \AND
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+}
+
+\begin{document}
+% \nipsfinalcopy is no longer used
+
+\maketitle
+
+\begin{abstract}
+Representations of data that are invariant to changes in specified factors are useful for a wide range of problems: removing potential biases in prediction problems, controlling the effects of covariates, and disentangling meaningful factors of variation. Unfortunately, learning representations that exhibit invariance to arbitrary nuisance factors yet remain useful for other tasks is challenging. Existing approaches cast the trade-off between task performance and invariance in an adversarial way, using an iterative minimax optimization. We show that adversarial training is unnecessary and sometimes counter-productive; we instead cast invariant representation learning as a single information-theoretic objective that can be directly optimized. We demonstrate that this approach matches or exceeds performance of state-of-the-art adversarial approaches for learning fair representations and for generative modeling with controllable transformations.
+%Representations of data that are invariant to changes in specified nuisance factors are useful for removing potential bias in prediction problems, controlling the effects of known confounders, and disentangling meaningful factors of variation. Unfortunately, learning representations that exhibit desired invariances and are still useful for other tasks like prediction and generative modeling is challenging. Existing approaches cast the trade-off between task performance and invariance in an adversarial way, using minimax optimization. We propose an information-theoretic framework for casting invariant representation learning of various tasks that can be jointly optimized without adversarial minimax training. We demonstrate that this approach matches or exceeds performance of state-of-the-art adversarial approaches for learning fair representations and generative modeling with controllable transformations.
+\end{abstract}
+
+\input{intro/intro.tex}
+
+\input{model/model.tex}
+
+\input{comp/comp.tex}
+
+\input{disc/disc.tex}
+
+\bibliographystyle{abbrv}
+\bibliography{neg_anchors.bib}
+
+\end{document}

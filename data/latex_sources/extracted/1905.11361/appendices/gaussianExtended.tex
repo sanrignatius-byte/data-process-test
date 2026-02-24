@@ -1,0 +1,93 @@
+In this extension, we characterize the conditional expectation, $\mathbbm{E}[Q|Y_1,...,Y_n]$ and
+ the conditional variance of $Q$ given the tests$Y_i$, i.e., $\text{Var}[Q|Y_1,...,Y_n]$.
+ 
+First, note that because $P(Q)$ is Gaussian, 
+and the conditionals $P(Y_i|Q)$ are all Gaussian,
+the joint probability $P(Q, Y_1, ..., Y_n)$
+is a multivariate Gaussian.
+We work out the precise analytic forms
+for the mean and variance of the conditional 
+$P(Q | Y_1, ..., Y_n)$ in terms of the quality and noise variances 
+($\sigma_Q^2$ and $\sigma_\eta^2$) and the number of tests $n$. 
+
+To begin, we note the properties of the joint distribution over $P(Q, Y_1, ..., Y_n)$.
+Owing to the generative process for our $Y_i$,
+all have mean $\mu_Q$, 
+and thus the joint over the means is an $n+1$-dimensional vector
+$(\mu_Q, ..., \mu_Q)$.
+The full $n+1 \times n+1$ covariance matrix $\Sigma$ has the form
+\begin{equation}
+\label{eq:covariance}
+\Sigma =
+\begin{bmatrix}
+    \sigma_Q^2 & \sigma_Q^2 &  \dots  & \sigma_Q^2 \\
+    \sigma_Q^2 & \sigma_Q^2 + \sigma_\eta^2 & \dots  & \sigma_Q^2 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \sigma_Q^2 & \sigma_Q^2 &  \dots  & \sigma_Q^2 + \sigma_\eta^2 
+\end{bmatrix}
+\end{equation}
+where all off-diagonal entries $\Sigma_{ij}$ for $i\neq j$ have value $\sigma_Q^2$ and all diagonal entries $i=j \geq 2$ corresponding to the variance of tests $Y_i$ take value $\sigma_Q^2 + \sigma_\eta^2$. The top-left entry corresponds to the variance of the test Q and thus has variance $\sigma_Q^2$.
+
+We can now derive the equations for the conditional mean and conditional variance of $Q|Y_1,...,Y_n$.
+To begin, note the following basic facts about deriving conditionals from multivariate Gaussians:
+to estimate the conditional of one set of variables, 
+given another set $P(\mathbf{x}_1|\mathbf{x}_2)$ 
+we can segment our data matrix into those rows corresponding 
+to the variables we don't condition upon (here, just $Q$) 
+and those we do (here, $Y_1,..,Y_n$), 
+expressing our covariance matrix in terms of the following submatrices:
+\[
+\Sigma =
+\begin{bmatrix}
+    \Sigma_{11} & \Sigma_{12} \\
+    \Sigma_{21} & \Sigma_{22} \\
+\end{bmatrix}
+\]
+Here, $\Sigma_{11}\in \mathbbm{R}^{1\times 1}$,
+$\Sigma_{21}\in \mathbbm{R}^{n \times 1}$,
+$\Sigma_{21}\in \mathbbm{R}^{1 \times n}$, and
+$\Sigma_{22}\in \mathbbm{R}^{n \times n}$.
+
+The conditional expectation $\mathbbm{E}[Q|Y_1,...,Y_n]$
+is then expressed as 
+\begin{equation} 
+\label{eq:mean}
+\mathbbm{E}[Q|Y_1,...,Y_n] =
+\mu_Q + \Sigma_{12} \Sigma_{22}^{-1} (\mathbf{y}-\mu_y)
+\end{equation}
+and the conditional variance $Var[Q|Y_1,...,Y_n]$
+can be expressed as
+\begin{equation}
+Var[Q|Y_1,...,Y_n] = \Sigma_{11}
+- \Sigma_{12} \Sigma_{22}^{-1} \Sigma_{21}
+\end{equation}
+which should be familiar as the Schur complement
+of the $n \times n$ matrix $\Sigma_{22}$.
+Intuitively, this corresponds to inverting the full matrix $\Sigma$, deleting those rows and columns corresponding to observed variables, and then inverting the resulting ($1 \times 1$) matrix back.
+
+
+
+What remains is to show that for the particular 
+covariance matrix that interests us (Equation \ref{eq:covariance}), these expressions have simple analytically computable forms. 
+Specifically we state the following simple theorems.
+
+\begin{theorem}
+\label{thm:expectation}
+For jointly Gaussian variables $Q, Y_1, ..., Y_n$
+characterized by the covariance matrix given in (Equation \ref{eq:covariance}),
+the conditional expectation takes form \begin{equation}
+\mathbbm{E}[Q|Y_1,...,Y_n]
+= \mu_Q + \left[\frac{1}{\frac{\sigma_\eta^2}{\sigma_Q^2} + n}, \dots \right] \cdot (\mathbf{y} - \mathbf{\mu}_y)
+\end{equation}
+\end{theorem}
+
+
+\begin{theorem}\label{thm:variance}
+For jointly Gaussian variables $Q, Y_1, ..., Y_n$
+characterized by the covariance matrix given in (Equation \ref{eq:covariance}),
+the conditional variance of $Q$ given the tests $Y_i$ takes form \begin{equation}
+\text{Var}[Q|Y_1,...,Y_n] =
+\frac{1}{
+\frac{1}{\sigma_Q^2} + \frac{n}{\sigma_\eta^2}}
+\end{equation}
+\end{theorem}

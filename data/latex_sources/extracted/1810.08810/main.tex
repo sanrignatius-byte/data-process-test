@@ -1,0 +1,132 @@
+\newif\ifdraft \draftfalse
+\newif\iffull \fulltrue
+
+
+%\draftfalse\fulltrue
+\drafttrue\fullfalse
+
+%\documentclass[anon,12pt]{colt2018} % Anonymized submission
+% \documentclass{colt2017} % Include author names
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+% The following packages will be automatically loaded:
+% amsmath, amssymb, natbib, graphicx, url, algorithm2e
+
+% \title{CCC Fairness workshop report}
+
+
+%Macros
+\newcommand\one{\mathbf{1}}
+\newcommand\ZZ{\mathbb{Z}}
+\newcommand\NN{\mathbb{N}}
+\newcommand\RR{\mathbb{R}}
+\newcommand\cA{\mathcal{A}}
+\newcommand\cC{\mathcal{C}}
+\newcommand\cB{\mathcal{B}}
+\newcommand\cE{\mathcal{E}}
+\newcommand\cL{\mathcal{L}}
+\newcommand\cF{\mathcal{F}}
+\newcommand\cH{\mathcal{H}}
+\newcommand\cG{\mathcal{G}}
+\newcommand\cT{\mathcal{T}}
+\newcommand\cK{\mathcal{K}}
+\newcommand\cM{\mathcal{M}}
+\newcommand\cO{\mathcal{O}}
+\newcommand\cP{\mathcal{P}}
+\newcommand\cQ{\mathcal{Q}}
+\newcommand\cR{\mathcal{R}}
+\newcommand\cX{\mathcal{X}}
+\newcommand\cD{\mathcal{D}}
+\newcommand\cU{\mathcal{U}}
+\newcommand\cN{\mathcal{N}}
+\newcommand\cS{\mathcal{S}}
+\newcommand\cV{\mathcal{V}}
+\newcommand\cI{\mathcal{I}}
+\newcommand\Dp{\mathcal{D}_{priv}}
+\newcommand\FP{\mathrm{FP}}
+\newcommand\SP{\mathrm{SP}}
+\newcommand\PA{P_\mathrm{audit}}
+\newcommand\PY{P_{y=0}}
+\newcommand\PYD{P_{y=0}^D}
+\newcommand\PDO{P_{D=1}^y}
+\newcommand\PXD{P^D}
+\newcommand\VCD{\mathrm{VCDIM}}
+\newcommand\Reg{\mathrm{Reg}}
+\newcommand\LC{\mathrm{LC}}
+\newcommand\CSC{\mathrm{CSC}}
+\newcommand\OracleQuery{\mathrm{OracleQuery}}
+\newcommand\spsize{\alpha_{SP}}
+\newcommand\spdisp{\beta_{SP}}
+\newcommand\fpsize{\alpha_{FP}}
+\newcommand\fpdisp{\beta_{FP}}
+%\usepackage{xspace}
+%\usepackage{cleveref}
+%\usepackage{thmtools, thm-restate}
+%\usepackage{natbib}
+\DeclareMathOperator{\poly}{poly}
+\DeclareMathOperator{\polylog}{polylog}
+\newcommand{\ex}[1]{\mathbb{E}\left[#1\right]}
+\DeclareMathOperator*{\Expectation}{\mathbb{E}}
+\newcommand{\Ex}[2]{\Expectation_{#1}\left[#2\right]}
+\DeclareMathOperator*{\Probability}{Pr}
+\newcommand{\prob}[1]{\Pr\left[#1\right]}
+\newcommand{\Prob}[2]{\Probability_{#1}\left[#2\right]}
+
+\newcommand{\eps}{\varepsilon}
+\def\epsilon{\varepsilon}
+\DeclareMathOperator{\OPT}{OPT}
+\DeclareMathOperator{\ROPT}{R-OPT}
+\DeclareMathOperator*{\argmin}{\mathrm{argmin}}
+\DeclareMathOperator*{\argmax}{\mathrm{argmax}}
+\newcommand{\INDSTATE}[1][1]{\STATE\hspace{#1\algorithmicindent}}
+% Switch between display or inline math depending on mode
+
+%\usepackage{subfigure}
+%\usepackage{algorithm}
+%\usepackage[noend]{algorithmic}
+%\usepackage[algo2e]{algorithm2e}
+\usepackage{fullpage}
+\usepackage{amsmath, amssymb, amsthm}
+%\usepackage{bbm}
+%\usepackage{mathtools}
+\usepackage{color}
+%\usepackage{kpfonts}
+%\usepackage{algorithm,algorithmic}
+\usepackage{xcolor}
+%\usepackage{authblk}
+\newcommand{\ac}[1]{\ifdraft \textcolor{blue}{[Alex: #1]}\fi}
+\newcommand{\ar}[1]{\ifdraft \textcolor{red}{[Aaron: #1]}\fi}
+
+
+
+
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+
+
+
+
+%\usepackage{multicol}
+\title{The Frontiers of Fairness in Machine Learning}
+\author{Alexandra Chouldechova\thanks{Heinz College, Carnegie Mellon University. \texttt{achould@cmu.edu}} \and Aaron Roth\thanks{Department of Computer and Information Science, University of Pennsylvania. \texttt{aaroth@cis.upenn.edu}}}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The last few years have seen an explosion of academic and popular interest in algorithmic fairness. Despite this interest and the volume and velocity of work that has been produced recently, the fundamental science of fairness in machine learning is still in a nascent state. In March 2018, we convened a group of experts as part of a CCC visioning workshop to assess the state of the field, and distill the most promising research directions going forward. This report summarizes the findings of that workshop. Along the way, it surveys recent theoretical work in the field and points towards promising directions for research.
+\end{abstract}
+
+\input{intro}
+\input{whatweknow}
+\input{whatwedont}
+\subsection*{Acknowledgements}
+This material is based upon work supposed by the National Science Foundation under Grant No. 1136993.  Any opinions, findings, and conclusions or recommendations expressed in this material are those of the authors and do not necessarily reflect the views of the National Science Foundation.
+
+We are indebted to all of the participants of the CCC visioning workshop, held March 18-19 2018 in Philadelphia. The workshop discussion shaped every aspect of this document. We are grateful to Helen Wright and Ann Drobnis, who are instrumental in making the workshop happen. Finally, we are thankful to Cynthia Dwork, Sampath Kannan, Michael Kearns, Toni Pitassi, and Suresh Venkatasubramanian who provided valuable feedback on this report.
+ \bibliographystyle{alpha}
+\bibliography{refs}
+\end{document} 

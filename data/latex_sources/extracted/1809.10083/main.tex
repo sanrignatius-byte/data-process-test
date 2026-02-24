@@ -1,0 +1,146 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2018
+\PassOptionsToPackage{numbers, compress}{natbib}
+
+% ready for submission
+\usepackage[final]{nips_2018}
+
+% to compile a preprint version, e.g., for submission to arXiv, add
+% add the [preprint] option:
+% \usepackage[preprint]{nips_2018}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{nips_2018}
+
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2018}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsmath}		% math environments
+\usepackage{amssymb}		% math environments
+\usepackage{MnSymbol}
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{gensymb}		% symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}		% figures
+\usepackage{color}			% colored notes
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{lipsum}
+
+\usepackage{appendix}
+\usepackage{comment}
+
+\makeatletter
+\newcommand{\xdashrightarrow}[2][]{\ext@arrow 0359\rightarrowfill@@{#1}{#2}}
+\def\rightarrowfill@@{\arrowfill@@\relax\relbar\rightarrow}
+\def\leftarrowfill@@{\arrowfill@@\leftarrow\relbar\relax}
+\def\leftrightarrowfill@@{\arrowfill@@\leftarrow\relbar\rightarrow}
+\def\arrowfill@@#1#2#3#4{%
+  $\m@th\thickmuskip0mu\medmuskip\thickmuskip\thinmuskip\thickmuskip
+   \relax#4#1
+   \xleaders\hbox{$#4#2$}\hfill
+   #3$%
+}
+
+\setcellgapes{1pt}
+
+\newcolumntype{?}[1]{!{\vrule width #1}}
+\newcommand{\hbline}{\Xhline{2.5\arrayrulewidth}}
+\newcommand\nocell[1]{\multicolumn{#1}{c?{1.5pt}}{}}
+\newcommand{\splitcelltwo}[2]{\begin{tabular}{@{}c@{}} #1 \\ #2 \end{tabular}}
+
+% \renewcommand{\arraystretch}{1.2}
+\setlength{\extrarowheight}{1pt}
+
+\newlength{\Oldarrayrulewidth}
+\newcommand{\Cline}[2]{%
+  \noalign{\global\setlength{\Oldarrayrulewidth}{\arrayrulewidth}}%
+  \noalign{\global\setlength{\arrayrulewidth}{#1}}\cline{#2}%
+  \noalign{\global\setlength{\arrayrulewidth}{\Oldarrayrulewidth}}}
+
+\newcommand{\dispskip}{1pt}
+\setlength{\abovedisplayskip}{\dispskip}
+\setlength{\belowdisplayskip}{\dispskip}
+\setlength{\abovedisplayshortskip}{\dispskip}
+\setlength{\belowdisplayshortskip}{\dispskip}
+\addtolength{\belowcaptionskip}{-7pt}
+
+\renewcommand\floatpagefraction{.9}
+\renewcommand\topfraction{.9}
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}   
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+
+\title{Unsupervised Adversarial Invariance}
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+\author{
+  Ayush Jaiswal, Yue Wu, Wael AbdAlmageed, Premkumar Natarajan\\
+USC Information Sciences Institute\\
+Marina del Rey, CA, USA\\
+{\tt\small \{ajaiswal, yue\_wu, wamageed, pnataraj\}@isi.edu}
+}
+
+\begin{document}
+% \nipsfinalcopy is no longer used
+
+\maketitle
+
+\begin{abstract}
+Data representations that contain all the information about target variables but are invariant to nuisance factors benefit supervised learning algorithms by preventing them from learning associations between these factors and the targets, thus reducing overfitting. We present a novel unsupervised invariance induction framework for neural networks that learns a split representation of data through competitive training between the prediction task and a reconstruction task coupled with disentanglement, without needing any labeled information about nuisance factors or domain knowledge. We describe an adversarial instantiation of this framework and provide analysis of its working. Our unsupervised model outperforms state-of-the-art methods, which are supervised, at inducing invariance to inherent nuisance factors, effectively using synthetic data augmentation to learn invariance, and domain adaptation. Our method can be applied to any prediction task, eg., binary/multi-class classification or regression, without loss of generality.
+\end{abstract}
+
+%%%%%%%%% BODY TEXT
+\input{introduction}
+%-------------------------------------------------------------------------
+
+\input{related_work}
+
+%-------------------------------------------------------------------------
+
+\input{uai}
+%-------------------------------------------------------------------------
+
+\input{theoretical}
+
+%-------------------------------------------------------------------------
+
+\input{evaluation}
+
+%-------------------------------------------------------------------------
+
+\input{conclusion}
+
+%-------------------------------------------------------------------------
+
+\section*{Acknowledgements}
+This work is based on research sponsored by the Defense Advanced Research Projects Agency under agreement number FA8750-16-2-0204. The U.S. Government is authorized to reproduce and distribute reprints for governmental purposes  notwithstanding any copyright notation thereon. The views and conclusions contained herein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of the Defense Advanced Research Projects Agency or the U.S. Government.
+
+{\small
+\bibliographystyle{plain}
+\bibliography{references}
+}
+
+\end{document}

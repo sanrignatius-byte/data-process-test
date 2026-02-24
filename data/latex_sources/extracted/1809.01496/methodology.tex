@@ -1,0 +1,203 @@
+\section{Methodology}
+\label{sec:methodology}
+%In this section, we present the design of De-GloVe model based on GloVe.
+%We first introduce the notations, then discuss the rationale of the objective function that De-GloVe aims to optimize.
+%\paragraph{Overview}
+In this paper, we take GloVe~\cite{glove} as the base embedding model and gender as the protected attribute. 
+It is worth noting that our approach is general and can be applied to other embedding models and attributes. 
+Following GloVe~\cite{glove}, we construct a word-to-word co-occurrence matrix $X$, denoting the frequency of the $j$-th word appearing in the context of the $i$-th word as $X_{i,j}$. 
+$w, \tilde{w} \in \rnR^{d}$  stand for the embeddings of a center and a context word, respectively, where $d$ is the dimension.
+
+
+In our embedding model, a word vector $w$ consists of two parts $w=[w^{(a)};w^{(g)}]$.
+$w^{(a)}\in\rnR^{d-k}$ and $w^{(g)}\in\rnR^{k}$ stand for neutralized and gendered components respectively,
+where $k$ is the number of dimensions reserved for gender information.\footnote{We set $k=1$ in this paper.}
+Our proposed gender neutralizing scheme is to reserve the gender feature, known as ``protected attribute'' into $w^{(g)}$. 
+Therefore, the information encoded in $w^{(a)}$ is  independent of gender influence. 
+We use $v_g \in \rnR^{d-k}$ to denote the direction of gender in the embedding space.
+% and male words of a predefined set of word pairs~\cite{kaiwei}.
+% a predefined set of male and female word pairs~\cite{kaiwei}.
+%According to the above discussion, an legitimate design of the objective should satisfy the following constraints. The obtained word vectors should preserve the property of word embeddings, which means, they preserve the similarities among words. %contain the analogy relation between words.
+We categorize all the vocabulary words into three subsets: male-definition $\Omega_M$, female-definition $\Omega_F$, and gender-neutral $\Omega_N$,  based on their definition in  WordNet~\cite{miller1998wordnet}.%  contain corresponding gender information.
+%For $w^{(g)}$, it is used to preserve the gender information for each word. 
+%$w^{(a)}$ is used to store the information for each word except the gender. For all the gender neutral words, this component is desired to be perpendicular to the gender direction $g$. 
+
+% \subsection{Adversarial feature learning}
+% Given the paired observation $(w^{(g)}, y)$, we aim at maximizing the probability $p(y|w^{(g)})$ of correctly predicting whether the specific dimension of word vector is related to gender or not. In the meanwhile, the encoder $E$ suppose to minimize the joint probability $p(g, w^{(a)})$ correlating gender direction with gender-free dimensions of the word vector. We also have a generator that trains upon corpus $x$ to achieve the embeddings $w$, namely $w = G(x)$. $G$ compels the embeddings preserving similarities among words and resists to the modification on vectors from $E$ and $D$.The aforementioned three modules together play the following minimax game: 
+% \begin{equation*}
+%     \min_{G, E} \max_{D} J(G, D, E)
+% \end{equation*}
+% where,
+% $$ J(G, D, E) = \mathbb{E}_{x, g, y\sim p(x, g, y)}[P_D - P_E] $$
+% $$ P_{D} = \log p_d(y|w^{(g)}) $$
+% $$ P_{E} = \log p_e(g, w^{(a)}) $$
+
+%$$ J(G, D, E) = \mathbb{E}_{w,y\sim p(w,y)}[\log p_d(y|w^{(g)})] $$$$-  \mathbb{E}_{w,g\sim p(w,g)}[\log p_e(g, w^{(a)}]$$
+
+\paragraph{Gender Neutral Word Embedding}
+Our minimization objective is designed in accordance with above insights. It contains three components: \begin{equation}
+\label{eq:full_loss}
+  J = J_G + \lambda_d J_D +\lambda_e J_E,
+\end{equation}
+where $\lambda_d$ and $\lambda_e$ are hyper-parameters. 
+
+
+% First component 
+
+The first component $J_G$ is originated from GloVe~\cite{glove}, which captures the word proximity:
+\begin{equation*}
+    J_G \!=\! \sum_{i,j=1}^{V}f(X_{i,j})\left(w_i^T\tilde{w}_j + b_i + \tilde{b}_j -\log X_{i,j}\!\right)^2.
+    \vspace{-2pt}
+\end{equation*}
+Here $f(X_{i,j})$ is a weighting function to reduce the influence of extremely large co-occurrence frequencies. $b$ and $\tilde{b}$ are the respective linear biases for $w$ and $\tilde{w}$. 
+% that 
+% \begin{equation*} 
+%     f(x) = \begin{cases} 
+%       (x/x_{\text{max}})^\alpha & \text{if } x<x_{\text{max}} \\
+%       1 & \text{otherwise.}
+%   \end{cases}
+% \end{equation*}
+
+% Second component
+The other two terms are aimed to restrict gender information in $w^{(g)}$, such that  $w^{(a)}$ is neutral.  Given male- and female-definition seed words $\Omega_M$ and $\Omega_F$, 
+we consider two distant metrics and form two types of objective functions.
+
+In $J_D^{L1}$, we directly minimizing the negative distances between words in the two groups: 
+%Male words and female words are discriminated by the value of $w^{(g)}$, 
+%so a larger difference of $w^{(g)}$ between male and female words
+%represents better discrimination ability.
+%Therefore, we maximize the following objective function $J_D^{L1}$: 
+$$J_D^{L1} = - \left\|\sum_{w\in \Omega_M} w^{(g)}  - \sum_{w\in \Omega_F} w^{(g)}\right\|_1. $$
+%where $\Omega_M$ and $\Omega_F$ are the set of gender specific words for male and female respectively.a
+% For $w^{(g)}$, given the gender indicators numerically set  $\beta\in\rnR^k$ for male and $\alpha$ for female, a natural penalty to impose is to shorten the distance between $\beta$ and $w^{(g)}_m$, and $\alpha$ and $w^{(g)}_f$, %which can be translated mathematically as
+% % \begin{align*}
+% % \min J_1 &= \sum_{w_m \in \Omega_M} \norm{\beta - w^{(g)}_m}_2 \\
+% %  &+ \sum_{w_f \in \Omega_F}\norm{-\beta - w^{(g)}_f}_2
+% % \end{align*}
+% \begin{equation*}
+% \label{eq:loss_j1}
+% J_D = \sum_{w \in \Omega_M} \norm{\beta - w^{(g)}}+ \sum_{w \in \Omega_F}\norm{\alpha-w^{(g)}}.
+% \end{equation*}
+%$w_m$ and $w_f$ in formula~\ref{eq:loss_j1} are words traversing through gender specific word sets $\Omega_M$ and $\Omega_F$ respectively and the transformation of $\norm{-\beta-w^{(g)}_f}=\norm{\beta+w^{(g)}_f}$ has been applied.
+%We also consider using L2-norm to constrain $w^{(g)}$. Given two constants 
+% that numerically set 
+%$\beta_1$ and $\beta_2$, %$J_D^{L2}$ is formulated as: 
+% Apparently, minimizing $J_D$ will ensure that word vectors learned can encode the gender information in $w^{(g)}$. Basically, $\alpha$,$\beta$ is a k-dimensional vector. In this paper, we set $k$ equals  to 1 ,  $\beta$ as $1$ and $\alpha$ as $-1$, which is a special case for gender representation, making the norm calculation a scalar operation as follows,
+In $J_D^{L2}$, we restrict the values of word vectors in $[\beta_1, \beta_2]$ and push $w^{(g)}$ into one of the extremes:
+\begin{equation*}
+    J_D^{L2} \!=\! \sum_{w\in \Omega_M}\!\!\left\|\beta_1 \bm{e} - w^{(g)}\right\|_2^2 + \sum_{w \in \Omega_F}\!\!\left\| \beta_2\bm{e} - w^{(g)}\right\|_2^2,
+    \vspace{-3pt}
+\end{equation*}
+where $\bm{e} \in \mathcal{R}^{k}$ is a vector of all ones.
+ $\beta_1$ and $\beta_2$ can be arbitrary values, and we set them to be $1$ and $-1$, respectively.
+% In practice, we set $\beta_1 = 1$ and $\beta_2 = -1$.
+
+% We use two parts to represent the word embedding: $w = [w^a, w^g]$, where $w^g$ stands for the gender information for this specific word and $w^a$ is the part without any gender information stored.
+% We use GloVe~\cite{glove} to train our word embedding. %TODO: intuition
+% The loss function can be viewed as a combination from three terms:
+% \begin{equation}
+%     \label{eq:loss_J1}
+%     J_1 = \sum_{w_m\in \Omega_M}w_m^g - \sum_{w_f\in \Omega_F}w_f^g
+% \end{equation}
+% \begin{equation}
+%     (2)J_1 = \sum_{w_m\in \Omega_M}(1 - w_m^g)^2 + \sum_{w_f\in \Omega_F}(1 + w_f^g)^2
+% \end{equation}
+
+% Maximization of $J_1$ will ensure that word vectors learned can encode the gender information in $w^g$.
+
+% Third component
+Finally, for words in $\Omega_N$, 
+the last term encourages their $w^{(a)}$ to be retained in the null space of the gender direction $v_g$:
+%Ideally, the model should push the $w^{(a)}$ parts of all the words in $\Omega_N$ to be orthogonal to the gender direction $v_g$:
+%representation learning result for $w^{(a)}$
+%is that all $w^{(a)}$ of $\Omega_N$ is uncorrelated with $v_g$,
+%which is mathematically presented as
+%$\forall w^{(a)} \in \Omega_N$, $v_g^T w^{(a)}=0$. 
+% where $v_g$ represents the gender direction in the embedding space.
+% $w^{(a)}$ is uncorrelated with  $g$.
+%where $\Omega_N$ stands for the gender neutral words. 
+% It can be geometrically represented as $g\perp w^{(a)}$, that is $g^T w^{(a)}=0$. 
+%Therefore, 
+% we decorrelate all $w^{(a)}$ from $v_g$ by 
+%the third cost term $J_E$ is
+\begin{equation*}
+    J_E = \sum_{w\in \Omega_N}\left(v_g^T w^{(a)}\right)^2,
+    \vspace{-3pt}
+\end{equation*}
+where $v_g$ is estimating on the fly by averaging the differences between female words 
+and their male counterparts in a predefined set,%~\cite{kaiwei}.
+% is defined as the average of the differences between female words
+% and male words in gender specific word pairs.
+% differences of  some gender specific word pairs:
+\begin{equation*}
+v_g = \frac{1}{|\Omega'|}\sum_{(w_m,w_f)\in \Omega'} (w_m^{(a)} - w_f^{(a)}),
+\vspace{-3pt}
+\end{equation*}
+where $\Omega'$ is a set of predefined gender word pairs.
+
+%By jointly optimizing the  three costs mentioned above, our target objective function is written as 
+% \begin{equation}
+%   \min J = J_0 - \lambda_1 J_1 +\lambda_2 J_2
+% \end{equation}
+% for the ratios of the cost contribution of the three components.
+
+
+We use stochastic gradient descent to optimize Eq.~\eqref{eq:full_loss}. To reduce the computational complexity in training the wording embedding, we assume $v_g$ is a fixed vector (i.e., we do not derive gradient w.r.t $v_g$ in updating $w^{(a)}, \forall w\in \Omega'$) and estimate $v_g$ only at the beginning of each epoch.  
+
+%The computation of gradients is approximated by fixing $v_g$ in each iteration.
+%The gradient of $J_E$ with respect to $v_g$ is omitted.
+% We assume $v_g$ is fixed in each iteration so the gradient computation of $J_E$ with
+% regard to $v_g$ is saved f
+% When calculating the gradients for gender specific words in $J_E$, 
+% we make an approximation by assuming that the gender direction $v_g$ is fixed to omit the gradients with regard to $v_g$.
+% so we do not add the gradient from this part.
+
+% The cost function mentioned above can also be interpreted as an adversarial mini-max game among three players: Generator $G$ generates the embeddings by capturing global co-occurrence relations of words; Discriminator $D$ identifies each word's gender type (female/male) from the specific $k$ dimensions; and Encoder $E$ neutralizes the rest dimensions. 
+% Their corresponding loss functions are $J_G$, $J_D$ and $J_E$, respectively. 
+%In this adversarial game, modules $D$ and $G$ force the transportation the gender information from the whole vector to specific $k$ dimensions while $G$ resists this process to keep the original attributes of word embeddings in each dimension of the vector.
+
+% The approximate partial derivatives are the following:
+% %\begin{equation}
+% %    \frac{\partial J}{\partial w_i}=
+% %    \begin{cases}
+% %    \frac{\partial J_G}{\partial w_i} - \lambda_d I^{(g)} & \text{if }w_i \in \Omega_M \\
+% %    \frac{\partial J_G}{\partial w_i} + \lambda_d I^{(g)} & \text{if }w_i \in \Omega_F \\
+% %    \frac{\partial J_G}{\partial w_i} + 2\lambda_e \left(g\cdot w_n^{(a)}\right) g & \text{if }w_i \in \Omega_N
+% %    \end{cases}
+% %\end{equation}
+
+% \begin{equation}
+%     \frac{\partial J}{\partial w_i}=
+%     \begin{cases}
+%     \frac{\partial J_G}{\partial w_i} + 2\lambda_d (w_i^{(g)} - 1) & \text{if }w_i \in \Omega_M \\
+%     \frac{\partial J_G}{\partial w_i} + 2\lambda_d (w_i^{(g)} + 1) & \text{if }w_i \in \Omega_F \\
+%     \frac{\partial J_G}{\partial w_i} + 2\lambda_e g^T w_i^{(a)} g & \text{if }w_i \in \Omega_N
+%     \end{cases}
+% \end{equation}
+
+
+% To calculate the gradient descent:
+% \begin{enumerate}
+%     \item $w_i \in \Omega_M$: 
+%     \begin{equation}
+%     \begin{aligned}
+%         & \frac{ \partial J}{\partial w_i} =  \frac{\partial J_0}{\partial w_i} - \lambda_1 I^g \\
+%     \end{aligned}
+%     \end{equation}
+    
+%     \item $w_i \in \Omega_F$: 
+%     \begin{equation}
+%     \begin{aligned}
+%         & \frac{ \partial J}{\partial w_i} =  \frac{\partial J_0}{\partial w_i} + \lambda_1 I^g \\
+%     \end{aligned}
+%     \end{equation}
+    
+%     \item $w_i \in \Omega_N$: 
+%     \begin{equation}
+%     \begin{aligned}
+%         & \frac{ \partial J}{\partial w_i} =  \frac{\partial J_0}{\partial w_i} - 0 \\
+%          & + 2\lambda_2  [(\sum_{w_m\in \Omega_M}w_m^a - \sum_{w_f \in \Omega_F}w_f^a)^T w_n^a]\cdot \\ & (\sum_{w_m\in \Omega_M}w_m^a - \sum_{w_f \in \Omega_F}w_f^a)
+%     \end{aligned}
+%     \end{equation}
+    
+% \end{enumerate}

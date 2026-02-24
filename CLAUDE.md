@@ -3,6 +3,54 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
+## 当前状态（2026-02-24 更新｜Dual-evidence + Cross-doc）
+
+### 本轮完成（相对 2026-02-22）
+- **L1 dual-evidence 官方批次完成**（`data/l1_dual_evidence_queries_slurm_img150_tuned_v4_official.jsonl`）
+  - 总量 222，QC pass 173，pass rate 77.93%
+  - pair_type: figure+table 144 / figure+formula 62 / formula+table 16
+- **Triplet 构建完成（v1 + v2）**
+  - v1：`in_doc_swap + same_type_hard`
+  - v2：`in_doc_swap + same_type_hard_plus`，并加入 `text_short`、图像覆盖统计
+  - v2 all：222 triplets，avg_difficulty 0.7288，positive image coverage 100%
+- **本地 embedding 跨文档匹配跑通（Qwen3-Embedding-4B）**
+  - 输出：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B.jsonl`
+  - records 590（top-k=20，总 match 11800）
+- **4B 匹配审计完成**
+  - 报告：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_audit.json`
+  - baseline: top1_mean 0.8822，top10 target concentration 0.3153，unique top1 targets 186，suspicious 241
+- **Stage-B Utility-aware Rerank 已落地**
+  - 脚本：`scripts/rerank_mineru_crossdoc_matches.py`
+  - 审计脚本：`scripts/audit_mineru_crossdoc_embedding_matches.py`
+  - 严格版（cap=8）：`..._v2_rerank.jsonl`
+  - 平衡版（cap=10，当前推荐）：`..._v2b_cap10.jsonl`
+  - 平衡版结果：top1_mean 0.8690；top10 concentration 0.1305；unique top1 targets 286；reciprocal 0.8119；suspicious 146
+- **汇报文档已整理**
+  - `docs/REPORT_SUMMARY_2026-02-24.md`
+
+### 本轮讨论共识（方法论）
+- 仅优化 embedding top-1 属于 **objective mismatch**（“相似” != “多跳有用”）
+- 当前阶段主目标应转向：
+  1. 候选召回与多样性（Stage A）
+  2. utility-aware rerank（Stage B）
+  3. 构链约束与 answerability（Stage C）
+- **top-1 平均分不是主 KPI**；应引入 `hop_utility` 相关评估
+
+### 当前数据口径（重要）
+- 当前 dual-evidence 数据**默认包含文本证据**（`text` / `text_short` + evidence spans）
+- 当前 pair_type 仅保留：
+  - `figure+table`
+  - `figure+formula`
+  - `formula+table`
+- **不含单独 `figure+text / table+text / formula+text` 作为本轮 dual-evidence 训练单元**
+  - 单图文 L1 历史线仍在：`data/l1_cross_modal_queries_v3.jsonl`
+
+### 下一步（已确定）
+1. 冻结平衡版 cross-doc 候选：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_v2b_cap10.jsonl`
+2. 建立 100-300 条人工标注小基准（relevance / hop_utility / redundancy / error_type）
+3. 生成 triplet v3：在保留 `in_doc_swap` 基础上，引入 reranked cross-doc hard negatives
+4. 做最小消融：embedding-only vs +hub/diversity rerank vs +context rerank
+
 ## 当前状态（2026-02-22 更新）
 
 ### 已完成

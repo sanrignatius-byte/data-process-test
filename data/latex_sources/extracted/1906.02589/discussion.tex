@@ -1,0 +1,17 @@
+\section{Discussion}
+In this paper we discussed how disentangled representation learning aligns with the goals of subgroup fair machine learning, and presented a method for learning a structured latent code using multiple sensitive attributes.
+The proposed model, FFVAE, provides \textit{flexibly fair} representations, which can be modified simply and compositionally at test time to yield a fair representation with respect to multiple sensitive attributes and their conjunctions, even when test-time sensitive attribute labels are unavailable.
+Empirically we found that FFVAE disentangled sensitive sources of variation in synthetic image data, even in the challenging scenario where attributes and labels correlate.
+Our method compared favorably with baseline disentanglement algorithms on downstream fair classifications by achieving better parity for a given accuracy budget across several group and subgroup definitions.
+FFVAE also performed well on the Communities \& Crime and Celeb-A dataset, although none of the models performed robustly across all possible subgroups in the real-data setting.
+This result reflects the difficulty of subgroup fair representation learning and motivates further work on this topic.
+
+There are two main directions of interest for future work.
+First is the question of fairness metrics: a wide range of fairness metrics beyond demographic parity have been proposed \citep{hardt2016equality,pleiss2017fairness}.
+Understanding how to learn flexibly fair representations with respect to other metrics is an important step in extending our approach.
+Secondly, robustness to distributional shift presents an important challenge in the context of both disentanglement and fairness.
+In disentanglement, we aim to learn independent factors of variation.
+Most empirical work on evaluating disentanglement has used synthetic data with uniformly distributed factors of variation, but this setting is unrealistic. 
+Meanwhile, in fairness, we hope to learn from potentially biased data distributions, which may suffer from both undersampling and systemic historical discrimination.
+We might wish to imagine hypothetical ``unbiased'' data or compute robustly fair representations, but must do so given the data at hand.
+While learning fair or disentangled representations from real data remains a challenge in practice, we hope that this investigation serves as a first step towards understanding and leveraging the relationship between the two areas.

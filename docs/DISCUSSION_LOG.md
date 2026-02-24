@@ -1453,3 +1453,90 @@ Equation~\ref{eq:pareto}. As Table~\ref{tab:results} demonstrates...
 - **评估闭环**：人工写 30 条测试 query → BM25 baseline → Recall@10/MRR 检验
 
 ---
+
+## 日期：2026-02-24（Dual-evidence + Triplet + Cross-doc Embedding 阶段总结）
+
+### 一、核心结论（对外汇报口径）
+- 我们已从“单纯相似度匹配”推进到“**可构链候选控制**”阶段。
+- 本轮不是继续堆 top-1 分数，而是先解决 **hubness / 伪相关 / 候选多样性**。
+- 采用 utility-aware rerank 后，候选池的结构质量显著提升，可作为下一步 triplet v3 的默认输入。
+
+### 二、本轮已执行事项
+
+1. **L1 dual-evidence 官方批次落地**
+   - 文件：`data/l1_dual_evidence_queries_slurm_img150_tuned_v4_official.jsonl`
+   - 结果：222 条，QC pass 173（77.93%）
+   - 分布：figure+table 144 / figure+formula 62 / formula+table 16
+
+2. **Triplet v1/v2 产线落地**
+   - v1：`in_doc_swap + same_type_hard`
+   - v2：`in_doc_swap + same_type_hard_plus`，新增 `text_short`
+   - v2 all 报告：`data/l1_dual_evidence_triplets_v2_all_report.json`
+   - 结果：222 triplets，avg_difficulty 0.7288，positive image coverage 100%
+
+3. **本地 4B embedding 跨文档匹配**
+   - 模型：`Qwen3-Embedding-4B`（local）
+   - 文件：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B.jsonl`
+   - 规模：590 source，top-k=20，总 11800 matches
+
+4. **匹配质量审计**
+   - 脚本：`scripts/audit_mineru_crossdoc_embedding_matches.py`
+   - 报告：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_audit.json`
+   - baseline 指标：
+     - top1_mean = 0.8822
+     - top10 target concentration = 0.3153
+     - unique top1 targets = 186
+     - suspicious candidates = 241
+
+5. **Stage-B utility-aware rerank（新）**
+   - 脚本：`scripts/rerank_mineru_crossdoc_matches.py`
+   - 机制：hub penalty + doc popularity penalty + diversity + top1 per-target cap
+   - 两个版本：
+     - 严格版 cap=8：`..._v2_rerank.jsonl`
+     - 平衡版 cap=10：`..._v2b_cap10.jsonl`（当前推荐）
+
+### 三、关键对比结果（baseline -> rerank）
+
+以平衡版 cap=10 为主：
+- top1_mean: 0.8822 -> 0.8690（小幅回落，可接受）
+- top10 concentration: 0.3153 -> 0.1305（显著下降）
+- unique top1 targets: 186 -> 286（显著提升）
+- top1 reciprocal: 0.7051 -> 0.8119（稳定性提升）
+- suspicious candidates: 241 -> 146（噪声下降）
+
+解释：
+- 我们用少量相似度分数换取了更强的候选覆盖与去“黑洞目标”能力，符合多跳构链目标。
+
+### 四、方法论讨论结论（本轮达成共识）
+
+1. **objective mismatch**：
+   - embedding 相似度优化“像不像”，
+   - 但我们任务优化“能否提供下一跳新增证据（hop utility）”。
+
+2. 当前阶段不再把 top-1 当主指标：
+   - top-1 分数只作诊断，
+   - 主指标应转向 hop utility + candidate diversity + path continuation。
+
+3. 产线架构明确为三段：
+   - Stage A: candidate retrieval（高 recall）
+   - Stage B: utility-aware rerank（控 hubness/冗余）
+   - Stage C: path construction（全局约束 + answerability）
+
+### 五、数据口径确认（避免汇报歧义）
+- 当前 dual-evidence 数据默认包含文本证据（`text` / `text_short`）。
+- 当前仅保留三种双证据 pair_type：
+  - figure+table / figure+formula / formula+table
+- 本轮 dual-evidence 里不单独保留 figure+text / table+text / formula+text 作为训练单元。
+- 历史单图文 L1 线仍在：`data/l1_cross_modal_queries_v3.jsonl`。
+
+### 六、当前缺陷
+1. 尚无人工标注的 hop_utility 基准（核心缺口）
+2. all-rank 层面仍有热点目标聚集（Top1 已改善）
+3. rerank 后需重定义质量指标（raw margin12 不再可直接解释）
+4. 存在无图路径样本（公式为主），训练侧需明确 fallback 规则
+
+### 七、下一步行动（已确定）
+1. 冻结 `..._v2b_cap10.jsonl` 作为默认 cross-doc 候选输入
+2. 构建 100-300 条人工标注集（relevance / hop_utility / redundancy / error_type）
+3. 生成 triplet v3（保留 in_doc_swap，增加 reranked cross-doc hard negatives）
+4. 做最小消融：embedding-only vs +hub/diversity vs +context rerank

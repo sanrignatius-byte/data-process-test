@@ -1,0 +1,480 @@
+\section{Equivalence of Auditing and Weak Agnostic Learning}
+\label{sec:auditing}
+
+In this section, we give a reduction from the problem of auditing both statistical parity and false positive rate fairness, to the problem of agnostic learning, and vice versa. This has two implications. The main implication is that, from a worst-case analysis point of view, auditing is computationally hard in almost every case (since it inherits this pessimistic state of affairs from agnostic learning).
+However, worst-case hardness results in learning theory have not prevented the successful practice of machine learning,
+and there are many heuristic algorithms that in real-world cases successfully solve ``hard'' agnostic learning problems. 
+Our reductions also imply that these heuristics can be used successfully as auditing algorithms, and we exploit this in the
+development of our algorithmic results and their experimental evaluation.
+
+%We now give two reductions from auditing for each fairness notion to
+%weak agnostic learning. These reductions allow us to exploit strong
+%impossibility results from the agnostic learning literature, which
+%shows that in many cases efficient auditing is computationally
+%hard. It also allows us to use a rich class of heuristic agnostic
+%learning algorithms to search for groups $f$ that witness
+%discrimination on real-world datasets.
+
+We make the following mild assumption on the class of group indicators $\cG$, to aid in our reductions. It is satisfied by most natural classes of functions, but is in any case essentially without loss of generality (since learning negated functions can be simulated by learning the original function class on a dataset with flipped class labels).
+
+\begin{assumpt}
+  We assume the set of group indicators $\cG$ satisfies closure under
+  negation: for any $g\in \cG$, we also have $\neg g\in \cG$.
+  \iffalse
+\begin{itemize}
+\item Closure under negation: for any $g\in \cG$, we also have
+  $\neg g\in \cG$, and
+% \item Contains constant functions: $\cG$ contains the constant functions $g_{\mathbf{1}}$ and
+%   $g_{\mathbf{0}}$, such that  $g_{\mathbf{1}}(x) = 1$ and $g_{\mathbf{0}}(x) = 0$ for all $x$.
+\end{itemize}\fi
+\end{assumpt}
+
+Recalling that $X = (x,x')$ and the following notions will be useful
+for describing our results:
+\begin{itemize}
+\item $\SP(D) = \Pr_{\cP, D}[D(X) = 1]$ and
+  $\FP(D) = \Pr_{D, \cP} [D(X) = 1\mid y=0]$.
+\item $\spsize(g, \cP) = \Pr_{\cP}[g(x) = 1]$ and
+  $\fpsize(g, \cP) = \Pr_{\cP}[g(x) = 1, y=0]$.
+\item $\spdisp(g, D, \cP) = \left|\SP(D) - \SP(D, g)\right|$ and
+  $\fpdisp(g, D, \cP) = \left| \FP(D) - \FP(D, g) \right|$.
+
+\item $\PXD$: the marginal distribution on $(x, D(X))$.
+\item $\PYD$: the conditional distribution on $(x, D(X))$, conditioned on $y = 0$.
+%\item $\PDO$: the conditional distribution on $(X,y)$ on the event
+%  $D(X) = 1$.
+\end{itemize}
+%In particular, we will view them as distributions over labelled
+%examples over the protected features, and reason about the agnostic
+%learning problems under these distributions.
+We will think about these as the target distributions for a learning problem: i.e. the problem of learning to predict $D(X)$ from only the protected features $x$. We will relate the ability to agnostically learn on these distributions, to the ability to audit $D$ given access to the original distribution $\PA(D)$.
+
+
+\subsection{Statistical Parity Fairness}
+
+We give our reduction first for SP subgroup fairness. The reduction
+for FP subgroup fairness will follow as a corollary, since auditing
+for FP subgroup fairness can be viewed as auditing for
+statistical parity fairness on the subset of the data restricted to
+$y = 0$.
+
+\begin{theorem}\label{thm:reduction1}
+  Fix any distribution $\cP$, and any set of
+  group indicators $\cG$. 
+  % , and any classifier $D$.  Suppose that the
+  % (statistical parity) base rate $\SP(D) = 1/2$. 
+Then for any
+  $\gamma, \epsilon > 0$, the following relationships hold:
+\begin{itemize}
+\item If there is a $(\gamma/2, (\gamma/2 - \eps))$ auditing algorithm
+  for $\cG$ for all $D$ such that $\SP(D) = 1/2$, then the class $\cF$
+  is $(\gamma, \gamma/2 - \eps)$-weakly agnostically learnable under
+  $\PXD$.
+
+\item If $\cG$ is $(\gamma, \gamma - \eps)$-weakly agnostically
+  learnable under distribution $\PXD$ for all $D$ such that
+  $\SP(D) = 1/2$, then there is a $(\gamma, (\gamma - \eps)/2)$
+  auditing algorithm for $\cG$ for SP fairness under $\cP$.
+\end{itemize}
+\end{theorem}
+
+
+
+We will prove \Cref{thm:reduction1} in two steps. First, we show that
+any unfair certificate $f$ for $D$ has non-trivial error for
+predicting the decision made by $D$ from the sensitive attributes.
+
+
+\begin{lemma}\label{dis-acc}
+  Suppose that the base rate $\SP(D) \leq 1/2$ and there exists a
+  function $f$ such that
+  $$\spsize(g, \cP) \; \spdisp(g, D, \cP)= \gamma.$$  Then
+  $$
+  \max\{\Pr[D(X) = f(x)], \Pr[D(X) = \neg f(x)]\} \geq \SP(D) +
+  \gamma.
+  $$
+\end{lemma}
+
+\begin{proof}
+  To simplify notations, let $b = \SP(D)$ denote the base rate,
+  $\alpha = \spsize$ and $\beta = \spdisp$. First, observe that either
+  $\Pr[D(X) = 1 \mid f(x) = 1] = b+ \beta$ or
+  $\Pr[D(X) = 1\mid f(x) = 1] = b - \beta$ holds.
+  % In the first case, we will let $g = f$, and in the second case we
+  % will let $g = \neg f$. Then the following derivation holds in both
+  % cases:
+  % $$
+  % \Pr[D(X) = 1 \mid g(x) = 0] < b
+  % $$
+  % This means
+  % \[
+  %   \Pr[D(X) = 0 \mid g(x) = 0] > 1 - b
+  % \]
+
+  In the first case, we know $\Pr[D(X) = 1\mid f(x) = 0] < b$, and
+  so $\Pr[D(X) = 0 \mid f(x) = 0] > 1 - b$. It follows that
+  \begin{align*}
+    \Pr[D(X) = f(x) ] &= \Pr[D(X) = f(x) = 1] +\Pr[D(X) =
+      f(x) = 0]\\
+    &= \Pr[D(X) = 1 \mid f(x) = 1]\Pr[f(x) = 1] + \Pr[D(X) = 0 \mid f(x) = 0] \Pr[f(x)=0]\\
+    &> \alpha (b + \beta) + (1-\alpha) (1 - b) \\ 
+    &=  (\alpha - 1) b + (1 - \alpha) (1 - b) + b + \alpha\beta \\
+    &= (1 - \alpha)(1 - 2b) + b + \alpha\beta.
+  \end{align*}
+  % In the first case,
+  % \[
+  %   \Pr[D(X) = g(x) ] > \alpha (b + \beta) + (1-\alpha) (1 - b) =
+  %   \alpha b + (1 - \alpha) (1 - b) + \alpha\beta = \frac{1}{2} +
+  %   \alpha\beta.
+  % \]
+  In the second case, we have
+  $\Pr[D(X) = 0 \mid f(x) = 1] = (1 - b) + \beta$ and
+  $\Pr[D(X) = 1\mid f(x) = 0] > b$. We can then bound
+  \begin{align*}
+   \Pr[D(X) = f(x) ] &= \Pr[D(X) = 1 \mid f(x) = 0]\Pr[f(x) = 0] + \Pr[D(X) = 0 \mid f(x) = 1] \Pr[f(x)=1]\\
+    &> (1- \alpha) b  + \alpha (1 - b + \beta) =  \alpha(1 - 2b) +
+      b+ \alpha\beta.
+  \end{align*}
+  % By \Cref{sidekick}, we know that $(1 - \alpha)\geq \beta$, and thus
+  % the right-hand-side is at least $1/2 + \beta^2$.
+  In both cases, we have $(1 - 2b) \geq 0$ by our assumption on the
+  base rate. Since $\alpha\in [0, 1]$, we know
+  $$
+  \max\{\Pr[D(X) = f(x)], \Pr[D(X) = \neg f(x)]\} \geq
+  b + \alpha\beta = b+\gamma
+  $$
+  which recovers our bound.
+\end{proof}
+
+
+
+
+
+
+In the next step, we show that if there exists any function $f$ that
+accurately predicts the decisions made by the algorithm $D$, then
+either $f$ or $\neg f$ can serve as an unfairness certificate for $D$.
+
+
+\begin{lemma}\label{acc-dis}
+  Suppose that the base rate $\SP(D) \geq 1/2$ and there exists
+  a function $f$ such that
+  $\Pr[D(X) = f(x)] \geq {\SP}(D) + \gamma$ for some value
+  $\gamma \in (0, 1/2)$. Then there exists a function $g$ such that
+ $$\spsize(g, \cP) \; \spdisp(g, D, \cP) \geq \gamma/2,$$ 
+ where $g \in \{f, \neg f\}$.
+\end{lemma}
+
+
+\begin{proof}
+  Let $b = {\SP}(D)$.  We can expand $\Pr[D(X) = f(x)]$ as
+  follows:
+  \begin{align*}
+    \Pr[D(X) = f(x) ] &= \Pr[D(X) = f(x) = 1] +\Pr[D(X) =
+                        f(x) = 0]\\
+                      &= \Pr[D(X) = 1 \mid f(x) = 1]\Pr[f(x) = 1] + \Pr[D(X) = 0 \mid f(x) = 0] \Pr[f(x)=0]
+  \end{align*}
+  \noindent This means
+  \begin{align*}
+    &   \Pr[D(X) = f(x) ] - b \\= &\left(\Pr[D(X) = 1 \mid f(x) = 1] - b\right)\Pr[f(x) = 1] + \left(\Pr[D(X) = 0 \mid f(x) = 0] - b \right)\Pr[f(x)=0] \geq \gamma
+  \end{align*}
+  Suppose that
+  $\left(\Pr[D(X) = 1 \mid f(x) = 1] - b\right)\Pr[f(x) = 1] \geq
+  \gamma / 2$, then our claim holds with $g = f$.
+  Suppose not, then we must have
+  \begin{align*}
+    \left(\Pr[D(X) = 0 \mid f(x) = 0] - b \right)\Pr[f(x)=0] &=  \left((1 - b) -\Pr[D(X) = 1 \mid f(x) = 0] \right)\Pr[f(x)=0]\geq \gamma/2
+  \end{align*}
+  Note that by our assumption $b\geq (1-b)$. This means
+  \begin{align*}
+    \left(b -\Pr[D(X) = 1 \mid f(x) = 0]
+    \right)\Pr[f(x)=0]\geq     \left((1 - b) -\Pr[D(X) = 1 \mid f(x) = 0]
+    \right)\Pr[f(x)=0]\geq \gamma/2
+\end{align*}
+which implies that our claim holds with $g = \neg f$.  \iffalse Since
+$\Pr[D(X) = f(x)] \geq b + \gamma$ and
+$\Pr[f(x) = 1] + \Pr[f(x) = 0] = 1$,
+  \[
+    \max\{ \Pr[D(X) = 1 \mid f(x) = 1], \Pr[D(X) = 0 \mid f(x)
+    = 0]\} \geq b + \gamma.
+  \]
+  Thus, we must have either $\Pr[D(X) = 1 \mid f(x) = 1] \geq b+ \gamma$ or
+  $\Pr[D(X) = 1 \mid f(x) = 0] \leq b - \gamma$.
+  Next, we observe that $\min\{\Pr[f=1] , \Pr[f=0]\} \geq
+  \gamma$. This follows since
+  $\Pr[D(x,x') = f] = \Pr[D(x,x') = f = 1] + \Pr[D(x,x') = f = 0] \leq
+  \Pr[f = 1] + \Pr[D = 0]$.  But
+  $\Pr[f = 1] \geq \Pr[D(x,x') = f] - \Pr[D = 0] \geq b + \gamma - b =
+  \gamma.$ The same result holds for $\Pr[f = 0]$.
+\fi
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:reduction1}]
+  % Given any agnostic learning instance, we can create an auditing
+  % problem instance: for each labelled examples $(x, \ell)$ in the
+  % learning instance, define an individual $x, x', $ decision example
+  % $(x, D(X))$ with $D(X) = \ell$.
+  Suppose that the class $\cG$ satisfies
+  $\min_{f\in \cG} err(f, \PXD) \leq 1/2 - \gamma$. Then by
+  \Cref{acc-dis}, there exists some $g\in \cG$ such that
+  $\Pr[g(x) = 1]|\Pr[D(X) = 1 \mid g(x) = 1] - \SP(D)| \geq
+  \gamma/2$.  By the assumption of auditability, we can then use the
+  auditing algorithm to find a group $g'\in \cG$ that is an
+  $(\gamma/2 - \eps)$-unfair certificate of $D$.  By \Cref{dis-acc},
+  we know that either $g'$ or $\neg g'$ predicts $D$ with an accuracy
+  of at least $1/2 + (\gamma/2 - \eps)$.
+
+
+  In the reverse direction, consider the auditing problem on the
+  classifier $D$.  We can treat each pair $(x, D(X))$ as a labelled
+  example and learn a hypothesis in $\cG$ that approximates the
+  decisions made by $D$.  Suppose that $D$ is $\gamma$-unfair. Then by
+  \Cref{dis-acc}, we know that there exists some $g\in \cG$ such that
+  $\Pr[D(X) = g(x)] \geq 1/2 + \gamma$. Therefore, the weak agnostic
+  learning algorithm from the hypothesis of the theorem will return
+  some $g'$ with $\Pr[D(X) = g'(x)] \geq 1/2 + (\gamma - \eps)$. By
+  \Cref{acc-dis}, we know $g'$ or $\neg g'$ is a
+  $(\gamma - \eps)/2$-unfair certificate for $D$.
+\end{proof}
+
+\iffalse
+\begin{remark}
+  The assumption in \Cref{thm:reduction1} that the base rate is
+  exactly $1/2$ can be relaxed. In the appendix, we extend the result
+  by showing that our reduction holds as long as the base rate by
+  ${\SP(D)}$ lies in the interval $[1/2 - \eps, 1/2 + \eps]$ for
+  sufficiently small $\epsilon$.\sw{todo}
+\end{remark}
+\fi
+
+% \sw{insert our counterexample showing why the
+%  base rate assumption is needed}
+
+\iffalse
+\begin{theorem}\label{red2}
+  Fix any distribution $P$ over the individuals, family of group
+  classifiers $\cG$, and decision-making algorithm $D$.  Suppose that
+  the base rate $b_{SP}(D, P) = 1/2$ and $\cG$ is
+  $(\alpha\beta, \gamma)$-weakly agnostically learnable under
+  distribution $\PXD$. Then $D$ is
+  $(\alpha, \beta, \gamma, \gamma)$-auditable under $P$ using function
+  class $\cG$.
+\end{theorem}
+
+\begin{proof}
+  Consider an auditing problem with a decision-making algorithm $D$.
+  We can treat each decision example $(x, D(X))$ as a labelled example
+  $(x, \ell)$, and learn an hypothesis in $\cG$ that approximates the
+  decisions by $D$.  Suppose that $D$ is $(\alpha,
+  \beta)$-unfair. Then by \Cref{dis-acc}, we know that there exists
+  some $g\in \cG$ such that $\Pr[D(X) = g(x)] \geq 1/2 +
+  \alpha\beta$. This means if we instantiate a weak agnostic learning
+  algorithm, it will return some $g'$ with
+  $\Pr[D(X) = g'(x)] \geq 1/2 + \gamma$. By \Cref{acc-dis}, we know
+  $g'$ or $\neg g'$ is a $(\gamma, \gamma)$-unfair certificate of $D$.
+  % Suppose that there exists some function $f \in cF$ such that
+  % $\Pr[D = f] > b + \gamma$. Then by lemma~\ref{acc-dis}
+  % $\exists g \in \{f, \neg f\}$ such that
+  % $|\Pr[D(X) = 1 \mid g(x) = 1] - b_{SP}(D, p)| > \gamma$, and
+  % $\Pr[g(x) = 1] > \gamma$.  So to audit $\cF$ we simply encode the
+  % learning problem with labels given by $D$, and efficiently produce a
+  % weak learner $f$.  We then efficiently check whether $f$ or $\neg f$
+  % witness statistical parity unfairness by estimating
+  % $\Pr[D(x,x') = 1|f(x) = 1]$ and $\Pr[D(x,x') = 0|\neg f(x) = 1]$, as
+  % well as the base rate $b$ in $poly(1/\gamma)$ samples.
+\end{proof}
+\fi
+
+\subsection{False Positive Fairness}
+
+A corollary of the above reduction is an analogous equivalence between
+auditing for FP subgroup fairness and agnostic learning. This is
+because a FP fairness constraint can be viewed as a statistical parity
+fairness constraint on the subset of the data such that $y =
+0$. Therefore, \Cref{thm:reduction1} implies the following:
+
+\begin{corollary}
+\label{cor:reduction2}
+  Fix any distribution $\cP$, and any set of group indicators $\cG$. % , and any classifier $D$.  Suppose that
+  % the (false-positive) base rate $b_{FP}(D, P) = 1/2$. 
+  The following
+  two relationships hold:
+\begin{itemize}
+\item If there is a $(\gamma/2, (\gamma/2 - \eps))$ auditing algorithm
+  for $\cF$ for all $D$ such that ${\FP}(D) = 1/2$,
+  % for false-positive fairness under distribution $P$ and
+  % group indicator set $\cG$, 
+  then the class $\cG$ is
+  $(\gamma, \gamma/2 - \eps)$-weakly agnostically learnable under $\PYD$.
+\item If $\cG$ is $(\gamma, \gamma - \eps)$--weakly agnostically
+  learnable under distribution $\PYD$ for all $D$ such that
+  ${\FP}(D) = 1/2$, then there is
+   % , then $D$ is
+  a $(\gamma, (\gamma - \eps)/2)$ auditing algorithm for FP subgroup
+  fairness for $\cG$ under distribution
+  $\cP$. % and group indicator set $\cG$.
+\end{itemize}
+\end{corollary}
+
+
+\iffalse
+\begin{theorem}\label{red3}
+  Suppose that the base rate $b(D, p) = 1/2$. Then if the function
+  class $\cF$ is $(\alpha, \beta)$ auditable with respect to
+  True-Positive fairness, then $\cF$ is also
+  $\min(\alpha, \beta, \beta^2)$-weakly agnostically learnable, with
+  to the distribution $P|Y = 1$.
+ \end{theorem}
+
+ \begin{theorem}\label{red4}
+   Suppose that $\cF$ is $\gamma$-weakly agnostically learnable with
+   respect to the distribution $P|Y = 1$. Then the function class
+   $\cF$ is $(\gamma, \gamma)$-auditable with respect to True-Positive
+   fairness.
+\end{theorem}
+
+
+
+\begin{lemma}
+  Suppose there exists some $f \in \cF$ such that
+  $\Pr[D(X) = f | y = 0] > b + \gamma$, where
+  $b = 1- \min\{err_{P|Y = 0}(\mathbf{1}), err_{P|Y =1}(\mathbf{0})\}$
+  denotes the larger accuracy of predicting $D$ by the constant
+  functions, conditional on $y = 0$.  Let $b_Y = \Pr[Y = 1]$.  Then
+  there exists $g \in \cF$ such that
+  $|\Pr[D(X) = 1|g = 1, Y = 1] -b| > \gamma, \Pr[g = 1|Y = 1] \geq
+  \gamma$, where $g \in \{f, \neg f\}$.
+  % Suppose $ \exists f \in \cF$ such that
+  % $\Pr[D(x,x') = f | Y = 0] > b + \gamma$, where
+  % $b = 1- \min\{err_{P|Y = 0}(\mathbf{1}), err_{P|Y =1}(\mathbf{0})\}$
+  % denotes the the larger accuracy of predicting $D$ by the constant
+  % functions, conditional on $Y = 0$.  Let $b_Y = \Pr[Y = 1]$.  Then
+  % $\exists g \in \cF$ such that
+  % $|\Pr[D(x,x') = 1|g = 1, Y = 1] -b| > \gamma, \Pr[g = 1|Y = 1] \geq
+  % \gamma$, where $g \in \{f, \neg f\}$.
+\end{lemma}
+
+
+
+
+
+
+
+\begin{proof}
+Conditioning on the value of $f, \Pr[D(x,x') = f | Y = 1] = $
+ $$\Pr[D(x,x') = 1|f = 1, Y =1)\Pr[f = 1|Y = 1) + \Pr[D(x,x') = 0|f = 0, Y =1)\Pr[f = 0|Y = 1)> b + \gamma$$
+We know that $\Pr[f = 1|Y = 1] + \Pr[f = 0|Y = 1] = 1$, and so $\max\{\Pr[D(x,x') = 1|f = 1, Y =1],  \Pr[D(x,x') = 0|f = 0, Y =1]\} > b + \gamma$.
+Now if  $\Pr[D(x,x') = 1|f = 1, Y =1] > \gamma + b$ we are clearly done with the first part of the claim. Suppose that $\Pr[D(x,x') = 0|f = 0, Y =1] > b + \gamma$. Then $\Pr[D = 0| \neg f = 1, Y =1] > b + \gamma \implies \Pr[D = 1| \neg f = 1, Y = 1] < 1-b-\gamma < b-\gamma$, since $ b > 1/2 \implies 1-b < b$. So we have proven the first part of the claim, and it remains to show that $\Pr[f = 1|Y = 1], \Pr[f = 0|Y = 1] \geq \gamma$.
+We now decompose $\Pr[D(x,x') = f | Y =1)$ a second way:
+$$ \Pr[D(x,x') = f | Y =1] = \Pr[D(x,x') = f = 0| Y = 1] + \Pr[D = f = 1|Y = 1],$$
+and $$ \Pr[D(x,x') = f = 0| Y = 1] + \Pr[D = f = 1|Y = 1]  \leq \Pr[f = 0|Y = 1] + \Pr[D = 1|Y = 1],$$
+since the event $\{D = f = 0 | Y = 1 \} \subset \{ f = 0 | Y = 1\}$, and the event $\{D = f = 1|Y = 1\} \subset \{D = 1 | Y = 1\}$.
+But then since $\Pr[D = 0| Y = 1] \leq b$ by definition,  we have that $\Pr[f = 0|Y = 1] \geq \Pr[D(x,x') = f |Y =1)- \Pr[D=0|Y =1] > b+\gamma-b = \gamma$. The same result holds for $\Pr[f = 1|Y = 1]$.
+\end{proof}
+
+\begin{lemma}
+  Suppose that the base rate $b_2(D,P) \leq 1/2 $ and there exists a
+  function $f \in \cF$ such that
+  $\Pr[D = 1|f = 1, y = 0] > b + \beta$, and
+  $\Pr[f = 1|y = 0] \geq \alpha_Y$, where $b$ denotes the
+  True-Positive base rate defined in Section $1$, and $b \leq
+  1/2$. Then
+ $$\max\{\Pr[ D = f | Y = 1], \Pr[D = \neg f | Y = 1] \} > b + \beta*\alpha_Y$$
+ \end{lemma}
+ \begin{proof}
+ Now $\Pr[D = f| Y = 1] = \Pr[ D = 1| f =1, Y = 1]\Pr[f = 1|Y = 1] + \Pr[D = 0|f = 0, Y = 0]\Pr[f = 0|Y = 1] \geq (b + \beta)\alpha_Y + (1-\alpha_Y)\Pr[D = 0|f = 0, Y = 1].$
+But we can lower bound $\Pr[D = 0|f = 0, Y = 1]$ by $1-b$ since $\Pr[D = 1|Y = 1] \leq b$, and by assumption $\Pr[D = 1| Y = 1, f = 1] > b$, so $\Pr[D = 1|f = 0, Y = 1] \leq b \implies \Pr[D = 0|f = 0, Y = 1] \geq 1-b$. Thus $$\Pr[D = f| Y = 1] \geq (b + \beta)\alpha_Y + (1-b)(1-\alpha_Y) = b + \beta*\alpha_Y + (1-2b)*\alpha_Y$$
+Then since by assumption $b \leq 1/2, (1-2b)*\alpha_Y \geq 0$ and so $\Pr[D = f| Y = 1] \geq b + \beta*\alpha_Y$.
+ \end{proof}
+
+\begin{remark}{Calibration Auditing $\Leftrightarrow$ Agnostic Learning}
+Calibration Auditing and True-Positive Auditing are exactly equivalent, but with the roles of $A$ and $Y$ reversed. Theorems~\ref{red3},\ref{red4} exactly hold for Calibration Auditing, with the roles of $Y$ and $A$ reversed. In particular, $f \in \cF$ that is a weak learner for $Y$ w.r.t. the distribution $P|A = 1$ will witness calibration unfairness.
+\end{remark}
+\fi
+
+
+\iffalse
+\subsection{Positive Predictive Fairness}
+Given the original auditing problem instance $\PA$, we consider the
+following hypothetical instance $\PA'$: for each decision example
+$(x, y, D(X))$ drawn from the distribution $\PA$, replace it with a
+decision example $(x, y', D'(X))$ such that label $y' = D(X)$ and the
+decision algorithm satisfies $D'(X) = y$.  Then the positive
+predictive fairness constraint on the algorithm $D$ is equivalent to
+the statistical fairness constraint on $D'$ over the conditional
+distribution of $\PA'$ given the event that $y' = 1$.
+
+Recall that $\PDO$ denote the distribution $P((x, y) \mid D(X) = 1)$,
+that is the conditional distribution over $(X, y)$ conditioned on
+$D(X) = 1$. The following is also a consequence of
+\Cref{thm:reduction1}:
+
+\begin{corollary}
+  Fix any distribution $P$ over the individuals, family of group
+  classifiers $\cG$, and decision-making algorithm $D$.  Suppose that
+  the (false-positive) base rate $b_{FP}(D, P) = 1/2$. The following
+  holds:
+\begin{itemize}
+\item If $D$ is $(\gamma/2, (\gamma/2 - \eps))$-auditable
+  (w.r.t. false-positive fairness) under distribution $P$ using
+  function class $\cG$, then the class $\cG$ is
+  $(\gamma, \gamma/2 - \eps)$-weakly agnostically learnable under
+  $\PDO$.
+\item If $\cG$ is $(\gamma, \gamma - \eps)$-weakly agnostically
+  learnable under distribution $\PDO$, then $D$ is
+  $(\gamma, (\gamma - \eps)/2)$-auditable (w.r.t. false-positive
+  fairness) under $P$ using function class $\cG$.
+
+\end{itemize}
+\end{corollary}
+
+\sw{todo: $P$ is over the randomness of $D$ as well}
+\fi
+
+\subsection{Worst-Case Intractability of Auditing}
+
+While we shall see in subsequent sections that the equivalence given above
+has positive algorithmic and experimental consequences, from a purely theoretical
+perspective the reduction of agnostic
+learning to auditing has strong negative worst-case implications. More precisely,
+we can import a long sequence of formal intractability results for agnostic learning
+to obtain:
+
+\begin{theorem}
+\label{thm:audithard}
+Under standard complexity-theoretic intractability assumptions,
+for $\cG$ the classes of conjunctions of boolean attributes,
+linear threshold functions, or
+bounded-degree polynomial threshold functions, there exist distributions $P$
+such that the auditing problem cannot be solved in polynomial time,
+for either statistical parity or false positive fairness.
+\end{theorem}
+
+The proof of this theorem follows from Theorem~\ref{thm:reduction1}, Corollary~\ref{cor:reduction2},
+and the following negative
+results from the learning theory literature.
+\cite{FGRW12} show a strong negative result for weak agnostic learning
+for conjunctions: given a distribution on labeled examples from the
+hypercube such that there exists a monomial (or conjunction)
+consistent with $(1 - \eps)$-fraction of the examples, it is NP-hard
+to find a halfspace that is correct on $( 1/ 2 + \eps)$-fraction of
+the examples, for arbitrary constant $\eps > 0$.
+\cite{DOSW11} show that under the Unique Games Conjecture, no
+polynomial-time algorithm can find a degree-$d$ polynomial threshold
+function (PTF) that is consistent with $(1/2 + \eps)$ fraction of a
+given set of labeled examples, even if there exists a degree-$d$ PTF
+that is consistent with a $(1 - \eps)$ fraction of the examples.
+\cite{DOSW11} also show that it is NP-Hard to find a degree-2 PTF that
+is consistent with a $(1/2 + \eps)$ fraction of a given set of labeled
+examples, even if there exists a halfspace (degree-1 PTF) that is
+consistent with a $(1 - \eps)$ fraction of the examples.
+
+While Theorem~\ref{thm:audithard} shows that certain natural subgroup classes $\cG$ yield
+intractable auditing problems in the worst case, in the rest of the paper we demonstrate
+that effective heuristics for this problem on specific (non-worst case) distributions can be used to derive
+an effective and practical learning algorithm for subgroup fairness.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

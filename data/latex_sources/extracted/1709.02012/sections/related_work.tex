@@ -1,0 +1,82 @@
+%TEX root=../main.tex
+\section{Related Work}
+
+\paragraph{Calibrated probability estimates} are considered necessary for empirical risk
+analysis tools \cite{berk2017fairness,crowson-calibration-risk-scores,dieterich-northpointe-fairness,flores-re-propublica-fair}.
+In practical applications, uncalibrated probability estimates can be misleading
+in the sense that the end user of these estimates has an incentive to mistrust (and therefore potentially misuse) them.
+We note however that calibration does not remove all potential for misuse, as the end user's biases
+might cause her or him to treat estimates differently based on group membership.
+%
+There are several post-processing methods for producing calibrated outputs from classification
+algorithms. For example, Platt Scaling \cite{platt1999probabilistic} passes outputs through
+a learned sigmoid function, transforming them into calibrated probabilities.
+Histogram Binning and Isotonic Regression \cite{zadrozny2001obtaining}
+learn a general monotonic function from outputs to probabilities.
+See \cite{niculescu2005predicting} and \cite{guo2017calibration} for empirical
+comparisons
+of these methods.
+
+\paragraph{Equalized Odds}~\cite{hardt2016equality},
+also referred to as \emph{Disparate Mistreatment} \cite{zafar2017fairness},
+ensures that no error type disproportionately affects any particular group.
+\citet{hardt2016equality} provide a post-processing technique to achieve this
+framework, while \citet{zafar2017fairness} introduce optimization constraints
+to achieve non-discrimination at training time.
+Recently, this framework has received significant attention from the algorithmic
+fairness community.
+Researchers have found that it is incompatible with other notions
+of fairness \cite{kleinberg2016inherent,chouldechova2017fair,corbett2017algorithmic}.
+Additionally, \citet{woodworth2017learning} demonstrate that, under certain assumptions, post-processing
+methods for achieving non-discrimination may be suboptimal.
+
+\paragraph{Alternative fairness frameworks} exist and are continuously proposed.
+%As the field of algorithm fairness evolves rapidly, there are
+%many alternative frameworks of machine learning fairness.
+We highlight several of these works, though by no means offer
+a comprehensive list. (More thorough reviews can be found in
+\cite{barocas2016big,berk2017fairness,romei2014multidisciplinary}).
+It has been shown that, under most frameworks of fairness, there is a trade-off
+between algorithmic performance and non-discrimination
+\cite{berk2017fairness,corbett2017algorithmic,hardt2016equality,zliobaite2015relation}.
+Several works approach fairness through the lens of
+\emph{Statistical Parity}
+\cite{calders2009building,kamiran2009classifying,calders2010three,kamishima2011fairness,zemel2013learning,louizos2015variational,edwards2015censoring,johndrow2017algorithm}.
+Under this definition, group membership should not affect the prediction of a classifier,
+i.e. members of different groups should have the same probability of receiving
+a positive-class prediction.
+%Statistical parity can be achieved through
+%regularization mechanisms \cite{kamishima2011fairness}, optimization
+%constraints \cite{zafar2015learning}, or by feature representations
+%that remove all group-specific information
+%\cite{zemel2013learning,louizos2015variational,edwards2015censoring}.
+%
+However,
+it has been argued that Statistical Parity may not be applicable
+in many scenarios
+\cite{chouldechova2017fair,dwork2012fairness,hardt2016equality,kleinberg2016inherent},
+as it
+%Statistical parity essentially amounts to affirmative action,
+%and has the potential to significantly harm accuracy in scenarios where group
+%membership is strongly correlated with outcome. This is especially harmful in
+%medical diagnosis and risk-assessment scenarios where errors are costly and to be avoided.
+%
+attempts to guarantee equal representation. For example, it is
+inappropriate in criminal justice, where base rates differ
+across different groups.
+%
+A related notion is \emph{Disparate Impact}
+\cite{feldman2015certifying,zafar2015learning}, which states that the
+prediction rates for any two groups should not differ by more than $80\%$
+(a number motivated by legal requirements).
+%
+\citet{dwork2012fairness} introduce a notion of fairness based on
+the idea that similar individuals should receive similar outcomes,
+though it challenging to achieve this notion in practice.
+%Though this is
+%a rich definition of fairness, it is challenging to implement in practice
+%because it requires an externally defined similarity metric between individuals.
+Fairness has also been considered in online learning
+\cite{joseph2016fairness,kearns2017meritocratic}, unsupervised learning \cite{bolukbasi2016man},
+and causal inference \cite{kilbertus2017avoiding,kusner2017counterfactual}.
+

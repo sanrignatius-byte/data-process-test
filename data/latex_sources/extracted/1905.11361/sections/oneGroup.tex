@@ -1,0 +1,289 @@
+To begin, we analyze this hiring model 
+for a single group of candidates.
+The employer's goal is to minimize the expected loss, $l_{\alpha}(\pi)$, 
+while maintaining a given acceptance probability.
+For brevity, we relegate all proofs to the appendix.
+
+\subsection{The Simple Threshold Policy (Equal Number of Tests)}
+
+Consider the setting where 
+the employer must subject all candidates 
+to an equal number of tests $\tau$ and threshold $\theta$ 
+(these parameters are chosen by the employer but thereafter constant across candidates).
+For a given threshold, we can relate
+the flip probability (error rate) of the test
+to the probability that a candidate is accepted as follows:
+
+Recall that $\hat{y}_{i,j}=y_i\xor Br(\eta)$, $S_\tau=\sum_{j=1}^\tau \hat{y}_{i,j}$, that $Z^\eta_\tau=\sum_{t=1}^\tau \mathbb{I}(\hat{y}_{i,j}\neq y_i)$, and that $\tau$ and $\theta$ are the only parameters of the threshold policy, $\pi$.
+Informally, $S_\tau$ is the number of passed tests
+and $Z^\eta_\tau$ is the number of flips 
+(tests in error).
+The probability of hiring an unskilled candidate is given by:
+$$\Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=1|y_i=0]=\Pr[S_{\tau}\geq \theta|y_i=0]=
+\Pr[Z_{\tau}^{\eta}\geq \theta].$$
+
+Since $Z_{\tau}^{\eta}$ is a binomial random variable with parameters $\tau$ and $\eta$, we can calculate this probability precisely as:
+$\Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=1|y_i=0]=\Pr[Z_{\tau}^{\eta}\geq \theta]= \sum_{k=\theta}^\tau{\tau \choose k}\eta^k(1-\eta)^{\tau-k}$,
+and the probability of rejecting a skilled candidate is the probability that they encounter more than $\tau-\theta$ flips, thus: 
+$\Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=0|y_i=+1]=\Pr[S_{\tau}<\theta|y=+1]=\Pr[Z_\tau^{\eta}> \tau- \theta]=$\\
+$\sum_{k=\tau- \theta+1}^{\tau}{\tau \choose k}\eta^k(1-\eta)^{\tau-k}.$
+Similarly, given a candidate's skill level, 
+we can calculate the probability 
+that 
+they obtain exactly $k$ positive tests 
+out of $\tau$, i.e,
+$$\Pr[S_{\tau}=k|y_i=0]=\Pr[Z_\tau^{\eta}= k]={\tau \choose k}\eta^{k}(1-\eta)^{\tau-k}.$$
+$$\Pr[S_{\tau}=k|y_i=+1]=\Pr[Z_\tau^{\eta}= \tau- k]={\tau \choose k}\eta^{\tau-k}(1-\eta)^{k}.$$
+% \end{observation}
+Given these observations, we can now analyze the employer's choices. 
+
+\subsection*{Optimal solution for any ratio $\alpha\in(0,1)$}
+%
+The next theorem shows that for threshold policies, the  expected loss $l_{\alpha}(\pi)=l_{\alpha}(\theta)$ is minimized at $\theta^*_{p,\alpha}$ 
+such that
+$|\theta^*_{p,\alpha}-\tau/2|\leq \frac{\log (\frac{1}{p})+\log(\frac{1}{ \alpha})}{2\log(1+\frac{2\sigma}{1-\sigma})}$.
+\begin{theorem}\label{thm:minErrorThresholdgeneralAlpha}
+The loss function $l_{\alpha}(\theta)$ is quasi-convex and a
+threshold of 
+$\theta^*_{p,\alpha}=
+\left\lceil\frac{1}{2}\left(\tau-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{\log(1+\frac{2\sigma}{1-\sigma})}\right)\right\rceil$ 
+minimizes loss for any values of $\alpha,p,\sigma\in(0,1)$.
+Namely,
+\[
+\theta^*_{p,\alpha}=\arg\min_{\theta}l_{\alpha}(\theta) =\left\lceil\frac{\tau}{2}-\frac{\log(\frac{1}{p}-1)+\log(\frac{1}{\alpha}-1)}{2\log(1+\frac{2\sigma}{1-\sigma})}\right\rceil.
+\]
+\end{theorem}
+
+Next, we bound the number of tests required to guarantee that
+the probability of classification error by the majority decision rule (i.e., $\theta=\ceil{\frac{\tau}{2}}$) 
+does not exceed a specified quantity $\delta$.
+
+
+\begin{theorem}\label{thm:majorityLowerBound}
+For every $\delta,p,\alpha \in(0,1)$, performing 
+$\tau=\Omega(\frac{\alpha+p-2p\alpha}{\sigma^2}\ln(\frac{1}{\delta}))$ 
+tests per candidate 
+and using majority as a decision rule (i.e., $\theta=\tau/2$)
+guarantees $l_{\alpha}(\pi)\leq \delta$.
+\end{theorem}
+
+\subsubsection*{Equal cost for false positives and false negatives $(\alpha=\frac{1}{2})$}
+
+Consider the simple loss consisting of the classification error rate 
+(false positives and false negatives count equally), 
+expressed via our loss function by setting $\alpha=\frac{1}{2}$. 
+When skilled and unskilled candidates 
+occur with equal frequency, i.e., $p=1/2$, 
+we can derive that the majority decision rule 
+minimizes the classification error 
+for any number of tests.
+
+\begin{corollary}\label{cor:majorityMinError}
+Assume  $p=1/2$ and $\alpha=1/2$. 
+For any number of tests $\tau$, 
+the majority decision rule minimizes loss $l_\alpha$.
+Namely,
+$\arg\min_{\theta}l_{\frac{1}{2}}(\theta) =\ceil{\frac{1}{2}\tau}.$
+In addition, for every $\delta\in(0,1)$, 
+performing $\tau=\Omega(\frac{1}{\sigma^2}\ln(\frac{1}{\delta}))$ tests per candidate 
+and using majority as a decision rule 
+guarantees classification error with probability of at most $\delta$.
+\end{corollary}
+
+
+\paragraph*{FDR minimization with limited number of tests per hire for balanced groups}
+Again, assuming balanced groups (i.e., $p=1/2$),
+suppose that an employer would like 
+to minimize the false discovery rate, 
+subject to the constraint of lower bounding the hiring probability.
+We can model this optimization problem 
+by introducing a budget parameter $B>1$ 
+to bound any predetermined (fixed) number of tests 
+per hired candidate as follows:
+\begin{equation}\label{optimization1}
+\begin{aligned}
+& \arg\min_{\pi}
+& & \text{FDR}_{\pi}=\Pr[y_i=0|\Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}) =1] \\
+& \text{subject to}
+& & \frac{\tau_\pi}{ \Pr[\pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}) =1]}\leq B
+\end{aligned}
+\end{equation}
+where $\tau_\pi$ is the number of tests $\pi$ performs.
+The following theorem shows that the optimal policy is a randomized threshold policy.
+\begin{theorem}\label{thm:minFPwithBudget}
+There exists a randomized threshold policy $\pi$ 
+which is an optimal solution for (\ref{optimization1}).
+\end{theorem}
+\subsection{The Dynamic Policy (Adaptively-Allocated Tests)}
+Recall that under a dynamic policy, 
+the employer can decide after each test 
+whether to accept, reject, or perform another test.
+In general, dynamic policies are more efficient 
+than those that must set a fixed number of tests. 
+To build intuition,
+consider a candidate that has passed $2$ out of $3$ tests.
+As seen above, under an optimally-constructed fixed-test policy,
+any candidate that fails a single test might be rejected.
+\footnote{For example, if $B=18$ and $\eta=\frac{1}{3}$,
+the lowest false discovery rate is achieved by $\tau=\theta=3$.}
+However, the posterior probability 
+that this candidate is in fact \emph{skilled}
+may still be greater than that of a fresh candidate sampled from the pool.
+Thus we can improve on the fixed-test policy by dynamically
+allocating more tests to candidates 
+until their posterior odds either 
+dip below the prior odds or rise above the threshold for hiring.
+%
+The following theorem formalizes this notion
+that it is better to administer more tests 
+to a candidate that passed the majority of previous tests 
+than to start afresh with a new candidate:
+
+
+\begin{theorem}\label{thm:posteriorBetter}
+For any $p,\sigma, \tau$, a candidate $i$ 
+that passed $\theta>\frac{\tau}{2}$ out of $\tau$ tests 
+is more likely to be a skilled
+than a freshly-sampled candidate $i'$ 
+for whom no test results are yet available, i.e.,
+$\Pr[y_{i'}=+1]=p<\Pr[y_i=+1|S_{\tau}=\theta]$.
+\end{theorem}
+\begin{remark}
+If $\theta<\frac{\tau}{2}$, the inequality would have been reversed.
+\end{remark}
+
+
+\paragraph*{The Greedy Policy}
+% 
+We now present a greedy algorithm 
+that continues to test a candidate 
+so long as the posterior probability that $y_i=+1$ 
+is greater than $\epsilon'$ and smaller than $1-\epsilon$,
+rejects a candidate whenever the posterior falls below $\epsilon'$
+(absent fairness concerns, employers will set $\epsilon'=p$ for all groups), 
+and accepts whenever the posterior rises above $1-\epsilon$. 
+Given parameters $\epsilon,\epsilon'>0$, 
+we show that the greedy policy solves the optimization problem 
+of minimizing the mean number of tests under these constraints, i.e.,
+\begin{equation*}
+\begin{aligned}
+& \underset{\tau}{\text{minimize}}
+& & \E[\tau] \\
+& \text{subject to}
+& &\forall_i \pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}) =1 \text{ iff } \Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}]\geq 1-\epsilon\\
+& & & \forall_i \pi(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}) =0 \text{ iff } \Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,\tau}]<\epsilon'
+\end{aligned}
+\end{equation*}
+Our analysis of this policy builds upon the observation
+that conditioned on a worker's skill,  
+the posterior log-odds after each test
+perform a one-dimensional random walk,
+starting with the prior log-odds $\log(\frac{p}{1-p})$
+and moving, after each test result, either left 
+(upon a failed test) or right (upon a passed test).  
+When (as in our model) the probability of a flip 
+are equal for skilled and unskilled candidates, 
+our random walk has a fixed step size.
+Moreover, our random walk has \emph{absorbing barriers}
+corresponding to (when $\epsilon'=p$) 
+falling below the prior log odds (on the left)
+and exceeding the hiring threshold (on the right).
+Owing to the fixed step size and absorbing barriers,
+our policy resembles the classic problem of Gambler's ruin,
+in which a gambler wins or loses a unit of currency at each step,
+and loses when crossing a threshold on the left (going bankrupt)
+or on the right (bankrupting the opponent).
+We formalize the random walk as follows where $X_j$
+is the position on the walk at time $j$:
+\begin{enumerate}
+    \item $X_0$ is the prior log-odds of the candidate, i.e., $X_0=\log \frac{p}{1-p}$.
+    \item After each test result, $\hat{y}_{i,j}$ is observed,
+    $X_j=X_{j-1}+(2\hat{y}_{i,j}-1)\cdot
+    \log \left(\frac{\Pr[\hat{y}_{i,j}=+1|y_i=+1]}{\Pr[\hat{y}_{i,j}=+1|y_i=0]}\right)$.
+\end{enumerate}
+Let $\pi_{Greedy}$ be the policy that accepts a candidate if $\Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,j}]\geq 1-\epsilon$, 
+rejects if $\Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,j}]<\epsilon'$,
+and otherwise conducts an additional test, i.e.,
+\[
+\pi_{Greedy}(\hat{y}_{i,1},\dots,\hat{y}_{i,j})=
+ \begin{cases}
+       0    &\quad\text{if } \Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,j}]<\epsilon' \\
+       1    &\quad\text{if } \Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,j}]\geq 1-\epsilon\\
+       \text{retest}    &\quad\text{else}\\
+     \end{cases}.
+\]
+An employer will generally set
+the lower absorbing barrier
+to reject all candidates with posterior log odds less than $p$ 
+since a fresh candidate from the pool is expected to be better.
+However, when noise levels differ across groups,
+we may prefer \emph{in the interest of fairness} 
+to set $\epsilon'$ lower than $p$ for members of the noisier group, 
+allowing us to equalize the frequency of false negatives across groups (see Section \ref{sec:twoGroups}).
+
+
+\begin{lemma}\label{lemma:beta}
+Let $\beta,\beta'\in \mathbb{R}$ be the parameters that satisfy $\frac{\beta}{\beta+1}=1-\epsilon$ and $\frac{\beta'}{\beta'+1}=\epsilon'$
+(i.e., $\beta=\frac{1-\epsilon}{\epsilon}$and $\beta'=\frac{\epsilon'}{1-\epsilon'}$).
+Then $X_{\tau}\geq \log \beta$ 
+iff $\Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,\tau} ] \geq 1-\epsilon$ 
+(iff the candidate is accepted) and $X_{\tau}< \log \beta'$ 
+iff $\Pr[y_i=+1|\hat{y}_{i,1},\dots,\hat{y}_{i,\tau} ] < \epsilon'$ 
+(iff the candidate is rejected).
+\end{lemma}
+
+\begin{corollary}\label{cor:piGreedy}
+The policy $\pi_{Greedy}$ can be described as follows.
+\[
+\pi_{Greedy}(\hat{y}_{i,1},\dots,\hat{y}_{i,\tau})=
+ \begin{cases}
+       0     &\quad\text{if } X_{\tau} < \log \frac{\epsilon'}{1-\epsilon'} \\
+       1    &\quad\text{if } X_{\tau}\geq \log(\frac{1-\epsilon}{\epsilon})\\
+       \textnormal{retest}    &\quad\textnormal{else}\\
+     \end{cases}
+\]
+\end{corollary} 
+
+\noindent We use the following parameters in the next theorems: 
+$$a=\left\lceil \frac{\log(\frac{(1-\epsilon)(1-\epsilon')(1+\sigma)}{\epsilon \epsilon'(1-\sigma)})}{\log(\frac{1+\sigma}{1-\sigma})}\right\rceil \gg \frac{1}{\sigma}
+\text{\quad and \quad} z=
+\left\lceil\frac{\log (\frac{p(1-\epsilon')(1+\sigma)}{\epsilon'(1-p)(1-\sigma)})}{\log(\frac{1+\sigma}{1-\sigma})}\right\rceil$$
+\begin{theorem}[Expected number of tests per type]\label{thm:expectedNumOfTests}
+The expected number of tests until a decision 
+(namely accept or reject) for skilled candidates is $\E[\tau_{s}]=\frac{1}{\sigma}\left(a\cdot\frac{1-(\frac{1-\sigma}{1+\sigma})^{z}}{1-(\frac{1-\sigma}{1+\sigma})^{a}}-z\right)\approx\frac{2a}{1+\sigma}-\frac{z}{\sigma}$ and $\E[\tau_{u}]=\frac{1}{\sigma}\left(z-a\cdot\frac{1-(\frac{1+\sigma}{1-\sigma})^{z}}{1-(\frac{1+\sigma}{1-\sigma})^{a}}\right)\approx\frac{z}{\sigma}$ for unskilled candidates.
+\end{theorem} 
+For the probabilities of the candidates to be accepted or rejected, 
+conditioned on their true skill level, 
+we present the results in a form of confusion matrix in Table \ref{tab:confMat}. 
+
+
+\begin{table}
+\begin{center}
+\caption{Confusion matrix for $\pi_{\text{greedy}}$
+assuming $\epsilon\leq 1/4$ and $\epsilon'\leq p\leq 1/2$.
+}
+\small
+\begin{tabular}{l|ll|ll}
+\multicolumn{1}{c}{} &\multicolumn{2}{c}{\textbf{General $\epsilon'$}}&\multicolumn{2}{c}{\textbf{When $\epsilon' = p$}} \\ 
+\multicolumn{1}{c}{} & 
+\multicolumn{1}{c}{\textbf{Skilled}  ($y_i=+1$)} & 
+\multicolumn{1}{c}{\textbf{Unskilled} ($y_i=0$)} &
+\multicolumn{1}{c}{\textbf{Skilled} } & 
+\multicolumn{1}{c}{\textbf{Unskilled} }
+\\ 
+\toprule
+\textbf{accept} & $\text{TPR}=\Theta\left(1-\frac{\epsilon'}{p}(1-\sigma)\right)$ & $\text{FPR}=\Theta\left(\epsilon(p-\epsilon'+\epsilon'\sigma) \right)$  &$ \Theta(\sigma)$&$ \Theta(\epsilon p \sigma)$ \\
+\textbf{reject} & $\text{FNR}=\Theta\left(\frac{\epsilon'}{p}(1-\sigma)\right)$   & $\text{TNR}=\Theta\left(1-\epsilon(p-\epsilon'+\epsilon'\sigma) \right)$ & $ \Theta(1-\sigma)$ &$\Theta(1-\epsilon p \sigma)$\\ 
+\bottomrule
+\end{tabular}
+\label{tab:confMat}
+\end{center}
+\end{table}
+
+
+\begin{theorem}\label{thm:expectedNumOfTestsUntilDecision}
+The expected number of tests until deciding whether to accept or reject a candidate is $
+\E[\tau|{\pi(y_{i,\tau})\in \{0,1\}}]
+\approx \frac{ap}{\sigma}$, where 
+$a\gg\frac{1}{\sigma}$.
+\end{theorem}

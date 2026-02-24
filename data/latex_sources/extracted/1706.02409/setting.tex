@@ -1,0 +1,50 @@
+\section{The Regression Setting}
+%\hh{Changed "instance" and "label" to its regression equivalents.}
+Consider the standard (linear and logit) regression setting: denote
+the \emph{explanatory} variables (or \emph{instances}) by
+$\vx \in \X = \reals^d$ and the \emph{target} variables (or
+\emph{labels}) by $y \in \Y = [-1,1]$.  Note that for both linear and
+logit models, the target values are continuous. Let $\cP$ denote the
+joint distribution over $\X \times \Y$. Suppose every instance $\vx$
+belongs to exactly one of $2$ groups, denoted by $1$ and
+$2$.\footnote{The generalization to more than 2 groups is
+  straightforward.} This partition of $\X$ into groups (e.g. into
+different races or genders) is encoded in a ``sensitive'' feature
+$\X_{d+1}$. Let $S = \{(\xi, \yi)\}_{i=1}^n\}$ be a training set of
+$n$ samples drawn i.i.d. from $\cP$, separated by groups into $S_1$
+and $S_2$. Let $n_1 = |S_1|$ and $n_2=|S_2|$.  ($n = n_1+n_2$.)
+
+
+This work studies the trade-off between fairness and accuracy for the
+class of linear and logit regression models.  Given a pair of
+explanatory and target variables $(\vx, y)$, we treat $y$ as the
+ground truth description of $\vx$'s merit for the regression task at
+hand: two pairs $(\vx, y), (\vx', y')$ with $y\approx y'$ have similar
+observed outcomes. We aim to design models which treat two such
+instances with similar observed outcomes similarly, a notion we refer
+to as \emph{ fairness} with respect to the ground truth. For a given
+accuracy loss $\ell$ and fairness loss (or \emph{penalty}) $f$, we
+define the $\lambda$-weighted fairness loss of a regressor $\vw$ on a
+distribution $\cP$ to be $\ell_{\cP}(\vw) + \lambda f_\cP (\vw).$ For
+our sample $S$, we analogously define the $\lambda$-weighted fairness
+training loss of $\vw$ as $\ell(\vw, S) + \lambda f(\vw, S).$ For
+linear regression, we let $\ell$ be mean-squared error; for logistic
+regression, we let $\ell$
+%$\ell_\cP(\vw, S) = \sum_{(\vx, y)\in S} \log\left(1 + e^{-y \cdot \v\left(w c\dot x\right)} \right)$, 
+be the standard log loss. Finally, we use $\ell_2$ regularization for
+both models, so the overall loss is then
+$ \ell_{\cP}(\vw) + \lambda f_{\cP}(\vw) + \gamma ||\vw||_2 $.
+
+%
+%\subsection{Real-valued predictors for binary-labeled data}\label{sec:mse}
+%
+\iffalse 
+Note that in case of logit models for regression, assessing the
+accuracy loss via MSE is indeed a sensible choice: one assumes in some
+true real-valued model applied to $\vx$ represents the probability of
+$\vx$'s binary observable $y$ being $1$. If one takes this stance,
+assessing the accuracy loss of a predictor using its $\mse$ will
+elicit the true model as its minimizer.
+\fi
+%
+%\hh{Shall we replace the above explanation with the scoring-rule one MK mentioned? I don't like introducing new notation (i.e. h) just for 1-2 sentences...}

@@ -75,6 +75,7 @@ class RefInstance:
     target_key: str           # the label / cite key being referenced
     ref_type: str             # "ref" | "eqref" | "pageref" | "cite"
     line_no: int              # 1-based line number (original file)
+    char_pos: Optional[int]   # approximate position in merged source text
     context: str              # surrounding text (±80 chars)
     source_env: Optional[str]  # enclosing env at the reference site
     file_path: Optional[str]
@@ -85,6 +86,7 @@ class RefInstance:
             "target_key": self.target_key,
             "ref_type": self.ref_type,
             "line_no": self.line_no,
+            "char_pos": self.char_pos,
             "context": self.context[:300],
             "source_env": self.source_env,
             "file_path": self.file_path,
@@ -171,9 +173,14 @@ class LatexDocumentGraph:
 # \label{key}
 RE_LABEL = re.compile(r'\\label\{([^}]+)\}')
 
-# \ref{key}, \eqref{key}, \pageref{key}, \autoref{key}, \cref{key}
+# \ref{key}, \eqref{key}, \pageref{key}, \autoref{key}, \cref{key}, plus common wrappers.
+# Keep this allowlist explicit to avoid accidentally capturing unrelated macros.
 RE_REF = re.compile(
-    r'\\(?P<cmd>ref|eqref|pageref|autoref|cref|Cref)\{(?P<key>[^}]+)\}'
+    r'\\(?P<cmd>'
+    r'ref|eqref|pageref|autoref|cref|'
+    r'figref|tabref|secref|eqnref|algref|thmref|lemref|propref|corref|appendixref|chapref'
+    r')\*?\{(?P<key>[^}]+)\}',
+    re.IGNORECASE,
 )
 
 # \cite{key1, key2}, \citep{...}, \citet{...}, \citealp{...}
@@ -189,7 +196,9 @@ RE_END_ENV = re.compile(r'\\end\{(\w+)\}')
 RE_CAPTION = re.compile(r'\\caption(?:\[[^\]]*\])?\{(.+)')
 
 # \input{file} / \include{file}
-RE_INPUT = re.compile(r'\\(?:input|include)\{([^}]+)\}')
+RE_INPUT_BRACED = re.compile(r'\\(?:input|include)\s*\{([^}]+)\}')
+# \input file / \include file   (plain form used in some sources)
+RE_INPUT_PLAIN = re.compile(r'\\(?:input|include)\s+([^\s{}%]+)')
 
 # \includegraphics[...]{file}
 RE_INCLUDEGRAPHICS = re.compile(
@@ -565,9 +574,8 @@ class LaTeXReferenceExtractor:
             # Strip comments (but not \%)
             stripped = self._strip_comment(line)
 
-            m = RE_INPUT.search(stripped)
-            if m:
-                input_name = m.group(1)
+            input_name = self._extract_input_target(stripped)
+            if input_name:
                 if not input_name.endswith(".tex"):
                     input_name += ".tex"
                 # Try multiple locations
@@ -586,12 +594,12 @@ class LaTeXReferenceExtractor:
                         resolved, extract_dir, _visited
                     )
                     sub_lines = sub_content.split("\n") if sub_content else []
-                    for sl in sub_lines:
+                    for sub_idx, sl in enumerate(sub_lines):
                         merged_idx = len(result_lines)
                         result_lines.append(sl)
-                        # Map to the sub-file (sub_file_lines already set)
-                        if merged_idx in sub_file_lines:
-                            file_lines[merged_idx] = sub_file_lines[merged_idx]
+                        # Map to the sub-file using sub-file local line index.
+                        if sub_idx in sub_file_lines:
+                            file_lines[merged_idx] = sub_file_lines[sub_idx]
                         else:
                             file_lines[merged_idx] = (0, str(resolved.relative_to(extract_dir)) if extract_dir in resolved.parents or resolved.parent == extract_dir else resolved.name)
                     continue
@@ -611,6 +619,23 @@ class LaTeXReferenceExtractor:
                 return line[:i]
             i += 1
         return line
+
+    @staticmethod
+    def _extract_input_target(line: str) -> Optional[str]:
+        """
+        Extract target from \\input / \\include commands.
+
+        Supports both braced and plain forms:
+          - \\input{sections/method}
+          - \\input sections/method
+        """
+        m = RE_INPUT_BRACED.search(line)
+        if m:
+            return m.group(1).strip()
+        m = RE_INPUT_PLAIN.search(line)
+        if m:
+            return m.group(1).strip()
+        return None
 
     # -----------------------------------------------------------------------
     # Environment tracking
@@ -797,25 +822,29 @@ class LaTeXReferenceExtractor:
     ) -> List[RefInstance]:
         refs: List[RefInstance] = []
 
-        full_text = "\n".join(lines)
-
         for idx, line in enumerate(lines):
             # \\ref, \\eqref, etc.
             for m in RE_REF.finditer(line):
-                cmd = m.group("cmd")
-                key = m.group("key").strip()
+                cmd = m.group("cmd").lower()
                 env = self._innermost_env(env_stack, idx)
                 orig_line, src_file = file_lines.get(idx, (idx + 1, None))
                 ctx = self._get_line_context(lines, idx)
-                refs.append(RefInstance(
-                    target_key=key,
-                    ref_type=cmd,
-                    line_no=orig_line,
-                    context=ctx,
-                    source_env=env,
-                    file_path=src_file,
-                    _merged_idx=idx,
-                ))
+                # Allow comma-separated ref targets, e.g. \cref{fig:a,fig:b}
+                keys_str = m.group("key")
+                for key in keys_str.split(","):
+                    key = key.strip()
+                    if not key:
+                        continue
+                    refs.append(RefInstance(
+                        target_key=key,
+                        ref_type=cmd,
+                        line_no=orig_line,
+                        char_pos=idx * 80 + m.start(),
+                        context=ctx,
+                        source_env=env,
+                        file_path=src_file,
+                        _merged_idx=idx,
+                    ))
 
             # \\cite, \\citep, etc. (can have comma-separated keys)
             for m in RE_CITE.finditer(line):
@@ -830,6 +859,7 @@ class LaTeXReferenceExtractor:
                             target_key=key,
                             ref_type="cite",
                             line_no=orig_line,
+                            char_pos=idx * 80 + m.start(),
                             context=ctx,
                             source_env=env,
                             file_path=src_file,

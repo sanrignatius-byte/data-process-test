@@ -1,0 +1,114 @@
+\section{A Comparative Empirical Case Study}
+\label{sec:exp}
+
+In this section we describe an empirical case study in which we
+apply our regularization framework to six different datasets
+in which fairness is a central concern. These datasets include
+cases in which the observed labels are real-valued, and cases in
+which they are binary-valued. For the real-valued datasets, we apply
+standard linear regression with our various fairness regularizers.
+For the binary-valued datasets, we apply standard logistic regression,
+again along with fairness regularizers. 
+% This
+% allows us to interpret our model predictions as probabilities of a 
+% binary outcome (such as defaulting on a loan or committing a crime) via
+% a proper scoring rule,
+% which seems appropriate for these datasets (as opposed to 
+% settings in which the ground truth is truly binary, e.g.
+% being older or younger than 21 years old).
+For datasets with real-valued targets we
+normalized the inputs and outputs to be zero mean and unit
+variance, and we set the cross-group fairness weights as
+$d(\yi, \yj) = e^{-(\yi-\yj)^2}$;
+for datasets with binary targets 
+we set
+$d(\yi,\yj) = \mathbbm{1}[\yi = \yj]$.
+
+For each dataset $S$, our framework requires that we 
+solve optimization problems of the
+form $\min_{\vw} \ell(\vw,S) + \lambda f(\vw, S) + \gamma ||\vw||_2$ for
+variable values of $\lambda$,
+where $\ell(\vw,S)$ is either MSE (linear regression)
+or the logistic regression loss.
+For each $\lambda$ we picked $\gamma$ as
+a function of this $\lambda$ by cross validation (see Appendix~\ref{sec:cross} for more details).
+All optimization
+problems are solved using the CVX solver in Matlab (for real-valued datasets) or
+python (for binary-valued datasets).\footnote{See \url{http://www.cvxr.com}~and~\url{http://www.cvxpy.org} for more details. We set the number
+of iterations to be 1000 in our optimization solvers.}
+Furthermore, all the results are reported using 10-fold cross
+validation (see more details in Appendix~\ref{sec:deets}).
+
+The datasets themselves are summarized in Table~\ref{tab:summary},
+where we specify the size and dimensionality of each, along with 
+the ``protected'' feature (race or gender) 
+that thus defines the subgroups across which we apply our
+fairness criteria (see Appendix~\ref{sec:data-description} for more details). 
+The datasets vary considerably in the
+number of observations, their dimensionality, and the relative
+size of the minority subgroup.
+
+The \emph{Adult} dataset~\citep{uci-repo, adult-dataset} from the UC Irvine Repository contains 1994
+Census data, and the goal is to predict whether the income of an
+individual in the dataset is more than $50$K per year or not. 
+The sensitive or protected attribute is gender.\footnote{We only used the data in Adult.data in our experiments.}
+The \emph{Communities and
+  Crime} dataset \citep{uci-repo} includes features relevant to
+per capita violent crime rates in different communities in the United
+States, and the goal is to predict this crime
+rate; race is the protected variable.
+The \emph{COMPAS}
+dataset contains data from Broward County, Florida, originally compiled
+by ProPublica~\cite{propublica}, in which the goal is to predict
+whether a convicted individual would commit a violent crime in the
+following two years or not. The protected attribute 
+is race, and the data was filtered in a fashion similar to that of~\citet{Corbett-DaviesP17}.
+The \emph{Default}
+dataset~\citep{default-dataset,uci-repo} contains data from Taiwanese
+credit card users, and the goal is to predict whether an individual
+will default on payments. The protected attribute is
+gender.
+The \emph{Law School} dataset\footnote{\url{http://www2.law.ucla.edu/sander/Systemic/Data.htm}} 
+consists of the records of law students who went on to take the bar exam. The goal is to 
+predict whether a student will pass the exam based on features such as LSAT score and 
+undergraduate GPA. The protected attribute is gender. 
+The \emph{Sentencing} dataset contains information from a state department
+of corrections regarding inmates in 2010. The goal is
+to predict the sentence length given by the judge based on factors
+such as previous criminal records and the crimes for which the
+conviction was obtained. The protected attribute is gender.
+
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+{\bf Data Set\/} & {\bf Type\/}  & {\bf $n$\/} & {\bf $d$\/} & {\bf Minority $n$\/} & {\bf Protected\/}
+   \\ \hline
+Adult & logit & 32561 & 14 & 10771 & gender
+     \\\hline
+Communities and Crime & linear & 1994 & 128 & 227 & race
+     \\\hline
+COMPAS & logit & 3373 & 19 & 1455 & race
+     \\\hline
+Default & logit & 30000 & 24 & 11888 & gender
+     \\\hline
+%     Student &  &  \checkmark &395 & & 187 %&7.17\% (20.69\%) 
+ %    \\\hline
+Law School & logit & 27478 & 36 & 12079 & gender
+     \\\hline
+%     Stop and Frisk & linn & 29786 & & 5467 %& 13.46\% (28.62\%) 
+   %  \\\hline
+Sentencing & linear & 5969 & 17  & 385 & gender
+     \\\hline
+\end{tabular}
+\end{center}
+\caption{Summary of datasets. 
+Type indicates whether regression is logistic or linear;
+$n$ is total number of data points;
+$d$ is dimensionality;
+Minority $n$ is the number of data points in the smaller population;
+Protected indicates which feature is protected or fairness-sensitive.
+}
+\label{tab:summary}
+\end{table}

@@ -77,7 +77,7 @@ def main():
         help="Maximum hops in cross-doc paths",
     )
     parser.add_argument(
-        "--min-score", type=float, default=0.30,
+        "--min-score", type=float, default=0.02,
         help="Minimum path score to keep",
     )
     parser.add_argument(
@@ -130,6 +130,14 @@ def main():
     citation_data = load_json(args.citation)
     latex_ref_data = load_json(args.latex_ref)
     element_data = load_json(args.elements) if args.elements else None
+    if (
+        isinstance(element_data, dict)
+        and "documents" in element_data
+        and isinstance(element_data.get("documents"), dict)
+    ):
+        wrapped_count = len(element_data["documents"])
+        print(f"  Detected wrapped MinerU format: using documents map ({wrapped_count} docs)")
+        element_data = element_data["documents"]
 
     if not citation_data and not latex_ref_data:
         print("ERROR: Need at least one of citation_graph.json or latex_reference_graph.json")

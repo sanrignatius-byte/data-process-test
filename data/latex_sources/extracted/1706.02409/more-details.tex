@@ -1,0 +1,32 @@
+\subsection{Additional Details}
+\label{sec:deets}
+
+We used 10-fold cross validation to evaluate the performance (fairness
+and accuracy losses) of a trained model on test data. For smaller
+datasets (Communities and Crime, COMPAS and Sentencing) we used one
+run of 10-fold cross validation. For larger datasets (Adult, Default
+and Law School) we first randomly sampled 30-50\% of the dataset
+(depending on the dataset), ran the 10-fold cross validation on the
+sampled data and then repeated the experiment 3 times each time with a
+new random sample. This is because both the running time and the
+instability of the CVXPY solver would increase when we used the whole
+datasets for the larger datasets.
+
+While the fairness losses~\ref{eqn:innersq}, \ref{eqn:outersq}, and
+\ref{eqn:betweensq} are defined using all the $n_1\times n_2$ cross
+pairs in the dataset, in our experiments we only used
+$2 \times \text{Minority } n$ random cross pairs where
+$\text{Minority } n = \min\{n_1, n_2\}$ (see
+Table~\ref{tab:summary}). This is because: (1) using more cross pairs
+did not substantially improve the efficiency curves in
+Figure~\ref{fig:pareto}, (2) the CVXPY solver for binary-valued
+problems would become unstable when using individual fairness if we
+increase the number of cross pairs significantly. Furthermore, we used
+the same cross validation folds and cross pairs when experimenting
+with our different notions of fairness.
+
+Finally, linear models perform poorly on some of our datasets~(see
+e.g.~\cite{default-dataset}). However, our goal in this work was not
+to obtain the most accurate models for particular datasets but to
+study the trade-off between fairness and accuracy and also different
+notions of fairness for regression problems.
