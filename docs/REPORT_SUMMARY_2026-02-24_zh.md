@@ -5,6 +5,30 @@
 
 ---
 
+## 对上次 Mentor 建议的执行情况
+
+上次汇报结束时，Mentor 给了三条方向性建议，这里先逐条交代进展，再展开细节。
+
+**① 丰富模态：引入 table/formula/figure，并尝试对各模态做细分**
+
+这条做了一半。table 和 formula 已经进入了 dual-evidence 的正式 pipeline——当前生产批次的 pair_type 包含 figure+table、figure+formula、formula+table 三种组合，不再是 L1 v3 那样清一色的图文问题。通过率也有明显差异：figure+table 76%，figure+formula 46%，formula+table 44%，说明三种模态组合的难度结构很不一样，值得分开处理。
+
+但**细分**那一层（模型图 vs 实验结果图 vs Chart vs 信息汇总图）还没做。原因是当时判断先把 dual-evidence pass rate 做上来比细分优先，但这确实是个欠账，后面回来补。
+
+**② 构建文档内部 links/structure，自然实现多跳——①LaTeX 引用图，②MinerU 路线**
+
+LaTeX 路线全部落地了，包括文档内引用 DAG、跨模态 pair 构建（带 bridge_text），以及跨文档 Citation Graph。细节在正文里展开。
+
+MinerU 路线当时判断"较难"之后就搁置了，这两周没有推进，还是在观望。思路上可行（从 MinerU 解析出的 section/caption/ref 结构直接建图），但 MinerU 输出的编号和 LaTeX 编号经常对不上（已知 label 匹配率只有 28.8%），在 LaTeX 路线还没充分验证之前先不动这条。
+
+**③ 展望：用 embedding 在隐空间探索跨文档文本相似性**
+
+这条有推进，但遇到了一个比较根本的问题。我们用 Qwen3-Embedding-4B 跑了 590 个 source elements 的 top-20 跨文档匹配，审计结果发现：embedding 找到的"最相似"跨文档 element，往往是平行描述同一件事的元素，而不是有多跳价值的元素——相似度高 ≠ 多跳有用。这不是 Qwen3-4B 的问题，是 objective mismatch。
+
+具体怎么应对，在正文的"这轮最想说清楚的一件事"里有讨论。
+
+---
+
 ## 先说背景：两周前我们卡在哪里
 
 直接进数字之前，想先交代一下两周前的处境，不然很多决定看起来会没来由。
@@ -117,6 +141,193 @@ Rerank 改善了 top1 的集中度，但在 all-rank 候选池里，热点 targe
 **再然后**：在 v2b_cap10 基础上加入 reranked cross-doc hard negatives，生成 triplet v3，做最小消融（embedding-only vs +hub/diversity rerank vs +context rerank）。
 
 **遗留**：figure+formula 里 architectural diagram + 复杂 loss function 的 hard case，等有了评估闭环再来判断要不要专项处理。
+
+---
+
+## 各版本代表性 Query 示例
+
+五个阶段各取一条，从简单到复杂展示 query 质量的演进。
+
+---
+
+### ① L1 v3（单图文，974 条，QC 97.2%）
+
+> **图**：Fair PCA 在 LFW 数据集上的重建误差折线图（Figure 3）
+> **类型**：`anomaly_cause`
+
+**Query：**
+> Why do all curves show steeper descent between 2.5 and 7.5 features compared to the gradual decline after 10 features, given that k groups exist?
+
+**Answer：**
+> With more than two groups, optimal solutions may not assign identical loss initially, but as features increase beyond k groups, the fairness constraints stabilize and reconstruction error improvements plateau, explaining the transition from steep to gradual decline.
+
+**特征**：只依赖单张图，视觉锚点明确（x=2.5-7.5 段的斜率），答案需要把视觉观察和公平约束理论挂钩。这是 L1 最干净的状态。
+
+---
+
+### ② L1 multihop v3（LaTeX bridge 注入，72 pass，30.5%）
+
+> **元素 A**：Formula 1（equalized odds 优化目标）
+> **元素 B**：Figure 4（graphical model DAG）
+> **类型**：`theory_vs_experiment` | 论文：1610.02413
+
+**Query：**
+> Why does the optimal predictor construction require both the regression score and the sensitive demographic attribute in the dependency structure?
+
+**Answer：**
+> The graphical model shows that the sensitive attribute directly influences the outcome and connects to the regression score, while the optimization framework demonstrates that deriving optimal equalized odds predictors requires combining the Bayes optimal regressor with the protected attribute. This structural dependency explains why fairness-constrained prediction cannot ignore demographic information even when seeking unbiased decisions.
+
+**特征**：这是 bridge evidence 首次注入的版本——模型拿到了 LaTeX 原文中"An optimal equalized odds predictor can be derived from the Bayes optimal regressor R and the protected attribute A"这句话作为桥接。但句式仍然是偏学术的 "requires both X and Y" 模式。
+
+---
+
+### ③ L1 dual-evidence v4.2（PhD persona + 句法多样性，152 pass，64.4%）
+
+> **元素 A**：Formula 1（equalized odds 优化目标，同上）
+> **元素 B**：Figure 4（graphical model DAG，同上）
+> **论文**：1610.02413——**与②完全相同的元素对**
+
+**Query：**
+> Given that the protected attribute directly connects to the outcome through the regressor node, why does the optimal predictor require access to both the protected attribute and the regressor?
+
+**Answer：**
+> The graphical model shows that the protected attribute A has a direct path to the regressor R, which then influences the outcome Y, creating conditional dependencies. The optimization formulation minimizes expected loss over the true outcome and predictor, subject to group-specific constraints that must be evaluated separately for each protected group. This necessitates conditioning on the protected attribute to compute group-conditional error rates (false positives and true positives) that define the fairness constraints. Therefore, the optimal predictor must access both the regressor (for accuracy) and the protected attribute (for fairness evaluation) because the constraints operate on conditional distributions that cannot be derived from the regressor alone.
+
+**特征**：相同元素对，改用 GIVEN-WHY 句法结构后，query 从"要求式陈述"变成了"条件触发的因果追问"，更像研究生在组会上真实提问的方式。anchor_leakage 降为 0（`anchor_leak_jaccard: 0.0`）。
+
+---
+
+### ④ 官方生产批次（77.93%，最高通过率）
+
+> **元素 A**：Figure 1（Google Translate 把匈牙利语职业句子翻成英文的截图）
+> **元素 B**：Table 3（各语言职业句子模板，含匈牙利语 `ő egy ⟨occupation⟩`）
+> **pair_type**：`figure+table` | 论文：1809.02208
+
+**Query：**
+> Why does translating occupation sentences using the single-pronoun structure from gender-neutral languages produce systematically gendered outputs for traditionally stereotyped professions?
+
+**Answer：**
+> The Hungarian template 'ő egy ⟨occupation⟩' uses a gender-neutral pronoun structure, but when translated to English, the system must assign gendered pronouns (he/she). This forces the translation algorithm to infer gender based on occupational stereotypes, resulting in nurse and baker being translated with 'she' while CEO is translated with 'he', consistent with traditionally male-dominated versus female-dominated fields.
+
+**特征**：figure（截图，视觉证据：she's a nurse / he's a CEO）和 table（模板结构）两侧证据各司其职——去掉任何一侧都无法完整回答。`required_evidence_spans` 标注了双侧各自的具体 span。
+
+---
+
+### ⑤ L2 v2（跨文档，16 pass）
+
+> **文档 A**：1511.00830（VFAE 原论文，Figure 13：t-SNE 可视化）
+> **文档 B**：1805.09458（后续工作，Figure 1：adversarial loss 柱状图）
+> **类型**：`cross_synthesis`
+
+**Query：**
+> How does the VFAE adversarial loss of approximately 0.75 on the Adult dataset bar chart compare to the gender-factoring success visible in the red-blue overlapping t-SNE clusters when VFAE uses MMD regularization?
+
+**Answer：**
+> The VFAE adversarial loss of ~0.75 on Adult (0-layer configuration) reflects moderate adversary accuracy on the protected attribute, while the t-SNE visualization with MMD shows heavily overlapping red (female) and blue (male) clusters where linear and non-linear accuracy approaches random chance. Both metrics confirm successful gender-information factoring: the bar chart quantifies adversarial confusion at 0.75, and the t-SNE overlap demonstrates indistinguishability of gender representations in the latent space.
+
+**特征**：这是当前唯一跨文档的样例——两张图来自两篇发表时间不同的论文，answer 需要同时引用两侧数值（0.75 和 t-SNE 聚类重叠）。代表了我们最终希望大量生产的 query 类型，也是目前产量最少、质量最难控的地方。
+
+---
+
+### ⑥ Triplet v2（训练格式，222 条，avg_difficulty 0.73）
+
+Triplet 是最终喂给 embedding 训练的格式，结构是 `(query, positive_bundle, [neg₁, neg₂])`。正例是 dual-evidence 双元素包，负例有两种策略。下面是完整的一条原始记录（`text_short` 字段）：
+
+```json
+{
+  "triplet_id": "l1_de_1409.0575_0000_triplet",
+  "source_query_id": "l1_de_1409.0575_0000",
+  "query": "Why does the hierarchical query progression from general to specific categories enable the human annotator to outperform the automated classifier despite evaluating many images?",
+  "query_type": "causal_explanation",
+  "positive": {
+    "text_short": "Evidence unit 1:\nEvidence modality: figure.\nCaption text: Fig. 6 Our algorithm dynamically selects the next query to efficiently determine the presence or absence of every object in every image. Green denotes a positive annotation and...\nExtracted content: Fig. 6 Our algorithm dynamically selects the next query to efficiently determine the presence or absence of every object in every image. Green denotes a positive annotation and red denotes a negative annotation. This...\n\nEvidence unit 2:\nEvidence modality: table.\nCaption text: Table 9 Human classification results on the ILSVRC2012-2014 classification test set, for two expert annotators A1 and A2. We report top-5 classification error.\nExtracted content: Table 9 Human classification results on the ILSVRC2012-2014 classification test set, for two expert annotators A1 and A2. We report top-5 classification error.\n\nShared paper context: To annotate images efficiently, these questions are asked only on images determined to contain an animal. With a sufficient amount of training, a human annotator is still able t...",
+    "modal_type": "dual_evidence_bundle",
+    "image_paths": [
+      "data/mineru_output/1409.0575/.../1409.0575_page0_fig5.jpg",
+      "data/mineru_output/1409.0575/.../0d1c0f71...jpg"
+    ],
+    "metadata": {
+      "doc_id": "1409.0575",
+      "pair_type": "figure+table",
+      "element_ids": ["1409.0575_figure_6", "1409.0575_table_14"],
+      "required_evidence_spans": [
+        {
+          "element_id": "1409.0575_figure_6",
+          "span": "dynamically selects the next query to efficiently determine the presence or absence of every object",
+          "evidence_type": "observation"
+        },
+        {
+          "element_id": "1409.0575_table_14",
+          "span": "Estimated GoogLeNet classification error 6.8%, Estimated human classification error 5.1%",
+          "evidence_type": "result"
+        }
+      ],
+      "bridge_evidence": "With a sufficient amount of training, a human annotator is still able to outperform the GoogLeNet result (p=0.022) by approximately 1.7%."
+    }
+  },
+  "negatives": [
+    {
+      "negative_type": "in_doc_swap",
+      "text_short": "Evidence unit 1:\nEvidence modality: figure.\nCaption text: Fig. 6 Our algorithm dynamically selects the next query to efficiently determine the presence or absence of every object in every image. Green denotes a positive annotation and...\nExtracted content: Fig. 6 ... This toy example illustrates a sample progression of the algorithm for one label (cat) on a set of images.\n\nEvidence unit 2:\nEvidence modality: table.\nCaption text: Table 1 Overview of the provided annotations for each of the tasks in ILSVRC.\nExtracted content: Table 1 Overview of the provided annotations for each of the tasks in ILSVRC.",
+      "image_paths": [
+        "data/mineru_output/1409.0575/.../1409.0575_page0_fig5.jpg",
+        "data/mineru_output/1409.0575/.../d4ded6ba...jpg"
+      ],
+      "metadata": {
+        "doc_id": "1409.0575",
+        "pair_type": "figure+table",
+        "anchor_element_id": "1409.0575_figure_6",
+        "distractor_element_id": "1409.0575_table_1",
+        "swap_side_type": "table"
+      },
+      "score": 0.2647
+    },
+    {
+      "negative_type": "same_type_hard_plus",
+      "text_short": "Evidence unit 1:\nEvidence modality: table.\nCaption text: Table 1: Statistics for the two recognition problems. In vSRL, we consider gender bias relating to verbs, while in MLC we consider the gender bias related to objects.\nExtracted content: Table 1: Statistics for the two recognition problems...\n\nEvidence unit 2:\nEvidence modality: figure.\nCaption text: (d) Bias analysis on MS-COCO MLC with RBA\nExtracted content: (d) Bias analysis on MS-COCO MLC with RBA\n\nShared paper context: struggles to remove bias amplification in areas of low initial training bias, likely because bias is encoded in image statistics",
+      "image_paths": [
+        "data/mineru_output/1707.09457/.../ec39e21f...jpg",
+        "data/mineru_output/1707.09457/.../1707.09457_page0_fig6.jpg"
+      ],
+      "metadata": {
+        "source_doc_id": "1707.09457",
+        "pair_type": "figure+table",
+        "score_components": {
+          "sim_query": 0.1389,
+          "sim_bundle": 0.24,
+          "sim_span": 0.0968,
+          "sim_bridge": 0.093,
+          "overlap_query": 0.25
+        }
+      },
+      "score": 0.2217
+    }
+  ],
+  "difficulty_score": 0.6147,
+  "metadata": {
+    "doc_id": "1409.0575",
+    "pair_type": "figure+table",
+    "qc_pass": true,
+    "negative_types": ["in_doc_swap", "same_type_hard_plus"]
+  }
+}
+```
+
+**结构解读：**
+
+- **positive**：Fig.6（动态标注算法流程图）+ Table 9（人机 top-5 误差对比）。`required_evidence_spans` 精确标注每个元素的关键文本片段；`bridge_evidence` 是连接两者的共现上下文句。
+- **negatives[0] `in_doc_swap`**（score=0.26）：保留 Fig.6，把 Table 9 换成同文档的 Table 1（ILSVRC 任务标注概览）。模态类型、文档一致，但内容完全对不上——基础难度干扰项。
+- **negatives[1] `same_type_hard_plus`**（score=0.22）：来自 1707.09457（视觉识别性别偏差），同为 figure+table，query token overlap=0.25、bundle 相似度=0.24——这才是真正的 hard negative，词面上和正例最接近，但语义完全不同。
+
+**v1 vs v2 负例策略对比：**
+
+| | v1（`same_type_hard`） | v2（`same_type_hard_plus`） |
+|---|---|---|
+| 跨文档负例选取 | 同 pair_type + query 词汇 overlap | 加入 bundle/span/bridge 多维加权 |
+| avg_difficulty | 0.62 | **0.73** |
+| BM25 global acc@1 | 0.55 | 0.45 |
+
+avg_difficulty 上升、BM25 下降——v2 的负例更难通过词法捷径区分，符合预期。
 
 ---
 
