@@ -144,6 +144,91 @@ Rerank 改善了 top1 的集中度，但在 all-rank 候选池里，热点 targe
 
 ---
 
+## 各版本代表性 Query 示例
+
+五个阶段各取一条，从简单到复杂展示 query 质量的演进。
+
+---
+
+### ① L1 v3（单图文，974 条，QC 97.2%）
+
+> **图**：Fair PCA 在 LFW 数据集上的重建误差折线图（Figure 3）
+> **类型**：`anomaly_cause`
+
+**Query：**
+> Why do all curves show steeper descent between 2.5 and 7.5 features compared to the gradual decline after 10 features, given that k groups exist?
+
+**Answer：**
+> With more than two groups, optimal solutions may not assign identical loss initially, but as features increase beyond k groups, the fairness constraints stabilize and reconstruction error improvements plateau, explaining the transition from steep to gradual decline.
+
+**特征**：只依赖单张图，视觉锚点明确（x=2.5-7.5 段的斜率），答案需要把视觉观察和公平约束理论挂钩。这是 L1 最干净的状态。
+
+---
+
+### ② L1 multihop v3（LaTeX bridge 注入，72 pass，30.5%）
+
+> **元素 A**：Formula 1（equalized odds 优化目标）
+> **元素 B**：Figure 4（graphical model DAG）
+> **类型**：`theory_vs_experiment` | 论文：1610.02413
+
+**Query：**
+> Why does the optimal predictor construction require both the regression score and the sensitive demographic attribute in the dependency structure?
+
+**Answer：**
+> The graphical model shows that the sensitive attribute directly influences the outcome and connects to the regression score, while the optimization framework demonstrates that deriving optimal equalized odds predictors requires combining the Bayes optimal regressor with the protected attribute. This structural dependency explains why fairness-constrained prediction cannot ignore demographic information even when seeking unbiased decisions.
+
+**特征**：这是 bridge evidence 首次注入的版本——模型拿到了 LaTeX 原文中"An optimal equalized odds predictor can be derived from the Bayes optimal regressor R and the protected attribute A"这句话作为桥接。但句式仍然是偏学术的 "requires both X and Y" 模式。
+
+---
+
+### ③ L1 dual-evidence v4.2（PhD persona + 句法多样性，152 pass，64.4%）
+
+> **元素 A**：Formula 1（equalized odds 优化目标，同上）
+> **元素 B**：Figure 4（graphical model DAG，同上）
+> **论文**：1610.02413——**与②完全相同的元素对**
+
+**Query：**
+> Given that the protected attribute directly connects to the outcome through the regressor node, why does the optimal predictor require access to both the protected attribute and the regressor?
+
+**Answer：**
+> The graphical model shows that the protected attribute A has a direct path to the regressor R, which then influences the outcome Y, creating conditional dependencies. The optimization formulation minimizes expected loss over the true outcome and predictor, subject to group-specific constraints that must be evaluated separately for each protected group. This necessitates conditioning on the protected attribute to compute group-conditional error rates (false positives and true positives) that define the fairness constraints. Therefore, the optimal predictor must access both the regressor (for accuracy) and the protected attribute (for fairness evaluation) because the constraints operate on conditional distributions that cannot be derived from the regressor alone.
+
+**特征**：相同元素对，改用 GIVEN-WHY 句法结构后，query 从"要求式陈述"变成了"条件触发的因果追问"，更像研究生在组会上真实提问的方式。anchor_leakage 降为 0（`anchor_leak_jaccard: 0.0`）。
+
+---
+
+### ④ 官方生产批次（77.93%，最高通过率）
+
+> **元素 A**：Figure 1（Google Translate 把匈牙利语职业句子翻成英文的截图）
+> **元素 B**：Table 3（各语言职业句子模板，含匈牙利语 `ő egy ⟨occupation⟩`）
+> **pair_type**：`figure+table` | 论文：1809.02208
+
+**Query：**
+> Why does translating occupation sentences using the single-pronoun structure from gender-neutral languages produce systematically gendered outputs for traditionally stereotyped professions?
+
+**Answer：**
+> The Hungarian template 'ő egy ⟨occupation⟩' uses a gender-neutral pronoun structure, but when translated to English, the system must assign gendered pronouns (he/she). This forces the translation algorithm to infer gender based on occupational stereotypes, resulting in nurse and baker being translated with 'she' while CEO is translated with 'he', consistent with traditionally male-dominated versus female-dominated fields.
+
+**特征**：figure（截图，视觉证据：she's a nurse / he's a CEO）和 table（模板结构）两侧证据各司其职——去掉任何一侧都无法完整回答。`required_evidence_spans` 标注了双侧各自的具体 span。
+
+---
+
+### ⑤ L2 v2（跨文档，16 pass）
+
+> **文档 A**：1511.00830（VFAE 原论文，Figure 13：t-SNE 可视化）
+> **文档 B**：1805.09458（后续工作，Figure 1：adversarial loss 柱状图）
+> **类型**：`cross_synthesis`
+
+**Query：**
+> How does the VFAE adversarial loss of approximately 0.75 on the Adult dataset bar chart compare to the gender-factoring success visible in the red-blue overlapping t-SNE clusters when VFAE uses MMD regularization?
+
+**Answer：**
+> The VFAE adversarial loss of ~0.75 on Adult (0-layer configuration) reflects moderate adversary accuracy on the protected attribute, while the t-SNE visualization with MMD shows heavily overlapping red (female) and blue (male) clusters where linear and non-linear accuracy approaches random chance. Both metrics confirm successful gender-information factoring: the bar chart quantifies adversarial confusion at 0.75, and the t-SNE overlap demonstrates indistinguishability of gender representations in the latent space.
+
+**特征**：这是当前唯一跨文档的样例——两张图来自两篇发表时间不同的论文，answer 需要同时引用两侧数值（0.75 和 t-SNE 聚类重叠）。代表了我们最终希望大量生产的 query 类型，也是目前产量最少、质量最难控的地方。
+
+---
+
 ## 关键文件（方便查找）
 
 | 文件 | 说明 |
