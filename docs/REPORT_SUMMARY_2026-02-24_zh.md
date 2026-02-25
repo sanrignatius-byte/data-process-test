@@ -229,6 +229,43 @@ Rerank 改善了 top1 的集中度，但在 all-rank 候选池里，热点 targe
 
 ---
 
+### ⑥ Triplet v2（训练格式，222 条，avg_difficulty 0.73）
+
+Triplet 是最终喂给 embedding 训练的格式，结构是 `(query, positive_bundle, [neg₁, neg₂])`。正例是 dual-evidence 双元素包，负例有两种策略。下面用同一条 query 完整展示结构。
+
+> **来源 query**：`l1_de_1409.0575_0000` | pair_type: `figure+table` | difficulty: 0.61
+
+**Query：**
+> Why does the hierarchical query progression from general to specific categories enable the human annotator to outperform the automated classifier despite evaluating many images?
+
+**✅ Positive bundle（正例，双元素）**
+
+| | 元素 |
+|---|---|
+| Evidence unit 1 | **Figure 6**：动态查询算法示意图（绿=正标注，红=负标注，展示 cat 类别在一批图上的逐步推进过程） |
+| Evidence unit 2 | **Table 14**：A1 与 A2 人工标注 top-5 误差对比（GoogLeNet 6.8% vs A1 5.1% vs A2 12.0%） |
+| bridge_evidence | "With a sufficient amount of training, a human annotator is still able to outperform the GoogLeNet result (p=0.022) by approximately 1.7%." |
+
+**❌ Negative 1：`in_doc_swap`（文档内替换，score=0.26）**
+
+> 保留 Figure 6，把 Table 14 换成**同文档的 Table 1**（ILSVRC 任务标注概览表）。Table 1 和 query 讲的完全不是同一件事，但模态类型（figure+table）一致、文档一致——这是最基础的干扰项，考察模型能否区分"同类型但错误内容"。
+
+**❌ Negative 2：`same_type_hard_plus`（跨文档同主题，score=0.22）**
+
+> 来自文档 **1707.09457**（视觉识别中的性别偏差）的 figure+table bundle：Table 1（vSRL/MLC 任务统计）+ Figure（MS-COCO bias analysis）。主题同属"公平性+视觉识别"，query token overlap 高（0.25），但证据内容和正例讲的是完全不同的实验。这类负例是真正的 hard negative，`sim_query=0.14`、`sim_bundle=0.24`——和正例的语义距离比 in_doc_swap 近得多。
+
+**两版负例策略对比（同一条 query）：**
+
+| 负例类型 | v1（`same_type_hard`） | v2（`same_type_hard_plus`） |
+|---------|----------------------|--------------------------|
+| 跨文档负例选取依据 | 同 pair_type + query 词汇 overlap | 加入 bundle/span/bridge 多维相似度加权 |
+| avg_difficulty | 0.62 | **0.73** |
+| 对 BM25 baseline 的影响 | global acc@1 = 0.55 | global acc@1 = 0.45 |
+
+avg_difficulty 上升、BM25 下降——说明 v2 的负例更难通过词法捷径区分，符合预期。
+
+---
+
 ## 关键文件（方便查找）
 
 | 文件 | 说明 |
