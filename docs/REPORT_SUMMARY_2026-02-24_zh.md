@@ -5,6 +5,30 @@
 
 ---
 
+## 对上次 Mentor 建议的执行情况
+
+上次汇报结束时，Mentor 给了三条方向性建议，这里先逐条交代进展，再展开细节。
+
+**① 丰富模态：引入 table/formula/figure，并尝试对各模态做细分**
+
+这条做了一半。table 和 formula 已经进入了 dual-evidence 的正式 pipeline——当前生产批次的 pair_type 包含 figure+table、figure+formula、formula+table 三种组合，不再是 L1 v3 那样清一色的图文问题。通过率也有明显差异：figure+table 76%，figure+formula 46%，formula+table 44%，说明三种模态组合的难度结构很不一样，值得分开处理。
+
+但**细分**那一层（模型图 vs 实验结果图 vs Chart vs 信息汇总图）还没做。原因是当时判断先把 dual-evidence pass rate 做上来比细分优先，但这确实是个欠账，后面回来补。
+
+**② 构建文档内部 links/structure，自然实现多跳——①LaTeX 引用图，②MinerU 路线**
+
+LaTeX 路线全部落地了，包括文档内引用 DAG、跨模态 pair 构建（带 bridge_text），以及跨文档 Citation Graph。细节在正文里展开。
+
+MinerU 路线当时判断"较难"之后就搁置了，这两周没有推进，还是在观望。思路上可行（从 MinerU 解析出的 section/caption/ref 结构直接建图），但 MinerU 输出的编号和 LaTeX 编号经常对不上（已知 label 匹配率只有 28.8%），在 LaTeX 路线还没充分验证之前先不动这条。
+
+**③ 展望：用 embedding 在隐空间探索跨文档文本相似性**
+
+这条有推进，但遇到了一个比较根本的问题。我们用 Qwen3-Embedding-4B 跑了 590 个 source elements 的 top-20 跨文档匹配，审计结果发现：embedding 找到的"最相似"跨文档 element，往往是平行描述同一件事的元素，而不是有多跳价值的元素——相似度高 ≠ 多跳有用。这不是 Qwen3-4B 的问题，是 objective mismatch。
+
+具体怎么应对，在正文的"这轮最想说清楚的一件事"里有讨论。
+
+---
+
 ## 先说背景：两周前我们卡在哪里
 
 直接进数字之前，想先交代一下两周前的处境，不然很多决定看起来会没来由。
