@@ -885,6 +885,135 @@ class UnifiedGraph:
         hubs.sort(key=lambda x: -x[1])
         return [h[0] for h in hubs]
 
+    def rank_traffic_hubs(
+        self,
+        top_k_docs: int = 20,
+        top_k_elements_per_doc: int = 8,
+        min_edge_confidence: float = 0.0,
+    ) -> Dict[str, Any]:
+        """
+        Rank high-traffic hubs for two use cases:
+          1) Intra-document hubs: concentrated elements/snippets/images inside a paper
+          2) Cross-document hubs: papers that bridge many paths via citations + element fan-out
+
+        Returns a structured payload directly usable by downstream query builders.
+        """
+        edge_type_weight = {
+            EdgeType.CITATION: 2.6,
+            EdgeType.INTRA_REF: 1.7,
+            EdgeType.CO_REFERENCE: 1.4,
+            EdgeType.CONTAINMENT: 1.2,
+            EdgeType.HAS_ELEMENT: 0.8,
+            EdgeType.PROXIMITY: 0.6,
+            EdgeType.ALIGNMENT: 0.4,
+        }
+
+        doc_scores: Dict[str, float] = defaultdict(float)
+        elem_scores: Dict[str, float] = defaultdict(float)
+        edge_contexts: Dict[str, List[str]] = defaultdict(list)
+
+        for e in self.edges:
+            if e.confidence < min_edge_confidence:
+                continue
+
+            weight = edge_type_weight.get(e.edge_type, 1.0) * max(0.05, e.confidence)
+
+            src_node = self.nodes.get(e.source_id)
+            tgt_node = self.nodes.get(e.target_id)
+            if not src_node or not tgt_node:
+                continue
+
+            # Document-level traffic
+            doc_scores[src_node.doc_id] += weight
+            doc_scores[tgt_node.doc_id] += weight
+
+            # Element-level traffic
+            if src_node.is_element:
+                elem_scores[src_node.node_id] += weight
+            if tgt_node.is_element:
+                elem_scores[tgt_node.node_id] += weight
+
+            if e.context:
+                edge_contexts[e.source_id].append(e.context)
+                edge_contexts[e.target_id].append(e.context)
+
+        top_docs = sorted(doc_scores.items(), key=lambda x: -x[1])[:top_k_docs]
+
+        cross_doc_hubs = []
+        for doc_id, score in top_docs:
+            doc_node = self.nodes.get(doc_id)
+            top_elems = self._top_elements_for_doc(
+                doc_id,
+                elem_scores,
+                top_k=top_k_elements_per_doc,
+            )
+
+            cross_doc_hubs.append({
+                "doc_id": doc_id,
+                "doc_label": doc_node.label if doc_node else doc_id,
+                "traffic_score": round(score, 4),
+                "top_elements": top_elems,
+                "contexts": edge_contexts.get(doc_id, [])[:5],
+            })
+
+        intra_doc_hubs = []
+        for doc_id in sorted(self._element_nodes.keys()):
+            top_elems = self._top_elements_for_doc(
+                doc_id,
+                elem_scores,
+                top_k=top_k_elements_per_doc,
+            )
+            if not top_elems:
+                continue
+            intra_doc_hubs.append({
+                "doc_id": doc_id,
+                "doc_traffic_score": round(doc_scores.get(doc_id, 0.0), 4),
+                "elements": top_elems,
+            })
+
+        intra_doc_hubs.sort(key=lambda x: -x["doc_traffic_score"])
+
+        return {
+            "summary": {
+                "num_docs_ranked": len(doc_scores),
+                "num_elements_ranked": len(elem_scores),
+                "top_k_docs": top_k_docs,
+                "top_k_elements_per_doc": top_k_elements_per_doc,
+                "min_edge_confidence": min_edge_confidence,
+            },
+            "cross_document_hubs": cross_doc_hubs,
+            "intra_document_hubs": intra_doc_hubs,
+        }
+
+    def _top_elements_for_doc(
+        self,
+        doc_id: str,
+        element_scores: Dict[str, float],
+        top_k: int,
+    ) -> List[Dict[str, Any]]:
+        """Return top-K high-traffic elements inside one document."""
+        element_ids = self._element_nodes.get(doc_id, set())
+        ranked_ids = sorted(
+            element_ids,
+            key=lambda nid: -element_scores.get(nid, 0.0),
+        )[:max(0, top_k)]
+
+        out: List[Dict[str, Any]] = []
+        for nid in ranked_ids:
+            node = self.nodes.get(nid)
+            if not node:
+                continue
+            out.append({
+                "node_id": nid,
+                "node_type": node.node_type.value,
+                "label": node.label,
+                "traffic_score": round(element_scores.get(nid, 0.0), 4),
+                "caption": (node.metadata.get("caption", "") or "")[:240],
+                "image_path": node.metadata.get("image_path"),
+                "latex_label": node.metadata.get("latex_label"),
+            })
+        return out
+
     # -------------------------------------------------------------------
     # Statistics & export
     # -------------------------------------------------------------------

@@ -73,6 +73,10 @@ def main():
         help="Output path for scored cross-doc paths",
     )
     parser.add_argument(
+        "--hubs-output", default="data/unified_graph_hubs.json",
+        help="Output path for ranked intra-doc and cross-doc traffic hubs",
+    )
+    parser.add_argument(
         "--max-hops", type=int, default=5,
         help="Maximum hops in cross-doc paths",
     )
@@ -91,6 +95,18 @@ def main():
     parser.add_argument(
         "--neighbor-limit", type=int, default=0,
         help="Cap neighbor expansions per DFS step (0 = no cap)",
+    )
+    parser.add_argument(
+        "--hub-top-docs", type=int, default=20,
+        help="How many cross-document hubs to keep",
+    )
+    parser.add_argument(
+        "--hub-top-elements", type=int, default=8,
+        help="How many top elements to keep per document",
+    )
+    parser.add_argument(
+        "--hub-min-edge-confidence", type=float, default=0.0,
+        help="Only count edges above this confidence when ranking hubs",
     )
     parser.add_argument(
         "--suppress-hubs", action="store_true",
@@ -207,7 +223,17 @@ def main():
     print()
 
     if args.stats_only:
-        print("--stats-only mode, skipping path finding and export.")
+        print("\nRanking traffic hubs (--stats-only still exports hub ranking)...")
+        hub_report = graph.rank_traffic_hubs(
+            top_k_docs=args.hub_top_docs,
+            top_k_elements_per_doc=args.hub_top_elements,
+            min_edge_confidence=args.hub_min_edge_confidence,
+        )
+        Path(args.hubs_output).parent.mkdir(parents=True, exist_ok=True)
+        with open(args.hubs_output, "w", encoding="utf-8") as f:
+            json.dump(hub_report, f, indent=2, ensure_ascii=False)
+        print(f"  Hubs written to {args.hubs_output}")
+        print("--stats-only mode, skipping path finding and other exports.")
         return
 
     # ---------------------------------------------------------------
@@ -270,6 +296,17 @@ def main():
         with open(args.paths_output, "w", encoding="utf-8") as f:
             json.dump(path_candidates, f, indent=2, ensure_ascii=False)
         print(f"  Written ({Path(args.paths_output).stat().st_size / 1024:.0f} KB)")
+
+    print("\nRanking traffic hubs for intra-doc and cross-doc retrieval...")
+    hub_report = graph.rank_traffic_hubs(
+        top_k_docs=args.hub_top_docs,
+        top_k_elements_per_doc=args.hub_top_elements,
+        min_edge_confidence=args.hub_min_edge_confidence,
+    )
+    Path(args.hubs_output).parent.mkdir(parents=True, exist_ok=True)
+    with open(args.hubs_output, "w", encoding="utf-8") as f:
+        json.dump(hub_report, f, indent=2, ensure_ascii=False)
+    print(f"  Hubs written ({Path(args.hubs_output).stat().st_size / 1024:.0f} KB) -> {args.hubs_output}")
 
     print(f"\nDone!")
 
