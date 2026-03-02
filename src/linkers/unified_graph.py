@@ -896,6 +896,9 @@ class UnifiedGraph:
           1) Intra-document hubs: concentrated elements/snippets/images inside a paper
           2) Cross-document hubs: papers that bridge many paths via citations + element fan-out
 
+        Cross-doc hubs are ranked by citation-only traffic so that papers with many
+        internal elements don't unfairly inflate their cross-doc score.
+
         Returns a structured payload directly usable by downstream query builders.
         """
         edge_type_weight = {
@@ -908,7 +911,12 @@ class UnifiedGraph:
             EdgeType.ALIGNMENT: 0.4,
         }
 
-        doc_scores: Dict[str, float] = defaultdict(float)
+        # Total weighted traffic (all edge types, fixed: no double-counting same-doc edges)
+        doc_total_scores: Dict[str, float] = defaultdict(float)
+        # Citation-only traffic: used to rank cross_document_hubs
+        doc_citation_scores: Dict[str, float] = defaultdict(float)
+        # How many times each doc is cited by other corpus docs (in-degree)
+        doc_citation_indegree: Dict[str, int] = defaultdict(int)
         elem_scores: Dict[str, float] = defaultdict(float)
         edge_contexts: Dict[str, List[str]] = defaultdict(list)
 
@@ -923,9 +931,18 @@ class UnifiedGraph:
             if not src_node or not tgt_node:
                 continue
 
-            # Document-level traffic
-            doc_scores[src_node.doc_id] += weight
-            doc_scores[tgt_node.doc_id] += weight
+            # Document-level total traffic.
+            # Fix: only credit tgt doc when the edge is truly cross-document, otherwise
+            # same-doc edges (HAS_ELEMENT, INTRA_REF, etc.) would double-count every doc.
+            doc_total_scores[src_node.doc_id] += weight
+            if tgt_node.doc_id != src_node.doc_id:
+                doc_total_scores[tgt_node.doc_id] += weight
+
+            # Citation-only cross-doc score + in-degree counter
+            if e.edge_type == EdgeType.CITATION:
+                doc_citation_scores[src_node.doc_id] += weight
+                doc_citation_scores[tgt_node.doc_id] += weight
+                doc_citation_indegree[tgt_node.doc_id] += 1
 
             # Element-level traffic
             if src_node.is_element:
@@ -937,10 +954,12 @@ class UnifiedGraph:
                 edge_contexts[e.source_id].append(e.context)
                 edge_contexts[e.target_id].append(e.context)
 
-        top_docs = sorted(doc_scores.items(), key=lambda x: -x[1])[:top_k_docs]
+        # Cross-doc hubs ranked by citation traffic (not total), so large papers with many
+        # internal elements don't crowd out genuinely well-connected hub papers.
+        top_docs = sorted(doc_citation_scores.items(), key=lambda x: -x[1])[:top_k_docs]
 
         cross_doc_hubs = []
-        for doc_id, score in top_docs:
+        for doc_id, citation_score in top_docs:
             doc_node = self.nodes.get(doc_id)
             top_elems = self._top_elements_for_doc(
                 doc_id,
@@ -951,7 +970,9 @@ class UnifiedGraph:
             cross_doc_hubs.append({
                 "doc_id": doc_id,
                 "doc_label": doc_node.label if doc_node else doc_id,
-                "traffic_score": round(score, 4),
+                "traffic_score": round(doc_total_scores.get(doc_id, 0.0), 4),
+                "citation_traffic_score": round(citation_score, 4),
+                "citation_indegree": doc_citation_indegree.get(doc_id, 0),
                 "top_elements": top_elems,
                 "contexts": edge_contexts.get(doc_id, [])[:5],
             })
@@ -967,7 +988,8 @@ class UnifiedGraph:
                 continue
             intra_doc_hubs.append({
                 "doc_id": doc_id,
-                "doc_traffic_score": round(doc_scores.get(doc_id, 0.0), 4),
+                "doc_traffic_score": round(doc_total_scores.get(doc_id, 0.0), 4),
+                "citation_indegree": doc_citation_indegree.get(doc_id, 0),
                 "elements": top_elems,
             })
 
@@ -975,7 +997,8 @@ class UnifiedGraph:
 
         return {
             "summary": {
-                "num_docs_ranked": len(doc_scores),
+                "num_docs_ranked": len(doc_total_scores),
+                "num_docs_with_citations": len(doc_citation_scores),
                 "num_elements_ranked": len(elem_scores),
                 "top_k_docs": top_k_docs,
                 "top_k_elements_per_doc": top_k_elements_per_doc,
@@ -993,10 +1016,10 @@ class UnifiedGraph:
     ) -> List[Dict[str, Any]]:
         """Return top-K high-traffic elements inside one document."""
         element_ids = self._element_nodes.get(doc_id, set())
-        ranked_ids = sorted(
-            element_ids,
-            key=lambda nid: -element_scores.get(nid, 0.0),
-        )[:max(0, top_k)]
+        # Only include elements that appear in at least one edge (score > 0),
+        # so zero-traffic placeholder nodes don't pollute the output.
+        scored_ids = [nid for nid in element_ids if element_scores.get(nid, 0.0) > 0]
+        ranked_ids = sorted(scored_ids, key=lambda nid: -element_scores[nid])[:top_k]
 
         out: List[Dict[str, Any]] = []
         for nid in ranked_ids:
