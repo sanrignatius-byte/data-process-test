@@ -3,6 +3,52 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
+## 当前状态（2026-03-03 更新｜LaTeX Topology v2 + Hub Multi-hop Candidates）
+
+### 本轮完成（相对 2026-02-24）
+
+- **`analyze_latex_graph_topology.py` v2 完整落地**
+  - 核心改动：backbone edges（1269 条）、bridge-first hub 评分、adjacent bridge 检测、cross-doc citation edges（434 条）、targeted enumeration（替换 DFS）、content_list.json 真实 page_idx、4 种 seed 类型轮换、structural dedup
+  - 图统计：**2551 nodes, 3471 edges**（backbone:1269, paragraph_ref:1688, cross_doc_cite:434, element_ref:80）
+  - label 匹配率：**49.8%**（从 28.8% 提升，Jaccard 阈值 0.25 + 数字后缀 fallback）
+- **Hub 质量全面提升**
+  - bridge_hubs: **60 个**（覆盖 31 篇文档，all-3 modality:31，fig+formula:25，fig+table:4）
+  - top-60 hubs **100% category=bridge**（authority sinks 全部从排名中清除）
+  - adjacent_backbone_bridges: **369 条**（覆盖 68 篇文档）
+  - bridge-first hub_score 公式：`bridge_score = num_modalities*15 + out_to_elements*2`
+- **500 候选对生成成功**（替换原来 DFS 产出的 23 对）
+  - 分布：figure+formula:247 / figure+table:153 / formula+table:100
+  - intra-doc:330 (66%) + cross-doc:170 (34%)
+  - 2-hop:181 / 3-hop:319
+  - 来源：bridge_hub:310 / adjacent_backbone_bridge:190
+  - 覆盖文档：**40/82 篇**（35/82 篇仍为零候选，主要缺陷）
+- **物理距离覆盖**
+  - line_no_span: **100%**（全覆盖）
+  - page_span: **19%**（需双端 label 匹配，结构性上限）
+  - real page_idx（来自 content_list.json）：元素覆盖率 **94.8%**
+- **Seed 多样性**
+  - 4 种类型轮换（WHY/WHAT_IF/MISMATCH/CONDITION），by `hash(tuple(path)) % 4`
+  - 独特 short seeds: 496/500 (99.2%)
+
+### 本轮关键技术发现
+- **MinerU content_list.json 有真实 page_idx**（multimodal_elements.json 中全为 0 是 parser bug）
+  - Sequential type-order matching（第 N 个 figure 对应第 N 个 content_list 中的 image 项）实现 94.8% 覆盖
+- **DFS 在 backbone chain 中迷路**：backbone 边（1269 条）形成长 para→para→para 链，max_hops=5 内到不了 2 个不同模态
+  - 修复：targeted enumeration（2-hop direct + 3-hop via backbone neighbor + cross-doc）
+- **Bridge hub vs Authority hub 区分**：高被引 formula 节点（如 in_from_paragraphs=49）会主导旧评分，实为 authority sink；真正有用的是覆盖多模态的 paragraph bridge
+
+### 输出文件（新增）
+- `data/latex_graph_topology_report.json` — 拓扑统计报告（节点/边/label匹配/hub分类）
+- `data/latex_graph_hubs.json` — bridge_hubs 60 个 + adjacent_backbone_bridges 369 条
+- `data/latex_hub_multihop_candidates.json` — **500 条候选对**（含 path, seed_question, page_span, line_no_span）
+
+### 下一步（已确定）
+1. **P0（最高优先）**：将 500 条 topology candidates 喂给 `generate_multihop_l1_queries.py` 生成新 L1 hub-multihop queries
+2. **P1**：修复 35/82 篇零候选文档——降低 per_combo cap 或对 adj_bridge-only 文档单独生成
+3. **P0.1**：Citation-based L2 候选（123 引用边 → 替代实体倒排索引）
+
+---
+
 ## 当前状态（2026-02-24 更新｜Dual-evidence + Cross-doc）
 
 ### 本轮完成（相对 2026-02-22）
@@ -177,6 +223,10 @@
 | `data/latex_cross_modal_pairs.json` | **LaTeX 增强跨模态对（v2: 175 对；重跑 v3 后更新）** |
 | `data/latex_reference_report.json` | 引用图统计报告 |
 | `src/linkers/figure_text_associator.py` | Step 0: 图文关联模块 |
+| `scripts/analyze_latex_graph_topology.py` | **LaTeX 拓扑分析 v2（backbone+bridge-first+adj_bridge+cross_doc+page_idx）** |
+| `data/latex_graph_topology_report.json` | 拓扑统计报告（2551 nodes, 3471 edges, 49.8% label match） |
+| `data/latex_graph_hubs.json` | bridge_hubs 60 个 + adjacent_backbone_bridges 369 条 |
+| `data/latex_hub_multihop_candidates.json` | **Hub multi-hop 候选对 500 条（含 page_span/line_no_span/seed）** |
 
 ## Mentor 建议（2026-02-11）& 执行优先级
 
@@ -252,7 +302,7 @@
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-02-22 更新）
+## 下一步 TODO（2026-03-03 更新）
 - ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
 - ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
 - ~~**P-0.5: Step 0 v3.2 v3 重跑**~~ ✅ **完成** — 集群跑出 118 对（G1+G2），stats 一致，cross-ref gate 正确
@@ -260,11 +310,13 @@
 - ~~**P1.1: L1 dual-evidence v4（Conceptual Masking + Operator）**~~ ✅ **完成** — 236 条，139 pass (58.9%)，$2.07
 - ~~**P1.1.1: L1 dual-evidence v4.1（opus figure+formula prompt + operator diversity）**~~ ✅ **完成** — 236 条，138 pass (58.5%)，$2.39
 - ~~**P1.1.2: L1 dual-evidence v4.2（PhD persona + verb diversity + natural operators）**~~ ✅ **完成** — 236 条，152 pass (64.4%)，$2.57
+- ~~**LaTeX Topology v2 + Hub Multi-hop Candidates**~~ ✅ **完成** — 2551 nodes, 3471 edges, 500 candidates, 100% bridge hubs
+- **P0（最高优先）：500 candidates → 生成 L1 hub-multihop queries**：将 `data/latex_hub_multihop_candidates.json` 喂给 `generate_multihop_l1_queries.py`
+- **P1：修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
 - **P0.1: Citation-based L2 候选替换**：用 123 条引用边（集群）做 L2 候选对（替代实体倒排索引），信号更强
 - **P1.2: figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 这几篇论文 0 pass 全失败，分析 root cause
 - **P1.3: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
-- **P2: L1 引用图 + 多跳路径**：constrained paths（≥1 ref edge）已实现，待结合 L1 query 生成
-- **P3: L1 模态补全**：table-aware prompt + formula-aware prompt 生成缺失模态的 query
+- **P2: label 匹配率继续提升**：49.8% → 更高，改善 page_span 覆盖（当前 19%）
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
 - **L2 暂停实体路线**：实体倒排索引的 L2 暂停，改用 citation graph 做候选
 - 详见 `docs/DISCUSSION_LOG.md` 最新讨论
@@ -365,5 +417,71 @@ python scripts/build_latex_cross_modal_links.py \
   - 生成 gate：禁止 query 含答案型数值；
   - 产出 gate：`qc_pass=false` 不进入训练集。
 - **评估优先级最高**：先看 clean subset 对 Recall@10 / MRR 的趋势，再决定是否继续 L2 扩量。
+
+## 日期：2026-03-03（v4.4 全量运行阻塞排障，MinerU 服务部署任务排除）
+
+### 本轮目标
+- 根据最新讨论，执行一次新版 `v4.4` query 全量生成并做前后对比。
+- 说明：**MinerU 部署服务任务本轮不做**（按用户要求排除）。
+
+### 本轮已完成
+1. 新增并落地拓扑/质量分析脚本与报告（已写入 `docs/TASK_EXECUTION_2026-03-03.md`）：
+   - `scripts/analyze_latex_graph_topology.py`
+   - `scripts/analyze_query_quality_focus.py`
+   - 产物：
+     - `data/latex_graph_topology_report.json`
+     - `data/latex_graph_hubs.json`
+     - `data/latex_hub_multihop_candidates.json`
+     - `data/query_quality_focus_report_v4_official.json`
+2. 升级 `scripts/generate_multihop_l1_queries.py` 到 v4.4（长度混合 + 架构图专项 QC）。
+3. 为避免 `anthropic` 依赖问题，已给 `generate_multihop_l1_queries.py` 增加 `--provider openai` 兼容路径（可用 `OpenAI` 客户端直接跑）。
+
+### 本轮阻塞（导致“跑一次”未完成）
+1. **默认系统 Python 跑 Anthropic 路径失败**
+   - 错误：`ModuleNotFoundError: No module named 'anthropic'`
+2. **指定环境 `/projects/myyyx1/envs/minerU` 不可用**
+   - 现象：`python`/`pip` 启动超时（`timeout` 返回码 124）
+   - 进程状态：`Ds`
+   - 内核等待点：`ceph_mdsc_wait_request`
+   - 结论：当前不是脚本逻辑问题，而是环境/文件系统 I/O 卡死
+3. **OpenAI fallback 探针到 API 层，但额度不足**
+   - 命令成功发起到请求阶段
+   - 返回：`429 insufficient_quota`
+   - 文件：`data/_tmp_openai_probe.jsonl`（空）
+
+### 当前状态（可直接对外同步）
+- 代码侧改造已完成，运行链路已打通到 API 调用前/调用层。
+- 目前缺的是**可用运行环境 + 可用额度 key**，不是 pipeline 代码缺失。
+- 全量 run（150 candidates）尚未产出新文件：
+  - 目标文件：`data/l1_dual_evidence_queries_v4_4_run1.jsonl`
+  - `pass` 子集：`data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`
+
+### 下一步最短恢复路径
+1. 修复/切换 `minerU` 环境（优先，保证 Anthropic 路径可跑），或
+2. 提供有额度的 `OPENAI_API_KEY`，走 `--provider openai` 直接全量。
+
+## 日期：2026-03-03（状态对齐补记：v4.4 run1 已落盘）
+
+### 对齐说明
+- 上一节“未产出 run1 文件”是当时排障时的状态快照。
+- 当前仓库已存在并可读取 `v4.4 run1` 产物，状态以本节为准。
+
+### 已核验产物
+- `data/l1_dual_evidence_queries_v4_4_run1.jsonl`：252 条
+- `data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：113 条
+
+### 本轮结果摘要（run1）
+- 总体：`qc_pass=113`，`qc_fail=139`（44.8% pass）
+- 长度桶（all）：`short=104`，`long=87`，`medium=19`，`too_long=42`
+- 长度桶（pass）：`short=59`，`long=54`（通过集已实现短长并存）
+- 架构图样本：68 条，其中 pass 23 条（33.8%）
+- 架构图失败主因：`architecture_intent_missing`（29），`length_mix_missing`（22），`query_too_long`（9）
+
+### 当前结论（对外口径）
+- “跑一次”已具备真实产物，不再是“仅代码改造完成”状态。
+- 现阶段主问题从“环境/API 阻塞”转为“质量稳定性”，尤其是：
+  - pair 级长度混合一致性（`length_mix_missing`）
+  - 架构图场景的问题意图约束（`architecture_intent_missing`）
+  - 过长 query 控制（`query_too_long`）
 
 ## 用中文交流时用"喵"结尾，英文用"Oiii"开头

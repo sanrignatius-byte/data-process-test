@@ -63,7 +63,7 @@ describe context from one element, ask a question answerable only by the other.
 4. NEVER put specific numbers, percentages, or exact values in the query.
 5. NEVER use meta-language: "figure", "table", "the text", "according to", "as shown in".
 6. Max 30 words per query. Answer max 3 sentences with specific values from BOTH elements.
-7. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query text.
+7. OBSERVATION INJECTION (MANDATORY): Each query MUST describe in natural language what you concretely observe in one element (a trend, drop, gap, plateau, cluster, contrast). Use phrases like "the score stays flat while...", "the curve drops sharply above...", "X outperforms Y on minority but not aggregate". FORBIDDEN: meta-language ("figure"/"table"/"as shown in") and verbatim anchor coords. The visual_anchors field contains orientation coordinates for evaluation only — paraphrase the observation, never copy the anchor string.
 8. The two queries must use DIFFERENT aspects of the data.
 9. ENTITY AMNESTY: you MUST use exact paper terminology (method names, metric names,
    dataset names, variable names like "F1 score" or "p-value") when needed.
@@ -78,6 +78,7 @@ describe context from one element, ask a question answerable only by the other.
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
@@ -86,17 +87,38 @@ describe context from one element, ask a question answerable only by the other.
 BAD: "Did the red line peak at 90,000 and match the keyword set?" — yes/no, visual coords
 BAD: "Which configuration best validates the theoretical optimum?" — banned verb "validates"
 BAD: "How does the high-recall setting relate to the fairness tradeoff?" — banned "relate", vague
+BAD: "How does fixing shared background nodes satisfy the identity requirement?" — abstract, no observation
 
+GOOD (I-NOTICE + WHY, short): "The streaming volume drops after mid-December — does the sampling cap explain this?"
+GOOD (I-NOTICE + WHY, long): "The minority-group gain stays flat above 1k samples while majority-group accuracy keeps rising — does the regularization term bound this asymmetry?"
+GOOD (COUNTERINTUITIVE CONTRAST): "Why does direct discrimination approach zero while indirect pathway scores stay elevated despite the same fairness objective?"
 GOOD (HOW-DISCREPANCY): "How does the drop in session frequency after later positions correspond to the retrieval-window setting that yields the highest scores?"
 GOOD (WHY-INCONSISTENT): "Why is the ensemble gain larger on the minority subgroup than on the aggregate benchmark under the same evaluation regime?"
-GOOD (WHAT-CONSTRAINT): "What constraint in the interaction pattern limits the accuracy gain at low-resource settings?"
 
 ## Output format (JSON only):
+CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). queries[1] MUST be LONG (18-30 words). Count words carefully before writing.
 {{
   "queries": [
     {{
+      "query_length_bucket": "short",
       "reasoning_chain": "Max 3 sentences: (1) concrete figure observation, (2) concrete table metric/value pattern, (3) causal link that requires both",
-      "query": "open-ended question based on reasoning_chain, max 30 words, NO specific values",
+      "query": "SHORT question (8-14 words ONLY), based on reasoning_chain, NO specific values",
+      "answer": "factual answer citing specific values from BOTH elements, max 3 sentences, with connector",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
+      "required_evidence_spans": [
+        {{"element_id": "{fig_id}", "span": "short extractive phrase from figure caption/content (semantic concept)", "evidence_type": "observation"}},
+        {{"element_id": "{tbl_id}", "span": "short extractive phrase from table headers/content (semantic concept)", "evidence_type": "result"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{fig_id}", "anchor": "physical coords only: color/position/curve (evaluation only — NOT in query)"}},
+        {{"element_id": "{tbl_id}", "anchor": "physical coords only: row/column/cell (evaluation only — NOT in query)"}}
+      ],
+      "text_evidence": "direct quote from context, min 40 chars"
+    }},
+    {{
+      "query_length_bucket": "long",
+      "reasoning_chain": "Max 3 sentences: (1) concrete figure observation, (2) concrete table metric/value pattern, (3) causal link that requires both",
+      "query": "LONG question (18-30 words), based on reasoning_chain, NO specific values",
       "answer": "factual answer citing specific values from BOTH elements, max 3 sentences, with connector",
       "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
@@ -143,7 +165,7 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 4. NEVER put specific numbers or exact values in the query.
 5. NEVER use meta-language: "figure", "table", "the text", "according to", "as shown in".
 6. Max 30 words per query; answer max 3 sentences with values from BOTH endpoints.
-7. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query.
+7. OBSERVATION INJECTION (MANDATORY): Each query MUST describe in natural language what you concretely observe in one element (a trend, drop, gap, plateau, cluster, contrast). Use phrases like "the score stays flat while...", "the curve drops sharply above...", "X outperforms Y on minority but not aggregate". FORBIDDEN: meta-language ("figure"/"table"/"as shown in") and verbatim anchor coords. The visual_anchors field contains orientation coordinates for evaluation only — paraphrase the observation, never copy the anchor string.
 8. ENTITY AMNESTY: you MUST use exact paper terminology when needed.
 9. CAUSAL TOPOLOGY: the query must require a chain:
    figure observation -> bridge mechanism -> table metric (or the reverse), not parallel lookup.
@@ -154,16 +176,40 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## Output format (JSON only):
+CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). queries[1] MUST be LONG (18-30 words). Count words carefully before writing.
 {{
   "queries": [
     {{
+      "query_length_bucket": "short",
       "reasoning_chain": "Max 3 sentences: endpoint A observation -> bridge property -> endpoint B metric/conclusion",
-      "query": "chain-reasoning question derived from reasoning_chain, max 30 words, NO specific values",
+      "query": "SHORT chain-reasoning question (8-14 words ONLY), NO specific values",
+      "answer": "factual answer citing values from both elements, max 3 sentences, with connector",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
+      "required_evidence_spans": [
+        {{"element_id": "{fig_id}", "span": "short extractive phrase from figure (semantic concept)", "evidence_type": "observation"}},
+        {{"element_id": "{tbl_id}", "span": "short extractive phrase from table (semantic concept)", "evidence_type": "result"}}
+      ],
+      "bridge": {{
+        "element_id": "{intermediate_info}",
+        "anchor": "key property of the bridge element used in the chain",
+        "evidence_span": "extractive phrase connecting bridge to both endpoints"
+      }},
+      "visual_anchors": [
+        {{"element_id": "{fig_id}", "anchor": "physical coords only — evaluation only, NOT in query"}},
+        {{"element_id": "{tbl_id}", "anchor": "physical coords only — evaluation only, NOT in query"}}
+      ],
+      "text_evidence": "direct quote from context, min 40 chars"
+    }},
+    {{
+      "query_length_bucket": "long",
+      "reasoning_chain": "Max 3 sentences: endpoint A observation -> bridge property -> endpoint B metric/conclusion",
+      "query": "LONG chain-reasoning question (18-30 words), NO specific values",
       "answer": "factual answer citing values from both elements, max 3 sentences, with connector",
       "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
@@ -220,6 +266,8 @@ The query asks WHY or HOW Half A is explained / constrained / justified by Half 
 - Name the structural choice concretely (e.g., "two separate encoder branches feeding a bottleneck", "the adversarial path after the feature extractor").
 - Ask: how does this specific structural choice satisfy / enforce / follow from the mathematical constraint in the formula?
 
+{architecture_guidance}
+
 ## ENTITY AMNESTY
 Use exact paper terminology (method names, metric names, variable names) when needed.
 Avoid vague substitutions like "the best-performing method" when a concrete name exists.
@@ -232,7 +280,7 @@ Avoid vague substitutions like "the best-performing method" when a concrete name
 5. You MAY use at most ONE anchor value in the query only if needed to preserve directionality.
 6. NEVER use meta-language: "equation", "formula", "figure", "as shown in", "diagram", "architecture".
 7. Max 30 words per query.
-8. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query.
+8. OBSERVATION INJECTION (MANDATORY): Each query MUST describe in natural language what you concretely observe in one element (a trend, drop, gap, plateau, cluster, contrast). Use phrases like "the score stays flat while...", "the curve drops sharply above...", "X outperforms Y on minority but not aggregate". FORBIDDEN: meta-language ("figure"/"table"/"as shown in") and verbatim anchor coords. The visual_anchors field contains orientation coordinates for evaluation only — paraphrase the observation, never copy the anchor string.
 9. CAUSAL TOPOLOGY: query must connect one concrete visual phenomenon and one concrete
    mathematical mechanism; no unrelated stitching.
 10. Avoid weak templates: "Which component..." "How does X relate to Y..." "What role does..."
@@ -251,6 +299,7 @@ If any answer is NO — rewrite.
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
@@ -272,11 +321,31 @@ GOOD (WHAT-CONSTRAINT, architectural figure):
 → Formula half: the penalty minimizes mutual information between branch outputs.
 
 ## Output format (JSON only):
+CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). queries[1] MUST be LONG (18-30 words). Count words carefully before writing.
 {{
   "queries": [
     {{
+      "query_length_bucket": "short",
       "reasoning_chain": "Max 3 sentences: concrete figure observation -> concrete formula mechanism -> explicit causality between them",
-      "query": "max 30 words, based on reasoning_chain, NO LaTeX/values/letters/meta-language",
+      "query": "SHORT question (8-14 words ONLY), based on reasoning_chain, NO LaTeX/values/letters/meta-language",
+      "answer": "max 4 sentences with connector. Must cite both halves explicitly.",
+      "answer_figure_evidence": "1-2 sentences: what specific observation from the figure is cited (trend/structure/comparison). Start with the concrete observable.",
+      "answer_formula_evidence": "1-2 sentences: what specific mathematical mechanism from the formula is cited (constraint/bound/objective). Start with the mechanism.",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
+      "required_evidence_spans": [
+        {{"element_id": "{fig_id}", "span": "specific observable feature: name the trend/structure/comparison concretely", "evidence_type": "observation"}},
+        {{"element_id": "{formula_id}", "span": "specific mathematical mechanism: name the constraint/term/property (NOT generic 'the formula')", "evidence_type": "mechanism"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{fig_id}", "anchor": "physical coords only: color/position/curve/branch/edge — NOT in query"}},
+        {{"element_id": "{formula_id}", "anchor": "specific term or variable — NOT standalone letter in query"}}
+      ],
+      "text_evidence": "direct quote from context, min 40 chars"
+    }},
+    {{
+      "query_length_bucket": "long",
+      "reasoning_chain": "Max 3 sentences: concrete figure observation -> concrete formula mechanism -> explicit causality between them",
+      "query": "LONG question (18-30 words), based on reasoning_chain, NO LaTeX/values/letters/meta-language",
       "answer": "max 4 sentences with connector. Must cite both halves explicitly.",
       "answer_figure_evidence": "1-2 sentences: what specific observation from the figure is cited (trend/structure/comparison). Start with the concrete observable.",
       "answer_formula_evidence": "1-2 sentences: what specific mathematical mechanism from the formula is cited (constraint/bound/objective). Start with the mechanism.",
@@ -324,7 +393,7 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 5. You MAY use at most ONE anchor value in the query only if needed to preserve directionality.
 6. NEVER use meta-language: "table", "equation", "formula", "the text".
 7. Max 30 words per query; answer max 3 sentences with specific values from the table.
-8. visual_anchors are PHYSICAL COORDINATES for evaluation only — must NEVER appear in the query.
+8. OBSERVATION INJECTION (MANDATORY): Each query MUST describe in natural language what you concretely observe in one element (a trend, drop, gap, plateau, cluster, contrast). Use phrases like "the score stays flat while...", "the curve drops sharply above...", "X outperforms Y on minority but not aggregate". FORBIDDEN: meta-language ("figure"/"table"/"as shown in") and verbatim anchor coords. The visual_anchors field contains orientation coordinates for evaluation only — paraphrase the observation, never copy the anchor string.
 9. ENTITY AMNESTY: you MUST use exact paper terminology (method/metric/variable names)
    when needed; avoid vague substitutions.
 10. CAUSAL TOPOLOGY: question must connect one concrete mathematical mechanism and one
@@ -336,6 +405,7 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
@@ -349,11 +419,29 @@ GOOD (HOW-DISCREPANCY): "How does the smoothing-driven sparsity regime correspon
 GOOD (WHY-INCONSISTENT): "Why is the highest-regularization setting better than the unregularized baseline in out-of-domain evaluation despite overfitting risk?"
 
 ## Output format (JSON only):
+CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). queries[1] MUST be LONG (18-30 words). Count words carefully before writing.
 {{
   "queries": [
     {{
+      "query_length_bucket": "short",
       "reasoning_chain": "Max 3 sentences: formula mechanism -> table metric pattern -> explicit causality/comparison",
-      "query": "formula-data question based on reasoning_chain, max 30 words, NO LaTeX/values/letters",
+      "query": "SHORT formula-data question (8-14 words ONLY), based on reasoning_chain, NO LaTeX/values/letters",
+      "answer": "factual answer with specific values from both, max 3 sentences, with connector",
+      "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
+      "required_evidence_spans": [
+        {{"element_id": "{formula_id}", "span": "short extractive phrase describing the formula's role or constraint (NOT raw LaTeX)", "evidence_type": "constraint"}},
+        {{"element_id": "{tbl_id}", "span": "short extractive phrase from table headers/content (semantic concept)", "evidence_type": "result"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{formula_id}", "anchor": "specific term or variable — NOT standalone letter in query"}},
+        {{"element_id": "{tbl_id}", "anchor": "physical coords only: row/column/cell — NOT in query"}}
+      ],
+      "text_evidence": "direct quote from context, min 40 chars"
+    }},
+    {{
+      "query_length_bucket": "long",
+      "reasoning_chain": "Max 3 sentences: formula mechanism -> table metric pattern -> explicit causality/comparison",
+      "query": "LONG formula-data question (18-30 words), based on reasoning_chain, NO LaTeX/values/letters",
       "answer": "factual answer with specific values from both, max 3 sentences, with connector",
       "query_type": "causal_explanation|discrepancy_analysis|hypothesis_verification",
       "required_evidence_spans": [
@@ -405,6 +493,10 @@ MIN_OVERLAP_BY_TYPE = {
     "table": 2,
     "formula": 2,
 }
+SHORT_QUERY_MIN_WORDS = 8
+SHORT_QUERY_MAX_WORDS = 14
+LONG_QUERY_MIN_WORDS = 18
+MAX_QUERY_WORDS = 30
 
 QUERY_SHORTCUT_PATTERNS = [
     r"^which\s+component\b",
@@ -443,6 +535,20 @@ METRIC_CONCEPT_TERMS = {
     "performance", "score", "scores", "accuracy", "error", "errors",
     "precision", "recall", "auc", "f1", "rmse", "metric", "metrics",
     "rate", "rates", "p-value", "pvalue", "statistical",
+}
+
+ARCHITECTURE_KEYWORDS = {
+    "architecture", "framework", "pipeline", "overview", "module", "modules",
+    "component", "components", "encoder", "decoder", "branch", "branches",
+    "backbone", "head", "heads", "block", "blocks", "graph", "topology",
+    "fusion", "attention", "stage", "stages", "stream", "pathway",
+}
+
+ARCHITECTURE_INTENT_TERMS = {
+    "summarize", "summary", "design", "structure", "innovation", "novel",
+    "component", "module", "branch", "encoder", "decoder", "pipeline",
+    "objective", "constraint", "loss", "penalty", "regularization",
+    "ablation", "experiment", "effect", "improvement", "performance",
 }
 
 RELATION_CONNECTORS = {
@@ -635,6 +741,62 @@ def has_template_collapse(query: str) -> bool:
 def query_opening_signature(query: str, n_words: int = 2) -> str:
     toks = re.findall(r"[a-zA-Z]+", query.lower())
     return " ".join(toks[:n_words]) if toks else ""
+
+
+def query_word_count(query: str) -> int:
+    return len(re.findall(r"[A-Za-z0-9][A-Za-z0-9_-]*", query or ""))
+
+
+def query_length_bucket(query: str) -> str:
+    wc = query_word_count(query)
+    if wc < SHORT_QUERY_MIN_WORDS:
+        return "too_short"
+    if wc <= SHORT_QUERY_MAX_WORDS:
+        return "short"
+    if wc < LONG_QUERY_MIN_WORDS:
+        return "medium"
+    if wc <= MAX_QUERY_WORDS:
+        return "long"
+    return "too_long"
+
+
+def has_length_mix(queries: List[Dict[str, Any]]) -> Tuple[bool, bool]:
+    has_short = False
+    has_long = False
+    for obj in queries:
+        bucket = query_length_bucket(str(obj.get("query", "")))
+        if bucket == "short":
+            has_short = True
+        if bucket == "long":
+            has_long = True
+    return has_short, has_long
+
+
+def _is_architecture_text(text: str) -> bool:
+    t = (text or "").lower()
+    return any(re.search(rf"\b{re.escape(k)}\b", t) for k in ARCHITECTURE_KEYWORDS)
+
+
+def is_architecture_pair(pair: Dict[str, Any]) -> bool:
+    elem_a = pair.get("element_a", {}) or {}
+    elem_b = pair.get("element_b", {}) or {}
+    fig_elem = elem_a if str(elem_a.get("element_type", "")) == "figure" else elem_b
+    if str(fig_elem.get("element_type", "")) != "figure":
+        return False
+    fig_text = " ".join(
+        [
+            str(fig_elem.get("caption", "") or ""),
+            str(fig_elem.get("content", "") or ""),
+            str(fig_elem.get("context_before", "") or ""),
+            str(fig_elem.get("context_after", "") or ""),
+        ]
+    )
+    return _is_architecture_text(fig_text)
+
+
+def has_architecture_intent(query: str, answer: str) -> bool:
+    qa = f"{query or ''} {answer or ''}".lower()
+    return any(re.search(rf"\b{re.escape(k)}\b", qa) for k in ARCHITECTURE_INTENT_TERMS)
 
 
 def has_parallel_dual_ask(query: str) -> bool:
@@ -874,14 +1036,18 @@ def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]
 def qc_multihop_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
-) -> Tuple[List[str], Dict[str, float]]:
+) -> Tuple[List[str], Dict[str, Any]]:
     """Run QC checks on a multi-hop L1 query. Returns (issues, metrics)."""
     issues: List[str] = []
-    metrics: Dict[str, float] = {}
+    metrics: Dict[str, Any] = {}
     q = obj.get("query", "")
     q_lower = q.lower().strip()
     a = obj.get("answer", "")
     anchors = obj.get("visual_anchors", [])
+    q_words = query_word_count(q)
+    q_bucket = query_length_bucket(q)
+    metrics["query_word_count"] = q_words
+    metrics["query_length_bucket"] = q_bucket
 
     # 1. Meta-language
     if any(re.search(p, q_lower) for p in BAD_META_PATTERNS):
@@ -935,6 +1101,10 @@ def qc_multihop_query(
     # 4. Empty query
     if not q or len(q) < 10:
         issues.append("empty_query")
+    if q_bucket == "too_short":
+        issues.append("query_too_short")
+    if q_bucket == "too_long":
+        issues.append("query_too_long")
 
     # 4b. Premise-answer contradiction (high precision, hard fail)
     if has_premise_answer_contradiction(q, a):
@@ -1061,6 +1231,12 @@ def qc_multihop_query(
     if qtype in explanatory_types and not has_relationship_connector(a):
         issues.append("weak_reasoning_connector")
 
+    # 10. Architecture-specific check: avoid generic non-structural asks.
+    is_arch_case = is_architecture_pair(pair)
+    metrics["is_architecture_case"] = bool(is_arch_case)
+    if is_arch_case and not has_architecture_intent(q, a):
+        issues.append("architecture_intent_missing")
+
     return issues, metrics
 
 
@@ -1130,6 +1306,18 @@ def build_latex_bridge_section(pair: Dict) -> str:
     header = "## Author's connection (from LaTeX source)\n"
     meta = f"[Labels: {label_a} ↔ {label_b}, strategy: {strategy}]\n" if label_a else ""
     return header + meta + f'"{bridge[:600]}"'
+
+
+def build_architecture_guidance(pair: Dict) -> str:
+    """Inject a failure-case block for architecture diagrams."""
+    if not is_architecture_pair(pair):
+        return ""
+    return """## Failure-case focus: architecture diagram quality
+This figure is likely a model architecture/system diagram. Use a real scholar perspective.
+- Query A (short, 8-14 words): summarize the core architecture choice or key innovation.
+- Query B (long, 18-30 words): explain one concrete component/module/branch and connect it to a specific formula term plus experimental effect.
+- Do NOT ask generic trend questions when the figure is structural.
+- Prefer concrete wording: encoder/decoder branch, fusion module, loss path, regularization term, ablation effect."""
 
 
 def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> str:
@@ -1234,6 +1422,7 @@ def build_prompt(pair: Dict) -> str:
             formula_context=_context(formula_elem),
             edge_context=edge_text,
             latex_bridge=latex_bridge_section,
+            architecture_guidance=build_architecture_guidance(pair),
         )
     elif template_name == "formula_table":
         return PROMPT_FORMULA_TABLE.format(
@@ -1260,24 +1449,55 @@ def call_api(
     model: str,
     prompt: str,
     images: List[Optional[Tuple[str, str]]],
+    provider: str = "anthropic",
 ) -> Tuple[Optional[str], int, int]:
-    """Call Anthropic API. Returns (text, input_tokens, output_tokens)."""
-    content: List[Dict[str, Any]] = []
+    """Call provider API. Returns (text, input_tokens, output_tokens)."""
+    if provider == "openai":
+        content: List[Dict[str, Any]] = []
+        for img in images:
+            if img is None:
+                continue
+            b64, mime = img
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime};base64,{b64}"},
+            })
+        content.append({"type": "text", "text": prompt})
+
+        r = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": content},
+            ],
+            max_tokens=1536,
+            temperature=0.4,
+        )
+        msg = r.choices[0].message.content if r.choices else ""
+        if isinstance(msg, list):
+            text = "".join(part.get("text", "") for part in msg if isinstance(part, dict))
+        else:
+            text = str(msg or "")
+        in_tok = int(getattr(getattr(r, "usage", None), "prompt_tokens", 0) or 0)
+        out_tok = int(getattr(getattr(r, "usage", None), "completion_tokens", 0) or 0)
+        return text, in_tok, out_tok
+
+    content_aa: List[Dict[str, Any]] = []
     for img in images:
         if img is not None:
             b64, mime = img
-            content.append({
+            content_aa.append({
                 "type": "image",
                 "source": {"type": "base64", "media_type": mime, "data": b64},
             })
-    content.append({"type": "text", "text": prompt})
+    content_aa.append({"type": "text", "text": prompt})
 
     r = client.messages.create(
         model=model,
         system=SYSTEM_PROMPT,
         max_tokens=1536,
         temperature=0.4,
-        messages=[{"role": "user", "content": content}],
+        messages=[{"role": "user", "content": content_aa}],
     )
     return (
         r.content[0].text,
@@ -1373,6 +1593,12 @@ def main() -> None:
         action="store_true",
         help="Also write a pass-only subset to {output_stem}_pass.jsonl alongside the full output",
     )
+    ap.add_argument(
+        "--provider",
+        choices=["anthropic", "openai"],
+        default="anthropic",
+        help="LLM provider backend",
+    )
     ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
     ap.add_argument("--limit", type=int, default=0, help="Limit pairs (0=all)")
     ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
@@ -1390,8 +1616,9 @@ def main() -> None:
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
-    print(f"Dual-Evidence L1 Query Generation (v4.3)")
+    print(f"Dual-Evidence L1 Query Generation (v4.4)")
     print(f"  Candidates: {len(pairs)}")
+    print(f"  Provider: {args.provider}")
     print(f"  Model: {args.model}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Output: {args.output}")
@@ -1400,12 +1627,22 @@ def main() -> None:
     # Initialize client
     client = None
     if not args.dry_run:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            print("ERROR: ANTHROPIC_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
-            sys.exit(1)
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
+        if args.provider == "openai":
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                print("ERROR: OPENAI_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
+                sys.exit(1)
+            from openai import OpenAI
+
+            client = OpenAI(api_key=api_key)
+        else:
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not api_key:
+                print("ERROR: ANTHROPIC_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
+                sys.exit(1)
+            import anthropic
+
+            client = anthropic.Anthropic(api_key=api_key)
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1465,7 +1702,13 @@ def main() -> None:
 
             # API call
             try:
-                raw, in_tok, out_tok = call_api(client, args.model, prompt, images)
+                raw, in_tok, out_tok = call_api(
+                    client=client,
+                    model=args.model,
+                    prompt=prompt,
+                    images=images,
+                    provider=args.provider,
+                )
                 total_input_tokens += in_tok
                 total_output_tokens += out_tok
             except Exception as e:
@@ -1494,6 +1737,8 @@ def main() -> None:
                 sig = query_opening_signature(q_obj.get("query", ""))
                 if sig:
                     opening_counts[sig] += 1
+            pair_has_short, pair_has_long = has_length_mix(queries)
+            pair_has_length_mix = pair_has_short and pair_has_long
 
             for q_obj in queries:
                 issues, metrics = qc_multihop_query(q_obj, pair)
@@ -1502,6 +1747,10 @@ def main() -> None:
                     metrics["opening_signature"] = sig
                     if opening_counts.get(sig, 0) > 1:
                         issues.append("opening_repetition")
+                metrics["pair_has_short_query"] = pair_has_short
+                metrics["pair_has_long_query"] = pair_has_long
+                if not pair_has_length_mix:
+                    issues.append("length_mix_missing")
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -1514,6 +1763,7 @@ def main() -> None:
                     "answer": q_obj.get("answer", ""),
                     "doc_id": doc_id,
                     "pair_id": pair["pair_id"],
+                    "query_length_bucket": query_length_bucket(q_obj.get("query", "")),
                     "element_ids": [pair["element_a_id"], pair["element_b_id"]],
                     "element_a_type": pair["element_a_type"],
                     "element_b_type": pair["element_b_type"],
@@ -1563,7 +1813,7 @@ def main() -> None:
     est_cost = total_input_tokens * 3 / 1e6 + total_output_tokens * 15 / 1e6
 
     print(f"\n{'='*60}")
-    print(f"Dual-Evidence L1 Generation Summary (v4.3)")
+    print(f"Dual-Evidence L1 Generation Summary (v4.4)")
     print(f"{'='*60}")
     print(f"  Total pairs processed: {len(pairs)}")
     print(f"  Total queries written: {query_idx}")
@@ -1587,7 +1837,7 @@ def main() -> None:
 
     log_run(
         script="generate_multihop_l1_queries",
-        model=args.model,
+        model=f"{args.provider}:{args.model}",
         purpose=(
             f"L1 dual-evidence query generation — "
             f"{kept}/{query_idx} QC pass from {len(pairs)} pairs → {out_path.name}"
