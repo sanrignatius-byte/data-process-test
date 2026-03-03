@@ -3,6 +3,8 @@
 Date: 2026-02-24
 Scope: dual-evidence L1 query pipeline -> triplet construction -> cross-doc embedding matching -> utility-aware rerank
 
+Follow-up execution (2026-03-03): see `docs/TASK_EXECUTION_2026-03-03.md`.
+
 ## 0) Continuity With Previous L1 Report
 
 Reference: `docs/L1_query_iteration_report.md`

@@ -445,6 +445,73 @@ def _pick_same_type_hard_negative(
     }
 
 
+def _pick_related_random_negative(
+    row: Dict[str, Any],
+    candidate_rows: List[Dict[str, Any]],
+    row_to_positive_payload: Dict[str, Dict[str, Any]],
+    row_query_tokens: Dict[str, set],
+    rng: random.Random,
+    scope: str,
+    min_overlap: float,
+) -> Optional[Dict[str, Any]]:
+    qid = str(row.get("query_id", ""))
+    doc_id = str(row.get("doc_id", ""))
+    pair_type = str(row.get("pair_type", ""))
+    q_tokens = row_query_tokens.get(qid, set())
+    if not q_tokens:
+        return None
+
+    scored: List[Tuple[Dict[str, Any], float]] = []
+    for cand in candidate_rows:
+        cand_qid = str(cand.get("query_id", ""))
+        if cand_qid == qid or cand_qid not in row_to_positive_payload:
+            continue
+        cand_doc = str(cand.get("doc_id", ""))
+        cand_pair_type = str(cand.get("pair_type", ""))
+        if scope == "same_doc" and cand_doc != doc_id:
+            continue
+        if scope == "same_or_similar" and cand_doc != doc_id and cand_pair_type != pair_type:
+            continue
+
+        cq = row_query_tokens.get(cand_qid, set())
+        overlap = _jaccard(q_tokens, cq)
+        if overlap < min_overlap:
+            continue
+        scored.append((cand, overlap))
+
+    if not scored:
+        return None
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    pool = scored[: min(8, len(scored))]
+    cand, overlap = rng.choice(pool)
+    cand_qid = str(cand.get("query_id", ""))
+    payload = row_to_positive_payload.get(cand_qid, {})
+    neg_text = str(payload.get("text", ""))
+    neg_text_short = str(payload.get("text_short", ""))
+    if not neg_text:
+        return None
+
+    image_paths = list(payload.get("image_paths", []) or [])
+    return {
+        "text": neg_text,
+        "text_short": neg_text_short,
+        "modal_type": "dual_evidence_bundle",
+        "negative_type": "related_random",
+        "image_paths": image_paths,
+        "image_path": _first_image_path(image_paths),
+        "metadata": {
+            "source_query_id": cand_qid,
+            "source_doc_id": cand.get("doc_id", ""),
+            "source_pair_id": cand.get("pair_id", ""),
+            "source_pair_type": cand.get("pair_type", ""),
+            "scope": scope,
+            "overlap_jaccard": round(float(overlap), 4),
+        },
+        "score": round(float(overlap), 4),
+    }
+
+
 def _make_positive_bundle_payload(
     row: Dict[str, Any],
     doc_elements: Dict[str, Dict[str, Any]],
@@ -601,8 +668,19 @@ def build_triplets(args: argparse.Namespace) -> None:
             row_span_tokens=row_span_tokens,
             row_bridge_tokens=row_bridge_tokens,
         )
+        related_random = None
+        if args.enable_related_random_negative:
+            related_random = _pick_related_random_negative(
+                row=row,
+                candidate_rows=usable_rows,
+                row_to_positive_payload=row_to_positive_payload,
+                row_query_tokens=row_query_tokens,
+                rng=rng,
+                scope=args.related_random_scope,
+                min_overlap=float(args.related_min_overlap),
+            )
 
-        negatives = [n for n in [in_doc_swap, same_type_hard] if n is not None]
+        negatives = [n for n in [in_doc_swap, same_type_hard, related_random] if n is not None]
         if not negatives:
             skipped_no_negative += 1
             continue
@@ -727,6 +805,9 @@ def build_triplets(args: argparse.Namespace) -> None:
         "output_triplets": str(args.output),
         "pass_only": bool(args.pass_only),
         "seed": args.seed,
+        "enable_related_random_negative": bool(args.enable_related_random_negative),
+        "related_random_scope": args.related_random_scope,
+        "related_min_overlap": float(args.related_min_overlap),
         "raw_total_queries": len(raw_query_rows),
         "total_queries_loaded": len(query_rows),
         "pass_filter_drop": len(raw_query_rows) - len(query_rows),
@@ -816,6 +897,23 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--max-short-content-chars", type=int, default=220)
     ap.add_argument("--max-short-context-chars", type=int, default=0)
     ap.add_argument("--max-bridge-chars", type=int, default=320)
+    ap.add_argument(
+        "--enable-related-random-negative",
+        action="store_true",
+        help="Add one extra random related negative from same/similar doc candidates",
+    )
+    ap.add_argument(
+        "--related-random-scope",
+        choices=["same_doc", "same_or_similar"],
+        default="same_or_similar",
+        help="Candidate scope for related random negative",
+    )
+    ap.add_argument(
+        "--related-min-overlap",
+        type=float,
+        default=0.08,
+        help="Minimum query token Jaccard overlap for related random negative",
+    )
     return ap.parse_args()
 
 

@@ -1540,3 +1540,253 @@ Equation~\ref{eq:pareto}. As Table~\ref{tab:results} demonstrates...
 2. 构建 100-300 条人工标注集（relevance / hop_utility / redundancy / error_type）
 3. 生成 triplet v3（保留 in_doc_swap，增加 reranked cross-doc hard negatives）
 4. 做最小消融：embedding-only vs +hub/diversity vs +context rerank
+
+---
+
+## 日期：2026-03-03（与 Codex 的执行对话记录：run 请求与阻塞定位）
+
+### 一、对齐 mentor 录音后的执行结论
+- 用户确认：先不做 MinerU 服务部署任务。
+- 讨论对齐结论：
+  - 拓扑密度、交通枢纽、跨页方差：已实现并有产物。
+  - Query 短长句混合、架构图专项：代码已实现，但需重跑新批次才能体现。
+  - hard negative：新增可选策略，默认仍“先保证正向 query 质量”。
+
+### 二、用户请求“跑一次”后的执行过程
+1. 先按原命令启动全量生成（150 candidates）：
+   - 命令：`python3 scripts/generate_multihop_l1_queries.py ...`
+   - 失败：`ModuleNotFoundError: No module named 'anthropic'`
+2. 尝试使用用户指定环境 `/projects/myyyx1/envs/minerU`：
+   - 发现该环境 `python/pip` 均超时，进程状态 `Ds`
+   - `/proc/<pid>/wchan` 显示 `ceph_mdsc_wait_request`
+   - 判定为环境/文件系统阻塞，不是脚本逻辑错误
+3. 为降低环境依赖，临时增加 OpenAI fallback：
+   - 在 `scripts/generate_multihop_l1_queries.py` 增加 `--provider openai`
+   - 1 条 probe 成功到 API 调用层
+   - 但返回 `429 insufficient_quota`（OpenAI key 额度不足）
+
+### 三、本次新增的可追溯改动
+- 代码：
+  - `scripts/generate_multihop_l1_queries.py`
+    - 新增参数：`--provider {anthropic,openai}`
+    - `call_api` 支持 OpenAI Chat Completions（含 image_url base64）
+- 文档：
+  - `docs/TASK_EXECUTION_2026-03-03.md`
+  - `docs/REPORT_SUMMARY_2026-02-24.md`（追加 follow-up 链接）
+
+### 四、本轮未完成项（明确状态）
+- “跑一次 v4.4 全量生成”未完成，原因是外部条件：
+  1. `minerU` 环境不可执行（I/O 卡死）
+  2. 可用 OpenAI 路径额度不足
+
+### 五、给外部同学接力所需最小信息
+1. 若走 Anthropic：
+   - 需可用 Python 环境 + `anthropic` 包可导入
+   - 运行：
+     ```bash
+     export $(grep -v '^#' .env | xargs)
+     python3 scripts/generate_multihop_l1_queries.py \
+       --provider anthropic \
+       --model claude-sonnet-4-5-20250929 \
+       --candidates data/multihop_l1_candidates.json \
+       --output data/l1_dual_evidence_queries_v4_4_run1.jsonl \
+       --pass-only --delay 0.3
+     ```
+2. 若走 OpenAI：
+   - 需有额度的 `OPENAI_API_KEY`
+   - 运行：
+     ```bash
+     export $(grep -v '^#' .env | xargs)
+     python3 scripts/generate_multihop_l1_queries.py \
+       --provider openai \
+       --model gpt-4o-mini \
+       --candidates data/multihop_l1_candidates.json \
+       --output data/l1_dual_evidence_queries_v4_4_run1.jsonl \
+       --pass-only --delay 0.3
+     ```
+
+---
+
+## 日期：2026-03-03（LaTeX Topology v2：backbone + bridge-first + 500 hub candidates）
+
+### 一、本轮背景与目标
+
+用户带回 mentor 录音，要求将 mentor 的三个核心思路落地到 LaTeX 图分析中，并通过强化算法在全部 82 篇 LaTeX 资源上构建更密集的拓扑图和多跳候选集。
+
+**Mentor 核心思路（录音摘录）**：
+1. **Backbone edges**："文本片段的自然顺序就相当于一个 backbone"——段落排序后顺序相连
+2. **交通枢纽（Traffic Hub）**：同时引用多种模态元素的段落节点，是构链的关键中间节点
+3. **Physical distance variance**：跨页/跨远距离的共引更有意义（不是纯粹邻近）
+4. **Adjacent paragraph bridge**："前一段引图片，后一段引表格"——连续 backbone 段落各指向不同模态
+5. **短长 query 混合**：生成时需要多样化 seed question 结构
+
+### 二、Mentor 思路与已有工作的 gap 分析
+
+对比发现之前的 `build_latex_cross_modal_links.py` 做的是"同一段落内共引"，而 mentor 想要的是更全局的拓扑分析：
+- 缺少 backbone edge（段落间顺序连接）
+- hub 评分被 authority sink 主导（高被引 formula 节点）
+- 无 adjacent bridge 检测
+- DFS 路径搜索在 backbone chain 中迷路
+
+### 三、`analyze_latex_graph_topology.py` v2 全面改写
+
+#### 核心新增功能
+
+| 功能 | 描述 | 产出 |
+|------|------|------|
+| Backbone edges | paragraph 按 line_no 排序 → para[i]→para[i+1] | 1269 新边 |
+| Bridge-first hub scoring | `bridge_score = num_modalities*15 + out_to_elements*2` | top-60 全为 bridge |
+| Adjacent backbone bridge | 连续 backbone 段落各引用不同模态 | 369 条 |
+| Cross-doc citation edges | 从 citation_graph.json 读取，src_doc top-para→tgt_doc top-elem | 434 边 |
+| Real page_idx | 从 content_list.json 按 type 顺序匹配，覆盖率 94.8% | page_span 19% |
+| Targeted enumeration | 3 种策略替换 DFS（2-hop/3-hop/cross-doc） | 23→500 candidates |
+| Structural dedup | frozenset of element labels，防止同 pair 从不同 hub 重复出现 | — |
+| Seed diversity | 4 类轮换（WHY/WHAT_IF/MISMATCH/CONDITION），by hash(path)%4 | 4 类均匀分布 |
+
+#### Graph 统计结果
+
+```
+Nodes: 2551
+Edges: 3471
+  - backbone:      1269
+  - paragraph_ref: 1688
+  - cross_doc_cite:  434
+  - element_ref:      80
+
+Label mapping: 599/1204 = 49.8% (↑ from 28.8%)
+  改进：Jaccard 阈值 0.25 + 数字后缀 fallback (e.g., "1409.0575_figure_3" → 3)
+```
+
+#### Hub 质量
+
+```
+bridge_hubs: 60（覆盖 31 docs）
+  modality breakdown: all-3: 31, fig+formula: 25, fig+table: 4
+  hub_category top-60: 全部 bridge (0 authority)
+
+adjacent_backbone_bridges: 369（覆盖 68 docs）
+```
+
+#### 候选对分布（500 条）
+
+```
+pair_type:    figure+formula: 247 / figure+table: 153 / formula+table: 100
+hop_count:    2-hop: 181 / 3-hop: 319
+cross_doc:    cross: 170 (34%) / intra: 330 (66%)
+source:       bridge_hub: 310 / adjacent_backbone_bridge: 190
+docs covered: 40/82 (35 篇仍为零候选)
+
+page_span:    95/500 (19%)   ← 结构性限制（双端都需要 label 匹配）
+line_no_span: 500/500 (100%) ← 全覆盖
+seed types:   WHY:125 / WHAT_IF:126 / MISMATCH:124 / CONDITION:125
+```
+
+### 四、关键修复历程
+
+#### Fix 1：23 候选 → 500 候选（DFS 替换）
+
+**问题**：原 DFS-based `pick_paths_from_hubs` 在 backbone chain 中迷路。backbone 边（1269 条）形成 para→para→para 长链，5 跳内到达不了 2 个不同模态的元素节点。结果：仅 23 候选。
+
+**修复**：替换为 3 种 targeted enumeration 策略：
+- Strategy 1：2-hop [elem_A, hub_para, elem_B]（直接共引）
+- Strategy 2：3-hop [elem_A, hub_para, p_adj, elem_B]（经相邻 backbone 段落）
+- Strategy 3：cross-doc [elem_A_intra, hub_para, elem_B_cross]（跨文档）
+
+#### Fix 2：Hub 排名被 authority sink 主导
+
+**问题**：旧公式 `hub_score = total + 60*pagerank + 3*balance` ≈ degree_total，equation node (in=49, out=0) 排首位——它是被引目标，不是路径中间站。
+
+**修复**：新公式优先 bridge category：
+```python
+bridge_score = num_modalities * 15 + out_to_elements * 2
+authority_score = in_from_paragraphs * 2
+hub_score = bridge_score + authority_score + 60*pagerank
+sort_key = (hub_category == "bridge", bridge_score, hub_score)
+```
+
+#### Fix 3：page_idx 全为 0 → 读 content_list.json
+
+**问题**：`multimodal_elements.json` 中所有元素的 `page_idx=0`，是 MinerU parser 的 bug。
+
+**修复**：`build_real_page_index()` 读取每篇文档的 content_list.json，按 type 顺序计数匹配（第 N 个 image 项 = figure_N），覆盖率 94.8%（1248/1316 elements）。
+
+**验证**：content_list.json（如 `1609.05807_content_list.json`）含真实 page_idx（0-22），类型分布：text:157, equation:44, image:1...
+
+#### Fix 4：structural dedup
+
+**问题**：同一 element pair（如 fig_3 和 eq_2）可以通过不同 hub paragraph 生成重复候选。
+
+**修复**：`seen_struct_keys: Set[FrozenSet[str]]`，以路径中所有 element label 的 frozenset 去重（不以 path node_ids 去重）。
+
+### 五、研究伙伴反馈与响应
+
+**研究伙伴评审（4 个批评）**：
+
+1. **Hub 评分仍被 authority sink 主导** → 已修复（bridge-first 公式）
+2. **Physical distance variance 不可用**（page_idx 全为 0）→ 已修复（content_list.json real page_idx）
+3. **候选结构性重复**（同 pair 不同 hub）→ 已修复（structural dedup）
+4. **Seed sentence 是模板，只有一种起始语句** → 已修复（4 种 seed type 轮换）
+
+### 六、当前主要缺陷与下一步
+
+| 缺陷 | 原因 | 下一步 |
+|------|------|--------|
+| 35/82 docs 零候选 | bridge_hubs 仅覆盖 31 docs；adj_bridge 68 docs 但被 per_combo_cap(5) 限制 | 降 cap 或对 adj-bridge-only docs 单独生成 |
+| page_span 仅 19% | 需双端 label 匹配（49.8% label match → P(both)≈25%） | 提升 label 匹配率 |
+| label 匹配率 49.8% | MinerU 编号与 LaTeX 编号 offset 不一致 | 更复杂的 fallback 策略 |
+
+### 七、下一步行动
+
+**P0（最高优先）**：
+```bash
+python scripts/generate_multihop_l1_queries.py \
+  --candidates data/latex_hub_multihop_candidates.json \
+  --output data/l1_hub_multihop_queries_v1.jsonl \
+  --pass-only --delay 0.3
+```
+
+**P1**：修复 35/82 docs 零候选问题
+- 方案 A：降低 `MAX_PER_COMBO` 从 5 到 3
+- 方案 B：对 adj_bridge-only docs 单独枚举（不经过 bridge_hub 过滤）
+
+**P0.1（并行）**：将 123 条 citation edges 作为 L2 候选对（`generate_l2_queries.py`）喵
+
+---
+
+## 日期：2026-03-03（状态对齐补记：run1 实际产出核验）
+
+### 一、对齐背景
+- 前一条记录停留在“环境阻塞导致 run1 未产出”的时点状态。
+- 为对外汇报口径一致，补充核验当前仓库真实产物。
+
+### 二、已核验文件状态
+- `data/l1_dual_evidence_queries_v4_4_run1.jsonl`：存在，252 条。
+- `data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：存在，113 条。
+- 结论：`v4.4` 已有可用批次，不再是“仅代码完成、无产物”。
+
+### 三、run1 结果（供 mentor 汇报）
+- 总体通过率：113 / 252 = 44.8%
+- 长度分布（all）：short 104 / long 87 / medium 19 / too_long 42
+- 长度分布（pass）：short 59 / long 54（通过集短长混合成立）
+- pair_type 通过率：
+  - figure+table：74 / 178（41.6%）
+  - figure+formula：21 / 44（47.7%）
+  - formula+table：18 / 30（60.0%）
+- architecture 样本：68 条，pass 23（33.8%）
+
+### 四、失败主因（run1）
+- 全局 Top issues：
+  - `length_mix_missing`：106
+  - `query_too_long`：42
+  - `architecture_intent_missing`：29
+- architecture 子集 Top issues：
+  - `architecture_intent_missing`：29
+  - `length_mix_missing`：22
+  - `query_too_long`：9
+
+### 五、状态判断（最新）
+- 阻塞主轴已由“环境/API 可用性”转为“质量稳定性”。
+- 下一个迭代应聚焦：
+  - pair 级短长混合硬约束稳定落地
+  - architecture case 的问题意图增强
+  - 过长 query 的生成与重试策略喵
