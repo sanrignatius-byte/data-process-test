@@ -59,6 +59,7 @@ class Node:
     section_title: Optional[str] = None
     source_file: Optional[str] = None
     paragraph_order: Optional[int] = None  # sequential index within doc backbone
+    text_snippet: Optional[str] = None     # first 200 chars of paragraph text (for hub scoring)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -75,6 +76,7 @@ class Node:
             "section_title": self.section_title,
             "source_file": self.source_file,
             "paragraph_order": self.paragraph_order,
+            "text_snippet": self.text_snippet,
         }
 
 
@@ -150,6 +152,34 @@ def summarize_distribution(values: List[float]) -> Dict[str, float]:
         "p50": round(p50, 4),
         "p90": round(p90, 4),
     }
+
+
+def _find_para_for_line(
+    file_path: str,
+    line_no: int,
+    para_meta: List[Dict[str, Any]],
+) -> Optional[str]:
+    """Return the paragraph p_key (``'<file>:<start>'``) whose line range
+    contains ``(file_path, line_no)``, preferring the tightest span.
+
+    Returns ``None`` when no paragraph covers the ref site (e.g. the
+    paragraph metadata is from an older graph without this field).
+    """
+    best_key: Optional[str] = None
+    best_span: float = float("inf")
+    for para in para_meta:
+        pfile = str(para.get("file_path") or "")
+        # Accept if files match or if either side is unknown (empty string)
+        if pfile and file_path and pfile != file_path:
+            continue
+        start = int(para.get("line_no_start") or 0)
+        end = int(para.get("line_no_end") or start)
+        if start <= line_no <= end:
+            span = end - start
+            if span < best_span:
+                best_span = span
+                best_key = f"{pfile}:{start}"
+    return best_key
 
 
 # ─── MinerU index ─────────────────────────────────────────────────────────────
@@ -384,15 +414,19 @@ def build_topology_graph(
             end = sec.get("line_no_end")
             start_line = int(start) if isinstance(start, int) else None
             end_line = int(end) if isinstance(end, int) else None
+            title_str = str(sec.get("title", "") or "")
+            title_short = title_str[:40].rstrip()
             sec_node = Node(
                 node_id=f"{doc_id}::sec::{i:04d}",
                 doc_id=doc_id,
                 node_type=node_type,
-                label=f"{source_name}:{start_line or 0}",
+                # Include the section title so label is human-readable and
+                # contributes to core_module keyword matching in hub scoring.
+                label=f"{title_short} [{source_name}:{start_line or 0}]",
                 line_no=start_line,
                 line_no_end=end_line,
                 section_level=sec.get("level"),
-                section_title=str(sec.get("title", "") or ""),
+                section_title=title_str,
                 source_file=str(source_file) if source_file else None,
             )
             nodes[sec_node.node_id] = sec_node
@@ -423,31 +457,95 @@ def build_topology_graph(
             )
             label_node_map[label_key] = node_id
 
-        # ── Paragraph nodes (from ref contexts) ───────────────────────────
-        paragraph_node_map: Dict[Tuple[str, int], str] = {}
-        refs = doc.get("refs", []) or []
-        for ref in refs:
-            tgt = str(ref.get("target_key", ""))
-            tgt_node = label_node_map.get(tgt)
-            if not tgt_node:
-                continue
-            file_path = str(ref.get("file_path", "") or "unknown")
-            line_no_raw = ref.get("line_no", 0)
-            line_no = int(line_no_raw) if isinstance(line_no_raw, int) else 0
-            p_key = (file_path, line_no)
-            if p_key not in paragraph_node_map:
-                pnode_id = f"{doc_id}::p::{len(paragraph_node_map)+1:05d}"
-                paragraph_node_map[p_key] = pnode_id
-                nodes[pnode_id] = Node(
-                    node_id=pnode_id,
-                    doc_id=doc_id,
-                    node_type="paragraph",
-                    label=f"{Path(file_path).name}:{line_no}",
-                    line_no=line_no if line_no else None,
-                    source_file=file_path,
-                )
-            src = paragraph_node_map[p_key]
-            add_edge(Edge(source_id=src, target_id=tgt_node, doc_id=doc_id, edge_type="paragraph_ref"))
+        # ── Paragraph nodes ────────────────────────────────────────────────
+        # Preferred path: use paragraph blocks extracted by the LaTeX parser
+        # (one node per blank-line-separated paragraph, not one per \ref site).
+        # Fallback: legacy ref-site granularity for graphs built without the
+        # new `paragraphs` metadata field.
+        paragraph_node_map: Dict[str, str] = {}  # p_key → node_id
+        para_meta: List[Dict[str, Any]] = doc.get("metadata", {}).get("paragraphs", []) or []
+
+        if para_meta:
+            # Build one node per extracted paragraph block
+            for para_data in para_meta:
+                pfile = str(para_data.get("file_path") or "unknown")
+                start = int(para_data.get("line_no_start") or 0)
+                end = int(para_data.get("line_no_end") or start)
+                snippet = str(para_data.get("text_snippet") or "")
+                p_key = f"{pfile}:{start}"
+                if p_key not in paragraph_node_map:
+                    pnode_id = f"{doc_id}::p::{len(paragraph_node_map)+1:05d}"
+                    paragraph_node_map[p_key] = pnode_id
+                    nodes[pnode_id] = Node(
+                        node_id=pnode_id,
+                        doc_id=doc_id,
+                        node_type="paragraph",
+                        label=f"{Path(pfile).name}:{start}",
+                        line_no=start,
+                        line_no_end=end,
+                        source_file=pfile,
+                        text_snippet=snippet if snippet else None,
+                    )
+
+            # Assign each \ref{} call-site to its containing paragraph node
+            refs = doc.get("refs", []) or []
+            for ref in refs:
+                tgt = str(ref.get("target_key", ""))
+                tgt_node = label_node_map.get(tgt)
+                if not tgt_node:
+                    continue
+                file_path = str(ref.get("file_path", "") or "unknown")
+                line_no_raw = ref.get("line_no", 0)
+                line_no = int(line_no_raw) if isinstance(line_no_raw, int) else 0
+                p_key = _find_para_for_line(file_path, line_no, para_meta)
+                if p_key and p_key in paragraph_node_map:
+                    src = paragraph_node_map[p_key]
+                    add_edge(Edge(source_id=src, target_id=tgt_node,
+                                  doc_id=doc_id, edge_type="paragraph_ref"))
+                else:
+                    # Ref site not covered by any paragraph block — create a
+                    # minimal ad-hoc node so we don't silently drop the edge.
+                    fallback_key = f"{file_path}:{line_no}"
+                    if fallback_key not in paragraph_node_map:
+                        pnode_id = f"{doc_id}::p::{len(paragraph_node_map)+1:05d}"
+                        paragraph_node_map[fallback_key] = pnode_id
+                        nodes[pnode_id] = Node(
+                            node_id=pnode_id,
+                            doc_id=doc_id,
+                            node_type="paragraph",
+                            label=f"{Path(file_path).name}:{line_no}",
+                            line_no=line_no if line_no else None,
+                            source_file=file_path,
+                        )
+                    src = paragraph_node_map[fallback_key]
+                    add_edge(Edge(source_id=src, target_id=tgt_node,
+                                  doc_id=doc_id, edge_type="paragraph_ref"))
+        else:
+            # Legacy fallback: one paragraph node per (file, line_no) ref site
+            refs = doc.get("refs", []) or []
+            for ref in refs:
+                tgt = str(ref.get("target_key", ""))
+                tgt_node = label_node_map.get(tgt)
+                if not tgt_node:
+                    continue
+                file_path = str(ref.get("file_path", "") or "unknown")
+                line_no_raw = ref.get("line_no", 0)
+                line_no = int(line_no_raw) if isinstance(line_no_raw, int) else 0
+                p_key = f"{file_path}:{line_no}"
+                if p_key not in paragraph_node_map:
+                    pnode_id = f"{doc_id}::p::{len(paragraph_node_map)+1:05d}"
+                    paragraph_node_map[p_key] = pnode_id
+                    nodes[pnode_id] = Node(
+                        node_id=pnode_id,
+                        doc_id=doc_id,
+                        node_type="paragraph",
+                        label=f"{Path(file_path).name}:{line_no}",
+                        line_no=line_no if line_no else None,
+                        source_file=file_path,
+                    )
+                src = paragraph_node_map[p_key]
+                add_edge(Edge(source_id=src, target_id=tgt_node,
+                              doc_id=doc_id, edge_type="paragraph_ref"))
 
         # ── Element→element co-reference edges ────────────────────────────
         for e in (doc.get("edges", []) or []):
@@ -648,8 +746,14 @@ def compute_hubs(
     out_adj: Dict[str, Set[str]],
     in_adj: Dict[str, Set[str]],
     top_k: int,
+    degree_norm: float = 12.0,
 ) -> List[Dict[str, Any]]:
-    """Compute hub scores with bridge/connectivity/core-module signals."""
+    """Compute hub scores with bridge/connectivity/core-module signals.
+
+    ``degree_norm`` is used to normalise ``edge_connectivity``; pass the 90th
+    percentile of per-node total degree so the score is adaptive to each graph
+    rather than relying on a hardcoded constant.
+    """
     node_ids = sorted(nodes.keys())
     pr = pagerank(node_ids, out_adj, in_adj)
     hubs: List[Dict[str, Any]] = []
@@ -674,9 +778,17 @@ def compute_hubs(
                 cross_type_edges += 1
 
         bridge_role = 1.0 if len(out_modalities) >= 2 else (0.5 if len(out_modalities) == 1 else 0.0)
-        edge_connectivity = min(1.0, (total / 12.0) + (cross_type_edges / 12.0))
+        dn = max(degree_norm, 4.0)  # guard against degenerate sparse graphs
+        edge_connectivity = min(1.0, (total / dn) + (cross_type_edges / dn))
 
-        core_text = " ".join([node.section_title or "", node.label or ""]).lower()
+        # Include paragraph text_snippet so keyword-based core_module scoring
+        # works for paragraph nodes (not just section/figure nodes whose title
+        # and label are already descriptive).
+        core_text = " ".join([
+            node.section_title or "",
+            node.label or "",
+            node.text_snippet or "",
+        ]).lower()
         core_score = 0.0
         for pat, w in (
             (r"\bintroduction\b", 1.0),
@@ -1439,7 +1551,20 @@ def main() -> None:
 
     # ── Phase 4: Hub detection ─────────────────────────────────────────────
     density = gather_density_report(nodes, edges, doc_stats)
-    all_hubs = compute_hubs(nodes, out_adj, in_adj, top_k=0)
+
+    # Adaptive degree normalisation: use the 90th-percentile total degree so
+    # edge_connectivity is calibrated to this graph's actual density rather
+    # than a hardcoded constant.  Floor at 4 to avoid division issues.
+    all_degrees = sorted(
+        len(out_adj.get(nid, ())) + len(in_adj.get(nid, ())) for nid in nodes
+    )
+    if all_degrees:
+        p90_idx = max(0, int(0.90 * (len(all_degrees) - 1)))
+        degree_norm = float(max(all_degrees[p90_idx], 4))
+    else:
+        degree_norm = 12.0
+
+    all_hubs = compute_hubs(nodes, out_adj, in_adj, top_k=0, degree_norm=degree_norm)
     hubs = all_hubs[:args.top_k_hubs]
     traffic_hubs = sorted(
         [h for h in all_hubs if h["in_degree"] > 0 and h["out_degree"] > 0],

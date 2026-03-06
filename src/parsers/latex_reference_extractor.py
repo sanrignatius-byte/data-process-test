@@ -189,6 +189,29 @@ class SectionCommand:
         }
 
 
+@dataclass
+class Paragraph:
+    """A paragraph-level text block extracted from LaTeX source.
+
+    A paragraph is a maximal sequence of non-blank lines that contains
+    at least some non-structural text content.  We store the source line
+    range so that topology code can assign \\ref{} call-sites to their
+    containing paragraph (coarser, semantically coherent granularity).
+    """
+    line_no_start: int
+    line_no_end: int
+    file_path: Optional[str]
+    text_snippet: str  # first 200 chars — used for keyword-based hub scoring
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "line_no_start": self.line_no_start,
+            "line_no_end": self.line_no_end,
+            "file_path": self.file_path,
+            "text_snippet": self.text_snippet,
+        }
+
+
 # ---------------------------------------------------------------------------
 # Regex patterns
 # ---------------------------------------------------------------------------
@@ -239,6 +262,18 @@ _SECTION_LEVELS = {
     "subsection": 2,
     "subsubsection": 3,
 }
+
+# Lines that are purely structural LaTeX commands and should not anchor a paragraph on their own.
+# We still include them in the block's text, but a block composed *only* of these lines is skipped.
+_RE_PURE_STRUCTURAL = re.compile(
+    r"^\s*\\(?:begin|end|section\*?|subsection\*?|subsubsection\*?|chapter\*?|"
+    r"documentclass|usepackage|newcommand|renewcommand|providecommand|def|let|"
+    r"bibliography|bibliographystyle|maketitle|tableofcontents|listoffigures|"
+    r"title|author|date|vspace\*?|hspace\*?|vskip|hskip|noindent|indent|"
+    r"clearpage|cleardoublepage|newpage|pagebreak|medskip|bigskip|smallskip|"
+    r"appendix|setcounter|addtocounter|stepcounter|pagenumbering|"
+    r"centering|raggedright|raggedleft)\b"
+)
 
 # \title{...} (may have optional [...])
 RE_TITLE = re.compile(r'\\title\s*(?:\[[^\]]*\])?\s*\{')
@@ -449,7 +484,14 @@ class LaTeXReferenceExtractor:
 
         # Structural section commands (for fine-grained node construction)
         graph.metadata["sections"] = [
-            s.to_dict() for s in self._extract_sections(lines, file_lines)
+            s.to_dict() for s in self._extract_sections(lines, file_lines, total_lines=len(lines))
+        ]
+
+        # Paragraph blocks — one entry per blank-line-separated text block.
+        # Topology builder uses these to create proper paragraph nodes instead
+        # of the coarser "one node per \ref{} call-site" approach.
+        graph.metadata["paragraphs"] = [
+            p.to_dict() for p in self._extract_paragraphs(lines, file_lines)
         ]
 
         # 1) Extract labels
@@ -915,6 +957,7 @@ class LaTeXReferenceExtractor:
         self,
         lines: List[str],
         file_lines: Dict[int, Tuple[int, Optional[str]]],
+        total_lines: int = 0,
     ) -> List[SectionCommand]:
         """Extract structural section commands with source ranges."""
         sections: List[SectionCommand] = []
@@ -946,15 +989,79 @@ class LaTeXReferenceExtractor:
                     sec.line_no_end = max(sec.line_no_start, nxt.line_no_start - 1)
                     break
             else:
-                sec.line_no_end = sec.line_no_start + 300  # conservative fallback window
+                # Use the actual document length as the upper bound so we never
+                # overshoot into non-existent lines or a different source file.
+                doc_end = total_lines if total_lines > sec.line_no_start else sec.line_no_start + 300
+                sec.line_no_end = doc_end
 
         return sections
 
+    def _extract_paragraphs(
+        self,
+        lines: List[str],
+        file_lines: Dict[int, Tuple[int, Optional[str]]],
+    ) -> List["Paragraph"]:
+        """Split merged LaTeX content into paragraph-level blocks.
+
+        A paragraph is a maximal sequence of non-blank lines whose content is
+        not *entirely* composed of pure structural LaTeX commands
+        (\\begin/\\end/\\section/\\usepackage …).  We require at least 15
+        non-whitespace characters of non-structural text.
+
+        The resulting list lets the topology builder create one paragraph node
+        per block and then assign \\ref{} call-sites to their containing
+        paragraph — coarser and semantically more coherent than the previous
+        "one node per ref-line" approach.
+        """
+        paragraphs: List[Paragraph] = []
+        block: List[int] = []   # indices into `lines` for the current block
+
+        def _flush(block: List[int]) -> None:
+            if not block:
+                return
+            text_lines = [lines[i] for i in block if lines[i].strip()]
+            if not text_lines:
+                return
+            # Require at least one line that is not a pure structural command
+            non_structural = [l for l in text_lines if not _RE_PURE_STRUCTURAL.match(l)]
+            content = " ".join(non_structural)
+            if len(content.replace(" ", "")) < 15:
+                return
+            orig_start, src_file = file_lines.get(block[0], (block[0] + 1, None))
+            orig_end, _ = file_lines.get(block[-1], (block[-1] + 1, None))
+            snippet = content[:200].strip()
+            paragraphs.append(Paragraph(
+                line_no_start=orig_start,
+                line_no_end=orig_end,
+                file_path=str(src_file) if src_file else None,
+                text_snippet=snippet,
+            ))
+
+        for idx, line in enumerate(lines):
+            if line.strip():
+                block.append(idx)
+            else:
+                _flush(block)
+                block = []
+        _flush(block)
+        return paragraphs
+
     @staticmethod
     def _clean_tex_text(text: str) -> str:
-        """Best-effort cleanup for section titles."""
-        cleaned = re.sub(r"\\[a-zA-Z]+\*?(?:\[[^\]]*\])?\{([^}]*)\}", r"\1", text)
-        cleaned = re.sub(r"\\[a-zA-Z]+", "", cleaned)
+        """Best-effort cleanup for section titles.
+
+        Iterates up to 5 times so that nested constructs like
+        ``\\textbf{\\emph{Multi-hop}}`` are fully unwrapped.
+        """
+        cleaned = text
+        for _ in range(5):
+            prev = cleaned
+            # Unwrap \cmd[opt]{inner} → inner  (handles one level per pass)
+            cleaned = re.sub(r"\\[a-zA-Z]+\*?(?:\[[^\]]*\])?\{([^{}]*)\}", r"\1", cleaned)
+            if cleaned == prev:
+                break
+        # Remove any remaining bare commands and stray braces
+        cleaned = re.sub(r"\\[a-zA-Z]+\*?", "", cleaned)
         cleaned = cleaned.replace("{", "").replace("}", "")
         cleaned = re.sub(r"\s+", " ", cleaned).strip()
         return cleaned
