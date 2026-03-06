@@ -1790,3 +1790,12 @@ python scripts/generate_multihop_l1_queries.py \
   - pair 级短长混合硬约束稳定落地
   - architecture case 的问题意图增强
   - 过长 query 的生成与重试策略喵
+
+
+## 日期：2026-03-06（Mentor 要求执行方案）
+
+- 已形成执行方案文档：`docs/MENTOR_EXECUTION_PLAN_2026-03-06.md`
+- 重点：Node 粒度重构、Hub 评分体系、正则优先检索、Evidence 导向评测、单文档优先与多跳预留。
+
+- 根据复核意见收敛执行范围：Week1 仅做 6 类结构节点；claim 节点/语义边后移到 Week2。
+- 评测基准调整为 30 条先跑通，再扩展到 100 条；DoD 的 Recall@10 基线门槛调整为 60%。

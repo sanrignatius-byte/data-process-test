@@ -149,6 +149,8 @@ def _match_labels_to_elements(
         "table": "table",
         "equation": "formula",
         "section": "section",
+        "subsection": "section",
+        "subsubsection": "section",
     }
 
     for label_key, label_info in lg.labels.items():
