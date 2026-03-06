@@ -34,6 +34,8 @@ class LabelType(Enum):
     TABLE = "table"
     EQUATION = "equation"
     SECTION = "section"
+    SUBSECTION = "subsection"
+    SUBSUBSECTION = "subsubsection"
     ALGORITHM = "algorithm"
     APPENDIX = "appendix"
     THEOREM = "theorem"       # theorem, lemma, proposition, corollary, conjecture, claim
@@ -166,6 +168,27 @@ class LatexDocumentGraph:
         }
 
 
+@dataclass
+class SectionCommand:
+    """A structural section command in LaTeX source."""
+    level: int
+    command: str
+    title: str
+    line_no_start: int
+    line_no_end: int
+    file_path: Optional[str]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "level": self.level,
+            "command": self.command,
+            "title": self.title,
+            "line_no_start": self.line_no_start,
+            "line_no_end": self.line_no_end,
+            "file_path": self.file_path,
+        }
+
+
 # ---------------------------------------------------------------------------
 # Regex patterns
 # ---------------------------------------------------------------------------
@@ -209,6 +232,13 @@ RE_INCLUDEGRAPHICS = re.compile(
 RE_SECTION = re.compile(
     r'\\(section|subsection|subsubsection|paragraph|chapter)\*?\{([^}]+)\}'
 )
+
+_SECTION_LEVELS = {
+    "chapter": 0,
+    "section": 1,
+    "subsection": 2,
+    "subsubsection": 3,
+}
 
 # \title{...} (may have optional [...])
 RE_TITLE = re.compile(r'\\title\s*(?:\[[^\]]*\])?\s*\{')
@@ -416,6 +446,11 @@ class LaTeXReferenceExtractor:
         lines = full_content.split("\n")
         graph.metadata["total_lines"] = len(lines)
         graph.metadata["main_tex"] = str(main_tex.relative_to(extract_dir))
+
+        # Structural section commands (for fine-grained node construction)
+        graph.metadata["sections"] = [
+            s.to_dict() for s in self._extract_sections(lines, file_lines)
+        ]
 
         # 1) Extract labels
         env_stack = self._build_env_map(lines)
@@ -712,7 +747,7 @@ class LaTeXReferenceExtractor:
 
     # Regex for detecting \section, \subsection, etc. (no \label needed)
     _RE_SECTION_CMD = re.compile(
-        r"\\(?:section|subsection|subsubsection|paragraph|chapter)\b"
+        r"\\(?P<cmd>section|subsection|subsubsection|paragraph|chapter)\b"
     )
 
     def _probe_nearby_section(
@@ -725,7 +760,15 @@ class LaTeXReferenceExtractor:
         start = max(0, label_idx - window)
         end = min(len(lines), label_idx + window + 1)
         for i in range(start, end):
-            if self._RE_SECTION_CMD.search(lines[i]):
+            m = self._RE_SECTION_CMD.search(lines[i])
+            if not m:
+                continue
+            cmd = m.group("cmd")
+            if cmd == "subsection":
+                return LabelType.SUBSECTION
+            if cmd == "subsubsection":
+                return LabelType.SUBSUBSECTION
+            if cmd in {"section", "chapter"}:
                 return LabelType.SECTION
         return LabelType.UNKNOWN
 
@@ -867,6 +910,54 @@ class LaTeXReferenceExtractor:
                         ))
 
         return refs
+
+    def _extract_sections(
+        self,
+        lines: List[str],
+        file_lines: Dict[int, Tuple[int, Optional[str]]],
+    ) -> List[SectionCommand]:
+        """Extract structural section commands with source ranges."""
+        sections: List[SectionCommand] = []
+
+        for idx, line in enumerate(lines):
+            m = RE_SECTION.search(line)
+            if not m:
+                continue
+            command = m.group(1).lower()
+            if command not in _SECTION_LEVELS:
+                continue
+            title = self._clean_tex_text(m.group(2).strip())
+            orig_line, src_file = file_lines.get(idx, (idx + 1, None))
+            sections.append(SectionCommand(
+                level=_SECTION_LEVELS[command],
+                command=command,
+                title=title,
+                line_no_start=orig_line,
+                line_no_end=orig_line,
+                file_path=src_file,
+            ))
+
+        # Compute range end with next section command in the same file
+        for i, sec in enumerate(sections):
+            sec.line_no_end = sec.line_no_start
+            for j in range(i + 1, len(sections)):
+                nxt = sections[j]
+                if nxt.file_path == sec.file_path and nxt.line_no_start > sec.line_no_start:
+                    sec.line_no_end = max(sec.line_no_start, nxt.line_no_start - 1)
+                    break
+            else:
+                sec.line_no_end = sec.line_no_start + 300  # conservative fallback window
+
+        return sections
+
+    @staticmethod
+    def _clean_tex_text(text: str) -> str:
+        """Best-effort cleanup for section titles."""
+        cleaned = re.sub(r"\\[a-zA-Z]+\*?(?:\[[^\]]*\])?\{([^}]*)\}", r"\1", text)
+        cleaned = re.sub(r"\\[a-zA-Z]+", "", cleaned)
+        cleaned = cleaned.replace("{", "").replace("}", "")
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        return cleaned
 
     def _get_line_context(self, lines: List[str], idx: int) -> str:
         """Get ±1 line around the reference for context."""

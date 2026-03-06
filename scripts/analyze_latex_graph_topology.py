@@ -34,10 +34,11 @@ from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 LABEL_TO_MODALITY = {
     "figure": "figure",
     "table": "table",
-    "equation": "formula",
-    "formula": "formula",
+    "equation": "equation",
+    "formula": "equation",
 }
-ELEMENT_MODALITIES = {"figure", "table", "formula"}
+ELEMENT_MODALITIES = {"figure", "table", "equation"}
+MINERU_ELEMENT_TYPES = {"figure", "table", "formula"}
 
 ARCHIVE_TIME = datetime.now(timezone.utc).isoformat()
 
@@ -47,12 +48,16 @@ ARCHIVE_TIME = datetime.now(timezone.utc).isoformat()
 class Node:
     node_id: str
     doc_id: str
-    node_type: str          # paragraph | figure | table | formula
+    node_type: str          # section | subsection | subsubsection | paragraph | figure | table | equation
     label: str
     mapped_element_id: Optional[str] = None
     page_idx: Optional[int] = None
     position_idx: Optional[int] = None   # MinerU reading-order index (better proxy)
     line_no: Optional[int] = None        # LaTeX source line (backbone ordering)
+    line_no_end: Optional[int] = None    # range end (sections)
+    section_level: Optional[int] = None
+    section_title: Optional[str] = None
+    source_file: Optional[str] = None
     paragraph_order: Optional[int] = None  # sequential index within doc backbone
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,6 +70,10 @@ class Node:
             "page_idx": self.page_idx,
             "position_idx": self.position_idx,
             "line_no": self.line_no,
+            "line_no_end": self.line_no_end,
+            "section_level": self.section_level,
+            "section_title": self.section_title,
+            "source_file": self.source_file,
             "paragraph_order": self.paragraph_order,
         }
 
@@ -74,7 +83,7 @@ class Edge:
     source_id: str
     target_id: str
     doc_id: str
-    edge_type: str  # paragraph_ref | element_ref | backbone | cross_doc_cite
+    edge_type: str  # paragraph_ref | element_ref | backbone | cross_doc_cite | section_contains_*
 
     def key(self) -> Tuple[str, str, str]:
         return (self.source_id, self.target_id, self.edge_type)
@@ -232,7 +241,7 @@ def build_multimodal_index(mm_data: Dict[str, Any], mineru_output_dir: str = "")
         elem_list: List[Tuple[int, str]] = []  # (position_idx, eid)
         for eid, elem in elements.items():
             etype = str(elem.get("element_type", "")).lower()
-            if etype not in ELEMENT_MODALITIES:
+            if etype not in MINERU_ELEMENT_TYPES:
                 continue
 
             # Real page from content_list (primary), fallback to mm_data page_idx
@@ -295,18 +304,19 @@ def map_label_to_element(
     ltype = normalize_label_type(str(label_info.get("label_type", "")))
     if ltype not in ELEMENT_MODALITIES:
         return None
+    mm_type = "formula" if ltype == "equation" else ltype
 
     # 1. number from label key
     number = parse_number(label_key)
     if number is not None:
-        eid = doc_idx["by_number"].get(ltype, {}).get(number)
+        eid = doc_idx["by_number"].get(mm_type, {}).get(number)
         if eid:
             return eid
         # Try each part of the label key
         for part in re.split(r"[_\-:]+", label_key):
             n = parse_number(part)
             if n is not None:
-                eid = doc_idx["by_number"].get(ltype, {}).get(n)
+                eid = doc_idx["by_number"].get(mm_type, {}).get(n)
                 if eid:
                     return eid
 
@@ -315,7 +325,7 @@ def map_label_to_element(
     if caption_tokens:
         best_id = None
         best_score = 0.0
-        for eid, cap_tokens in doc_idx["by_caption"].get(ltype, []):
+        for eid, cap_tokens in doc_idx["by_caption"].get(mm_type, []):
             s = jaccard(caption_tokens, cap_tokens)
             if s > best_score:
                 best_score = s
@@ -361,6 +371,32 @@ def build_topology_graph(
     for doc_id, doc in docs.items():
         label_node_map: Dict[str, str] = {}
         labels = doc.get("labels", {}) or {}
+        sections = doc.get("metadata", {}).get("sections", []) or []
+
+        # ── Section / subsection nodes ──────────────────────────────────────
+        section_nodes: List[Node] = []
+        for i, sec in enumerate(sections, start=1):
+            command = str(sec.get("command", "section")).lower()
+            node_type = command if command in {"section", "subsection", "subsubsection"} else "section"
+            source_file = sec.get("file_path")
+            source_name = Path(str(source_file)).name if source_file else "unknown"
+            start = sec.get("line_no_start")
+            end = sec.get("line_no_end")
+            start_line = int(start) if isinstance(start, int) else None
+            end_line = int(end) if isinstance(end, int) else None
+            sec_node = Node(
+                node_id=f"{doc_id}::sec::{i:04d}",
+                doc_id=doc_id,
+                node_type=node_type,
+                label=f"{source_name}:{start_line or 0}",
+                line_no=start_line,
+                line_no_end=end_line,
+                section_level=sec.get("level"),
+                section_title=str(sec.get("title", "") or ""),
+                source_file=str(source_file) if source_file else None,
+            )
+            nodes[sec_node.node_id] = sec_node
+            section_nodes.append(sec_node)
 
         # ── Element nodes (figure / table / formula) ──────────────────────
         for label_key, info in labels.items():
@@ -383,6 +419,7 @@ def build_topology_graph(
                 page_idx=real_page,
                 position_idx=pos_idx,
                 line_no=elem_line_no,
+                source_file=info.get("file_path"),
             )
             label_node_map[label_key] = node_id
 
@@ -407,6 +444,7 @@ def build_topology_graph(
                     node_type="paragraph",
                     label=f"{Path(file_path).name}:{line_no}",
                     line_no=line_no if line_no else None,
+                    source_file=file_path,
                 )
             src = paragraph_node_map[p_key]
             add_edge(Edge(source_id=src, target_id=tgt_node, doc_id=doc_id, edge_type="paragraph_ref"))
@@ -446,11 +484,47 @@ def build_topology_graph(
             ))
             bb_count += 1
 
+        # ── Section containment edges ──────────────────────────────────────
+        def find_section_for(node: Node) -> Optional[str]:
+            if node.line_no is None:
+                return None
+            best: Optional[Node] = None
+            for sec in section_nodes:
+                if sec.line_no is None or sec.line_no_end is None:
+                    continue
+                same_file = (not node.source_file or not sec.source_file or node.source_file == sec.source_file)
+                if not same_file:
+                    continue
+                if sec.line_no <= node.line_no <= sec.line_no_end:
+                    if best is None:
+                        best = sec
+                    else:
+                        best_span = (best.line_no_end or best.line_no) - (best.line_no or 0)
+                        cur_span = (sec.line_no_end or sec.line_no) - (sec.line_no or 0)
+                        if cur_span <= best_span:
+                            best = sec
+            return best.node_id if best else None
+
+        for para in doc_paragraphs:
+            sec_id = find_section_for(para)
+            if sec_id:
+                add_edge(Edge(source_id=sec_id, target_id=para.node_id, doc_id=doc_id,
+                              edge_type="section_contains_paragraph"))
+
+        for nid, node in nodes.items():
+            if node.doc_id != doc_id or node.node_type not in ELEMENT_MODALITIES:
+                continue
+            sec_id = find_section_for(node)
+            if sec_id:
+                add_edge(Edge(source_id=sec_id, target_id=nid, doc_id=doc_id,
+                              edge_type="section_contains_element"))
+
         # ── Per-doc stats ──────────────────────────────────────────────────
         doc_nodes = [n for n in nodes.values() if n.doc_id == doc_id]
         doc_stats[doc_id]["nodes"] = len(doc_nodes)
         doc_stats[doc_id]["paragraph_nodes"] = sum(1 for n in doc_nodes if n.node_type == "paragraph")
         doc_stats[doc_id]["element_nodes"] = sum(1 for n in doc_nodes if n.node_type in ELEMENT_MODALITIES)
+        doc_stats[doc_id]["section_nodes"] = sum(1 for n in doc_nodes if n.node_type in {"section", "subsection", "subsubsection"})
         doc_stats[doc_id]["edges"] = sum(1 for e in edges if e.doc_id == doc_id)
         doc_stats[doc_id]["backbone_edges"] = bb_count
 
@@ -575,20 +649,7 @@ def compute_hubs(
     in_adj: Dict[str, Set[str]],
     top_k: int,
 ) -> List[Dict[str, Any]]:
-    """Compute hubs with bridge-aware scoring.
-
-    Hub categories:
-      - "bridge": paragraph nodes with out_degree ≥ 2 to different modalities.
-        Scored by modality diversity + out_degree (connector ability).
-      - "authority": element nodes with high in_degree (frequently referenced).
-        Scored by in_degree alone.
-
-    bridge_score = num_modalities_referred * 15 + out_degree_to_elements * 2
-    authority_score = in_degree_from_paragraphs * 2
-
-    Final hub_score = bridge_score + authority_score + 60 * pagerank
-    This ensures bridge/connector nodes rank above pure sink nodes.
-    """
+    """Compute hub scores with bridge/connectivity/core-module signals."""
     node_ids = sorted(nodes.keys())
     pr = pagerank(node_ids, out_adj, in_adj)
     hubs: List[Dict[str, Any]] = []
@@ -603,18 +664,42 @@ def compute_hubs(
         # Bridge score: rewarded for connecting multiple modalities as a paragraph
         out_modalities: Set[str] = set()
         out_to_elements = 0
-        in_from_paras = 0
+        cross_type_edges = 0
         for nb in out_adj.get(nid, ()):
             if nodes[nb].node_type in ELEMENT_MODALITIES:
                 out_modalities.add(nodes[nb].node_type)
                 out_to_elements += 1
-        for nb in in_adj.get(nid, ()):
-            if nodes[nb].node_type == "paragraph":
-                in_from_paras += 1
+        for nb in out_adj.get(nid, ()) | in_adj.get(nid, ()):
+            if nodes[nb].node_type != node.node_type:
+                cross_type_edges += 1
 
-        bridge_score = len(out_modalities) * 15 + out_to_elements * 2
-        authority_score = in_from_paras * 2
-        hub_score = bridge_score + authority_score + 60.0 * pr.get(nid, 0.0)
+        bridge_role = 1.0 if len(out_modalities) >= 2 else (0.5 if len(out_modalities) == 1 else 0.0)
+        edge_connectivity = min(1.0, (total / 12.0) + (cross_type_edges / 12.0))
+
+        core_text = " ".join([node.section_title or "", node.label or ""]).lower()
+        core_score = 0.0
+        for pat, w in (
+            (r"\bintroduction\b", 1.0),
+            (r"\b(main\s+result|key\s+result|experiment|ablation)\b", 0.9),
+            (r"\b(method|approach|framework|architecture|model)\b", 0.8),
+            (r"\b(conclusion|discussion)\b", 0.6),
+            (r"\b(related\s+work|background)\b", 0.3),
+        ):
+            if re.search(pat, core_text):
+                core_score = w
+                break
+        if node.node_type == "figure":
+            if re.search(r"\b(architecture|framework|overview|pipeline|model\s+structure)\b", core_text):
+                core_score = max(core_score, 1.0)
+            elif re.search(r"\b(result|performance|comparison|ablation)\b", core_text):
+                core_score = max(core_score, 0.8)
+
+        bridge_score = bridge_role * 100
+        connectivity_score = edge_connectivity * 100
+        core_module_score = core_score * 100
+        penalty = 20.0 if (in_deg > out_deg * 2 and len(out_modalities) <= 1) else 0.0
+        hub_score = (0.40 * bridge_score + 0.35 * connectivity_score +
+                     0.25 * core_module_score + 20.0 * pr.get(nid, 0.0) - penalty)
 
         # Hub category
         if node.node_type == "paragraph" and len(out_modalities) >= 2:
@@ -642,7 +727,9 @@ def compute_hubs(
             "degree_balance": round(balance, 4),
             "pagerank": round(pr.get(nid, 0.0), 8),
             "bridge_score": round(bridge_score, 2),
-            "authority_score": round(authority_score, 2),
+            "connectivity_score": round(connectivity_score, 2),
+            "core_module_score": round(core_module_score, 2),
+            "penalty": round(penalty, 2),
             "hub_score": round(hub_score, 6),
         })
     # Bridge-first sort: bridge hubs ranked before authority sinks
@@ -1462,10 +1549,12 @@ def main() -> None:
             "count": len(hubs),
             "hub_category_breakdown": dict(hub_cats),
             "note_scoring": (
-                "hub_score = bridge_score + authority_score + 60*pagerank. "
-                "bridge_score = num_modalities*15 + out_to_elements*2 (paragraph bridge ability). "
-                "authority_score = in_from_paragraphs*2 (element citation popularity). "
-                "Hubs sorted bridge-first so connector paragraphs rank above in-only sinks."
+                "hub_score = 0.40*bridge_score + 0.35*connectivity_score + "
+                "0.25*core_module_score + 20*pagerank - penalty. "
+                "bridge_score rewards multi-modality bridge behavior; "
+                "connectivity_score captures degree + cross-type neighbors; "
+                "core_module_score uses regex keywords from section/title labels. "
+                "Penalty suppresses authority sinks (high in-degree with weak bridging)."
             ),
             "top10": hubs[:10],
             "traffic_hubs_count": len(traffic_hubs),
