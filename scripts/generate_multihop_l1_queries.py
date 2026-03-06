@@ -1444,6 +1444,44 @@ def build_prompt(pair: Dict) -> str:
 # API call
 # ──────────────────────────────────────────────────────────────
 
+def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
+    """Collect content and token usage from company API SSE stream.
+
+    Returns (text, input_tokens, output_tokens).
+    """
+    content_parts: List[str] = []
+    in_tok, out_tok = 0, 0
+
+    for line in stream_generator:
+        line = line.strip() if isinstance(line, str) else line
+        if not line or not line.startswith("data: "):
+            continue
+        data = line[6:].strip()
+        if data == "[DONE]":
+            continue
+        try:
+            parsed = json.loads(data)
+            # Extract token usage from the final chunk
+            if "usage" in parsed and parsed["usage"]:
+                in_tok = parsed["usage"].get("prompt_tokens", 0)
+                out_tok = parsed["usage"].get("completion_tokens", 0)
+            choices = parsed.get("choices") or []
+            if not choices:
+                continue
+            delta = choices[0].get("delta", {})
+            if c := delta.get("content"):
+                content_parts.append(c)
+        except (json.JSONDecodeError, KeyError, IndexError):
+            continue
+
+    return "".join(content_parts), in_tok, out_tok
+
+
+# Global company API config (set from args in main)
+_COMPANY_API_URL: str = ""
+_COMPANY_API_KEY: str = ""
+
+
 def call_api(
     client: Any,
     model: str,
@@ -1482,6 +1520,48 @@ def call_api(
         out_tok = int(getattr(getattr(r, "usage", None), "completion_tokens", 0) or 0)
         return text, in_tok, out_tok
 
+    if provider == "company":
+        from local_api_logger import wrap_requests_call
+
+        # Build OpenAI-compatible content array (yunwu.ai is OpenAI-compat)
+        user_content: List[Dict[str, Any]] = []
+        for img in images:
+            if img is None:
+                continue
+            b64, mime = img
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime};base64,{b64}"},
+            })
+        user_content.append({"type": "text", "text": prompt})
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {_COMPANY_API_KEY}",
+        }
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            "max_tokens": 1536,
+            "temperature": 0.4,
+            "stream": True,
+        }
+
+        stream = wrap_requests_call(
+            model=model,
+            url=_COMPANY_API_URL,
+            headers=headers,
+            payload=payload,
+            user="l1_dual_evidence",
+            verify=False,
+        )
+        text, in_tok, out_tok = _collect_company_stream(stream)
+        return text, in_tok, out_tok
+
+    # Default: anthropic
     content_aa: List[Dict[str, Any]] = []
     for img in images:
         if img is not None:
@@ -1595,11 +1675,21 @@ def main() -> None:
     )
     ap.add_argument(
         "--provider",
-        choices=["anthropic", "openai"],
+        choices=["anthropic", "openai", "company"],
         default="anthropic",
-        help="LLM provider backend",
+        help="LLM provider backend (company = yunwu.ai via local_api_logger)",
     )
     ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
+    ap.add_argument(
+        "--company-api-url",
+        default=os.environ.get("COMPANY_API_URL", "https://yunwu.ai/v1/chat/completions"),
+        help="Company API endpoint URL (default: $COMPANY_API_URL or yunwu.ai)",
+    )
+    ap.add_argument(
+        "--company-api-key",
+        default=os.environ.get("COMPANY_API_KEY", ""),
+        help="Company API key (default: $COMPANY_API_KEY)",
+    )
     ap.add_argument("--limit", type=int, default=0, help="Limit pairs (0=all)")
     ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
@@ -1627,7 +1717,16 @@ def main() -> None:
     # Initialize client
     client = None
     if not args.dry_run:
-        if args.provider == "openai":
+        if args.provider == "company":
+            global _COMPANY_API_URL, _COMPANY_API_KEY
+            _COMPANY_API_KEY = args.company_api_key
+            _COMPANY_API_URL = args.company_api_url
+            if not _COMPANY_API_KEY:
+                print("ERROR: Company API key not set. Use --company-api-key or export COMPANY_API_KEY=...")
+                sys.exit(1)
+            print(f"  Company API: {_COMPANY_API_URL}")
+            # client stays None; company provider uses wrap_requests_call directly
+        elif args.provider == "openai":
             api_key = os.environ.get("OPENAI_API_KEY")
             if not api_key:
                 print("ERROR: OPENAI_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
