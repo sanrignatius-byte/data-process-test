@@ -454,15 +454,15 @@ def main():
     args = ap.parse_args()
 
     print("Loading data...")
-    with open(args.hub_candidates) as f:
+    with open(args.hub_candidates, encoding="utf-8") as f:
         hub_data = json.load(f)
     print(f"  Hub candidates: {len(hub_data['candidates'])}")
 
-    with open(args.elements) as f:
+    with open(args.elements, encoding="utf-8") as f:
         mm_data = json.load(f)
     print(f"  Documents: {len(mm_data['documents'])}")
 
-    with open(args.latex_graph) as f:
+    with open(args.latex_graph, encoding="utf-8") as f:
         latex_raw = json.load(f)
     # Handle both flat dict and nested {"documents": {...}} format
     if "documents" in latex_raw and isinstance(latex_raw["documents"], dict):
@@ -497,7 +497,7 @@ def main():
     print(f"  Docs covered: {summary['docs_covered']}")
     print(f"  Cross-doc: {summary['cross_doc']} / Intra-doc: {summary['intra_doc']}")
 
-    with open(args.output, "w") as f:
+    with open(args.output, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
     print(f"\nWritten to {args.output}")
 
