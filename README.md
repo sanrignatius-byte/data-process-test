@@ -339,6 +339,34 @@ chain = linker.build_evidence_chain(passages, bridge_entities)
 - 分步生成：桥接问题→多轮转换→完整M4
 - 内置Evidence验证
 
+## 公司 API + local_api_logger 集成（Query 生成）
+
+项目新增了一个可直接运行的示例脚本：
+
+`scripts/run_logged_api_chat.py`
+
+用途：
+- 使用 `local_api_logger.wrap_requests_call` 发送请求
+- 自动记录 token 使用与调用统计
+- 支持流式/非流式两种模式
+
+快速运行：
+
+```bash
+export YUNWU_API_KEY="<your-key>"
+
+python scripts/run_logged_api_chat.py \
+  --api-url https://yunwu.ai/v1/chat/completions \
+  --model claude-sonnet-4-20250514 \
+  --prompt "数从1到10" \
+  --user data \
+  --insecure
+```
+
+说明：
+- 若 `local_api_logger` 不在项目根目录，脚本会报错并提示。
+- 该脚本用于验证 API 连通性与日志完整性，后续可把同样调用模式迁移到批量 query 生成脚本中。
+
 ```python
 from src.generators import create_m4_generator
 
