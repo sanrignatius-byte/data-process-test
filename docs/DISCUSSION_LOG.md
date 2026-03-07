@@ -1799,3 +1799,70 @@ python scripts/generate_multihop_l1_queries.py \
 
 - 根据复核意见收敛执行范围：Week1 仅做 6 类结构节点；claim 节点/语义边后移到 Week2。
 - 评测基准调整为 30 条先跑通，再扩展到 100 条；DoD 的 Recall@10 基线门槛调整为 60%。
+
+---
+
+## 日期：2026-03-07（公司 API 整合 + 全量生成就绪）
+
+### 一、背景
+- 集群 `minerU` conda 环境 I/O 卡死（ceph）+ OpenAI 额度用尽 → 直连 Anthropic / OpenAI 均不可用。
+- Mentor 提供公司 API 代理（`yunwu.ai`），OpenAI-compatible，需通过 `local_api_logger` 库记录 token 用量。
+
+### 二、本轮完成
+
+1. **`generate_multihop_l1_queries.py` 新增 `--provider company`**
+   - 在已有 `anthropic` / `openai` 两种 provider 之上新增第三种。
+   - 通过 `local_api_logger.wrap_requests_call` 发送 SSE 流式请求。
+   - `_collect_company_stream()` 解析 SSE 行，累积 content 并从最终 chunk 提取 `prompt_tokens` / `completion_tokens`。
+   - 图像用 OpenAI-compat 的 `image_url` 格式（`data:{mime};base64,{b64}`）。
+   - CLI 新增 `--company-api-url` 和 `--company-api-key`（均可通过环境变量 `COMPANY_API_URL` / `COMPANY_API_KEY` 设置）。
+   - Token 统计同时记录到两处：`local_api_logger`（公司侧自动记录）+ `src/utils/token_logger.py`（项目 SQLite 审计库）。
+
+2. **`main.py` 连通性测试脚本**
+   - 基于 Mentor 模板（`collect_stream_data` + `wrap_requests_call`）。
+   - 支持 `--api-key` / `--model` / `--prompt` 参数。
+   - 用于验证 key 有效 + API 可达 + 模型可用后再跑正式 pipeline。
+
+### 三、当前就绪状态
+
+| 条件 | 状态 | 说明 |
+|------|------|------|
+| `generate_multihop_l1_queries.py` 代码 | ✅ 已完成 | `--provider company` 分支 |
+| `main.py` 测试脚本 | ✅ 已完成 | 可独立测试连通性 |
+| `local_api_logger/` 模块 | ⬜ 待放入 | 用户手上有，需复制到项目根目录 |
+| `COMPANY_API_KEY` | ⬜ 待设置 | `export COMPANY_API_KEY="sk-..."` |
+| 500 条 hub candidates | ✅ 已就绪 | `data/latex_hub_multihop_candidates.json` |
+
+### 四、使用方法（给另一位助手参考）
+
+```bash
+# 0. 将 local_api_logger 文件夹放入项目根目录
+
+# 1. 连通性测试
+export COMPANY_API_KEY="sk-your-key"
+python main.py
+
+# 2. 正式全量生成（500 条 hub candidates）
+python scripts/generate_multihop_l1_queries.py \
+    --candidates data/latex_hub_multihop_candidates.json \
+    --output data/l1_dual_evidence_queries_hub_v1.jsonl \
+    --pass-only \
+    --provider company \
+    --model claude-sonnet-4-20250514 \
+    --delay 0.5
+
+# 3. 查看 token 统计（local_api_logger 自动记录）
+python -c "from local_api_logger import print_stats_summary; print_stats_summary()"
+```
+
+### 五、技术备忘
+
+- **yunwu.ai 是 OpenAI-compat 代理**：endpoint `/v1/chat/completions`，request/response 格式与 OpenAI SDK 一致。
+- **`wrap_requests_call` 自动注入 `stream_options: {"include_usage": true}`**：确保最终 SSE chunk 含 `usage` 字段。
+- **三种 provider 在 `call_api()` 内并行维护**：`anthropic`（直连 Claude messages API）、`openai`（OpenAI SDK `chat.completions.create`）、`company`（raw requests + SSE 解析）。
+- **`client` 在 `company` 模式下为 `None`**：不需要 SDK client，请求由 `wrap_requests_call` 直接发出。
+
+### 六、下一步
+
+- 用户放入 `local_api_logger` + 设置 key → 跑 `main.py` 验证 → 全量生成。
+- 质量迭代目标不变：P0 是全量生成 L1 hub-multihop queries，P1 是修复零候选文档覆盖喵。
