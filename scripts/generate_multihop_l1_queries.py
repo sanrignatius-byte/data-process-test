@@ -1820,6 +1820,10 @@ def main() -> None:
             obj = parse_json(raw)
             if not obj:
                 print("PARSE FAIL")
+                if raw:
+                    print(f"  [DEBUG] raw response ({len(raw)} chars): {raw[:500]}")
+                else:
+                    print("  [DEBUG] raw response is empty/None")
                 parse_failed += 1
                 continue
 
