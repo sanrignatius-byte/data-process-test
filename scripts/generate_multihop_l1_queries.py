@@ -1451,9 +1451,20 @@ def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
     """
     content_parts: List[str] = []
     in_tok, out_tok = 0, 0
+    line_count = 0
+    debug_lines: List[str] = []
 
     for line in stream_generator:
-        line = line.strip() if isinstance(line, str) else line
+        line_count += 1
+        raw_repr = repr(line)[:200] if line_count <= 5 else None
+        if raw_repr:
+            debug_lines.append(raw_repr)
+
+        # Handle bytes
+        if isinstance(line, bytes):
+            line = line.decode("utf-8", errors="replace")
+        line = line.strip() if isinstance(line, str) else str(line).strip()
+
         if not line or not line.startswith("data: "):
             continue
         data = line[6:].strip()
@@ -1474,7 +1485,12 @@ def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
         except (json.JSONDecodeError, KeyError, IndexError):
             continue
 
-    return "".join(content_parts), in_tok, out_tok
+    text = "".join(content_parts)
+    if not text and debug_lines:
+        print(f"\n  [DEBUG] stream had {line_count} lines, first 5:")
+        for dl in debug_lines:
+            print(f"    {dl}")
+    return text, in_tok, out_tok
 
 
 # Global company API config (set from args in main)
@@ -1820,6 +1836,10 @@ def main() -> None:
             obj = parse_json(raw)
             if not obj:
                 print("PARSE FAIL")
+                if raw:
+                    print(f"  [DEBUG] raw response ({len(raw)} chars): {raw[:500]}")
+                else:
+                    print("  [DEBUG] raw response is empty/None")
                 parse_failed += 1
                 continue
 
