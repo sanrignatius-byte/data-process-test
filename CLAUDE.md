@@ -467,52 +467,28 @@ python scripts/generate_multihop_l1_queries.py \
 conda activate minerU
 
 # 加载 API key（从 .env 文件）
-Get-Content .env | Where-Object { $_ -notmatch '^#' -and $_.Trim() -ne '' } | ForEach-Object {
-    $parts = $_ -split '=', 2
-    [Environment]::SetEnvironmentVariable($parts[0], $parts[1], 'Process')
-}
+Get-Content .env | Where-Object { $_ -notmatch '^#' -and $_.Trim() -ne '' } | ForEach-Object { $p = $_ -split '=', 2; [Environment]::SetEnvironmentVariable($p[0], $p[1], 'Process') }
 
 # === Hub 候选 enrichment pipeline ===
-# Step 1: 将 topology hub candidates 转为生成脚本可用格式
-python scripts/enrich_hub_candidates.py `
-    --hub-candidates data/latex_hub_multihop_candidates.json `
-    --elements data/multimodal_elements.json `
-    --latex-graph data/latex_reference_graph.json `
-    --output data/hub_candidates_enriched.json
+# Step 1: enrichment
+python scripts/enrich_hub_candidates.py --hub-candidates data/latex_hub_multihop_candidates.json --elements data/multimodal_elements.json --latex-graph data/latex_reference_graph.json --output data/hub_candidates_enriched.json
 
-# Step 2: 用 enriched 候选跑生成（公司 API）
+# Step 2: 生成（公司 API）
 $env:COMPANY_API_KEY = "sk-your-key"
-python scripts/generate_multihop_l1_queries.py `
-    --candidates data/hub_candidates_enriched.json `
-    --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl `
-    --pass-only `
-    --provider company `
-    --model claude-sonnet-4-20250514 `
-    --delay 0.5
+python scripts/generate_multihop_l1_queries.py --candidates data/hub_candidates_enriched.json --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl --pass-only --provider company --model claude-sonnet-4-20250514 --delay 0.5
 
-# Step 2 备选: 用 Anthropic 直连
-python scripts/generate_multihop_l1_queries.py `
-    --candidates data/hub_candidates_enriched.json `
-    --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl `
-    --pass-only `
-    --provider anthropic `
-    --model claude-sonnet-4-5-20250929 `
-    --delay 0.3
+# Step 2 备选: Anthropic 直连
+python scripts/generate_multihop_l1_queries.py --candidates data/hub_candidates_enriched.json --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl --pass-only --provider anthropic --model claude-sonnet-4-5-20250929 --delay 0.3
 
 # === 其他常用命令 ===
 # 连通性测试（公司 API）
-$env:COMPANY_API_KEY = "sk-your-key"
-python main.py
+$env:COMPANY_API_KEY = "sk-your-key"; python main.py
 
 # Dry-run 验证（不调 API，只看 prompt）
-python scripts/generate_multihop_l1_queries.py `
-    --candidates data/hub_candidates_enriched.json `
-    --output /dev/null `
-    --dry-run --limit 5 --no-images
+python scripts/generate_multihop_l1_queries.py --candidates data/hub_candidates_enriched.json --output NUL --dry-run --limit 5 --no-images
 
-# 跑 validation
-python scripts/validate_queries.py data/l1_dual_evidence_queries_hub_enriched_v1.jsonl `
-    --output data/validation_report_hub_enriched_v1.json
+# Validation
+python scripts/validate_queries.py data/l1_dual_evidence_queries_hub_enriched_v1.jsonl --output data/validation_report_hub_enriched_v1.json
 
 # L1 三分法分拣
 python scripts/triage_l1_v3.py
@@ -524,10 +500,7 @@ python scripts/build_l2_candidates.py --topk 100
 python scripts/analyze_latex_graph_topology.py
 
 # LaTeX cross-modal links
-python scripts/build_latex_cross_modal_links.py `
-    --elements data/multimodal_elements.json `
-    --latex-graph data/latex_reference_graph.json `
-    --output data/latex_cross_modal_pairs.json
+python scripts/build_latex_cross_modal_links.py --elements data/multimodal_elements.json --latex-graph data/latex_reference_graph.json --output data/latex_cross_modal_pairs.json
 ```
 
 ## 日期：2026-02-10（L2 v3 三方毒舌评审共识总结）
