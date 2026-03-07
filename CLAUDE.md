@@ -3,6 +3,32 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
+## 当前状态（2026-03-07 更新｜公司 API 整合 + 全量生成就绪）
+
+### 本轮完成（相对 2026-03-03）
+
+- **公司 API（yunwu.ai）整合完成**
+  - `generate_multihop_l1_queries.py` 新增 `--provider company` 选项
+  - 通过 `local_api_logger` 的 `wrap_requests_call` 发送请求，SSE 流式解析 + 自动 token 日志
+  - 环境变量：`COMPANY_API_KEY` / `COMPANY_API_URL`；也可通过 CLI `--company-api-key` / `--company-api-url` 传入
+  - 图像用 OpenAI 兼容 `image_url` 格式发送（yunwu.ai 是 OpenAI-compat 代理）
+  - `main.py` demo 脚本可做连通性测试
+- **v4.4 run1 已有真实产物**（前序补记）
+  - `data/l1_dual_evidence_queries_v4_4_run1.jsonl`：252 条
+  - `data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：113 条（44.8% pass）
+
+### 本轮关键技术发现
+- **公司 API 是 OpenAI-compat**：endpoint `/v1/chat/completions`，请求格式与 OpenAI SDK 一致，但走 `local_api_logger` 包装器自动记录 token 统计
+- **三种 provider 并存**：`anthropic`（直连 Claude API）、`openai`（OpenAI SDK）、`company`（yunwu.ai via local_api_logger），在 `call_api()` 内按 provider 分支处理
+
+### 当前全量生成就绪条件
+- 代码侧：✅ 已完成（`--provider company` + SSE 解析 + token logging）
+- `local_api_logger` 模块：⬜ 需用户放入项目根目录
+- `COMPANY_API_KEY`：⬜ 需设置有效 key
+- 目标：500 条 hub candidates → L1 dual-evidence queries
+
+---
+
 ## 当前状态（2026-03-03 更新｜LaTeX Topology v2 + Hub Multi-hop Candidates）
 
 ### 本轮完成（相对 2026-02-24）
@@ -227,6 +253,8 @@
 | `data/latex_graph_topology_report.json` | 拓扑统计报告（2551 nodes, 3471 edges, 49.8% label match） |
 | `data/latex_graph_hubs.json` | bridge_hubs 60 个 + adjacent_backbone_bridges 369 条 |
 | `data/latex_hub_multihop_candidates.json` | **Hub multi-hop 候选对 500 条（含 page_span/line_no_span/seed）** |
+| `main.py` | **公司 API 连通性测试脚本（yunwu.ai demo）** |
+| `local_api_logger/` | **公司 API 日志库（wrap_requests_call + token 统计）——需用户放入** |
 
 ## Mentor 建议（2026-02-11）& 执行优先级
 
@@ -302,7 +330,7 @@
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-03 更新）
+## 下一步 TODO（2026-03-07 更新）
 - ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
 - ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
 - ~~**P-0.5: Step 0 v3.2 v3 重跑**~~ ✅ **完成** — 集群跑出 118 对（G1+G2），stats 一致，cross-ref gate 正确
@@ -311,7 +339,8 @@
 - ~~**P1.1.1: L1 dual-evidence v4.1（opus figure+formula prompt + operator diversity）**~~ ✅ **完成** — 236 条，138 pass (58.5%)，$2.39
 - ~~**P1.1.2: L1 dual-evidence v4.2（PhD persona + verb diversity + natural operators）**~~ ✅ **完成** — 236 条，152 pass (64.4%)，$2.57
 - ~~**LaTeX Topology v2 + Hub Multi-hop Candidates**~~ ✅ **完成** — 2551 nodes, 3471 edges, 500 candidates, 100% bridge hubs
-- **P0（最高优先）：500 candidates → 生成 L1 hub-multihop queries**：将 `data/latex_hub_multihop_candidates.json` 喂给 `generate_multihop_l1_queries.py`
+- ~~**公司 API 整合**~~ ✅ **完成** — `--provider company` via `local_api_logger`，SSE 流式解析 + token 自动记录
+- **P0（最高优先）：全量生成 L1 hub-multihop queries**：放入 `local_api_logger` + 设置 `COMPANY_API_KEY` 后，用 `--provider company` 跑 500 条 hub candidates
 - **P1：修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
 - **P0.1: Citation-based L2 候选替换**：用 123 条引用边（集群）做 L2 候选对（替代实体倒排索引），信号更强
 - **P1.2: figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 这几篇论文 0 pass 全失败，分析 root cause
@@ -390,6 +419,20 @@ python scripts/build_latex_cross_modal_links.py \
     --elements data/multimodal_elements.json \
     --latex-graph data/latex_reference_graph.json \
     --output data/latex_cross_modal_pairs.json
+
+# === 公司 API（yunwu.ai）pipeline ===
+# 连通性测试
+export COMPANY_API_KEY="sk-your-key"
+python main.py
+
+# 用公司 API 跑 500 条 hub candidates 全量生成
+python scripts/generate_multihop_l1_queries.py \
+    --candidates data/latex_hub_multihop_candidates.json \
+    --output data/l1_dual_evidence_queries_hub_v1.jsonl \
+    --pass-only \
+    --provider company \
+    --model claude-sonnet-4-20250514 \
+    --delay 0.5
 ```
 
 ## 日期：2026-02-10（L2 v3 三方毒舌评审共识总结）
