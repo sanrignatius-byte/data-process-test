@@ -1,5 +1,13 @@
 # Project Context for Claude Code
 
+## 运行环境默认配置
+
+- **默认 provider**：`company`（yunwu.ai），所有脚本已改为默认走公司 API
+- **API 配置**：已在 `.env` 中配好 `COMPANY_API_KEY` 和 `COMPANY_API_URL`，无需额外传参
+- **`local_api_logger/`**：已放入项目根目录
+- **运行方式**：直接 `python scripts/xxx.py` 即可，不需要加 `--provider` 或 `--company-api-key`
+- **备选 provider**：如需切换，手动加 `--provider anthropic` 或 `--provider openai`
+
 ## 铁律（Iron Rules）— 所有开发必须遵守
 
 ### 铁律 1：Token 使用必须官方记录
