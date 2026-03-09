@@ -94,7 +94,9 @@ def build_mm_index(mm_data: Dict[str, Any]) -> Dict[str, Any]:
 
             num = el.get("number")
             if num is not None:
-                by_number[etype][int(num)] = eid
+                num_int = _safe_int(num)
+                if num_int != 99999:
+                    by_number[etype][num_int] = eid
 
             cap = el.get("caption", "") or ""
             cap_tokens = tokenize(cap)
@@ -156,35 +158,59 @@ def map_label_to_element(
 
 # ─── Build node→element mapping ─────────────────────────────────────────────
 
+def _safe_int(val: Any) -> int:
+    """Convert a value to int for sorting; non-numeric strings get 99999."""
+    if val is None:
+        return 99999
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return 99999
+
+
 def build_sequential_mapping(
     doc_id: str,
     labels: Dict[str, Any],
     mm_elements: Dict[str, Any],
+    exclude_node_ids: Optional[Set[str]] = None,
+    exclude_eids: Optional[Set[str]] = None,
 ) -> Dict[str, str]:
     """Sequential order matching: sort labels by line_no, elements by number/position.
 
     For each modality type, if we have N LaTeX labels and M MinerU elements,
     match them 1:1 in order (up to min(N,M)).
+
+    Pre-excludes already-mapped node_ids and element_ids so that the zip
+    alignment only operates on genuinely unmatched items.
     """
     result: Dict[str, str] = {}
+    _excl_nodes = exclude_node_ids or set()
+    _excl_eids = exclude_eids or set()
 
     for latex_type, mm_type in [("figure", "figure"), ("table", "table"),
                                  ("equation", "formula")]:
         # Collect LaTeX labels of this type, sorted by line_no
+        # Skip labels already mapped in Phase 1/2
         type_labels = []
         for lk, info in labels.items():
             lt = normalize_label_type(str(info.get("label_type", "")))
             if lt == latex_type:
-                line = info.get("line_no", 99999)
+                node_id = f"{doc_id}::el::{lk}"
+                if node_id in _excl_nodes:
+                    continue
+                line = _safe_int(info.get("line_no"))
                 type_labels.append((line, lk))
         type_labels.sort()
 
         # Collect MinerU elements of this type, sorted by number then position
+        # Skip elements already claimed in Phase 1/2
         type_elements = []
         for eid, el in mm_elements.items():
             if el["element_type"] == mm_type:
-                num = el.get("number") or 99999
-                pos = el.get("position_idx") or 99999
+                if eid in _excl_eids:
+                    continue
+                num = _safe_int(el.get("number"))
+                pos = _safe_int(el.get("position_idx"))
                 type_elements.append((num, pos, eid))
         type_elements.sort()
 
@@ -229,17 +255,21 @@ def build_node_element_map(
                 node_to_element[node_id] = mapped_eid
 
         # Phase 3: sequential matching for remaining unmapped labels
+        # Pre-exclude already-mapped node_ids and element_ids so that
+        # zip alignment only operates on genuinely unmatched items.
         mm_doc = mm_data["documents"].get(doc_id)
         if mm_doc:
             mm_elements = mm_doc.get("elements", {})
             if isinstance(mm_elements, dict):
-                seq_map = build_sequential_mapping(doc_id, labels, mm_elements)
-                # Only add mappings that don't conflict with existing ones
                 used_eids = set(node_to_element.values())
+                mapped_nodes = set(node_to_element.keys())
+                seq_map = build_sequential_mapping(
+                    doc_id, labels, mm_elements,
+                    exclude_node_ids=mapped_nodes,
+                    exclude_eids=used_eids,
+                )
                 for node_id, eid in seq_map.items():
-                    if node_id not in node_to_element and eid not in used_eids:
-                        node_to_element[node_id] = eid
-                        used_eids.add(eid)
+                    node_to_element[node_id] = eid
 
     return node_to_element
 
@@ -344,8 +374,15 @@ def enrich_candidates(
 
     for cand in candidates:
         # Find the two element endpoints (non-paragraph nodes)
+        path_ids = cand["path_node_ids"]
+        path_types = cand["path_node_types"]
+        if len(path_ids) != len(path_types):
+            print(f"  WARNING: path length mismatch in {cand.get('candidate_id', '?')}: "
+                  f"ids={len(path_ids)} types={len(path_types)}, skipping")
+            skipped_no_mapping += 1
+            continue
         endpoints = []
-        for nid, ntype in zip(cand["path_node_ids"], cand["path_node_types"]):
+        for nid, ntype in zip(path_ids, path_types):
             if ntype in {"figure", "table", "equation", "formula"}:
                 endpoints.append((nid, ntype))
 
@@ -569,10 +606,10 @@ def main():
     mm_index = build_mm_index(mm_data)
     print(f"  Total elements indexed: {len(mm_index['all_elements'])}")
 
-    node_to_element = build_node_element_map(latex_data, mm_index, mm_data)
+    node_to_element = build_node_element_map(latex_docs, mm_index, mm_data)
     print(f"  Node→element mappings: {len(node_to_element)}")
 
-    edge_ctx_index = build_edge_context_index(latex_data)
+    edge_ctx_index = build_edge_context_index(latex_docs)
     print(f"  Edge context pairs: {len(edge_ctx_index)}")
 
     print("\nEnriching candidates...")
