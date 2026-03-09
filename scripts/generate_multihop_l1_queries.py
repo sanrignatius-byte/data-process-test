@@ -1753,7 +1753,7 @@ def main() -> None:
         print(f"ERROR: {cand_path} not found. Run select_multihop_candidates.py first.")
         sys.exit(1)
     cand_data = json.loads(cand_path.read_text(encoding="utf-8"))
-    pairs = cand_data.get("pairs", [])
+    pairs = cand_data.get("pairs") or cand_data.get("candidates") or []
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
