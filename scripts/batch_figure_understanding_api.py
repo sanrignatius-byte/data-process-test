@@ -258,11 +258,17 @@ def main():
                     continue
 
                 # Normalize image path
-                img_path = result.get("image_path", "")
+                img_path = result.get("image_path", "").replace("\\", "/")
+                matched = False
                 for root in repo_roots:
                     if img_path.startswith(root):
                         img_path = img_path[len(root):]
+                        matched = True
                         break
+                if not matched:
+                    idx = img_path.find("/data/")
+                    if idx >= 0:
+                        img_path = img_path[idx + 1:]
 
                 entry = {
                     "query_id": f"l1_{result['doc_id']}_{result['figure_id']}_{query_count}",

@@ -1735,9 +1735,14 @@ REPO_ROOTS = [
 
 
 def normalize_path(img_path: str) -> str:
+    normed = img_path.replace("\\", "/")
     for root in REPO_ROOTS:
-        if img_path.startswith(root):
-            return img_path[len(root):]
+        if normed.startswith(root):
+            return normed[len(root):]
+    # Generic fallback: find '/data/' and keep relative path from there
+    idx = normed.find("/data/")
+    if idx >= 0:
+        return normed[idx + 1:]  # 'data/...'
     return img_path
 
 

@@ -164,12 +164,13 @@ _KNOWN_PREFIXES = [
 def resolve_image_path(raw_path: str) -> Optional[Path]:
     """Try to resolve an image path across different environments.
 
-    Handles three cases:
+    Handles four cases:
     1. Path exists as-is (original environment) → use directly.
     2. Path starts with a known cluster prefix → strip prefix, re-root to
        PROJECT_ROOT.
     3. Path contains '/data/mineru_output/' → extract the suffix after this
        marker and resolve relative to PROJECT_ROOT/data/mineru_output/.
+    4. Generic fallback: find 'data/' in the path and re-root to PROJECT_ROOT.
     """
     if not raw_path:
         return None
@@ -178,18 +179,29 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
     if p.exists():
         return p
 
+    # Normalise backslashes (Windows paths stored in JSON)
+    normed = raw_path.replace("\\", "/")
+
     # Strategy 1: strip known cluster prefix → re-root to PROJECT_ROOT
     for prefix in _KNOWN_PREFIXES:
-        if raw_path.startswith(prefix):
-            relative = raw_path[len(prefix):]
+        if normed.startswith(prefix):
+            relative = normed[len(prefix):]
             candidate = PROJECT_ROOT / relative
             if candidate.exists():
                 return candidate
 
     # Strategy 2: extract suffix after '/data/mineru_output/'
-    parts = raw_path.split("/data/mineru_output/")
+    parts = normed.split("/data/mineru_output/")
     if len(parts) == 2:
         candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
+        if candidate.exists():
+            return candidate
+
+    # Strategy 3: generic – find '/data/' and re-root everything after it
+    idx = normed.find("/data/")
+    if idx >= 0:
+        relative = normed[idx + 1:]  # keep 'data/...'
+        candidate = PROJECT_ROOT / relative
         if candidate.exists():
             return candidate
 
