@@ -1,6 +1,6 @@
 # 专利技术摘要：多源异构文档图构建与多跳跨模态候选生成方法
 
-> 版本：v1.0 | 日期：2026-03-09
+> 版本：v1.1 | 日期：2026-03-09
 > 状态：内部技术梳理，供专利撰写参考
 
 ---
@@ -481,3 +481,178 @@ hub_score = 0.40 × bridge_score + 0.35 × connectivity_score + 0.25 × core_mod
 | 创新8 page_idx修复 | `analyze_latex_graph_topology.py` | `build_real_page_index()` |
 | 创新9 质量门禁 | `build_latex_cross_modal_links.py` | G1/G2 逻辑 |
 | 创新10 QC引擎 | `generate_multihop_l1_queries.py` | `perform_qc()` 及 9 项检查函数 |
+
+---
+
+## 十、补充创新点（深度代码分析发现）
+
+以下创新点是对前述 10 项的补充，涉及 pipeline 中更底层的算法设计。
+
+### 补充创新点 A：LaTeX 主文件发现与置信度排序
+
+**文件**：`src/parsers/latex_reference_extractor.py`（`_find_all_main_tex()`）
+
+**问题**：arXiv 解压后的 LaTeX 源码目录中可能有多个 `.tex` 文件，需要识别真正的主文件。
+
+**三级置信度排序**：
+| 策略 | 条件 | 置信度 |
+|------|------|--------|
+| `\documentclass` + `\begin{document}` | 同时存在 | 0.95 |
+| `\documentclass` 单独出现 | 无 `\begin{document}` | 0.85 |
+| 约定文件名（main.tex, paper.tex 等） | 文件名匹配 | 0.70 |
+| 最大文件 | 按文件大小兜底 | 0.40 |
+
+**专利价值**：解决了碎片化 LaTeX 归档包的文件发现问题，提供可解释的置信度排名。
+
+---
+
+### 补充创新点 B：递归 `\input{}` 解析与行号溯源映射
+
+**文件**：`src/parsers/latex_reference_extractor.py`（`_resolve_inputs()`）
+
+**技术方案**：
+1. 递归解析 `\input{file}` / `\include{file}` 链（含循环检测）
+2. 构建 `merged_line_no → (original_line_no, source_file)` 映射
+3. 支持花括号和无括号两种语法
+
+**专利价值**：任何从合并文本中提取的引用都能精确追溯到原始 `.tex` 文件和行号，实现"来源可追溯性"（provenance tracking）。
+
+---
+
+### 补充创新点 C：环境栈跟踪与标签类型推断
+
+**文件**：`src/parsers/latex_reference_extractor.py`（`_build_env_map()`, `_infer_label_type()`）
+
+**标签类型推断三级级联**：
+```
+级别1: 冒号前缀策略
+  fig:xxx → figure, tab:xxx → table, eq:xxx → equation
+
+级别2: 环境栈策略
+  当前处于 \begin{figure}...\end{figure} 内 → figure
+  当前处于 \begin{equation}...\end{equation} 内 → equation
+
+级别3: 子串启发式
+  标签含 "figure" → figure, 含 "table" → table
+```
+
+**环境栈容错**：容忍不匹配的 `\begin{}`/`\end{}` 对（实际 LaTeX 源码常有此类错误）。
+
+---
+
+### 补充创新点 D：字符距离指数衰减质量评分
+
+**文件**：`scripts/build_latex_cross_modal_links.py`（`_quality_score()`）
+
+**公式**：
+```
+quality_score = min(conf_a, conf_b) × exp(-char_dist / DECAY_CONST)
+
+其中:
+  conf_a, conf_b: 两端标签映射置信度
+  char_dist: LaTeX 源码中两个 \ref{} 调用的字符距离
+  DECAY_CONST = 500.0（调优值）
+```
+
+**距离衰减效果**：
+| 距离 | 乘数 | 含义 |
+|------|------|------|
+| 0（直接边） | ≈ 1.0 | 无衰减 |
+| 500 字符 | ≈ 0.37 | 约 2-3 段 |
+| 1000 字符 | ≈ 0.14 | 约 5-6 段 |
+
+**专利价值**：提供连续型置信度度量，替代二值"接受/拒绝"判断；对三种发现策略（直接边、proximity、段落共引）统一适用。
+
+---
+
+### 补充创新点 E：跨文档引用匹配的歧义度检测
+
+**文件**：`scripts/build_citation_graph.py`（`compute_match_margin()`, `is_ambiguous_match()`）
+
+**方法**：
+```
+margin = top_confidence - runner_up_confidence
+if margin < 0.10: 标记为 ambiguous
+```
+
+每条引用边标注 `match_margin` 和 `is_ambiguous` 字段。
+
+**专利价值**：超越传统二值匹配（accept/reject），提供匹配可信度的梯度信息，可用于下游训练数据的置信度加权。
+
+---
+
+### 补充创新点 F：引用图度数预算抑制（Hub Suppression）
+
+**文件**：`scripts/build_citation_graph.py`（`suppress_hub_citers()`）
+
+**方法**：
+- 出度超限（`> max_out_degree=10`）的"多产引用者"：保留置信度 top-N
+- 入度超限（`> max_in_degree=15`）的"高被引论文"：保留置信度 top-N
+
+**专利价值**：与创新点 9（G1 hub 去重）形成两级度数控制体系——G1 在元素级，本方法在论文级。
+
+---
+
+### 补充创新点 G：多模态元素嵌入式检测（从文本流中提取表/公式）
+
+**文件**：`src/linkers/multimodal_relationship_builder.py`
+
+**技术方案**：
+- **嵌入式表格检测**（`_extract_tables_from_text()`）：识别 HTML `<table>` 和 Markdown `|...|` 格式的内嵌表格
+- **嵌入式公式检测**（`_extract_formulas_from_text()`）：识别 `$$...$$` 显示数学环境，提取方程编号
+- 两者均从文本正文中提取，而非仅依赖 MinerU 的独立元素记录
+
+**专利价值**：弥补 PDF 解析器将部分表/公式识别为普通文本段落的遗漏，提升元素召回率。
+
+---
+
+### 补充创新点 H：质量分层标签体系（Gold/Silver/Trash）
+
+**文件**：`scripts/build_latex_cross_modal_links.py`
+
+**分层标准**：
+| 层级 | 条件 |
+|------|------|
+| **Gold** | 直接边 + 双端匹配置信度 ≥ 0.9 |
+| **Silver** | proximity 策略 + 字符距离 ≤ 200 + 无共引惩罚 |
+| **Trash** | quality_score < 0.2 或字符距离 > 600 |
+
+**专利价值**：支持课程学习（curriculum learning）——训练时先用 Gold 再逐步引入 Silver，Trash 永不进入训练集。
+
+---
+
+## 十一、权利要求补充建议
+
+基于补充创新点，建议增加以下从属权利要求：
+
+- **从属权利要求 10**（关于创新点 A）：所述 LaTeX 引用图构建步骤中，通过多级置信度排序自动发现 LaTeX 主文件。
+- **从属权利要求 11**（关于创新点 B）：所述引用提取步骤包括递归解析 `\input` 链并维护行号到源文件的溯源映射。
+- **从属权利要求 12**（关于创新点 D）：所述跨模态对质量评分使用字符距离指数衰减函数 `min(conf_a, conf_b) × exp(-d/τ)`。
+- **从属权利要求 13**（关于创新点 E）：所述跨文档引用匹配包括歧义度检测步骤，其中匹配余量小于阈值的边被标记为不确定。
+- **从属权利要求 14**（关于创新点 F）：所述跨文档引用图构建包括两级度数预算控制——引用图级别抑制 + 元素对级别去重。
+- **从属权利要求 15**（关于创新点 H）：所述候选对被分为 Gold/Silver/Trash 三层质量等级，支持课程学习策略。
+
+---
+
+## 十二、完整创新点清单（总计 18 项）
+
+| # | 创新点 | 类别 | 新颖性级别 |
+|---|--------|------|------------|
+| 1 | 5类节点×5类边多层异构图 | 图结构 | ★★★ 高（vs 树/平面图） |
+| 2 | 三级标签映射（数字→Jaccard→顺序） | 实体对齐 | ★★ 中 |
+| 3 | 四级跨文档标题模糊匹配 | 实体对齐 | ★★ 中 |
+| 4 | Bridge-First 枢纽检测 + authority 惩罚 | 图分析 | ★★★ 高（独创） |
+| 5 | 邻接骨架桥检测 | 图分析 | ★★★ 高（独创） |
+| 6 | 定向枚举三策略（替代DFS） | 路径发现 | ★★★ 高（vs DFS） |
+| 7 | MoDora [T]/[M]/[C] 图节点语义增强 | 语义增强 | ★★ 中（改造） |
+| 8 | content_list.json 顺序匹配修复 page_idx | 数据修复 | ★★ 中 |
+| 9 | G1+G2 双门禁 | 质量控制 | ★★ 中 |
+| 10 | 9项查询QC引擎 | 质量控制 | ★★ 中 |
+| A | LaTeX 主文件置信度发现 | 解析 | ★ 低 |
+| B | 递归 \input 解析 + 行号溯源 | 解析 | ★★ 中 |
+| C | 环境栈 + 标签类型三级推断 | 解析 | ★★ 中 |
+| D | 字符距离指数衰减质量评分 | 评分 | ★★★ 高（独创） |
+| E | 引用匹配歧义度检测 | 实体对齐 | ★★ 中 |
+| F | 引用图度数预算抑制 | 质量控制 | ★ 低 |
+| G | 嵌入式表/公式检测 | 元素提取 | ★ 低 |
+| H | Gold/Silver/Trash 质量分层 | 质量控制 | ★★ 中 |
