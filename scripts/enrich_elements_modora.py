@@ -38,6 +38,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+from src.utils.token_logger import log_run
 
 # ──────────────────────────────────────────────────────────────
 # Enrichment prompts per modality (inspired by MoDora [T]/[M]/[C])
@@ -569,7 +570,7 @@ def process_elements(
         cost_est = (total_in_tok * 3 + total_out_tok * 15) / 1_000_000
         print(f"  Estimated cost: ${cost_est:.2f} (Sonnet pricing)")
 
-    return results
+    return results, total_in_tok, total_out_tok, processed, failed
 
 
 def merge_enrichments(
@@ -700,7 +701,7 @@ def main():
                 sys.exit(1)
 
     # Process
-    enrichments = process_elements(
+    enrichments, total_in_tok, total_out_tok, processed, failed = process_elements(
         mm_data=mm_data,
         client=client,
         model=args.model,
@@ -718,6 +719,20 @@ def main():
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(enriched_data, f, indent=2, ensure_ascii=False)
     print(f"\nWritten to {args.output}")
+
+    # Iron Rule: log token usage
+    log_run(
+        script="enrich_elements_modora",
+        model=f"{args.provider}:{args.model}",
+        purpose=f"MoDora [T]/[M]/[C] element enrichment — {processed} enriched, {failed} failed",
+        input_tokens=total_in_tok,
+        output_tokens=total_out_tok,
+        extra={
+            "pairs_processed": processed,
+            "parse_failures": failed,
+            "output": str(args.output),
+        },
+    )
 
 
 if __name__ == "__main__":
