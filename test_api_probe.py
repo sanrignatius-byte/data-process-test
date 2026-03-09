@@ -1,7 +1,10 @@
 """Quick probe: test company API response format."""
 import requests, json, os
 
-url = os.environ.get("COMPANY_API_URL", "http://az.gptplus5.com") + "/v1/chat/completions"
+url = os.environ.get("COMPANY_API_URL", "")
+if not url:
+    print("ERROR: COMPANY_API_URL not set. Copy .env.example to .env and fill in values.")
+    exit(1)
 key = os.environ.get("COMPANY_API_KEY", "")
 
 print(f"URL: {url}")

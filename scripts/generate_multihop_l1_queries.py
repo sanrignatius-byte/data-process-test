@@ -1728,13 +1728,13 @@ def main() -> None:
         "--provider",
         choices=["anthropic", "openai", "company"],
         default="anthropic",
-        help="LLM provider backend (company = yunwu.ai via local_api_logger)",
+        help="LLM provider backend (company = OpenAI-compat proxy via local_api_logger)",
     )
     ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
     ap.add_argument(
         "--company-api-url",
-        default=os.environ.get("COMPANY_API_URL", "https://yunwu.ai/v1/chat/completions"),
-        help="Company API endpoint URL (default: $COMPANY_API_URL or yunwu.ai)",
+        default=os.environ.get("COMPANY_API_URL", ""),
+        help="Company API endpoint URL (default: $COMPANY_API_URL from .env)",
     )
     ap.add_argument(
         "--company-api-key",
@@ -1772,8 +1772,11 @@ def main() -> None:
             global _COMPANY_API_URL, _COMPANY_API_KEY
             _COMPANY_API_KEY = args.company_api_key
             _COMPANY_API_URL = args.company_api_url
+            if not _COMPANY_API_URL:
+                print("ERROR: Company API URL not set. Use --company-api-url or set COMPANY_API_URL in .env")
+                sys.exit(1)
             if not _COMPANY_API_KEY:
-                print("ERROR: Company API key not set. Use --company-api-key or export COMPANY_API_KEY=...")
+                print("ERROR: Company API key not set. Use --company-api-key or set COMPANY_API_KEY in .env")
                 sys.exit(1)
             print(f"  Company API: {_COMPANY_API_URL}")
             # client stays None; company provider uses wrap_requests_call directly

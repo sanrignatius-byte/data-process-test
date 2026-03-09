@@ -26,7 +26,6 @@ from local_api_logger import wrap_requests_call, print_recent_calls
 
 
 # ── Default config ──────────────────────────────────────────
-DEFAULT_API_URL = "https://yunwu.ai/v1/chat/completions"
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
@@ -70,14 +69,17 @@ def collect_stream_data(stream_generator):
 
 def main():
     ap = argparse.ArgumentParser(description="Company API demo")
-    ap.add_argument("--api-url", default=os.environ.get("COMPANY_API_URL", DEFAULT_API_URL))
+    ap.add_argument("--api-url", default=os.environ.get("COMPANY_API_URL", ""))
     ap.add_argument("--api-key", default=os.environ.get("COMPANY_API_KEY", ""))
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--prompt", default="Count from 1 to 10", help="Test prompt")
     args = ap.parse_args()
 
+    if not args.api_url:
+        print("ERROR: API URL not set. Use --api-url or set COMPANY_API_URL in .env")
+        return
     if not args.api_key:
-        print("ERROR: API key not set. Use --api-key or export COMPANY_API_KEY=...")
+        print("ERROR: API key not set. Use --api-key or set COMPANY_API_KEY in .env")
         return
 
     headers = {
@@ -96,7 +98,7 @@ def main():
     print(f"Model:   {args.model}")
     print(f"Prompt:  {args.prompt}")
     print("\nSending streaming request...")
-    print("Note: wrapper auto-adds stream_options for token stats\n")
+    print("Note: stream_options.include_usage is set for token stats\n")
 
     try:
         stream = wrap_requests_call(
