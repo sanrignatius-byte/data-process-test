@@ -32,30 +32,28 @@ mineru_output/:    ❌ 无图片文件（图片在集群上）
 ## 一、安装依赖
 
 ```bash
-# 选择一种 provider 安装对应 SDK
-pip install anthropic          # 方案 A：直连 Anthropic
-pip install openai             # 方案 B：OpenAI 或兼容代理
-# 方案 C：公司 API 只需 requests（已有）+ local_api_logger 模块
+# 公司 API（默认）只需 requests（已有）+ local_api_logger 模块，无需额外安装
+# 备选：
+pip install anthropic          # 备选 A：直连 Anthropic
+pip install openai             # 备选 B：OpenAI 或兼容代理
 ```
 
 ---
 
-## 二、配置 API Key
+## 二、配置 API Key（默认走公司 API）
 
 ```bash
-# 方案 A：Anthropic 直连
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env
-export $(grep -v '^#' .env | xargs)
-
-# 方案 B：OpenAI
-echo 'OPENAI_API_KEY=sk-...' > .env
-export $(grep -v '^#' .env | xargs)
-
-# 方案 C：公司 API
+# 公司 API（默认 provider）
 echo 'COMPANY_API_KEY=sk-...' > .env
 echo 'COMPANY_API_URL=https://yunwu.ai/v1/chat/completions' >> .env
 export $(grep -v '^#' .env | xargs)
-# 并把 local_api_logger/ 目录放到项目根目录
+# 把 local_api_logger/ 目录放到项目根目录
+
+# 备选 A：Anthropic 直连（需加 --provider anthropic）
+echo 'ANTHROPIC_API_KEY=sk-ant-...' >> .env
+
+# 备选 B：OpenAI（需加 --provider openai）
+echo 'OPENAI_API_KEY=sk-...' >> .env
 ```
 
 ---
@@ -65,7 +63,10 @@ export $(grep -v '^#' .env | xargs)
 ### Step 0: 验证 API 连通性
 
 ```bash
-# Anthropic
+# 公司 API（默认 provider）
+python main.py
+
+# Anthropic（备选）
 python -c "
 import anthropic
 c = anthropic.Anthropic()
@@ -73,18 +74,6 @@ r = c.messages.create(model='claude-sonnet-4-5-20250929', max_tokens=10,
     messages=[{'role':'user','content':'Say OK'}])
 print(r.content[0].text, '| tokens:', r.usage.input_tokens, r.usage.output_tokens)
 "
-
-# OpenAI
-python -c "
-from openai import OpenAI
-c = OpenAI()
-r = c.chat.completions.create(model='gpt-4o', max_tokens=10,
-    messages=[{'role':'user','content':'Say OK'}])
-print(r.choices[0].message.content)
-"
-
-# 公司 API
-python main.py
 ```
 
 ### Step 1: Dry-run 验证 prompt 构建（不花钱）
@@ -114,12 +103,10 @@ python scripts/generate_multihop_l1_queries.py \
 ### Step 2: 小批量真实调用（2-5 条，验证端到端）
 
 ```bash
-# 先跑 element enrichment（--no-images 因为本地没图片）
+# 先跑 element enrichment（默认 company provider）
 python scripts/enrich_elements_modora.py \
     --input data/multimodal_elements.json \
     --output data/_test_enriched_5.json \
-    --provider anthropic \
-    --model claude-sonnet-4-5-20250929 \
     --no-images \
     --limit 5 \
     --delay 0.5
@@ -152,8 +139,6 @@ print(f'Total enriched: {enriched}')
 python scripts/generate_multihop_l1_queries.py \
     --candidates data/hub_candidates_enriched.json \
     --output data/_test_queries_5.jsonl \
-    --provider anthropic \
-    --model claude-sonnet-4-5-20250929 \
     --no-images \
     --limit 5 \
     --delay 0.5
@@ -219,8 +204,6 @@ python src/utils/token_logger.py --all
 python scripts/enrich_elements_modora.py \
     --input data/multimodal_elements.json \
     --output data/multimodal_elements_enriched.json \
-    --provider anthropic \
-    --model claude-sonnet-4-5-20250929 \
     --no-images \
     --delay 0.3
 
@@ -237,8 +220,6 @@ python scripts/generate_multihop_l1_queries.py \
     --candidates data/hub_candidates_enriched_v2.json \
     --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl \
     --pass-only \
-    --provider anthropic \
-    --model claude-sonnet-4-5-20250929 \
     --no-images \
     --delay 0.3
 

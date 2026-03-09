@@ -1767,10 +1767,10 @@ def main() -> None:
     ap.add_argument(
         "--provider",
         choices=["anthropic", "openai", "company"],
-        default="anthropic",
+        default="company",
         help="LLM provider backend (company = OpenAI-compat proxy via local_api_logger)",
     )
-    ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
+    ap.add_argument("--model", default=None, help="Model name (default: auto per provider)")
     ap.add_argument(
         "--company-api-url",
         default=os.environ.get("COMPANY_API_URL", ""),
@@ -1786,6 +1786,15 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
     args = ap.parse_args()
+
+    # Resolve model default per provider
+    if args.model is None:
+        if args.provider == "anthropic":
+            args.model = "claude-sonnet-4-5-20250929"
+        elif args.provider == "openai":
+            args.model = "gpt-4o"
+        else:  # company
+            args.model = "claude-sonnet-4-20250514"
 
     # Load candidates
     cand_path = Path(args.candidates)

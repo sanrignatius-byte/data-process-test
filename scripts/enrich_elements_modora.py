@@ -618,7 +618,7 @@ def main():
     ap.add_argument("--output", default="data/multimodal_elements_enriched.json",
                     help="Output enriched elements file")
     ap.add_argument("--provider", choices=["anthropic", "openai", "company"],
-                    default="anthropic", help="API provider")
+                    default="company", help="API provider")
     ap.add_argument("--model", default=None,
                     help="Model name (default: auto per provider)")
     ap.add_argument("--delay", type=float, default=0.3,
