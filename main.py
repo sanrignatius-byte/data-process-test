@@ -89,6 +89,7 @@ def main():
         "model": args.model,
         "messages": [{"role": "user", "content": args.prompt}],
         "stream": True,
+        "stream_options": {"include_usage": True},
     }
 
     print(f"\nAPI URL: {args.api_url}")

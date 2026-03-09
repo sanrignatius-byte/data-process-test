@@ -1244,6 +1244,31 @@ def qc_multihop_query(
 # Image encoding
 # ──────────────────────────────────────────────────────────────
 
+def _fallback_image_path(original: str) -> Optional[Path]:
+    """Try to resolve an image path from a different environment.
+
+    When multimodal_elements.json was generated on cluster, image_path may
+    contain absolute cluster paths (e.g. /projects/.../mineru_output/...).
+    This tries to find the same file under the local data/mineru_output/.
+    """
+    parts = Path(original).parts
+    for i, part in enumerate(parts):
+        if part == "mineru_output" and i + 1 < len(parts):
+            doc_id = parts[i + 1]
+            fname = Path(original).name
+            # Try common MinerU output layouts
+            for subpath in [
+                Path(doc_id, doc_id, "hybrid_auto", "images", fname),
+                Path(doc_id, doc_id, "images", fname),
+                Path(doc_id, "images", fname),
+            ]:
+                candidate = PROJECT_ROOT / "data" / "mineru_output" / subpath
+                if candidate.exists():
+                    return candidate
+            break
+    return None
+
+
 def encode_image(path: Optional[str]) -> Optional[Tuple[str, str]]:
     """Return (base64_data, mime_type) or None if file missing."""
     if not path:
@@ -1251,6 +1276,11 @@ def encode_image(path: Optional[str]) -> Optional[Tuple[str, str]]:
     p = Path(path)
     if not p.is_absolute():
         p = PROJECT_ROOT / path
+    # Fallback: resolve cross-environment paths (cluster → local)
+    if not p.exists():
+        fallback = _fallback_image_path(path)
+        if fallback:
+            p = fallback
     if not p.exists() or p.stat().st_size < 500:
         return None
     ext = p.suffix.lower().lstrip(".")
@@ -1490,6 +1520,10 @@ def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
         print(f"\n  [DEBUG] stream had {line_count} lines, first 5:")
         for dl in debug_lines:
             print(f"    {dl}")
+    if in_tok == 0 and out_tok == 0 and content_parts:
+        print("  [WARN] No token usage found in stream response. "
+              "Ensure stream_options.include_usage is enabled or "
+              "wrap_requests_call injects it automatically.")
     return text, in_tok, out_tok
 
 
@@ -1564,6 +1598,7 @@ def call_api(
             "max_tokens": 1536,
             "temperature": 0.4,
             "stream": True,
+            "stream_options": {"include_usage": True},
         }
 
         stream = wrap_requests_call(
