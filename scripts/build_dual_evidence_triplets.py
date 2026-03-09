@@ -72,12 +72,16 @@ def _first_image_path(paths: List[str]) -> Optional[str]:
 def _normalize_path(path: Optional[str]) -> Optional[str]:
     if not path:
         return None
-    p = str(path).strip()
+    p = str(path).strip().replace("\\", "/")
     if not p:
         return None
     for root in REPO_ROOTS:
         if p.startswith(root):
             return p[len(root):]
+    # Generic fallback: find '/data/' and keep relative path
+    idx = p.find("/data/")
+    if idx >= 0:
+        return p[idx + 1:]
     return p
 
 

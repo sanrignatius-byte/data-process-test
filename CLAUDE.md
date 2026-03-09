@@ -1,5 +1,41 @@
 # Project Context for Claude Code
 
+## 铁律（Iron Rules）— 所有开发必须遵守
+
+### 铁律 1：Token 使用必须官方记录
+
+**任何调用 LLM API 的脚本，结束时必须调用 `src.utils.token_logger.log_run()` 记录本次运行的 token 消耗。无例外。**
+
+```python
+# 必须在脚本顶部 import
+from src.utils.token_logger import log_run
+
+# 必须在脚本结束时调用（dry-run 除外，log_run 内部会自动跳过 0 token）
+log_run(
+    script="your_script_name",           # 脚本名，不含路径
+    model=f"{provider}:{model}",          # provider:model 格式
+    purpose="简述本次运行做了什么",         # 人可读
+    input_tokens=total_in_tok,
+    output_tokens=total_out_tok,
+    extra={                               # 可选但强烈建议
+        "pairs_processed": N,
+        "qc_pass": M,
+        "output": str(output_path),
+    },
+)
+```
+
+**合规检查清单**：
+- `generate_multihop_l1_queries.py` ✅ 已接入
+- `batch_figure_understanding_api.py` ✅ 已接入
+- `generate_l2_queries.py` ✅ 已接入
+- `enrich_elements_modora.py` ✅ 已接入（v1.1 补入）
+- **新增任何调用 LLM 的脚本时必须同步接入**
+
+**违规判定**：任何发起 API 请求但未调用 `log_run()` 的 PR 视为未通过 review。
+
+---
+
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 

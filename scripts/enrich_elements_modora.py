@@ -38,6 +38,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+from src.utils.token_logger import log_run
 
 # ──────────────────────────────────────────────────────────────
 # Enrichment prompts per modality (inspired by MoDora [T]/[M]/[C])
@@ -163,12 +164,13 @@ _KNOWN_PREFIXES = [
 def resolve_image_path(raw_path: str) -> Optional[Path]:
     """Try to resolve an image path across different environments.
 
-    Handles three cases:
+    Handles four cases:
     1. Path exists as-is (original environment) → use directly.
     2. Path starts with a known cluster prefix → strip prefix, re-root to
        PROJECT_ROOT.
     3. Path contains '/data/mineru_output/' → extract the suffix after this
        marker and resolve relative to PROJECT_ROOT/data/mineru_output/.
+    4. Generic fallback: find 'data/' in the path and re-root to PROJECT_ROOT.
     """
     if not raw_path:
         return None
@@ -177,18 +179,29 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
     if p.exists():
         return p
 
+    # Normalise backslashes (Windows paths stored in JSON)
+    normed = raw_path.replace("\\", "/")
+
     # Strategy 1: strip known cluster prefix → re-root to PROJECT_ROOT
     for prefix in _KNOWN_PREFIXES:
-        if raw_path.startswith(prefix):
-            relative = raw_path[len(prefix):]
+        if normed.startswith(prefix):
+            relative = normed[len(prefix):]
             candidate = PROJECT_ROOT / relative
             if candidate.exists():
                 return candidate
 
     # Strategy 2: extract suffix after '/data/mineru_output/'
-    parts = raw_path.split("/data/mineru_output/")
+    parts = normed.split("/data/mineru_output/")
     if len(parts) == 2:
         candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
+        if candidate.exists():
+            return candidate
+
+    # Strategy 3: generic – find '/data/' and re-root everything after it
+    idx = normed.find("/data/")
+    if idx >= 0:
+        relative = normed[idx + 1:]  # keep 'data/...'
+        candidate = PROJECT_ROOT / relative
         if candidate.exists():
             return candidate
 
@@ -569,7 +582,7 @@ def process_elements(
         cost_est = (total_in_tok * 3 + total_out_tok * 15) / 1_000_000
         print(f"  Estimated cost: ${cost_est:.2f} (Sonnet pricing)")
 
-    return results
+    return results, total_in_tok, total_out_tok, processed, failed
 
 
 def merge_enrichments(
@@ -617,7 +630,7 @@ def main():
     ap.add_argument("--output", default="data/multimodal_elements_enriched.json",
                     help="Output enriched elements file")
     ap.add_argument("--provider", choices=["anthropic", "openai", "company"],
-                    default="anthropic", help="API provider")
+                    default="company", help="API provider")
     ap.add_argument("--model", default=None,
                     help="Model name (default: auto per provider)")
     ap.add_argument("--delay", type=float, default=0.3,
@@ -700,7 +713,7 @@ def main():
                 sys.exit(1)
 
     # Process
-    enrichments = process_elements(
+    enrichments, total_in_tok, total_out_tok, processed, failed = process_elements(
         mm_data=mm_data,
         client=client,
         model=args.model,
@@ -718,6 +731,20 @@ def main():
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(enriched_data, f, indent=2, ensure_ascii=False)
     print(f"\nWritten to {args.output}")
+
+    # Iron Rule: log token usage
+    log_run(
+        script="enrich_elements_modora",
+        model=f"{args.provider}:{args.model}",
+        purpose=f"MoDora [T]/[M]/[C] element enrichment — {processed} enriched, {failed} failed",
+        input_tokens=total_in_tok,
+        output_tokens=total_out_tok,
+        extra={
+            "pairs_processed": processed,
+            "parse_failures": failed,
+            "output": str(args.output),
+        },
+    )
 
 
 if __name__ == "__main__":

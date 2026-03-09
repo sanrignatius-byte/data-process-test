@@ -1735,9 +1735,14 @@ REPO_ROOTS = [
 
 
 def normalize_path(img_path: str) -> str:
+    normed = img_path.replace("\\", "/")
     for root in REPO_ROOTS:
-        if img_path.startswith(root):
-            return img_path[len(root):]
+        if normed.startswith(root):
+            return normed[len(root):]
+    # Generic fallback: find '/data/' and keep relative path from there
+    idx = normed.find("/data/")
+    if idx >= 0:
+        return normed[idx + 1:]  # 'data/...'
     return img_path
 
 
@@ -1767,10 +1772,10 @@ def main() -> None:
     ap.add_argument(
         "--provider",
         choices=["anthropic", "openai", "company"],
-        default="anthropic",
+        default="company",
         help="LLM provider backend (company = OpenAI-compat proxy via local_api_logger)",
     )
-    ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
+    ap.add_argument("--model", default=None, help="Model name (default: auto per provider)")
     ap.add_argument(
         "--company-api-url",
         default=os.environ.get("COMPANY_API_URL", ""),
@@ -1786,6 +1791,15 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
     args = ap.parse_args()
+
+    # Resolve model default per provider
+    if args.model is None:
+        if args.provider == "anthropic":
+            args.model = "claude-sonnet-4-5-20250929"
+        elif args.provider == "openai":
+            args.model = "gpt-4o"
+        else:  # company
+            args.model = "claude-sonnet-4-20250514"
 
     # Load candidates
     cand_path = Path(args.candidates)
