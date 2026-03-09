@@ -9,12 +9,17 @@ The key task: map LaTeX node IDs (e.g. "1306.5204::el::fig:histograms")
 back to MinerU element IDs (e.g. "1306.5204_figure_2") and attach full
 element details (caption, image_path, context_before/after).
 
+Supports optional MoDora-style enriched elements (--enriched-elements) to
+inject enriched_title / enriched_content / enriched_metadata and generate
+hub_semantic_summary fields for each candidate pair.
+
 Usage:
     python scripts/enrich_hub_candidates.py \
         --hub-candidates data/latex_hub_multihop_candidates.json \
         --elements data/multimodal_elements.json \
         --latex-graph data/latex_reference_graph.json \
         --output data/hub_candidates_enriched.json \
+        [--enriched-elements data/multimodal_elements_enriched.json] \
         [--limit 50]
 """
 
@@ -270,12 +275,62 @@ def build_edge_context_index(
 
 # ─── Main enrichment ────────────────────────────────────────────────────────
 
+def build_hub_semantic_summary(
+    el_a: Dict[str, Any],
+    el_b: Dict[str, Any],
+    edge_contexts: List[Dict[str, str]],
+) -> str:
+    """Build a hub semantic summary by aggregating enriched element descriptions.
+
+    Inspired by MoDora's bottom-up cascade summarization: combines enriched
+    content from both elements plus edge context to create a unified bridge
+    description that captures the semantic relationship.
+    """
+    parts: List[str] = []
+
+    # Element A enriched content
+    a_title = el_a.get("enriched_title", "")
+    a_content = el_a.get("enriched_content", "")
+    a_type = el_a.get("element_type", "element")
+    if a_title or a_content:
+        desc = a_title
+        if a_content:
+            desc = f"{desc}: {a_content}" if desc else a_content
+        parts.append(f"[{a_type.upper()} A] {desc}")
+
+    # Element B enriched content
+    b_title = el_b.get("enriched_title", "")
+    b_content = el_b.get("enriched_content", "")
+    b_type = el_b.get("element_type", "element")
+    if b_title or b_content:
+        desc = b_title
+        if b_content:
+            desc = f"{desc}: {b_content}" if desc else b_content
+        parts.append(f"[{b_type.upper()} B] {desc}")
+
+    # Edge context snippets
+    for ectx in edge_contexts[:2]:
+        snippet = ectx.get("context_snippet", "").strip()
+        if snippet:
+            parts.append(f"[BRIDGE] {snippet[:200]}")
+
+    # Aggregate keywords from enriched metadata
+    keywords_a = (el_a.get("enriched_metadata") or {}).get("keywords", [])
+    keywords_b = (el_b.get("enriched_metadata") or {}).get("keywords", [])
+    all_keywords = list(dict.fromkeys(keywords_a + keywords_b))  # dedup preserving order
+    if all_keywords:
+        parts.append(f"[KEYWORDS] {', '.join(all_keywords[:10])}")
+
+    return " | ".join(parts) if parts else ""
+
+
 def enrich_candidates(
     hub_data: Dict[str, Any],
     mm_index: Dict[str, Any],
     node_to_element: Dict[str, str],
     edge_ctx_index: Dict[Tuple[str, str], List[Dict[str, str]]],
     limit: int = 0,
+    enriched_elements: Optional[Dict[str, Dict]] = None,
 ) -> Dict[str, Any]:
     """Convert hub candidates to generation-ready format."""
     candidates = hub_data["candidates"]
@@ -328,7 +383,7 @@ def enrich_candidates(
 
         # Build element dicts (same format as multihop_l1_candidates)
         def make_element_dict(el: Dict) -> Dict[str, Any]:
-            return {
+            d = {
                 "element_id": el["element_id"],
                 "element_type": el["element_type"],
                 "caption": el.get("caption", "") or "",
@@ -337,6 +392,14 @@ def enrich_candidates(
                 "context_before": (el.get("context_before", "") or "")[:300],
                 "context_after": (el.get("context_after", "") or "")[:300],
             }
+            # Attach MoDora-style enriched fields if available
+            eid = el["element_id"]
+            if enriched_elements and eid in enriched_elements:
+                enr = enriched_elements[eid]
+                d["enriched_title"] = enr.get("enriched_title", "")
+                d["enriched_metadata"] = enr.get("enriched_metadata", {})
+                d["enriched_content"] = enr.get("enriched_content", "")
+            return d
 
         # Collect edge contexts along the path
         path_nids = cand["path_node_ids"]
@@ -359,6 +422,14 @@ def enrich_candidates(
             mapped = node_to_element.get(nid)
             mapped_path.append(mapped if mapped else nid)
 
+        elem_a_dict = make_element_dict(el_a)
+        elem_b_dict = make_element_dict(el_b)
+
+        # Build hub semantic summary from enriched descriptions
+        hub_summary = build_hub_semantic_summary(
+            elem_a_dict, elem_b_dict, edge_contexts,
+        )
+
         pair_dict = {
             "pair_id": pair_id,
             "doc_id": doc_id,
@@ -371,9 +442,11 @@ def enrich_candidates(
             "path": mapped_path,
             "quality_score": 0.8,  # default for topology-validated candidates
             "overlap_with_existing_l1": False,
-            "element_a": make_element_dict(el_a),
-            "element_b": make_element_dict(el_b),
+            "element_a": elem_a_dict,
+            "element_b": elem_b_dict,
             "edge_contexts": edge_contexts,
+            # Hub semantic summary (MoDora cascade aggregation)
+            "hub_semantic_summary": hub_summary,
             # Preserve hub metadata for analysis
             "hub_metadata": {
                 "hub_node_id": cand["hub_node_id"],
@@ -450,6 +523,11 @@ def main():
         default="data/hub_candidates_enriched.json",
         help="Output enriched candidates",
     )
+    ap.add_argument(
+        "--enriched-elements",
+        default=None,
+        help="Optional MoDora-enriched elements file (multimodal_elements_enriched.json)",
+    )
     ap.add_argument("--limit", type=int, default=0, help="Limit candidates (0=all)")
     args = ap.parse_args()
 
@@ -472,6 +550,21 @@ def main():
     latex_docs = {k: v for k, v in latex_data.items() if isinstance(v, dict) and "labels" in v}
     print(f"  LaTeX docs with labels: {len(latex_docs)}")
 
+    # Load enriched elements if provided
+    enriched_elements: Optional[Dict[str, Dict]] = None
+    if args.enriched_elements:
+        print(f"  Loading enriched elements from {args.enriched_elements}...")
+        with open(args.enriched_elements, encoding="utf-8") as f:
+            enriched_data = json.load(f)
+        enriched_elements = {}
+        for doc in enriched_data["documents"].values():
+            elements = doc.get("elements", {})
+            if isinstance(elements, dict):
+                for eid, el in elements.items():
+                    if "enriched_title" in el:
+                        enriched_elements[eid] = el
+        print(f"  Enriched elements available: {len(enriched_elements)}")
+
     print("\nBuilding indices...")
     mm_index = build_mm_index(mm_data)
     print(f"  Total elements indexed: {len(mm_index['all_elements'])}")
@@ -483,7 +576,10 @@ def main():
     print(f"  Edge context pairs: {len(edge_ctx_index)}")
 
     print("\nEnriching candidates...")
-    result = enrich_candidates(hub_data, mm_index, node_to_element, edge_ctx_index, args.limit)
+    result = enrich_candidates(
+        hub_data, mm_index, node_to_element, edge_ctx_index, args.limit,
+        enriched_elements=enriched_elements,
+    )
 
     summary = result["summary"]
     stats = result["metadata"]["enrichment_stats"]
