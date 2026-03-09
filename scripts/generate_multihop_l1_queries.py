@@ -1338,6 +1338,35 @@ def build_latex_bridge_section(pair: Dict) -> str:
     return header + meta + f'"{bridge[:600]}"'
 
 
+def build_enriched_context_section(pair: Dict) -> str:
+    """Build enriched context section from MoDora-style [T]/[M]/[C] fields.
+
+    Provides richer element descriptions when enriched fields are available
+    from enrich_elements_modora.py output.
+    """
+    parts: List[str] = []
+
+    for key, label in [("element_a", "Element A"), ("element_b", "Element B")]:
+        elem = pair.get(key, {})
+        enriched_title = elem.get("enriched_title", "")
+        enriched_content = elem.get("enriched_content", "")
+        if enriched_title or enriched_content:
+            section = f"[{label} enriched description]"
+            if enriched_title:
+                section += f" {enriched_title}."
+            if enriched_content:
+                section += f" {enriched_content}"
+            parts.append(section)
+
+    hub_summary = pair.get("hub_semantic_summary", "")
+    if hub_summary:
+        parts.append(f"[Hub bridge summary] {hub_summary}")
+
+    if not parts:
+        return ""
+    return "## Enriched element descriptions\n" + "\n".join(parts)
+
+
 def build_architecture_guidance(pair: Dict) -> str:
     """Inject a failure-case block for architecture diagrams."""
     if not is_architecture_pair(pair):
@@ -1406,9 +1435,13 @@ def build_prompt(pair: Dict) -> str:
             formula_key = key
 
     def _context(elem: Dict) -> str:
+        # Prefer enriched content when available (MoDora-style)
+        enriched = (elem.get("enriched_content", "") or "").strip()
         before = (elem.get("context_before", "") or "")[:300]
         after = (elem.get("context_after", "") or "")[:300]
         parts = []
+        if enriched:
+            parts.append(f"[Enriched] {enriched}")
         if before:
             parts.append(before)
         if after:
@@ -1416,9 +1449,16 @@ def build_prompt(pair: Dict) -> str:
         return " ... ".join(parts) if parts else "(no context)"
 
     latex_bridge_section = build_latex_bridge_section(pair)
+    enriched_section = build_enriched_context_section(pair)
+
+    # Helper: append enriched section if non-empty
+    def _with_enriched(prompt_text: str) -> str:
+        if enriched_section:
+            return prompt_text + "\n\n" + enriched_section
+        return prompt_text
 
     if template_name == "figure_table_1hop":
-        return PROMPT_FIGURE_TABLE_1HOP.format(
+        return _with_enriched(PROMPT_FIGURE_TABLE_1HOP.format(
             fig_id=fig_elem["element_id"],
             fig_caption=(fig_elem.get("caption", "") or "")[:400],
             fig_context=_context(fig_elem),
@@ -1428,9 +1468,9 @@ def build_prompt(pair: Dict) -> str:
             tbl_context=_context(table_elem),
             edge_context=edge_text,
             latex_bridge=latex_bridge_section,
-        )
+        ))
     elif template_name == "figure_table_2hop":
-        return PROMPT_FIGURE_TABLE_2HOP.format(
+        return _with_enriched(PROMPT_FIGURE_TABLE_2HOP.format(
             fig_id=fig_elem["element_id"],
             fig_caption=(fig_elem.get("caption", "") or "")[:400],
             fig_context=_context(fig_elem),
@@ -1441,9 +1481,9 @@ def build_prompt(pair: Dict) -> str:
             edge_context=edge_text,
             intermediate_info=build_intermediate_info(pair),
             latex_bridge=latex_bridge_section,
-        )
+        ))
     elif template_name == "figure_formula":
-        return PROMPT_FIGURE_FORMULA.format(
+        return _with_enriched(PROMPT_FIGURE_FORMULA.format(
             fig_id=fig_elem["element_id"],
             fig_caption=(fig_elem.get("caption", "") or "")[:400],
             fig_context=_context(fig_elem),
@@ -1453,9 +1493,9 @@ def build_prompt(pair: Dict) -> str:
             edge_context=edge_text,
             latex_bridge=latex_bridge_section,
             architecture_guidance=build_architecture_guidance(pair),
-        )
+        ))
     elif template_name == "formula_table":
-        return PROMPT_FORMULA_TABLE.format(
+        return _with_enriched(PROMPT_FORMULA_TABLE.format(
             formula_id=formula_elem["element_id"],
             formula_variables=extract_formula_variables((formula_elem.get("content", "") or "")[:1200]),
             formula_context=_context(formula_elem),
@@ -1465,7 +1505,7 @@ def build_prompt(pair: Dict) -> str:
             tbl_context=_context(table_elem),
             edge_context=edge_text,
             latex_bridge=latex_bridge_section,
-        )
+        ))
 
     return ""
 

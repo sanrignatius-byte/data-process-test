@@ -3,6 +3,64 @@
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
+## 当前状态（2026-03-09 更新｜MoDora [T]/[M]/[C] Enrichment 整合）
+
+### 本轮完成（相对 2026-03-07）
+
+- **MoDora CCTree 思路分析完成**
+  - 分析文档：`docs/MODORA_INTEGRATION_ANALYSIS.md`
+  - 结论：借鉴"上游语义增强"，不迁移 CCTree 检索框架
+- **P0.5：Element [T]/[M]/[C] Enrichment 脚本落地**
+  - 新增 `scripts/enrich_elements_modora.py`
+  - 对 figure/table/formula 三类元素分别用类型特化 prompt 生成结构化描述
+  - 输出 `enriched_title` / `enriched_metadata` / `enriched_content` 三个新字段（不覆盖原字段）
+  - 支持 `--provider`（anthropic/openai/company）、`--incremental`（增量模式）、`--dry-run`
+  - 输出：`data/multimodal_elements_enriched.json`
+- **P1：Hub Cascade Summary 增强**
+  - `enrich_hub_candidates.py` 新增 `--enriched-elements` 参数
+  - 新增 `build_hub_semantic_summary()` 函数：聚合两端元素 enriched 描述 + edge context + keywords
+  - 输出新字段 `hub_semantic_summary`（附加到每个 candidate pair）
+- **Phase 3：Query 生成上下文升级**
+  - `generate_multihop_l1_queries.py` 新增 `build_enriched_context_section()`
+  - `_context()` 优先读取 `enriched_content`
+  - 所有 4 个 prompt 模板自动附加 enriched section（当 enriched 字段存在时）
+  - 向后兼容：无 enriched 字段时行为完全不变
+
+### 本轮关键技术发现
+- **MoDora [T]/[M]/[C] 思路对我们最有价值的是"上游语义增强"**，而非其树结构或在线检索
+- 我们多层图（citation + cross-modal + backbone）对跨文档/跨模态表达力优于 CCTree 树合并
+- Element enrichment 预期改善 `single_element_answer` 和 `weak_reasoning_connector` 类 QC 失败
+
+### MoDora 整合 Pipeline（新增）
+```bash
+# Step 0: Element enrichment（MoDora-style [T]/[M]/[C]）
+python scripts/enrich_elements_modora.py \
+    --input data/multimodal_elements.json \
+    --output data/multimodal_elements_enriched.json \
+    --provider anthropic \
+    --model claude-sonnet-4-5-20250929 \
+    --delay 0.3
+
+# Step 1: Hub enrichment（传入 enriched elements）
+python scripts/enrich_hub_candidates.py \
+    --hub-candidates data/latex_hub_multihop_candidates.json \
+    --elements data/multimodal_elements.json \
+    --latex-graph data/latex_reference_graph.json \
+    --enriched-elements data/multimodal_elements_enriched.json \
+    --output data/hub_candidates_enriched_v2.json
+
+# Step 2: Query generation（自动使用 enriched context）
+python scripts/generate_multihop_l1_queries.py \
+    --candidates data/hub_candidates_enriched_v2.json \
+    --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl \
+    --pass-only \
+    --provider anthropic \
+    --model claude-sonnet-4-5-20250929 \
+    --delay 0.3
+```
+
+---
+
 ## 当前状态（2026-03-07 更新｜公司 API 整合 + 全量生成就绪）
 
 ### 本轮完成（相对 2026-03-03）
@@ -253,6 +311,9 @@
 | `data/latex_graph_topology_report.json` | 拓扑统计报告（2551 nodes, 3471 edges, 49.8% label match） |
 | `data/latex_graph_hubs.json` | bridge_hubs 60 个 + adjacent_backbone_bridges 369 条 |
 | `data/latex_hub_multihop_candidates.json` | **Hub multi-hop 候选对 500 条（含 page_span/line_no_span/seed）** |
+| `scripts/enrich_elements_modora.py` | **MoDora-style [T]/[M]/[C] 元素语义增强（figure/table/formula）** |
+| `data/multimodal_elements_enriched.json` | **MoDora enriched 元素（含 enriched_title/metadata/content）——待生成** |
+| `docs/MODORA_INTEGRATION_ANALYSIS.md` | **MoDora CCTree 整合分析文档** |
 | `main.py` | **公司 API 连通性测试脚本（yunwu.ai demo）** |
 | `local_api_logger/` | **公司 API 日志库（wrap_requests_call + token 统计）——需用户放入** |
 
