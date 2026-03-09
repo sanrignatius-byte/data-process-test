@@ -152,15 +152,24 @@ Produce a structured description with exactly three fields:
 # Image utilities
 # ──────────────────────────────────────────────────────────────
 
-# Common base paths for cross-environment image resolution
-_IMAGE_BASE_PATHS = [
-    Path("/projects/_hdd/myyyx1/data-process-test/data/mineru_output"),
-    PROJECT_ROOT / "data" / "mineru_output",
+# Known path prefixes from different environments that should be
+# re-rooted to PROJECT_ROOT when running elsewhere.
+_KNOWN_PREFIXES = [
+    "/projects/_hdd/myyyx1/data-process-test/",
+    "/projects/myyyx1/data-process-test/",
 ]
 
 
 def resolve_image_path(raw_path: str) -> Optional[Path]:
-    """Try to resolve an image path across different environments."""
+    """Try to resolve an image path across different environments.
+
+    Handles three cases:
+    1. Path exists as-is (original environment) → use directly.
+    2. Path starts with a known cluster prefix → strip prefix, re-root to
+       PROJECT_ROOT.
+    3. Path contains '/data/mineru_output/' → extract the suffix after this
+       marker and resolve relative to PROJECT_ROOT/data/mineru_output/.
+    """
     if not raw_path:
         return None
 
@@ -168,14 +177,20 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
     if p.exists():
         return p
 
-    # Try relative to known base paths
-    for base in _IMAGE_BASE_PATHS:
-        # Extract doc_id/... part from absolute path
-        parts = raw_path.split("/mineru_output/")
-        if len(parts) == 2:
-            candidate = base / parts[1]
+    # Strategy 1: strip known cluster prefix → re-root to PROJECT_ROOT
+    for prefix in _KNOWN_PREFIXES:
+        if raw_path.startswith(prefix):
+            relative = raw_path[len(prefix):]
+            candidate = PROJECT_ROOT / relative
             if candidate.exists():
                 return candidate
+
+    # Strategy 2: extract suffix after '/data/mineru_output/'
+    parts = raw_path.split("/data/mineru_output/")
+    if len(parts) == 2:
+        candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
+        if candidate.exists():
+            return candidate
 
     return None
 
