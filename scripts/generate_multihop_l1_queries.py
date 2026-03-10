@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -286,6 +287,9 @@ Avoid vague substitutions like "the best-performing method" when a concrete name
 10. Avoid weak templates: "Which component..." "How does X relate to Y..." "What role does..."
 11. Answer must include a relationship connector (because / due to / consistent with /
     constrained by / compared with / whereas / despite / under).
+12. Questions must NOT be binary yes/no asks. Avoid constructions like "..., does X...?" or "..., is X...?"; use what/which/how/why explanatory forms.
+13. Answer MUST NOT begin with "Yes" or "No"; write a declarative explanation.
+14. IRON RULE (symbolic grounding): if Element B is mathematical, the answer MUST explicitly quote at least one specific variable/function/constraint term from Element B (e.g., lambda, theta, f(A,C)) and explain how it maps to the observed visual topology in Element A. Avoid generic phrases like "the mathematical structure".
 
 ## SELF-CHECK before outputting each query
 
@@ -824,6 +828,7 @@ SHORT_QUERY_MIN_WORDS = 8
 SHORT_QUERY_MAX_WORDS = 14
 LONG_QUERY_MIN_WORDS = 18
 MAX_QUERY_WORDS = 30
+TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.4
 
 QUERY_SHORTCUT_PATTERNS = [
     r"^which\s+component\b",
@@ -883,6 +888,8 @@ RELATION_CONNECTORS = {
     "leads to", "results in", "explains", "matches", "corresponds to",
     "driven by", "caused by", "consistent with", "deviates from",
     "constrained by", "compared with", "whereas", "despite", "under",
+    "resulting in", "reflect", "reflects", "prevent", "prevents", "preventing",
+    "allow", "allows", "enable", "enables", "associated with", "linked to",
 }
 
 # Cross-modal operator cues tracked by QC as advisory features.
@@ -1042,6 +1049,14 @@ def is_yes_no_question(query: str) -> bool:
             rest[:80],
         ):
             return True
+
+    # Catch embedded binary ask after dash/comma, e.g.
+    # "X ... — does Y increase?" / "..., is Y higher?"
+    if re.search(
+        r"[—,:;]\s*(?:do|does|did|is|are|was|were|can|could|has|have|had|will|would|may|might)\b",
+        q,
+    ):
+        return True
     return False
 
 
@@ -1321,6 +1336,72 @@ def _number_tokens(text: str) -> Set[str]:
     return nums
 
 
+def _extract_formula_symbol_terms(content: str) -> Set[str]:
+    """Extract formula-specific symbolic terms used for grounding checks."""
+    if not content:
+        return set()
+    text = content
+    regions: List[str] = []
+    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
+    math_text = " ".join(regions) if regions else text
+
+    terms: Set[str] = set()
+    # greek symbols
+    for g in re.findall(r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)", math_text):
+        terms.add(g.lower())
+    # subscript vars like x_i / y_12
+    for t in re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text):
+        terms.add(t.lower())
+    # latex subscript forms like Y_{a,m}, M_{a'}
+    for t in re.findall(r"\b([A-Za-z]\s*_\s*\{[^}]+\})", math_text):
+        terms.add(re.sub(r"\s+", "", t.lower()))
+    # function terms like f(A,C)
+    for t in re.findall(r"\b([A-Za-z]+\([A-Za-z0-9,\s_{}'\-]+\))", math_text):
+        terms.add(re.sub(r"\s+", "", t.lower()))
+    # p( | )-style probability term
+    for t in re.findall(r"\b([Pp]\([^)]*\|[^)]*\))", math_text):
+        terms.add(re.sub(r"\s+", "", t.lower()))
+
+    ignore_cmds = {"begin", "end", "left", "right", "frac", "cdot", "times", "sum", "prod", "int", "mid", "tag"}
+    for cmd in re.findall(r"\\([A-Za-z]{2,})", math_text):
+        c = cmd.lower()
+        if c not in ignore_cmds:
+            terms.add(c)
+    return {t for t in terms if t and len(t) >= 2}
+
+
+def _formula_symbol_hit(answer: str, terms: Set[str]) -> bool:
+    """Return True if answer explicitly mentions at least one formula symbol/term."""
+    if not terms:
+        return True
+    a = (answer or "").lower()
+    a_norm = re.sub(r"\s+", "", a)
+    # normalize common latex wrappers in answer for robust matching
+    a_norm = a_norm.replace('\\{', '{').replace('\\}', '}')
+    for t in terms:
+        t_norm = re.sub(r"\s+", "", t.lower())
+        if "(" in t_norm or "_" in t_norm or "{" in t_norm or "|" in t_norm:
+            if t_norm in a_norm:
+                return True
+        else:
+            if re.search(rf"\b{re.escape(t_norm)}\b", a):
+                return True
+    return False
+
+
+def _answer_text_evidence_overlap(answer: str, evidence: str) -> float:
+    """Token overlap ratio between answer and text_evidence (answer-normalized)."""
+    a_tokens = _content_tokens(answer)
+    if not a_tokens:
+        return 0.0
+    e_tokens = _content_tokens(evidence)
+    if not e_tokens:
+        return 0.0
+    return len(a_tokens & e_tokens) / len(a_tokens)
+
+
 def anchor_leak_jaccard(query: str, anchors: List[Dict[str, Any]]) -> float:
     q_tokens = _content_tokens(query)
     if not q_tokens:
@@ -1542,6 +1623,23 @@ def qc_multihop_query(
     if len(evidence) < 40:
         issues.append("short_evidence")
 
+    # 8b. Guard against answer over-reliance on text_evidence paraphrase.
+    text_evidence_overlap = _answer_text_evidence_overlap(a, evidence)
+    metrics["text_evidence_overlap"] = round(text_evidence_overlap, 4)
+    if text_evidence_overlap > TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD:
+        issues.append("text_evidence_over_reliance")
+
+    # 8c. Figure+formula symbolic grounding hard check.
+    pair_type = str(pair.get("pair_type", ""))
+    if pair_type == "figure+formula":
+        formula_elem = pair.get("element_a", {}) if pair.get("element_a_type") == "formula" else pair.get("element_b", {})
+        formula_text = (formula_elem.get("caption", "") or "") + " " + (formula_elem.get("content", "") or "")
+        formula_terms = _extract_formula_symbol_terms(formula_text)
+        metrics["formula_symbol_term_count"] = len(formula_terms)
+        metrics["formula_symbol_grounded"] = _formula_symbol_hit(a, formula_terms)
+        if formula_terms and not metrics["formula_symbol_grounded"]:
+            issues.append("formula_symbol_grounding_missing")
+
     # 9. Encourage explicit relationship grounding instead of generic lookup answers.
     # v2.1: cross_reading is a lookup/referencing type, not explanatory — exempt from check.
     qtype = str(obj.get("query_type", "")).lower()
@@ -1571,7 +1669,7 @@ def qc_real_user_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """QC checks for real-user style queries (relaxed relative to academic style).
+    """QC checks for real-user style queries (relaxed relative to academic style, with P0 grounding guards).
 
     Kept checks:
       - meta_language: no "figure"/"table"/"equation" in query
@@ -1584,8 +1682,7 @@ def qc_real_user_query(
       - templated_opening / template_collapse: natural openers allowed
       - pseudo_multihop_parallel: dual-ask style acceptable in conversational queries
       - weak_reasoning_connector: colloquial answers needn't use "because/due to"
-      - missing_reasoning_chain: no explicit reasoning_chain requirement
-      - architecture_intent_missing: not applicable
+            - architecture_intent_missing: not applicable
       - length_mix_missing: no SHORT+LONG bucket requirement
 
     New metric:
@@ -1604,6 +1701,11 @@ def qc_real_user_query(
     # 1. Meta-language (kept)
     if any(re.search(p, q_lower) for p in BAD_META_PATTERNS):
         issues.append("meta_language")
+
+    # 1b. Require minimal reasoning chain for real-user too (P0 guard).
+    if not has_min_reasoning_chain(obj):
+        issues.append("missing_reasoning_chain")
+        metrics["reasoning_chain_warn"] = True
 
     # 2. Empty / length (kept, relaxed max to 35 words for real-user style)
     if not q.strip():
@@ -1678,6 +1780,46 @@ def qc_real_user_query(
     if len(evidence) >= 30:
         retv += 1
     metrics["retrievability_score"] = retv
+
+    # 6. Guard against answer over-reliance on text_evidence paraphrase.
+    evidence = obj.get("text_evidence", "")
+    text_evidence_overlap = _answer_text_evidence_overlap(a, evidence)
+    metrics["text_evidence_overlap"] = round(text_evidence_overlap, 4)
+    if text_evidence_overlap > TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD:
+        issues.append("text_evidence_over_reliance")
+
+    # 7. Real-user numeric consistency guard: answer numbers must be grounded.
+    answer_nums = _number_tokens(a)
+    source_text_parts: List[str] = [
+        str(pair.get("element_a", {}).get("caption", "") or ""),
+        str(pair.get("element_a", {}).get("content", "") or ""),
+        str(pair.get("element_b", {}).get("caption", "") or ""),
+        str(pair.get("element_b", {}).get("content", "") or ""),
+        str(evidence or ""),
+    ]
+    for s in obj.get("required_evidence_spans", []) or []:
+        if isinstance(s, dict):
+            source_text_parts.append(str(s.get("span", "") or ""))
+    source_nums = _number_tokens(" ".join(source_text_parts))
+    unsupported_nums = sorted(answer_nums - source_nums)
+    metrics["unsupported_answer_numbers"] = unsupported_nums
+    if unsupported_nums:
+        # Hard-fail only for high-risk case: no reasoning chain + unsupported numeric claims.
+        if not has_min_reasoning_chain(obj):
+            issues.append("numeric_unsupported")
+        else:
+            metrics["numeric_unsupported_warn"] = True
+
+    # 8. Figure+formula symbolic grounding hard check.
+    pair_type = str(pair.get("pair_type", ""))
+    if pair_type == "figure+formula":
+        formula_elem = pair.get("element_a", {}) if pair.get("element_a_type") == "formula" else pair.get("element_b", {})
+        formula_text = (formula_elem.get("caption", "") or "") + " " + (formula_elem.get("content", "") or "")
+        formula_terms = _extract_formula_symbol_terms(formula_text)
+        metrics["formula_symbol_term_count"] = len(formula_terms)
+        metrics["formula_symbol_grounded"] = _formula_symbol_hit(a, formula_terms)
+        if formula_terms and not metrics["formula_symbol_grounded"]:
+            issues.append("formula_symbol_grounding_missing")
 
     return issues, metrics
 
@@ -1879,6 +2021,18 @@ def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> 
     return ", ".join(parts)
 
 
+def resolve_query_style(query_style: str, pair_id: str) -> str:
+    """Resolve effective style per pair.
+
+    For `mixed`, use a deterministic 50/50 split by stable md5 hash so the
+    same pair gets the same style across runs/machines.
+    """
+    if query_style != "mixed":
+        return query_style
+    stable_hash = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16) if pair_id else 0
+    return "academic" if (stable_hash % 2 == 0) else "real_user"
+
+
 def select_template(pair: Dict, query_style: str = "academic") -> str:
     """Choose the right prompt template based on modality combo, hop distance, and style.
 
@@ -1887,16 +2041,14 @@ def select_template(pair: Dict, query_style: str = "academic") -> str:
       "real_user" — natural-language reader templates (5 rotating sub-types)
       "mixed"     — 50 % academic / 50 % real_user, chosen deterministically by pair hash
     """
+    if query_style == "mixed":
+        query_style = resolve_query_style(query_style, str(pair.get("pair_id", "")))
+
     if query_style == "real_user":
-        # Rotate through 5 real-user sub-types deterministically by pair index
-        pair_hash = hash(pair.get("pair_id", "")) % len(_REAL_USER_STYLE_CYCLE)
-        return f"real_user_{_REAL_USER_STYLE_CYCLE[pair_hash]}"
-    elif query_style == "mixed":
-        # Even pair-hash index → academic; odd → real_user
-        pair_hash = hash(pair.get("pair_id", ""))
-        if pair_hash % 2 == 0:
-            return select_template(pair, "academic")
-        return select_template(pair, "real_user")
+        # Rotate through 5 real-user sub-types deterministically by stable pair_id hash
+        pid = str(pair.get("pair_id", ""))
+        stable_hash = int(hashlib.md5(pid.encode("utf-8")).hexdigest()[:8], 16) if pid else 0
+        return f"real_user_{_REAL_USER_STYLE_CYCLE[stable_hash % len(_REAL_USER_STYLE_CYCLE)]}"
 
     # academic (default)
     a_type = pair["element_a_type"]
@@ -2411,10 +2563,11 @@ def main() -> None:
             doc_id = pair["doc_id"]
             pair_type = pair["pair_type"]
             hop = pair["hop_distance"]
-            template_name = select_template(pair, args.query_style)
+            effective_query_style = resolve_query_style(args.query_style, str(pair.get("pair_id", "")))
+            template_name = select_template(pair, effective_query_style)
 
             # Build prompt
-            prompt = build_prompt(pair, args.query_style)
+            prompt = build_prompt(pair, effective_query_style)
             if not prompt:
                 print(f"  [{i+1}/{len(pairs)}] SKIP (no prompt template for {pair_type})")
                 continue
@@ -2489,7 +2642,7 @@ def main() -> None:
 
             for q_obj in queries:
                 # Route to the appropriate QC function based on query style
-                is_real_user_style = args.query_style in ("real_user", "mixed") and template_name.startswith("real_user_")
+                is_real_user_style = effective_query_style == "real_user"
                 if is_real_user_style:
                     issues, metrics = qc_real_user_query(q_obj, pair)
                 else:
@@ -2503,7 +2656,7 @@ def main() -> None:
                     metrics["pair_has_long_query"] = pair_has_long
                     if not pair_has_length_mix:
                         issues.append("length_mix_missing")
-                metrics["query_style"] = args.query_style
+                metrics["query_style"] = effective_query_style
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -2525,7 +2678,7 @@ def main() -> None:
                     "path": pair.get("path", []),
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
                     "cross_modal": True,
-                    "query_style": args.query_style,
+                    "query_style": effective_query_style,
                     "image_paths": [p for p in [img_a_path, img_b_path] if p],
                     "quality_tier": pair.get("quality_tier", "unknown"),
                     "query_type": q_obj.get("query_type", "unknown"),
