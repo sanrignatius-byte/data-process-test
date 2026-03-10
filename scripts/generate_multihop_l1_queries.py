@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -1879,6 +1880,18 @@ def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> 
     return ", ".join(parts)
 
 
+def resolve_query_style(query_style: str, pair_id: str) -> str:
+    """Resolve effective style per pair.
+
+    For `mixed`, use a deterministic 50/50 split by stable md5 hash so the
+    same pair gets the same style across runs/machines.
+    """
+    if query_style != "mixed":
+        return query_style
+    stable_hash = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16) if pair_id else 0
+    return "academic" if (stable_hash % 2 == 0) else "real_user"
+
+
 def select_template(pair: Dict, query_style: str = "academic") -> str:
     """Choose the right prompt template based on modality combo, hop distance, and style.
 
@@ -1887,16 +1900,14 @@ def select_template(pair: Dict, query_style: str = "academic") -> str:
       "real_user" — natural-language reader templates (5 rotating sub-types)
       "mixed"     — 50 % academic / 50 % real_user, chosen deterministically by pair hash
     """
+    if query_style == "mixed":
+        query_style = resolve_query_style(query_style, str(pair.get("pair_id", "")))
+
     if query_style == "real_user":
-        # Rotate through 5 real-user sub-types deterministically by pair index
-        pair_hash = hash(pair.get("pair_id", "")) % len(_REAL_USER_STYLE_CYCLE)
-        return f"real_user_{_REAL_USER_STYLE_CYCLE[pair_hash]}"
-    elif query_style == "mixed":
-        # Even pair-hash index → academic; odd → real_user
-        pair_hash = hash(pair.get("pair_id", ""))
-        if pair_hash % 2 == 0:
-            return select_template(pair, "academic")
-        return select_template(pair, "real_user")
+        # Rotate through 5 real-user sub-types deterministically by stable pair_id hash
+        pid = str(pair.get("pair_id", ""))
+        stable_hash = int(hashlib.md5(pid.encode("utf-8")).hexdigest()[:8], 16) if pid else 0
+        return f"real_user_{_REAL_USER_STYLE_CYCLE[stable_hash % len(_REAL_USER_STYLE_CYCLE)]}"
 
     # academic (default)
     a_type = pair["element_a_type"]
@@ -2411,10 +2422,11 @@ def main() -> None:
             doc_id = pair["doc_id"]
             pair_type = pair["pair_type"]
             hop = pair["hop_distance"]
-            template_name = select_template(pair, args.query_style)
+            effective_query_style = resolve_query_style(args.query_style, str(pair.get("pair_id", "")))
+            template_name = select_template(pair, effective_query_style)
 
             # Build prompt
-            prompt = build_prompt(pair, args.query_style)
+            prompt = build_prompt(pair, effective_query_style)
             if not prompt:
                 print(f"  [{i+1}/{len(pairs)}] SKIP (no prompt template for {pair_type})")
                 continue
@@ -2489,7 +2501,7 @@ def main() -> None:
 
             for q_obj in queries:
                 # Route to the appropriate QC function based on query style
-                is_real_user_style = args.query_style in ("real_user", "mixed") and template_name.startswith("real_user_")
+                is_real_user_style = effective_query_style == "real_user"
                 if is_real_user_style:
                     issues, metrics = qc_real_user_query(q_obj, pair)
                 else:
@@ -2503,7 +2515,7 @@ def main() -> None:
                     metrics["pair_has_long_query"] = pair_has_long
                     if not pair_has_length_mix:
                         issues.append("length_mix_missing")
-                metrics["query_style"] = args.query_style
+                metrics["query_style"] = effective_query_style
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -2525,7 +2537,7 @@ def main() -> None:
                     "path": pair.get("path", []),
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
                     "cross_modal": True,
-                    "query_style": args.query_style,
+                    "query_style": effective_query_style,
                     "image_paths": [p for p in [img_a_path, img_b_path] if p],
                     "quality_tier": pair.get("quality_tier", "unknown"),
                     "query_type": q_obj.get("query_type", "unknown"),
