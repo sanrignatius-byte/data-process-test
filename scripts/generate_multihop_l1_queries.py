@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -456,6 +457,57 @@ CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). que
     }}
   ]
 }}"""
+
+PROMPT_REAL_USER_FACTUAL = """You are writing natural end-user retrieval queries in English.
+
+Generate 2 concise questions (<=25 words each) that REQUIRE combining BOTH elements.
+
+Element A ({elem_a_id}, {elem_a_type})
+- Caption/title: {elem_a_caption}
+- Context: {elem_a_context}
+
+Element B ({elem_b_id}, {elem_b_type})
+- Caption/title: {elem_b_caption}
+- Context: {elem_b_context}
+
+Connection hints:
+{edge_context}
+{latex_bridge}
+
+Rules:
+1) no yes/no question;
+2) no meta words like "according to the figure/table";
+3) query must require evidence from both elements;
+4) keep wording conversational, concrete, and answerable.
+
+Output JSON only:
+{{
+  "queries": [
+    {{
+      "query": "...",
+      "answer": "...",
+      "query_type": "factual",
+      "required_evidence_spans": [],
+      "visual_anchors": [],
+      "text_evidence": "..."
+    }},
+    {{
+      "query": "...",
+      "answer": "...",
+      "query_type": "factual",
+      "required_evidence_spans": [],
+      "visual_anchors": [],
+      "text_evidence": "..."
+    }}
+  ]
+}}"""
+
+PROMPT_REAL_USER_SUMMARY = PROMPT_REAL_USER_FACTUAL.replace('"factual"', '"summary"')
+PROMPT_REAL_USER_COMPARISON = PROMPT_REAL_USER_FACTUAL.replace('"factual"', '"comparison"')
+PROMPT_REAL_USER_HOW_WORKS = PROMPT_REAL_USER_FACTUAL.replace('"factual"', '"how_works"')
+PROMPT_REAL_USER_WHAT_IF = PROMPT_REAL_USER_FACTUAL.replace('"factual"', '"what_if"')
+
+REAL_USER_TEMPLATE_KEYS = ["factual", "summary", "comparison", "how_works", "what_if"]
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1240,6 +1292,78 @@ def qc_multihop_query(
     return issues, metrics
 
 
+def qc_real_user_query(obj: Dict[str, Any], pair: Dict[str, Any]) -> Tuple[List[str], Dict[str, Any]]:
+    """QC for real-user style queries (looser template constraints).
+
+    Keep core safeguards: meta-language, yes/no, dual-evidence grounding, and length.
+    Add retrievability_score (0-3 heuristic) for monitoring/review.
+    """
+    issues: List[str] = []
+    metrics: Dict[str, Any] = {}
+
+    q = str(obj.get("query", "") or "").strip()
+    a = str(obj.get("answer", "") or "").strip()
+
+    q_words = [w for w in re.findall(r"\b\w+\b", q)]
+    metrics["query_word_count"] = len(q_words)
+    if len(q_words) < 5 or len(q_words) > 25:
+        issues.append("bad_query_length")
+
+    if contains_meta_language(q):
+        issues.append("meta_language")
+
+    if re.match(r"^\s*(do|does|did|is|are|can|could|will|would|has|have|had)\b", q.lower()):
+        issues.append("yes_no_question")
+
+    # Reuse dual-evidence answerability check.
+    elem_a = pair.get("element_a", {})
+    elem_b = pair.get("element_b", {})
+    elem_a_id = pair.get("element_a_id", "")
+    elem_b_id = pair.get("element_b_id", "")
+
+    answer_tokens = _content_tokens(a)
+    answer_num_tokens = _number_tokens(a)
+
+    def _elem_text(elem: Dict[str, Any], elem_id: str) -> str:
+        caption = elem.get("caption", "") or ""
+        content = elem.get("content", "") or ""
+        span_parts: List[str] = []
+        for s in obj.get("required_evidence_spans", []) or []:
+            if isinstance(s, dict) and str(s.get("element_id", "")).strip() == elem_id:
+                span_parts.append(str(s.get("span", "") or ""))
+        return " ".join([caption, content, " ".join(span_parts)]).strip()
+
+    overlap_a = len(answer_tokens & _content_tokens(_elem_text(elem_a, elem_a_id))) + min(
+        len(answer_num_tokens & _number_tokens(_elem_text(elem_a, elem_a_id))), 2
+    )
+    overlap_b = len(answer_tokens & _content_tokens(_elem_text(elem_b, elem_b_id))) + min(
+        len(answer_num_tokens & _number_tokens(_elem_text(elem_b, elem_b_id))), 2
+    )
+    metrics["answer_overlap_a"] = overlap_a
+    metrics["answer_overlap_b"] = overlap_b
+    if overlap_a < 1 or overlap_b < 1:
+        issues.append("single_element_answer")
+
+    # Retrievability heuristic (0-3): specificity + dual evidence + non-generic wording.
+    score = 0
+    if len(_content_tokens(q)) >= 5:
+        score += 1
+    req_spans = obj.get("required_evidence_spans", []) or []
+    span_elem_ids = {
+        str(s.get("element_id", "")).strip()
+        for s in req_spans
+        if isinstance(s, dict) and str(s.get("element_id", "")).strip()
+    }
+    if len(span_elem_ids) >= 2:
+        score += 1
+    generic = {"result", "method", "performance", "model", "data", "system"}
+    if len(_content_tokens(q) - generic) >= 4:
+        score += 1
+    metrics["retrievability_score"] = score
+
+    return issues, metrics
+
+
 # ──────────────────────────────────────────────────────────────
 # Image encoding
 # ──────────────────────────────────────────────────────────────
@@ -1338,6 +1462,30 @@ def build_latex_bridge_section(pair: Dict) -> str:
     return header + meta + f'"{bridge[:600]}"'
 
 
+def _is_noisy_enrichment(text: str) -> bool:
+    """Detect low-quality enriched text and avoid polluting prompt context."""
+    t = (text or "").strip()
+    if not t or len(t) < 15:
+        return True
+    lower = t.lower()
+    noisy_markers = [
+        "glyph",
+        "icon",
+        "ocr failed",
+        "ocr error",
+        "unable to read",
+        "illegible",
+        "garbled",
+        "marker",
+    ]
+    if any(m in lower for m in noisy_markers):
+        return True
+    # Common unicode symbols/pictographs often indicate extraction noise.
+    if re.search(r"[\u2190-\u2bff\U0001F300-\U0001FAFF]", t):
+        return True
+    return False
+
+
 def build_enriched_context_section(pair: Dict) -> str:
     """Build enriched context section from MoDora-style [T]/[M]/[C] fields.
 
@@ -1350,6 +1498,10 @@ def build_enriched_context_section(pair: Dict) -> str:
         elem = pair.get(key, {})
         enriched_title = elem.get("enriched_title", "")
         enriched_content = elem.get("enriched_content", "")
+        if _is_noisy_enrichment(enriched_title):
+            enriched_title = ""
+        if _is_noisy_enrichment(enriched_content):
+            enriched_content = ""
         if enriched_title or enriched_content:
             section = f"[{label} enriched description]"
             if enriched_title:
@@ -1359,7 +1511,7 @@ def build_enriched_context_section(pair: Dict) -> str:
             parts.append(section)
 
     hub_summary = pair.get("hub_semantic_summary", "")
-    if hub_summary:
+    if hub_summary and not _is_noisy_enrichment(hub_summary):
         parts.append(f"[Hub bridge summary] {hub_summary}")
 
     if not parts:
@@ -1391,8 +1543,22 @@ def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> 
     return ", ".join(parts)
 
 
-def select_template(pair: Dict) -> str:
+def resolve_query_style(query_style: str, pair_id: str) -> str:
+    stable_hash = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16) if pair_id else 0
+    if query_style == "mixed":
+        # deterministic 50/50 split by pair hash
+        return "academic" if (stable_hash % 2 == 0) else "real_user"
+    return query_style
+
+
+def select_template(pair: Dict, query_style: str = "academic") -> str:
     """Choose the right prompt template based on modality combo and hop distance."""
+    if query_style == "real_user":
+        pid = str(pair.get("pair_id", ""))
+        stable_hash = int(hashlib.md5(pid.encode("utf-8")).hexdigest()[:8], 16) if pid else 0
+        t = REAL_USER_TEMPLATE_KEYS[stable_hash % len(REAL_USER_TEMPLATE_KEYS)]
+        return f"real_user_{t}"
+
     a_type = pair["element_a_type"]
     b_type = pair["element_b_type"]
     hop = pair["hop_distance"]
@@ -1412,9 +1578,9 @@ def select_template(pair: Dict) -> str:
         return "figure_table_1hop"  # fallback
 
 
-def build_prompt(pair: Dict) -> str:
+def build_prompt(pair: Dict, query_style: str = "academic") -> str:
     """Build the prompt text for a candidate pair."""
-    template_name = select_template(pair)
+    template_name = select_template(pair, query_style)
     elem_a = pair["element_a"]
     elem_b = pair["element_b"]
     edge_text = build_edge_context_text(pair.get("edge_contexts", []))
@@ -1437,6 +1603,8 @@ def build_prompt(pair: Dict) -> str:
     def _context(elem: Dict) -> str:
         # Prefer enriched content when available (MoDora-style)
         enriched = (elem.get("enriched_content", "") or "").strip()
+        if _is_noisy_enrichment(enriched):
+            enriched = ""
         before = (elem.get("context_before", "") or "")[:300]
         after = (elem.get("context_after", "") or "")[:300]
         parts = []
@@ -1456,6 +1624,31 @@ def build_prompt(pair: Dict) -> str:
         if enriched_section:
             return prompt_text + "\n\n" + enriched_section
         return prompt_text
+
+    if template_name.startswith("real_user_"):
+        template_map = {
+            "real_user_factual": PROMPT_REAL_USER_FACTUAL,
+            "real_user_summary": PROMPT_REAL_USER_SUMMARY,
+            "real_user_comparison": PROMPT_REAL_USER_COMPARISON,
+            "real_user_how_works": PROMPT_REAL_USER_HOW_WORKS,
+            "real_user_what_if": PROMPT_REAL_USER_WHAT_IF,
+        }
+        rt = template_map.get(template_name)
+        if not rt:
+            return ""
+        prompt = rt.format(
+            elem_a_id=elem_a.get("element_id", pair.get("element_a_id", "A")),
+            elem_a_type=elem_a.get("element_type", pair.get("element_a_type", "unknown")),
+            elem_a_caption=(elem_a.get("caption", "") or "")[:300],
+            elem_a_context=_context(elem_a),
+            elem_b_id=elem_b.get("element_id", pair.get("element_b_id", "B")),
+            elem_b_type=elem_b.get("element_type", pair.get("element_b_type", "unknown")),
+            elem_b_caption=(elem_b.get("caption", "") or "")[:300],
+            elem_b_context=_context(elem_b),
+            edge_context=edge_text,
+            latex_bridge=latex_bridge_section,
+        )
+        return _with_enriched(prompt)
 
     if template_name == "figure_table_1hop":
         return _with_enriched(PROMPT_FIGURE_TABLE_1HOP.format(
@@ -1790,6 +1983,12 @@ def main() -> None:
     ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
+    ap.add_argument(
+        "--query-style",
+        choices=["academic", "real_user", "mixed"],
+        default="academic",
+        help="Prompt/QC style: academic (default), real_user, or mixed (50/50).",
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -1811,11 +2010,12 @@ def main() -> None:
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
-    print(f"Dual-Evidence L1 Query Generation (v4.4)")
+    print(f"Dual-Evidence L1 Query Generation (v4.5)")
     print(f"  Candidates: {len(pairs)}")
     print(f"  Provider: {args.provider}")
     print(f"  Model: {args.model}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
+    print(f"  Query style: {args.query_style}")
     print(f"  Output: {args.output}")
     print()
 
@@ -1875,10 +2075,11 @@ def main() -> None:
             doc_id = pair["doc_id"]
             pair_type = pair["pair_type"]
             hop = pair["hop_distance"]
-            template_name = select_template(pair)
+            effective_query_style = resolve_query_style(args.query_style, pair.get("pair_id", ""))
+            template_name = select_template(pair, effective_query_style)
 
             # Build prompt
-            prompt = build_prompt(pair)
+            prompt = build_prompt(pair, effective_query_style)
             if not prompt:
                 print(f"  [{i+1}/{len(pairs)}] SKIP (no prompt template for {pair_type})")
                 continue
@@ -1952,15 +2153,18 @@ def main() -> None:
             pair_has_length_mix = pair_has_short and pair_has_long
 
             for q_obj in queries:
-                issues, metrics = qc_multihop_query(q_obj, pair)
+                if effective_query_style == "real_user":
+                    issues, metrics = qc_real_user_query(q_obj, pair)
+                else:
+                    issues, metrics = qc_multihop_query(q_obj, pair)
                 sig = query_opening_signature(q_obj.get("query", ""))
-                if sig:
+                if sig and effective_query_style != "real_user":
                     metrics["opening_signature"] = sig
                     if opening_counts.get(sig, 0) > 1:
                         issues.append("opening_repetition")
                 metrics["pair_has_short_query"] = pair_has_short
                 metrics["pair_has_long_query"] = pair_has_long
-                if not pair_has_length_mix:
+                if not pair_has_length_mix and effective_query_style != "real_user":
                     issues.append("length_mix_missing")
 
                 # Normalize image paths
@@ -1974,6 +2178,7 @@ def main() -> None:
                     "answer": q_obj.get("answer", ""),
                     "doc_id": doc_id,
                     "pair_id": pair["pair_id"],
+                    "query_style": effective_query_style,
                     "query_length_bucket": query_length_bucket(q_obj.get("query", "")),
                     "element_ids": [pair["element_a_id"], pair["element_b_id"]],
                     "element_a_type": pair["element_a_type"],
@@ -2024,7 +2229,7 @@ def main() -> None:
     est_cost = total_input_tokens * 3 / 1e6 + total_output_tokens * 15 / 1e6
 
     print(f"\n{'='*60}")
-    print(f"Dual-Evidence L1 Generation Summary (v4.4)")
+    print(f"Dual-Evidence L1 Generation Summary (v4.5)")
     print(f"{'='*60}")
     print(f"  Total pairs processed: {len(pairs)}")
     print(f"  Total queries written: {query_idx}")
