@@ -459,6 +459,333 @@ CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). que
 
 
 # ──────────────────────────────────────────────────────────────
+# Real-user query style prompt templates (B1)
+# ──────────────────────────────────────────────────────────────
+# These templates generate naturally phrased queries as a curious
+# reader / practitioner would ask, rather than the structured
+# PhD dual-evidence academic style.  Activated via --query-style
+# real_user or mixed.  Both elements are still required to answer.
+
+PROMPT_REAL_USER_FACTUAL = """A researcher is skimming an AI/ML paper and wants quick factual clarity.
+Generate 2 natural lookup queries that require BOTH the figure and the table/formula below.
+
+## Element A ({elem_a_id}, {elem_a_type})
+Caption: {elem_a_caption}
+Context: {elem_a_context}
+
+## Element B ({elem_b_id}, {elem_b_type})
+Caption: {elem_b_caption}
+Context: {elem_b_context}
+
+## Connection
+{edge_context}
+{latex_bridge}
+
+## YOUR TASK
+Write 2 questions a researcher would genuinely ask while reading this paper.
+Style: factual_lookup — "What is X?", "What value does Y take when Z?", "What does X show about Y?"
+
+## RULES
+1. Both elements must be needed to fully answer the question.
+2. Questions must be in natural English — no academic formalism.
+3. NEVER use meta-language: "figure", "table", "equation", "as shown in".
+4. Max 25 words per question. Answer max 2 sentences.
+5. Do NOT copy raw LaTeX, variable names as standalone letters, or numeric values into the question.
+6. Each question must have a different opening word.
+
+## Output (JSON only):
+{{
+  "queries": [
+    {{
+      "query": "natural factual question requiring both elements (max 25 words)",
+      "answer": "direct factual answer (max 2 sentences, cite values from both elements)",
+      "query_type": "factual_lookup",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "key concept or value from element A", "evidence_type": "data"}},
+        {{"element_id": "{elem_b_id}", "span": "key concept or value from element B", "evidence_type": "data"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "specific region or term in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "specific region or term in element B"}}
+      ],
+      "text_evidence": "direct quote from context supporting the answer (min 30 chars)"
+    }},
+    {{
+      "query": "second natural factual question, different opening word (max 25 words)",
+      "answer": "direct factual answer (max 2 sentences)",
+      "query_type": "factual_lookup",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "key concept from element A", "evidence_type": "data"}},
+        {{"element_id": "{elem_b_id}", "span": "key concept from element B", "evidence_type": "data"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "specific region or term in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "specific region or term in element B"}}
+      ],
+      "text_evidence": "direct quote from context (min 30 chars)"
+    }}
+  ]
+}}"""
+
+PROMPT_REAL_USER_SUMMARY = """A reader wants a concise synthesis of what two pieces of evidence mean together.
+Generate 2 natural summary questions requiring BOTH elements below.
+
+## Element A ({elem_a_id}, {elem_a_type})
+Caption: {elem_a_caption}
+Context: {elem_a_context}
+
+## Element B ({elem_b_id}, {elem_b_type})
+Caption: {elem_b_caption}
+Context: {elem_b_context}
+
+## Connection
+{edge_context}
+{latex_bridge}
+
+## YOUR TASK
+Write 2 questions asking for a combined summary of both elements.
+Style: summary — "Summarize how...", "What does the combination of X and Y suggest?", "What can we conclude from X and Y together?"
+
+## RULES
+1. Both elements must be needed — a summary of only one element is wrong.
+2. Natural English. No academic formalism.
+3. NEVER use meta-language: "figure", "table", "equation", "as shown in".
+4. Max 25 words per question. Answer max 3 sentences.
+5. Each question must have a different opening word.
+6. Do NOT use yes/no questions.
+
+## Output (JSON only):
+{{
+  "queries": [
+    {{
+      "query": "natural summary question requiring both elements (max 25 words)",
+      "answer": "synthesized answer covering both elements (max 3 sentences)",
+      "query_type": "summary",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "key insight from element A", "evidence_type": "observation"}},
+        {{"element_id": "{elem_b_id}", "span": "key insight from element B", "evidence_type": "observation"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "main visual or conceptual anchor in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "main visual or conceptual anchor in element B"}}
+      ],
+      "text_evidence": "relevant context quote supporting the synthesis (min 30 chars)"
+    }},
+    {{
+      "query": "second summary question, different opening word (max 25 words)",
+      "answer": "synthesized answer (max 3 sentences)",
+      "query_type": "summary",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "key insight from element A", "evidence_type": "observation"}},
+        {{"element_id": "{elem_b_id}", "span": "key insight from element B", "evidence_type": "observation"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "main anchor in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "main anchor in element B"}}
+      ],
+      "text_evidence": "context quote (min 30 chars)"
+    }}
+  ]
+}}"""
+
+PROMPT_REAL_USER_COMPARISON = """A reader wants to understand how two results or components compare.
+Generate 2 natural comparison questions requiring BOTH elements below.
+
+## Element A ({elem_a_id}, {elem_a_type})
+Caption: {elem_a_caption}
+Context: {elem_a_context}
+
+## Element B ({elem_b_id}, {elem_b_type})
+Caption: {elem_b_caption}
+Context: {elem_b_context}
+
+## Connection
+{edge_context}
+{latex_bridge}
+
+## YOUR TASK
+Write 2 questions comparing something across the two elements.
+Style: comparison — "How does X in [element A] compare to Y in [element B]?", "Which is better at..., and why?", "What differences exist between X and Y?"
+
+## RULES
+1. The comparison must be grounded in both elements — not inferable from one alone.
+2. Natural English, conversational tone.
+3. NEVER use meta-language: "figure", "table", "equation".
+4. Max 25 words per question. Answer max 3 sentences.
+5. Do NOT copy raw LaTeX or standalone variable letters.
+6. Each question must have a different opening word.
+7. Do NOT use yes/no questions.
+
+## Output (JSON only):
+{{
+  "queries": [
+    {{
+      "query": "natural comparison question requiring both elements (max 25 words)",
+      "answer": "comparative answer with specific values from both (max 3 sentences)",
+      "query_type": "comparison",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "compared aspect from element A", "evidence_type": "observation"}},
+        {{"element_id": "{elem_b_id}", "span": "compared aspect from element B", "evidence_type": "observation"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "compared feature in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "compared feature in element B"}}
+      ],
+      "text_evidence": "context quote supporting the comparison (min 30 chars)"
+    }},
+    {{
+      "query": "second comparison question, different opening word (max 25 words)",
+      "answer": "comparative answer (max 3 sentences)",
+      "query_type": "comparison",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "compared aspect from element A", "evidence_type": "observation"}},
+        {{"element_id": "{elem_b_id}", "span": "compared aspect from element B", "evidence_type": "observation"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "compared feature in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "compared feature in element B"}}
+      ],
+      "text_evidence": "context quote (min 30 chars)"
+    }}
+  ]
+}}"""
+
+PROMPT_REAL_USER_HOW_WORKS = """A practitioner wants to understand the mechanism connecting two results.
+Generate 2 natural how/why questions requiring BOTH elements below.
+
+## Element A ({elem_a_id}, {elem_a_type})
+Caption: {elem_a_caption}
+Context: {elem_a_context}
+
+## Element B ({elem_b_id}, {elem_b_type})
+Caption: {elem_b_caption}
+Context: {elem_b_context}
+
+## Connection
+{edge_context}
+{latex_bridge}
+
+## YOUR TASK
+Write 2 mechanistic questions about how/why the two pieces of evidence are related.
+Style: how_works — "How does X lead to Y?", "Why does X affect Y?", "What mechanism connects X and Y?"
+
+## RULES
+1. Both elements must be needed to explain the mechanism.
+2. Natural English — not overly academic.
+3. NEVER use meta-language: "figure", "table", "equation", "as shown in".
+4. Max 25 words per question. Answer max 3 sentences.
+5. Do NOT copy raw LaTeX or standalone variable letters.
+6. Each question must have a different opening word.
+7. Do NOT use yes/no questions.
+
+## Output (JSON only):
+{{
+  "queries": [
+    {{
+      "query": "natural how/why question connecting both elements (max 25 words)",
+      "answer": "mechanistic answer drawing on both elements (max 3 sentences)",
+      "query_type": "how_works",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "mechanism aspect from element A", "evidence_type": "mechanism"}},
+        {{"element_id": "{elem_b_id}", "span": "mechanism aspect from element B", "evidence_type": "mechanism"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "key mechanism feature in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "key mechanism feature in element B"}}
+      ],
+      "text_evidence": "context quote supporting the mechanism (min 30 chars)"
+    }},
+    {{
+      "query": "second how/why question, different opening word (max 25 words)",
+      "answer": "mechanistic answer (max 3 sentences)",
+      "query_type": "how_works",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "mechanism aspect from element A", "evidence_type": "mechanism"}},
+        {{"element_id": "{elem_b_id}", "span": "mechanism aspect from element B", "evidence_type": "mechanism"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "key feature in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "key feature in element B"}}
+      ],
+      "text_evidence": "context quote (min 30 chars)"
+    }}
+  ]
+}}"""
+
+PROMPT_REAL_USER_WHAT_IF = """A researcher wants to reason about hypothetical changes to a method or result.
+Generate 2 natural what-if questions requiring BOTH elements below.
+
+## Element A ({elem_a_id}, {elem_a_type})
+Caption: {elem_a_caption}
+Context: {elem_a_context}
+
+## Element B ({elem_b_id}, {elem_b_type})
+Caption: {elem_b_caption}
+Context: {elem_b_context}
+
+## Connection
+{edge_context}
+{latex_bridge}
+
+## YOUR TASK
+Write 2 hypothetical / counterfactual questions that require both elements to reason about.
+Style: what_if — "What would happen to X if Y changed?", "If X were different, how would Y be affected?", "What would change in [result] if [condition] were altered?"
+
+## RULES
+1. Both elements must be needed to reason about the hypothetical.
+2. Natural English — conversational speculation.
+3. NEVER use meta-language: "figure", "table", "equation".
+4. Max 25 words per question. Answer max 3 sentences.
+5. Do NOT copy raw LaTeX or standalone variable letters.
+6. Each question must have a different opening word.
+7. Do NOT use yes/no questions.
+
+## Output (JSON only):
+{{
+  "queries": [
+    {{
+      "query": "natural what-if question connecting both elements (max 25 words)",
+      "answer": "reasoned counterfactual answer drawing on both elements (max 3 sentences)",
+      "query_type": "what_if",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "condition or variable from element A", "evidence_type": "condition"}},
+        {{"element_id": "{elem_b_id}", "span": "affected result from element B", "evidence_type": "result"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "hypothetical feature in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "affected feature in element B"}}
+      ],
+      "text_evidence": "context quote supporting the reasoning (min 30 chars)"
+    }},
+    {{
+      "query": "second what-if question, different opening word (max 25 words)",
+      "answer": "reasoned counterfactual answer (max 3 sentences)",
+      "query_type": "what_if",
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "condition from element A", "evidence_type": "condition"}},
+        {{"element_id": "{elem_b_id}", "span": "affected result from element B", "evidence_type": "result"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "feature in element A"}},
+        {{"element_id": "{elem_b_id}", "anchor": "feature in element B"}}
+      ],
+      "text_evidence": "context quote (min 30 chars)"
+    }}
+  ]
+}}"""
+
+# Mapping used by select_template() for real_user style
+_REAL_USER_TEMPLATES: Dict[str, str] = {
+    "factual_lookup": PROMPT_REAL_USER_FACTUAL,
+    "summary": PROMPT_REAL_USER_SUMMARY,
+    "comparison": PROMPT_REAL_USER_COMPARISON,
+    "how_works": PROMPT_REAL_USER_HOW_WORKS,
+    "what_if": PROMPT_REAL_USER_WHAT_IF,
+}
+_REAL_USER_STYLE_CYCLE = list(_REAL_USER_TEMPLATES.keys())
+
+
+# ──────────────────────────────────────────────────────────────
 # QC infrastructure (reused + extended from L2 script)
 # ──────────────────────────────────────────────────────────────
 
@@ -1240,6 +1567,121 @@ def qc_multihop_query(
     return issues, metrics
 
 
+def qc_real_user_query(
+    obj: Dict[str, Any],
+    pair: Dict[str, Any],
+) -> Tuple[List[str], Dict[str, Any]]:
+    """QC checks for real-user style queries (relaxed relative to academic style).
+
+    Kept checks:
+      - meta_language: no "figure"/"table"/"equation" in query
+      - yes_no_question: no pure yes/no questions
+      - single_element_answer: answer must draw on both elements
+      - empty/too_short/too_long: basic length sanity
+
+    Removed / relaxed checks (relative to qc_multihop_query):
+      - template_shortcut: "How does X relate to Y" is fine in real-user style
+      - templated_opening / template_collapse: natural openers allowed
+      - pseudo_multihop_parallel: dual-ask style acceptable in conversational queries
+      - weak_reasoning_connector: colloquial answers needn't use "because/due to"
+      - missing_reasoning_chain: no explicit reasoning_chain requirement
+      - architecture_intent_missing: not applicable
+      - length_mix_missing: no SHORT+LONG bucket requirement
+
+    New metric:
+      - retrievability_score (0–3): rough estimate of how retrievable the answer is
+        from the two elements without additional context.
+    """
+    issues: List[str] = []
+    metrics: Dict[str, Any] = {}
+    q = obj.get("query", "")
+    q_lower = q.lower().strip()
+    a = obj.get("answer", "")
+    q_words = query_word_count(q)
+    metrics["query_word_count"] = q_words
+    metrics["query_length_bucket"] = query_length_bucket(q)
+
+    # 1. Meta-language (kept)
+    if any(re.search(p, q_lower) for p in BAD_META_PATTERNS):
+        issues.append("meta_language")
+
+    # 2. Empty / length (kept, relaxed max to 35 words for real-user style)
+    if not q.strip():
+        issues.append("empty_query")
+    elif q_words < 4:
+        issues.append("query_too_short")
+    elif q_words > 35:
+        issues.append("query_too_long")
+
+    # 3. Yes/no question (kept)
+    if is_yes_no_question(q):
+        issues.append("yes_no_question")
+
+    # 4. Single-element answer (kept — dual evidence requirement is non-negotiable)
+    a_tokens = _content_tokens(a)
+    a_num_tokens = _number_tokens(a)
+    if a_tokens or a_num_tokens:
+        def _min_overlap_ru(elem: Dict) -> int:
+            etype = str(elem.get("element_type", "")).lower()
+            return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
+
+        def _elem_text_ru(elem: Dict) -> str:
+            return (elem.get("caption", "") or "") + " " + (elem.get("content", "") or "")
+
+        span_text_by_eid: Dict[str, str] = defaultdict(str)
+        for s in obj.get("required_evidence_spans", []) or []:
+            if not isinstance(s, dict):
+                continue
+            eid = str(s.get("element_id", "")).strip()
+            span = str(s.get("span", "")).strip()
+            if eid and span:
+                span_text_by_eid[eid] += " " + span
+
+        elem_a = pair.get("element_a", {})
+        elem_b = pair.get("element_b", {})
+        elem_a_id = pair.get("element_a_id", "")
+        elem_b_id = pair.get("element_b_id", "")
+
+        def _overlap_ru(elem: Dict, elem_id: str) -> int:
+            merged = (_elem_text_ru(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
+            word_ov = len(a_tokens & _content_tokens(merged))
+            num_ov = len(a_num_tokens & _number_tokens(merged))
+            return word_ov + min(num_ov, 2)
+
+        ov_a = _overlap_ru(elem_a, elem_a_id)
+        ov_b = _overlap_ru(elem_b, elem_b_id)
+        metrics["answer_overlap_a"] = ov_a
+        metrics["answer_overlap_b"] = ov_b
+        total = ov_a + ov_b
+        metrics["answer_balance"] = 0.0
+        if total > 0:
+            balance = min(ov_a / total, ov_b / total)
+            metrics["answer_balance"] = round(balance, 4)
+            if (
+                ov_a < _min_overlap_ru(elem_a)
+                or ov_b < _min_overlap_ru(elem_b)
+                or balance < ANSWER_BALANCE_THRESHOLD
+            ):
+                issues.append("single_element_answer")
+        else:
+            issues.append("single_element_answer")
+
+    # 5. Retrievability score (0–3, higher = more self-contained / easier to retrieve)
+    #    Heuristic: +1 if answer length > 30 chars, +1 if required_evidence_spans non-empty,
+    #    +1 if text_evidence non-empty
+    retv = 0
+    if len(a.strip()) > 30:
+        retv += 1
+    if obj.get("required_evidence_spans"):
+        retv += 1
+    evidence = obj.get("text_evidence", "")
+    if len(evidence) >= 30:
+        retv += 1
+    metrics["retrievability_score"] = retv
+
+    return issues, metrics
+
+
 # ──────────────────────────────────────────────────────────────
 # Image encoding
 # ──────────────────────────────────────────────────────────────
@@ -1338,18 +1780,64 @@ def build_latex_bridge_section(pair: Dict) -> str:
     return header + meta + f'"{bridge[:600]}"'
 
 
+# ──────────────────────────────────────────────────────────────
+# C1: Enrichment noise filter
+# ──────────────────────────────────────────────────────────────
+
+# Patterns that indicate a low-quality / noisy enriched field.
+# If any pattern matches, the enriched field is discarded and we
+# fall back to the original raw context so the LLM isn't misled.
+_ENRICHMENT_NOISE_PATTERNS = [
+    # Unicode decorative / glyph / icon characters
+    r"[\u2460-\u2473\u25a0-\u25ff\u2600-\u26ff\u2700-\u27bf]",
+    # Explicit noise labels from common OCR / PDF-extraction artefacts
+    r"\b(glyph|icon|marker|symbol|bullet|arrow|checkmark|watermark)\b",
+    # Circled / enclosed numbers used as decorative list markers
+    r"[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮]",
+    # Self-describing OCR failure strings
+    r"\b(ocr error|illegible|unreadable|corrupted text|extraction failed)\b",
+    # Repeated non-alphanumeric filler (e.g. "--- --- ---", "· · ·")
+    r"^[\W\d\s]{0,20}$",
+]
+
+_ENRICHMENT_NOISE_RE = re.compile(
+    "|".join(_ENRICHMENT_NOISE_PATTERNS), re.IGNORECASE | re.UNICODE
+)
+
+
+def _is_noisy_enrichment(text: str) -> bool:
+    """Return True if the enriched field should be discarded as noise.
+
+    A field is considered noisy if:
+    - It is empty or too short to carry semantic meaning (< 15 chars after strip)
+    - It matches any of the known glyph / icon / OCR-error patterns
+    """
+    if not text:
+        return True
+    stripped = text.strip()
+    if len(stripped) < 15:
+        return True
+    return bool(_ENRICHMENT_NOISE_RE.search(stripped))
+
+
 def build_enriched_context_section(pair: Dict) -> str:
     """Build enriched context section from MoDora-style [T]/[M]/[C] fields.
 
     Provides richer element descriptions when enriched fields are available
-    from enrich_elements_modora.py output.
+    from enrich_elements_modora.py output.  Low-quality / noisy enriched
+    fields are silently dropped (C1 noise filter).
     """
     parts: List[str] = []
 
     for key, label in [("element_a", "Element A"), ("element_b", "Element B")]:
         elem = pair.get(key, {})
-        enriched_title = elem.get("enriched_title", "")
-        enriched_content = elem.get("enriched_content", "")
+        enriched_title = elem.get("enriched_title", "") or ""
+        enriched_content = elem.get("enriched_content", "") or ""
+        # C1: discard noisy fields before including them in the prompt
+        if _is_noisy_enrichment(enriched_title):
+            enriched_title = ""
+        if _is_noisy_enrichment(enriched_content):
+            enriched_content = ""
         if enriched_title or enriched_content:
             section = f"[{label} enriched description]"
             if enriched_title:
@@ -1358,8 +1846,8 @@ def build_enriched_context_section(pair: Dict) -> str:
                 section += f" {enriched_content}"
             parts.append(section)
 
-    hub_summary = pair.get("hub_semantic_summary", "")
-    if hub_summary:
+    hub_summary = pair.get("hub_semantic_summary", "") or ""
+    if not _is_noisy_enrichment(hub_summary):
         parts.append(f"[Hub bridge summary] {hub_summary}")
 
     if not parts:
@@ -1391,12 +1879,29 @@ def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> 
     return ", ".join(parts)
 
 
-def select_template(pair: Dict) -> str:
-    """Choose the right prompt template based on modality combo and hop distance."""
+def select_template(pair: Dict, query_style: str = "academic") -> str:
+    """Choose the right prompt template based on modality combo, hop distance, and style.
+
+    query_style:
+      "academic"  — original dual-evidence PhD persona templates (default, backward-compat)
+      "real_user" — natural-language reader templates (5 rotating sub-types)
+      "mixed"     — 50 % academic / 50 % real_user, chosen deterministically by pair hash
+    """
+    if query_style == "real_user":
+        # Rotate through 5 real-user sub-types deterministically by pair index
+        pair_hash = hash(pair.get("pair_id", "")) % len(_REAL_USER_STYLE_CYCLE)
+        return f"real_user_{_REAL_USER_STYLE_CYCLE[pair_hash]}"
+    elif query_style == "mixed":
+        # Even pair-hash index → academic; odd → real_user
+        pair_hash = hash(pair.get("pair_id", ""))
+        if pair_hash % 2 == 0:
+            return select_template(pair, "academic")
+        return select_template(pair, "real_user")
+
+    # academic (default)
     a_type = pair["element_a_type"]
     b_type = pair["element_b_type"]
     hop = pair["hop_distance"]
-
     types = {a_type, b_type}
 
     if types == {"figure", "table"}:
@@ -1412,9 +1917,9 @@ def select_template(pair: Dict) -> str:
         return "figure_table_1hop"  # fallback
 
 
-def build_prompt(pair: Dict) -> str:
+def build_prompt(pair: Dict, query_style: str = "academic") -> str:
     """Build the prompt text for a candidate pair."""
-    template_name = select_template(pair)
+    template_name = select_template(pair, query_style)
     elem_a = pair["element_a"]
     elem_b = pair["element_b"]
     edge_text = build_edge_context_text(pair.get("edge_contexts", []))
@@ -1435,8 +1940,11 @@ def build_prompt(pair: Dict) -> str:
             formula_key = key
 
     def _context(elem: Dict) -> str:
-        # Prefer enriched content when available (MoDora-style)
+        # Prefer enriched content when available (MoDora-style).
+        # C1: discard noisy enriched fields before using them.
         enriched = (elem.get("enriched_content", "") or "").strip()
+        if _is_noisy_enrichment(enriched):
+            enriched = ""
         before = (elem.get("context_before", "") or "")[:300]
         after = (elem.get("context_after", "") or "")[:300]
         parts = []
@@ -1503,6 +2011,22 @@ def build_prompt(pair: Dict) -> str:
             tbl_caption=(table_elem.get("caption", "") or "")[:400],
             tbl_headers=extract_table_headers((table_elem.get("content", "") or ""), max_chars=150),
             tbl_context=_context(table_elem),
+            edge_context=edge_text,
+            latex_bridge=latex_bridge_section,
+        ))
+    elif template_name.startswith("real_user_"):
+        # Real-user templates use a generic two-element layout
+        style_key = template_name[len("real_user_"):]
+        ru_template = _REAL_USER_TEMPLATES.get(style_key, PROMPT_REAL_USER_FACTUAL)
+        return _with_enriched(ru_template.format(
+            elem_a_id=elem_a["element_id"],
+            elem_a_type=elem_a.get("element_type", "element"),
+            elem_a_caption=(elem_a.get("caption", "") or "")[:400],
+            elem_a_context=_context(elem_a),
+            elem_b_id=elem_b["element_id"],
+            elem_b_type=elem_b.get("element_type", "element"),
+            elem_b_caption=(elem_b.get("caption", "") or "")[:400],
+            elem_b_context=_context(elem_b),
             edge_context=edge_text,
             latex_bridge=latex_bridge_section,
         ))
@@ -1790,6 +2314,17 @@ def main() -> None:
     ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
+    ap.add_argument(
+        "--query-style",
+        choices=["academic", "real_user", "mixed"],
+        default="academic",
+        help=(
+            "Query generation style: "
+            "'academic' (default, backward-compat dual-evidence PhD persona), "
+            "'real_user' (natural-language reader queries, 5 rotating sub-types), "
+            "'mixed' (50%% academic / 50%% real_user by pair hash)"
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -1811,10 +2346,11 @@ def main() -> None:
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
-    print(f"Dual-Evidence L1 Query Generation (v4.4)")
+    print(f"Dual-Evidence L1 Query Generation (v4.5)")
     print(f"  Candidates: {len(pairs)}")
     print(f"  Provider: {args.provider}")
     print(f"  Model: {args.model}")
+    print(f"  Query style: {args.query_style}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Output: {args.output}")
     print()
@@ -1875,10 +2411,10 @@ def main() -> None:
             doc_id = pair["doc_id"]
             pair_type = pair["pair_type"]
             hop = pair["hop_distance"]
-            template_name = select_template(pair)
+            template_name = select_template(pair, args.query_style)
 
             # Build prompt
-            prompt = build_prompt(pair)
+            prompt = build_prompt(pair, args.query_style)
             if not prompt:
                 print(f"  [{i+1}/{len(pairs)}] SKIP (no prompt template for {pair_type})")
                 continue
@@ -1952,16 +2488,22 @@ def main() -> None:
             pair_has_length_mix = pair_has_short and pair_has_long
 
             for q_obj in queries:
-                issues, metrics = qc_multihop_query(q_obj, pair)
-                sig = query_opening_signature(q_obj.get("query", ""))
-                if sig:
-                    metrics["opening_signature"] = sig
-                    if opening_counts.get(sig, 0) > 1:
-                        issues.append("opening_repetition")
-                metrics["pair_has_short_query"] = pair_has_short
-                metrics["pair_has_long_query"] = pair_has_long
-                if not pair_has_length_mix:
-                    issues.append("length_mix_missing")
+                # Route to the appropriate QC function based on query style
+                is_real_user_style = args.query_style in ("real_user", "mixed") and template_name.startswith("real_user_")
+                if is_real_user_style:
+                    issues, metrics = qc_real_user_query(q_obj, pair)
+                else:
+                    issues, metrics = qc_multihop_query(q_obj, pair)
+                    sig = query_opening_signature(q_obj.get("query", ""))
+                    if sig:
+                        metrics["opening_signature"] = sig
+                        if opening_counts.get(sig, 0) > 1:
+                            issues.append("opening_repetition")
+                    metrics["pair_has_short_query"] = pair_has_short
+                    metrics["pair_has_long_query"] = pair_has_long
+                    if not pair_has_length_mix:
+                        issues.append("length_mix_missing")
+                metrics["query_style"] = args.query_style
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -1983,6 +2525,7 @@ def main() -> None:
                     "path": pair.get("path", []),
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
                     "cross_modal": True,
+                    "query_style": args.query_style,
                     "image_paths": [p for p in [img_a_path, img_b_path] if p],
                     "quality_tier": pair.get("quality_tier", "unknown"),
                     "query_type": q_obj.get("query_type", "unknown"),
@@ -2024,8 +2567,9 @@ def main() -> None:
     est_cost = total_input_tokens * 3 / 1e6 + total_output_tokens * 15 / 1e6
 
     print(f"\n{'='*60}")
-    print(f"Dual-Evidence L1 Generation Summary (v4.4)")
+    print(f"Dual-Evidence L1 Generation Summary (v4.5)")
     print(f"{'='*60}")
+    print(f"  Query style:           {args.query_style}")
     print(f"  Total pairs processed: {len(pairs)}")
     print(f"  Total queries written: {query_idx}")
     print(f"  QC passed:             {kept}")
