@@ -47,6 +47,39 @@ log_run(
 ## 项目简介
 这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
 
+## 当前状态（2026-03-10 更新｜MoDora 深度整合 + Real-user Query 风格 + Enrichment 质量闸门）
+
+### 本轮完成（相对 2026-03-09）
+
+- **MoDora 整合实施方案设计完成**（4 个 workstream 并行）
+  - Workstream A：节点粒度细化（段落按 section 切分 + section 节点参与路径枚举）
+  - Workstream B：Real-user query 风格（5 类新模板 + `--query-style` 切换 + node_group 支持）
+  - Workstream C：Enrichment 质量闸门（噪声过滤器 + figure/table 一致性校验 + hub summary 压缩重写）
+  - Workstream D：QC 体系重构（`qc_real_user_query()` 并行于现有 `qc_multihop_query()` + retrievability_score）
+- **同事 Review 反馈已纳入方案**
+  - 最高优先：低质量 enrichment 过滤器（glyph/icon/marker 等噪声模式检测，命中则回退原始 context）
+  - figure/table 轻量一致性校验（caption 含 metric 词但 enriched 输出 figure_type=other → 低置信标记）
+  - hub summary 从拼接升级为压缩重写（50-80 词，提升桥接语义密度）
+- **实施方案文档**：`plan.md`（项目根目录）
+
+### 本轮关键设计决策
+- **旧模板保留，新模板并存**：通过 `--query-style academic/real_user/mixed` 切换，默认 `academic` 向后兼容
+- **仅英文**：新 real-user 模板仍为英文
+- **Node group 替代 strict pair**：新模板支持 1-3 个元素的 node_group，不再强制恰好 2 个
+- **QC 双轨制**：academic 走现有 `qc_multihop_query()`，real_user 走新 `qc_real_user_query()`（放宽 yes/no、template 限制，新增 retrievability_score）
+- **Enrichment 质量优先于数量**：query 生成前过滤低质量 enriched 字段，而非盲信
+
+### 待改动文件（5 个）
+| 文件 | 工作流 | 改动 |
+|------|--------|------|
+| `src/parsers/latex_reference_extractor.py` | A | `_extract_paragraphs()` 按 section 边界切分 |
+| `scripts/analyze_latex_graph_topology.py` | A | section 节点参与路径 + `--single-doc-only` |
+| `scripts/generate_multihop_l1_queries.py` | B, C, D | 5 类新模板 + enrichment 过滤器 + real-user QC + `--query-style` |
+| `scripts/enrich_hub_candidates.py` | B, C | node_group 支持 + hub summary 压缩重写 |
+| `src/utils/token_logger.py` | — | 无需改动（已合规） |
+
+---
+
 ## 当前状态（2026-03-09 更新｜MoDora [T]/[M]/[C] Enrichment 整合）
 
 ### 本轮完成（相对 2026-03-07）
@@ -435,7 +468,7 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-07 更新）
+## 下一步 TODO（2026-03-10 更新）
 - ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
 - ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
 - ~~**P-0.5: Step 0 v3.2 v3 重跑**~~ ✅ **完成** — 集群跑出 118 对（G1+G2），stats 一致，cross-ref gate 正确
@@ -445,11 +478,18 @@ python scripts/generate_multihop_l1_queries.py \
 - ~~**P1.1.2: L1 dual-evidence v4.2（PhD persona + verb diversity + natural operators）**~~ ✅ **完成** — 236 条，152 pass (64.4%)，$2.57
 - ~~**LaTeX Topology v2 + Hub Multi-hop Candidates**~~ ✅ **完成** — 2551 nodes, 3471 edges, 500 candidates, 100% bridge hubs
 - ~~**公司 API 整合**~~ ✅ **完成** — `--provider company` via `local_api_logger`，SSE 流式解析 + token 自动记录
-- **P0（最高优先）：全量生成 L1 hub-multihop queries**：放入 `local_api_logger` + 设置 `COMPANY_API_KEY` 后，用 `--provider company` 跑 500 条 hub candidates
-- **P1：修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
+- ~~**MoDora 整合方案设计**~~ ✅ **完成** — 4 workstream 并行，5 文件改动，同事反馈已纳入
+- **C1（最高优先）：低质量 enrichment 过滤器**：在 query 生成前检测 enriched 字段噪声模式（glyph/icon/marker），命中回退原始 context
+- **A1：段落按 section 边界切分**：`_extract_paragraphs()` 遇 `\section{}` 先 flush 当前 block
+- **A2：section 节点参与路径枚举**：Strategy 4 + `--single-doc-only` flag
+- **B1：5 类 real-user prompt 模板**：factual_lookup / summary / comparison / how_works / what_if
+- **B2：`--query-style` CLI 开关**：academic（默认）/ real_user / mixed
+- **C3：hub summary 压缩重写**：从拼接升级为 50-80 词压缩
+- **D1：`qc_real_user_query()` 函数**：放宽 yes/no + template 限制，新增 retrievability_score
+- **P0（原有）：全量生成 L1 hub-multihop queries**：放入 `local_api_logger` + 设置 `COMPANY_API_KEY` 后，用 `--provider company` 跑 500 条 hub candidates
+- **P1（原有）：修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
 - **P0.1: Citation-based L2 候选替换**：用 123 条引用边（集群）做 L2 候选对（替代实体倒排索引），信号更强
 - **P1.2: figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 这几篇论文 0 pass 全失败，分析 root cause
-- **P1.3: 分层启用 weak_reasoning_connector**：按 `query_type` 控制，不对纯参数检索类过罚
 - **P2: label 匹配率继续提升**：49.8% → 更高，改善 page_span 覆盖（当前 19%）
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
 - **L2 暂停实体路线**：实体倒排索引的 L2 暂停，改用 citation graph 做候选

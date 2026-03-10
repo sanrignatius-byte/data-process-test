@@ -1866,3 +1866,81 @@ python -c "from local_api_logger import print_stats_summary; print_stats_summary
 
 - 用户放入 `local_api_logger` + 设置 key → 跑 `main.py` 验证 → 全量生成。
 - 质量迭代目标不变：P0 是全量生成 L1 hub-multihop queries，P1 是修复零候选文档覆盖喵。
+
+---
+
+## 日期：2026-03-10（MoDora 深度整合方案 + 同事 Review + Real-user Query 风格设计）
+
+### 一、背景
+- MoDora（Multi-modal Document Retrieval via Cascade and Clustering Tree）论文分析已完成（`docs/MODORA_INTEGRATION_ANALYSIS.md`）。
+- 结论：借鉴 MoDora 的"上游语义增强"（[T]/[M]/[C] enrichment），不迁移其 CCTree 检索框架。
+- Mentor 2026-03-06 执行方案中提出三个核心 gap：节点粒度过粗、query 风格太学术、评测偏 answer 质量而非 retrievability。
+- 本轮目标：设计完整实施方案，覆盖三个 gap + 同事反馈。
+
+### 二、同事 Review 反馈（2026-03-10 收到）
+
+1. **"hub summary 拼接式聚合距离结构化层级汇总还有一步"**
+   - 当前 `build_hub_semantic_summary()` 是 endpoint enriched + edge snippet + keywords 的简单拼接
+   - MoDora 强调 leaf-to-parent 的 cascade 汇总
+   - 决策：增加压缩重写步骤（50-80 词），提升桥接语义密度
+
+2. **"validate 缺少语义可信度过滤"**
+   - 当前 validate 只做结构校验（字段有无/长度）
+   - marker/glyph/icon 等无效图的 enrichment 会污染 prompt
+   - 决策：query 生成前加 enrichment 质量过滤器（最高优先级）
+
+3. **"figure/table 需要轻量一致性校验"**
+   - caption 含 metric 词但 enriched 输出 figure_type=other + 纯排版关键词 → 低置信
+   - 决策：在同一过滤函数中实现，标记为低置信并回退原始 context
+
+### 三、四工作流实施方案
+
+#### Workstream A：节点粒度细化
+- **A1**：`src/parsers/latex_reference_extractor.py` — `_extract_paragraphs()` 在 `RE_SECTION` 匹配行处先 flush 当前 block
+- **A2**：`scripts/analyze_latex_graph_topology.py` — 新增 Strategy 4（section-bridged paths）+ `--single-doc-only` flag + intra-doc 优先排序
+- **A3**：重跑 `build_latex_reference_graph.py` + `analyze_latex_graph_topology.py` 重建候选
+
+#### Workstream B：Real-user Query 风格
+- **B1**：5 类新模板（factual_lookup / summary / comparison / how_works / what_if）
+  - 与现有 academic 模板并存，通过 `--query-style` 切换
+  - 关键差异：无强制 observation injection，允许 yes/no，5-20 词，输出 node_group（1-3 元素）
+- **B2**：`select_template()` 按 `--query-style` 分派
+- **B3**：`enrich_hub_candidates.py` 支持 node_group 字段
+
+#### Workstream C：Enrichment 质量 + Hub Summary
+- **C1**（最高优先）：噪声模式检测（glyph/icon/standalone symbol/marker/decorative/logo/separator）
+- **C2**：caption vs enriched 一致性校验（metric 词 vs figure_type=other）
+- **C3**：hub summary 压缩重写（拼接 → 50-80 词精炼）
+
+#### Workstream D：QC 体系重构
+- **D1**：新建 `qc_real_user_query()`，保留核心安全检查（meta_language/anchor_leakage/numeric_leakage），移除学术风格限制（yes_no/template_shortcut/weak_reasoning_connector）
+- **D2**：新增 `retrievability_score`（query token 与目标元素的词汇重叠率）
+- **D3**：输出 schema 扩展（`query_style` / `node_group` / `retrievability_score`）
+
+### 四、关键设计决策
+
+| 决策点 | 选择 | 理由 |
+|--------|------|------|
+| 旧模板处理 | 保留并存 | 向后兼容 + A/B 对比 |
+| Query 语言 | 仅英文 | 语料和评测基准均为英文 |
+| 推进顺序 | 全部并行 | A 和 B 无依赖，C1 最高优先先做 |
+| node_group 大小 | 1-3 | 单元素 query 覆盖 factual_lookup，3 元素覆盖复杂 comparison |
+| hub summary 重写 | LLM 或规则 | 先试规则压缩，不够再加 LLM |
+| QC 双轨制 | 按 query_style 分派 | 避免改动现有通过率基线 |
+
+### 五、执行优先级
+
+```
+C1 (enrichment 过滤器) ← 最高优先
+  ↓
+A1+A2 ‖ B1+B2 ‖ C3  （并行）
+  ↓       ↓
+A3      B3 → D1+D2+D3
+              ↓
+          集成测试
+```
+
+### 六、下一步
+- 立即开始 C1（enrichment 过滤器），预计改动量最小、收益最大
+- A1/A2 和 B1/B2 同步推进
+- 完成后在现有 500 candidates 上做 `--query-style real_user --limit 50` 验证喵
