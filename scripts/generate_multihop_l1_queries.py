@@ -2484,9 +2484,9 @@ def main() -> None:
         if args.provider == "anthropic":
             args.model = "claude-sonnet-4-5-20250929"
         elif args.provider == "openai":
-            args.model = "gpt-4o"
+            args.model = "gpt5.2"
         else:  # company
-            args.model = "claude-sonnet-4-20250514"
+            args.model = "gpt5.2"
 
     # Load candidates
     cand_path = Path(args.candidates)
