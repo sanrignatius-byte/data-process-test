@@ -59,7 +59,7 @@ describe context from one element, ask a question answerable only by the other.
 
 ## STRICT RULES
 1. Query MUST be UNANSWERABLE if either the figure or the table is removed.
-2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions.
+2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions, including embedded binary forms like "..., does X...?" or "..., is X...?".
 3. NEVER start with "Given that" or "What causes" (avoid template collapse).
 4. NEVER put specific numbers, percentages, or exact values in the query.
 5. NEVER use meta-language: "figure", "table", "the text", "according to", "as shown in".
@@ -161,7 +161,7 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 
 ## STRICT RULES
 1. Query MUST be UNANSWERABLE if either endpoint or bridge is removed.
-2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions.
+2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions, including embedded binary forms like "..., does X...?" or "..., is X...?".
 3. NEVER start with "Given that" or "What causes" (avoid template collapse).
 4. NEVER put specific numbers or exact values in the query.
 5. NEVER use meta-language: "figure", "table", "the text", "according to", "as shown in".
@@ -275,7 +275,7 @@ Avoid vague substitutions like "the best-performing method" when a concrete name
 
 ## STRICT RULES
 1. Query MUST be UNANSWERABLE without BOTH the figure AND the formula. Test: if you remove the figure, can you still answer from the formula alone? If yes — REJECT and rewrite.
-2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions.
+2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions, including embedded binary forms like "..., does X...?" or "..., is X...?".
 3. NEVER start with "Given that" or "What causes" (avoid template collapse).
 4. NEVER copy raw LaTeX strings or raw variable symbols into the query.
 5. You MAY use at most ONE anchor value in the query only if needed to preserve directionality.
@@ -286,10 +286,8 @@ Avoid vague substitutions like "the best-performing method" when a concrete name
    mathematical mechanism; no unrelated stitching.
 10. Avoid weak templates: "Which component..." "How does X relate to Y..." "What role does..."
 11. Answer must include a relationship connector (because / due to / consistent with /
-    constrained by / compared with / whereas / despite / under).
-12. Questions must NOT be binary yes/no asks. Avoid constructions like "..., does X...?" or "..., is X...?"; use what/which/how/why explanatory forms.
-13. Answer MUST NOT begin with "Yes" or "No"; write a declarative explanation.
-14. IRON RULE (symbolic grounding): if Element B is mathematical, the answer MUST explicitly quote at least one specific variable/function/constraint term from Element B (e.g., lambda, theta, f(A,C)) and explain how it maps to the observed visual topology in Element A. Avoid generic phrases like "the mathematical structure".
+    constrained by / compared with / whereas / despite / under) and be declarative (do NOT begin with "Yes" or "No").
+12. IRON RULE (symbolic grounding): if Element B is mathematical, the answer MUST explicitly quote at least one specific variable/function/constraint term from Element B (e.g., lambda, theta, f(A,C)) and explain how it maps to the observed visual topology in Element A. Avoid generic phrases like "the mathematical structure".
 
 ## SELF-CHECK before outputting each query
 
@@ -391,7 +389,7 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 
 ## STRICT RULES
 1. Query MUST be UNANSWERABLE without both the formula and the table.
-2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions.
+2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions, including embedded binary forms like "..., does X...?" or "..., is X...?".
 3. NEVER start with "Given that" or "What causes" (avoid template collapse).
 4. NEVER copy raw LaTeX strings or raw variable symbols into the query.
 5. You MAY use at most ONE anchor value in the query only if needed to preserve directionality.
@@ -1804,11 +1802,7 @@ def qc_real_user_query(
     unsupported_nums = sorted(answer_nums - source_nums)
     metrics["unsupported_answer_numbers"] = unsupported_nums
     if unsupported_nums:
-        # Hard-fail only for high-risk case: no reasoning chain + unsupported numeric claims.
-        if not has_min_reasoning_chain(obj):
-            issues.append("numeric_unsupported")
-        else:
-            metrics["numeric_unsupported_warn"] = True
+        issues.append("numeric_unsupported")
 
     # 8. Figure+formula symbolic grounding hard check.
     pair_type = str(pair.get("pair_type", ""))
