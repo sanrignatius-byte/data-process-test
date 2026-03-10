@@ -287,6 +287,7 @@ Avoid vague substitutions like "the best-performing method" when a concrete name
 10. Avoid weak templates: "Which component..." "How does X relate to Y..." "What role does..."
 11. Answer must include a relationship connector (because / due to / consistent with /
     constrained by / compared with / whereas / despite / under).
+12. IRON RULE (symbolic grounding): if Element B is mathematical, the answer MUST explicitly quote at least one specific variable/function/constraint term from Element B (e.g., lambda, theta, f(A,C)) and explain how it maps to the observed visual topology in Element A. Avoid generic phrases like "the mathematical structure".
 
 ## SELF-CHECK before outputting each query
 
@@ -825,6 +826,7 @@ SHORT_QUERY_MIN_WORDS = 8
 SHORT_QUERY_MAX_WORDS = 14
 LONG_QUERY_MIN_WORDS = 18
 MAX_QUERY_WORDS = 30
+TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.4
 
 QUERY_SHORTCUT_PATTERNS = [
     r"^which\s+component\b",
@@ -1322,6 +1324,59 @@ def _number_tokens(text: str) -> Set[str]:
     return nums
 
 
+def _extract_formula_symbol_terms(content: str) -> Set[str]:
+    """Extract formula-specific symbolic terms used for grounding checks."""
+    if not content:
+        return set()
+    text = content
+    regions: List[str] = []
+    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
+    math_text = " ".join(regions) if regions else text
+
+    terms: Set[str] = set()
+    for g in re.findall(r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)", math_text):
+        terms.add(g.lower())
+    for t in re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text):
+        terms.add(t.lower())
+    for t in re.findall(r"\b([A-Za-z]+\([A-Za-z0-9,\s]+\))", math_text):
+        terms.add(re.sub(r"\s+", "", t.lower()))
+    ignore_cmds = {"begin", "end", "left", "right", "frac", "cdot", "times", "sum", "prod", "int", "mid", "tag"}
+    for cmd in re.findall(r"\\([A-Za-z]{2,})", math_text):
+        c = cmd.lower()
+        if c not in ignore_cmds:
+            terms.add(c)
+    return {t for t in terms if t and len(t) >= 2}
+
+
+def _formula_symbol_hit(answer: str, terms: Set[str]) -> bool:
+    """Return True if answer explicitly mentions at least one formula symbol/term."""
+    if not terms:
+        return True
+    a = (answer or "").lower()
+    a_no_space = re.sub(r"\s+", "", a)
+    for t in terms:
+        if "(" in t or "_" in t:
+            if t in a_no_space:
+                return True
+        else:
+            if re.search(rf"\b{re.escape(t)}\b", a):
+                return True
+    return False
+
+
+def _answer_text_evidence_overlap(answer: str, evidence: str) -> float:
+    """Token overlap ratio between answer and text_evidence (answer-normalized)."""
+    a_tokens = _content_tokens(answer)
+    if not a_tokens:
+        return 0.0
+    e_tokens = _content_tokens(evidence)
+    if not e_tokens:
+        return 0.0
+    return len(a_tokens & e_tokens) / len(a_tokens)
+
+
 def anchor_leak_jaccard(query: str, anchors: List[Dict[str, Any]]) -> float:
     q_tokens = _content_tokens(query)
     if not q_tokens:
@@ -1543,6 +1598,23 @@ def qc_multihop_query(
     if len(evidence) < 40:
         issues.append("short_evidence")
 
+    # 8b. Guard against answer over-reliance on text_evidence paraphrase.
+    text_evidence_overlap = _answer_text_evidence_overlap(a, evidence)
+    metrics["text_evidence_overlap"] = round(text_evidence_overlap, 4)
+    if text_evidence_overlap > TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD:
+        issues.append("text_evidence_over_reliance")
+
+    # 8c. Figure+formula symbolic grounding hard check.
+    pair_type = str(pair.get("pair_type", ""))
+    if pair_type == "figure+formula":
+        formula_elem = pair.get("element_a", {}) if pair.get("element_a_type") == "formula" else pair.get("element_b", {})
+        formula_text = (formula_elem.get("caption", "") or "") + " " + (formula_elem.get("content", "") or "")
+        formula_terms = _extract_formula_symbol_terms(formula_text)
+        metrics["formula_symbol_term_count"] = len(formula_terms)
+        metrics["formula_symbol_grounded"] = _formula_symbol_hit(a, formula_terms)
+        if formula_terms and not metrics["formula_symbol_grounded"]:
+            issues.append("formula_symbol_grounding_missing")
+
     # 9. Encourage explicit relationship grounding instead of generic lookup answers.
     # v2.1: cross_reading is a lookup/referencing type, not explanatory — exempt from check.
     qtype = str(obj.get("query_type", "")).lower()
@@ -1679,6 +1751,42 @@ def qc_real_user_query(
     if len(evidence) >= 30:
         retv += 1
     metrics["retrievability_score"] = retv
+
+    # 6. Guard against answer over-reliance on text_evidence paraphrase.
+    evidence = obj.get("text_evidence", "")
+    text_evidence_overlap = _answer_text_evidence_overlap(a, evidence)
+    metrics["text_evidence_overlap"] = round(text_evidence_overlap, 4)
+    if text_evidence_overlap > TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD:
+        issues.append("text_evidence_over_reliance")
+
+    # 7. Real-user numeric consistency guard: answer numbers must be grounded.
+    answer_nums = _number_tokens(a)
+    source_text_parts: List[str] = [
+        str(pair.get("element_a", {}).get("caption", "") or ""),
+        str(pair.get("element_a", {}).get("content", "") or ""),
+        str(pair.get("element_b", {}).get("caption", "") or ""),
+        str(pair.get("element_b", {}).get("content", "") or ""),
+        str(evidence or ""),
+    ]
+    for s in obj.get("required_evidence_spans", []) or []:
+        if isinstance(s, dict):
+            source_text_parts.append(str(s.get("span", "") or ""))
+    source_nums = _number_tokens(" ".join(source_text_parts))
+    unsupported_nums = sorted(answer_nums - source_nums)
+    metrics["unsupported_answer_numbers"] = unsupported_nums
+    if unsupported_nums:
+        issues.append("numeric_unsupported")
+
+    # 8. Figure+formula symbolic grounding hard check.
+    pair_type = str(pair.get("pair_type", ""))
+    if pair_type == "figure+formula":
+        formula_elem = pair.get("element_a", {}) if pair.get("element_a_type") == "formula" else pair.get("element_b", {})
+        formula_text = (formula_elem.get("caption", "") or "") + " " + (formula_elem.get("content", "") or "")
+        formula_terms = _extract_formula_symbol_terms(formula_text)
+        metrics["formula_symbol_term_count"] = len(formula_terms)
+        metrics["formula_symbol_grounded"] = _formula_symbol_hit(a, formula_terms)
+        if formula_terms and not metrics["formula_symbol_grounded"]:
+            issues.append("formula_symbol_grounding_missing")
 
     return issues, metrics
 
