@@ -116,6 +116,81 @@ Checker 要求 answer 包含 LaTeX `$...$` 格式的数学符号。但模型输�
 
 ---
 
+---
+
+## 五、节点重要性打分体系（本报告此前遗漏的核心模块）
+
+> **上周主管明确要求**：定义规则量化节点重要性，具体维度包括：承上启下桥接功能加分、包含核心模块（Introduction/Main Results）加分、边数多的加分。本节补充说明该体系的实际落地状态。
+
+### 5.1 当前打分公式（已在代码中实现，`analyze_latex_graph_topology.py:813`）
+
+```
+hub_score = 0.40 × bridge_score
+          + 0.35 × connectivity_score
+          + 0.25 × core_module_score
+          + 20.0 × pagerank
+          - penalty
+```
+
+各分量含义：
+
+| 分量 | 权重 | 计算方式 | 对应主管要求 |
+|---|---|---|---|
+| `bridge_score` | **40%** | `bridge_role × 100`；`bridge_role=1.0` 当段落节点出边覆盖 ≥2 种元素模态（figure/table/formula）；`=0.5` 仅覆盖1种 | ✅ 桥接功能加分 |
+| `connectivity_score` | **35%** | `min(1, total_degree/degree_norm + cross_type_edges/degree_norm) × 100`；degree_norm 取全图 90 百分位 | ✅ 边数多的加分（自适应归一化） |
+| `core_module_score` | **25%** | 对节点 section_title + label + text_snippet 做正则匹配：introduction=1.0, main_result/experiment=0.9, method/framework=0.8, conclusion=0.6, related_work=0.3 | ✅ 核心模块加分 |
+| `pagerank` | 系数20 | 全图 PageRank，捕捉全局引用权威性 | ✅ 结构性中心度 |
+| `penalty` | -20 | 当 in_deg > out_deg×2 且跨模态出边 ≤1 时扣分（authority sink 惩罚） | ✅ 抑制虚假枢纽 |
+
+figure 节点还有额外 `core_module_score` 加成：含 architecture/framework/overview/pipeline 等词 → 满分1.0；含 result/performance/comparison/ablation → 0.8。
+
+### 5.2 当前状态与差距
+
+**已落地**：公式已在 `compute_hubs()` 函数中实现，每个 hub 节点均输出 `bridge_score / connectivity_score / core_module_score / hub_score` 四个字段，可在 `data/latex_graph_hubs.json` 中查询。
+
+**工程化差距（主管要求 vs. 当前实现）**：
+
+| 主管要求 | 当前状态 | 缺口 |
+|---|---|---|
+| 打分体系可解释 | 四字段全量输出，注释说明在 report JSON | ⚠️ 报告中未透出，不可视 |
+| 权重可调节 | 权重硬编码在函数体 | ❌ 无 CLI 参数，不支持调参实验 |
+| 打分驱动候选筛选 | hub_score 已用于 top-K hub 排序 | ⚠️ 但 500 条候选的 **pair 级重要性分**（两端 hub_score 聚合）尚未暴露到 enriched pair 输出 |
+| 节点重要性进入训练信号 | 未接入 | ❌ 无 `importance_weight` 字段在 JSONL 输出中 |
+
+### 5.3 本周补齐计划
+
+1. **P0（周二前）**：在 `enrich_hub_candidates.py` 输出的 pair JSON 中新增 `pair_importance_score` 字段，定义为 `(hub_score_A + hub_score_B) / 2`，并将 `bridge_score` 和 `core_module_score` 作为 sub-fields 透出
+2. **P1（周三前）**：在 `analyze_latex_graph_topology.py` 的 argparse 中暴露 `--bridge-weight / --connectivity-weight / --core-weight` 三个权重参数，支持消融实验
+3. **P2（下周）**：在 JSONL 训练输出中加入 `node_importance` 字段，作为训练时的 sample weight 候选
+
+---
+
+## 六、三项主管反馈的自查与修正
+
+### 问题1：节点重要性打分体系"处于缺失状态"
+
+**修正**：打分体系在代码层面已实现（见第五节），但存在两个问题：① 报告中完全未提及，造成"不存在"的误判；② 分数未透传到 pair 级输出和最终 JSONL，无法驱动训练时的 sample weighting。本周 P0 补齐 ① 的可见性，并启动 pair_importance_score 透传。
+
+### 问题2：单文档闭环未稳，跨文档步子偏大
+
+**自查**：当前 230 条 enriched pairs 中有 **74 条（32%）为 cross-doc**，而此时 label→MinerU ID 映射成功率仅 46%（270/500 条因 schema join 失败丢弃）。主管的判断是正确的：单文档的 ID 映射链路都还没稳定，74 条 cross-doc pair 只会增加排错变量。
+
+**修正行动**：
+- 本周三之前，label mapping 修复优先于 cross-doc 扩量
+- 修复后的重跑策略：先只保留 `is_cross_doc=False` 的 intra-doc pairs 做闭环验证，达到 mapping rate ≥70% + QC pass ≥50% 后，再开放 cross-doc
+- 在 `enrich_hub_candidates.py` 新增 `--single-doc-only` flag，与 CLAUDE.md 中 A2 workstream 对齐
+
+### 问题3：QC 指标的执念 vs. 检索目标的偏移
+
+**自查**：上版报告中 Recall@10/MRR 评估闭环被排在 ③ 号交付位（周五），前两项都是生成侧 bug 修复。主管的批评准确：当前所有 prompt 优化、QC 调整，如果没有检索命中率数据作为北极星，就是在黑盒里调参。
+
+**修正行动**：
+- **调整交付顺序**：将最小评估闭环（20-30条人工query + BM25 + Recall@10/MRR）提升为 **① 号交付（周二前）**，哪怕样本量只有 20 条，有数字比无数字有决定性意义
+- **北极星指标明确化**：本周所有 QC 修复的合格标准不再是"pass rate ≥50%"，而是"修复后 Recall@10 不低于修复前"
+- QC pass rate 降级为辅助监控指标，不再作为周报的核心 KPI
+
+---
+
 ## 附录：当前模块状态
 
 | 模块 | 状态 |
@@ -126,4 +201,6 @@ Checker 要求 answer 包含 LaTeX `$...$` 格式的数学符号。但模型输�
 | Hub semantic summary | 230 条 enriched pairs |
 | v4.5 生成链路 | 代码完成，smoke test 跑通 |
 | 公司 API | 就绪 |
-| **端到端评估闭环** | **缺失，本周③必须交付** |
+| **节点重要性打分** | **代码已实现（hub_score 四分量），pair 级透传和 CLI 权重参数本周补齐** |
+| **单文档闭环** | **label mapping 46%，本周修复目标 ≥70%；cross-doc 暂缓扩量** |
+| **端到端评估闭环** | **本周①必须交付（提前至周二），Recall@10/MRR 作为北极星** |
