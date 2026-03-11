@@ -123,7 +123,93 @@ QC 函数 `_formula_symbol_hit()` 从 formula 的 `caption/content` 字段提取
 
 更重要的是：**QC pass rate 只是生成侧代理指标，不是最终 KPI。** 按 `DISCUSSION_LOG.md`、`CLAUDE.md` 和既定计划，本周周五前必须拿到最小评估闭环的 BM25 baseline、Recall@10、MRR；否则这轮所有 prompt / QC 优化都只能算局部调试，不能算方法有效性验证。
 
+### 本轮生成样本展示（来自 `data111/l1_img_run_20.jsonl`，共 16 条）
+
+#### ✅ 通过样本（3 条）
+
+**[Pass-1] figure+table | academic | 1904.03035（debiasing LSTM 论文）**
+```
+Hub 语义摘要（生成 query 所基于的 enriched 上下文）：
+  [TABLE A] Effect of lambda on bias metrics and language-model perplexity:
+  Ablation over λ compares bias-related summary statistics (μ, σ, β) under fixed
+  vs infinite context settings and reports Penn Treebank perplexity (Ppl.).
+  λ=0.5 yields the best perplexity (116.19) and the lowest β (0.14)...
+
+Query:  The three-layer LSTM applies bias minimization to embedding matrices —
+        which specific bias metrics demonstrate the effectiveness of this architectural choice?
+
+Answer: The table's β (beta) and σ (sigma) columns provide bias measurements
+        that quantify the effectiveness of the LSTM's embedding bias minimization,
+        because these metrics directly measure the gender bias reduction achieved by
+        the lambda-controlled regularization shown in the figure's architecture.
+
+QC metrics: anchor_jaccard=0.12, answer_balance=0.44
+```
+> 评注：query 给出了"建筑前提"（三层 LSTM + bias minimization），要求学生从 table 指出具体度量指标，从 figure 建立架构对应；answer 准确引用 β/σ 并连接了正则化参数 λ，属于典型双证据闭环。
+
 ---
+
+**[Pass-2] figure+formula | academic | 1801.07593（对抗去偏论文）**
+```
+Query:  How does the geometric arrangement of vectors in the projection operation
+        correspond to the dual adversarial terms in the gradient update?
+
+Answer: The vector diagram illustrates the geometric decomposition where proj_h g
+        isolates the component of the predictor gradient orthogonal to the adversarial
+        direction. This corresponds to the middle projection term in the formula that
+        removes adversary-aligned components, while the final alpha term activates
+        only when the adversary succeeds...
+
+QC metrics: anchor_jaccard=0.17, answer_balance=0.25
+```
+> 评注：这是 16 条中唯一通过的 figure+formula，质量也是本批最高——几何直觉（向量投影图）与数学形式（梯度更新公式）精准互通，reasoning chain 完整。
+
+---
+
+#### ❌ 失败样本（按病灶分类）
+
+**[Fail-A] formula_symbol_grounding_missing × 7 — 根因示例**
+```
+pair: 1802.08139_figure_2 × 1802.08139_formula_3（因果公平论文）
+
+Query:  Which pathways from A to Y does the penalty term block?
+
+Answer: The penalty term blocks both the direct A→Y pathway and the indirect A→M→Y
+        pathway because these represent unfair influence channels. The causal graph
+        explicitly shows these two green-highlighted paths as the problematic routes
+        that must be eliminated, whereas the formula's penalty...
+
+QC: formula_symbol_grounded=False, formula_symbol_term_count=6 ← checker 提取到 6 个符号词但 answer 未命中任何一个
+```
+> 根因：checker 从 formula caption/content 的 plain text 中提取出 `Y_0`、`Y_1`、`delta` 等符号词，但模型 answer 用自然语言描述路径（"A→Y pathway"），而非重复符号名，导致误判。Answer 语义完全正确，这是 checker 的精确匹配过窄。
+
+---
+
+**[Fail-B] yes_no_answer × 3 — prompt 改写引入退化**
+```
+pair: 1904.03035_figure_1 × 1904.03035_table_1
+
+Query:  Regularization flattens bias curves — does perplexity increase with stronger lambda values?
+Answer: Yes, the table shows perplexity increases from lower to higher lambda values...
+
+QC: yes_no_answer ← "does X?" 句式触发
+```
+> 根因：本轮 prompt 迭代将 WH 问句（"what/which X?"）改成了极性问句（"does X?"），是一行 prompt 改写造成的退化，回滚即可。
+
+---
+
+**[Fail-C] numeric_unsupported × 2 — QC 证据池多模态盲区**
+```
+pair: 2005.07293_figure_4 × 2005.07293_table_5（公平性偏好调查论文）
+
+Query:  How do the rating distributions for equity versus parity compare to the actual preference counts?
+Answer: ...in Scenarios 3 and 4, more people actually preferred parity solutions
+        (91 and 106) over equity solutions (59 and 44)...
+
+QC: unsupported_answer_numbers=['106', '44', '59', '91']
+    → text_evidence 中不含这四个数字
+```
+> 根因：数字 91/106/59/44 来自 table 的格子，而 `numeric_unsupported` checker 只验证 `text_evidence` 文本片段。这是 QC 证据池不完整，不是模型幻觉。
 
 ---
 
