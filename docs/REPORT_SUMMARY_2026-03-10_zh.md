@@ -201,6 +201,61 @@ hub_score = bridge_score + authority_score + 60 × pagerank
 
 ---
 
+## 七、同事 Query 质量评审（2026-03-11）
+
+> 本节记录对一批实际产出 query（32 条，query_id 0000–0031，来自 `data111/` 相关产物）的逐条评审结论。
+
+### 7.1 总体通过率
+
+| 维度 | 数值 |
+|---|---|
+| 总条数 | 32 |
+| QC pass | **21（65.6%）** |
+| QC fail | 11 |
+
+### 7.2 按 pair_type × query_style 拆分
+
+| pair_type | style | 总条 | pass | pass 率 | 主要失败原因 |
+|---|---|---|---|---|---|
+| figure+table | academic | 20 | 18 | **90%** | `single_element_answer`（3 件） |
+| figure+table | real_user | 6 | 5 | **83%** | `single_element_answer`（1 件） |
+| figure+formula | real_user | 6 | 0 | **0%** | `formula_symbol_grounding_missing`（全 6 条） |
+
+figure+table 表现良好，可直接入训练集。**figure+formula real_user 对目前 0% pass，是本批的系统性瓶颈。**
+
+### 7.3 两个系统性问题
+
+#### 问题 A：`formula_symbol_grounding_missing`（6 条，来自 1709.02012 doc，全军覆没）
+
+**根因**：real_user 风格的 query 直接使用 `c_fp`、`h_t*`、`μ_t` 等 LaTeX 符号，但未用自然语言加注释义（如"false-positive cost rate"）。QC 检测到 ≥4 个公式符号 term 但 `formula_symbol_grounded=false`，全部拦截。
+
+**修复方向**：real_user 模板在引用公式符号时必须先用括号或从句释义，例如写成 `c_fp (false-positive cost rate)` 而非裸符号。预期可将 figure+formula pass 率从 0% 提升至 ≥50%。
+
+#### 问题 B：`single_element_answer`（5 条）
+
+受影响 query_id：0008（answer_balance=0.14）、0017（0.20）、0022（0.17）、0026（0.08）、0027（0.11）。共同特征：answer 主体只围绕一端 element 展开，另一端仅做结构性引用。
+
+**修复方向**：对 `answer_balance < 0.25` 的 pair，在生成时强制两端各有一句含具体数值或观察的句子。可在 prompt 层加约束，或在 QC 之前做 balance 预检并触发重生成。
+
+### 7.4 其他指标（通过批次）
+
+| 指标 | 状态 |
+|---|---|
+| short+long query 配对覆盖 | ✅ 所有 academic 对均有短长两条 |
+| anchor_leak_jaccard | ✅ 全部 < 0.15（0002 = 0.143，刚好在边界） |
+| dual_evidence / cross_modal 标记 | ✅ 全部正确 |
+| reasoning_chain 非空 | ✅ academic 对全有；real_user 按设计为空，可接受 |
+| `has_cross_modal_operator` | ⚠️ 部分 long query 缺失（0001、0007、0010、0011），但不是 fail 触发条件 |
+
+### 7.5 结论与后续动作
+
+- figure+table 批次质量已达可用水位（90%），可继续扩量。
+- **figure+formula real_user 模板必须在下一次全量生成前修复符号 grounding 问题**，否则整批 formula 对无法使用。
+- `single_element_answer` 是跨 pair_type 的共性问题，建议加入 prompt 约束（双端各举一条具体证据）后重跑失败样本。
+- 上述两项修复与第四节的 formula checker plain-text 匹配修复存在重叠，可合并为同一个 PR。
+
+---
+
 ## 附录：当前模块状态
 
 | 模块 | 状态 |
