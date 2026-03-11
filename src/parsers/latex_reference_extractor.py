@@ -1038,7 +1038,15 @@ class LaTeXReferenceExtractor:
             ))
 
         for idx, line in enumerate(lines):
-            if line.strip():
+            stripped = line.strip()
+            # A1: flush current block at every section/subsection boundary so
+            # paragraphs never span across section commands.  The section line
+            # itself is a pure structural command and is intentionally excluded
+            # from both the old and the new block.
+            if stripped and RE_SECTION.match(stripped):
+                _flush(block)
+                block = []
+            elif stripped:
                 block.append(idx)
             else:
                 _flush(block)

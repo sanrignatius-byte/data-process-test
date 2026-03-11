@@ -227,7 +227,12 @@ def build_real_page_index(mm_data: Dict[str, Any], mineru_output_dir: str) -> Di
             if etype not in elems_by_etype:
                 continue
             pos = elem.get("position_idx") or 0
-            elems_by_etype[etype].append((pos, eid))
+            # Bug fix: position_idx is 0 for all elements (parser bug documented in CLAUDE.md).
+            # Fall back to the figure/table/formula sequential number as a reliable
+            # document-order proxy when position_idx is missing or zero.
+            num = elem.get("number")
+            sort_key = pos if pos > 0 else (int(num) if num is not None else 99999)
+            elems_by_etype[etype].append((sort_key, eid))
         for etype in elems_by_etype:
             elems_by_etype[etype].sort()
 
@@ -1100,10 +1105,21 @@ def enumerate_candidates_from_bridge_hubs(
         seen_struct_keys.add(elem_labels)
         per_combo_count[combo_key] += 1
 
-        # Real page span (from content_list.json, primary distance metric)
-        page_vals = [nodes[n].page_idx for n in path if isinstance(nodes[n].page_idx, int)]
-        page_span = (max(page_vals) - min(page_vals)) if len(page_vals) >= 2 else None
-        page_variance = round(variance([float(x) for x in page_vals]), 4) if len(page_vals) >= 2 else None
+        # Real page span (from content_list.json, primary distance metric).
+        # Cross-doc paths are excluded: pages from different papers are independent
+        # numbering schemes so the difference is physically meaningless.
+        if is_cross_doc:
+            page_span = None
+            page_variance = None
+        else:
+            # Use only the two terminal element nodes; intermediate paragraph hubs
+            # have no page_idx (LaTeX-only nodes) so the filter is redundant but
+            # explicit for clarity.
+            terminal_nids = [path[0], path[-1]]
+            page_vals = [nodes[n].page_idx for n in terminal_nids
+                         if isinstance(nodes[n].page_idx, int)]
+            page_span = (max(page_vals) - min(page_vals)) if len(page_vals) >= 2 else None
+            page_variance = round(variance([float(x) for x in page_vals]), 4) if len(page_vals) >= 2 else None
 
         # Position span (MinerU reading order, secondary)
         pos_vals = [nodes[n].position_idx for n in path if isinstance(nodes[n].position_idx, int)]
@@ -1244,6 +1260,54 @@ def enumerate_candidates_from_bridge_hubs(
 
         if len(candidates) >= max_candidates:
             break
+
+    # ── Strategy 4: Section-bridged paths [elem_A, sec_node, elem_B] ────────
+    # Section nodes have section_contains_element edges to element nodes within
+    # their span.  Any section that directly contains ≥2 distinct modalities
+    # acts as an implicit hub connecting those elements.
+    section_node_types = {"section", "subsection", "subsubsection"}
+    # Collect all section nodes grouped by doc
+    section_nodes_by_doc: Dict[str, List[str]] = defaultdict(list)
+    for nid, node in nodes.items():
+        if node.node_type in section_node_types:
+            section_nodes_by_doc[node.doc_id].append(nid)
+
+    for sec_nid in [nid for nids in section_nodes_by_doc.values() for nid in nids]:
+        if len(candidates) >= max_candidates:
+            break
+        sec_node = nodes[sec_nid]
+        sec_doc = sec_node.doc_id
+
+        # Collect element children of this section node (section_contains_element edges)
+        sec_elem_neighbors: Dict[str, List[str]] = defaultdict(list)
+        for nb in out_adj.get(sec_nid, set()):
+            nb_node = nodes.get(nb)
+            if nb_node and nb_node.doc_id == sec_doc and nb_node.node_type in ELEMENT_MODALITIES:
+                sec_elem_neighbors[nb_node.node_type].append(nb)
+
+        if len(sec_elem_neighbors) < 2:
+            continue  # section must cover ≥2 modalities to be a useful bridge
+
+        for mod in sec_elem_neighbors:
+            sec_elem_neighbors[mod] = sort_by_position(sec_elem_neighbors[mod])
+
+        modality_list = sorted(sec_elem_neighbors.keys())
+        for i, mod_a in enumerate(modality_list):
+            for mod_b in modality_list[i + 1:]:
+                for ea in sec_elem_neighbors[mod_a]:
+                    for eb in sec_elem_neighbors[mod_b]:
+                        if ea == eb:
+                            continue
+                        path = [ea, sec_nid, eb]
+                        try_add_candidate(path, sec_nid, is_cross_doc=False)
+                        if len(candidates) >= max_candidates:
+                            break
+                    if len(candidates) >= max_candidates:
+                        break
+                if len(candidates) >= max_candidates:
+                    break
+            if len(candidates) >= max_candidates:
+                break
 
     candidates.sort(
         key=lambda x: (
@@ -1516,6 +1580,12 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--min-hops", type=int, default=2)
     ap.add_argument("--max-hops", type=int, default=5)
     ap.add_argument("--max-candidates", type=int, default=500)
+    ap.add_argument(
+        "--single-doc-only",
+        action="store_true",
+        default=False,
+        help="Exclude cross-document candidates (keep only intra-document paths).",
+    )
     return ap.parse_args()
 
 
@@ -1592,7 +1662,10 @@ def main() -> None:
     # Merge: hub candidates first, then adj_bridge candidates (deduplicate by path signature)
     seen_sigs: Set[Tuple[str, ...]] = set()
     candidates: List[Dict[str, Any]] = []
-    for c in hub_candidates + adj_bridge_candidates:
+    all_merged = hub_candidates + adj_bridge_candidates
+    if args.single_doc_only:
+        all_merged = [c for c in all_merged if not c.get("is_cross_doc", False)]
+    for c in all_merged:
         path = c["path_node_ids"]
         fwd = tuple(path)
         rev = tuple(reversed(path))
