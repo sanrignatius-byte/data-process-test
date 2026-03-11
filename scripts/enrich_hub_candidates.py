@@ -305,53 +305,83 @@ def build_edge_context_index(
 
 # ─── Main enrichment ────────────────────────────────────────────────────────
 
+def _first_n_words(text: str, n: int) -> str:
+    """Return the first n words of text, preserving a trailing sentence boundary if close."""
+    words = text.split()
+    if len(words) <= n:
+        return text
+    excerpt = " ".join(words[:n])
+    # Try to end at a sentence boundary within ±5 words
+    for i in range(min(n + 5, len(words)), max(n - 5, 1), -1):
+        candidate = " ".join(words[:i])
+        if candidate.rstrip().endswith((".", "?", "!")):
+            return candidate
+    return excerpt
+
+
 def build_hub_semantic_summary(
     el_a: Dict[str, Any],
     el_b: Dict[str, Any],
     edge_contexts: List[Dict[str, str]],
 ) -> str:
-    """Build a hub semantic summary by aggregating enriched element descriptions.
+    """Build a compressed hub semantic summary (~50-80 words).
 
     Inspired by MoDora's bottom-up cascade summarization: combines enriched
-    content from both elements plus edge context to create a unified bridge
-    description that captures the semantic relationship.
+    content from both elements plus edge context.  The result is compressed
+    from the raw concatenation to a dense 50-80 word bridge description so
+    it fits within prompt context budgets without dominating the input.
+
+    Compression strategy (rule-based, no extra LLM call):
+      - Take first ~20 words from each element's enriched description.
+      - Take first ~15 words from the strongest bridge context snippet.
+      - Include up to 5 shared keywords.
+    Total budget: ~55-65 words plus tags.
     """
     parts: List[str] = []
 
-    # Element A enriched content
-    a_title = el_a.get("enriched_title", "")
-    a_content = el_a.get("enriched_content", "")
-    a_type = el_a.get("element_type", "element")
-    if a_title or a_content:
-        desc = a_title
-        if a_content:
-            desc = f"{desc}: {a_content}" if desc else a_content
-        parts.append(f"[{a_type.upper()} A] {desc}")
+    def element_excerpt(el: Dict[str, Any], label: str) -> str:
+        title = (el.get("enriched_title") or "").strip()
+        content = (el.get("enriched_content") or "").strip()
+        # Prefer enriched fields; fall back to caption
+        if not title and not content:
+            content = (el.get("caption") or "").strip()
+        combined = f"{title}: {content}" if (title and content) else (title or content)
+        return _first_n_words(combined, 20) if combined else ""
 
-    # Element B enriched content
-    b_title = el_b.get("enriched_title", "")
-    b_content = el_b.get("enriched_content", "")
-    b_type = el_b.get("element_type", "element")
-    if b_title or b_content:
-        desc = b_title
-        if b_content:
-            desc = f"{desc}: {b_content}" if desc else b_content
-        parts.append(f"[{b_type.upper()} B] {desc}")
+    # Element A
+    exc_a = element_excerpt(el_a, "A")
+    if exc_a:
+        a_type = el_a.get("element_type", "element").upper()
+        parts.append(f"[{a_type} A] {exc_a}")
 
-    # Edge context snippets
-    for ectx in edge_contexts[:2]:
+    # Element B
+    exc_b = element_excerpt(el_b, "B")
+    if exc_b:
+        b_type = el_b.get("element_type", "element").upper()
+        parts.append(f"[{b_type} B] {exc_b}")
+
+    # Best bridge context snippet (first non-empty, up to 15 words)
+    for ectx in edge_contexts[:3]:
         snippet = ectx.get("context_snippet", "").strip()
         if snippet:
-            parts.append(f"[BRIDGE] {snippet[:200]}")
+            parts.append(f"[BRIDGE] {_first_n_words(snippet, 15)}")
+            break  # one bridge snippet is enough for compression target
 
-    # Aggregate keywords from enriched metadata
+    # Keywords: merged from both elements, deduped, max 5
     keywords_a = (el_a.get("enriched_metadata") or {}).get("keywords", [])
     keywords_b = (el_b.get("enriched_metadata") or {}).get("keywords", [])
-    all_keywords = list(dict.fromkeys(keywords_a + keywords_b))  # dedup preserving order
+    all_keywords = list(dict.fromkeys(keywords_a + keywords_b))[:5]
     if all_keywords:
-        parts.append(f"[KEYWORDS] {', '.join(all_keywords[:10])}")
+        parts.append(f"[KEYWORDS] {', '.join(all_keywords)}")
 
-    return " | ".join(parts) if parts else ""
+    summary = " | ".join(parts) if parts else ""
+
+    # Final word-count guard: hard-cap at 80 words to stay within budget
+    words = summary.split()
+    if len(words) > 80:
+        summary = " ".join(words[:80])
+
+    return summary
 
 
 def enrich_candidates(
@@ -390,7 +420,7 @@ def enrich_candidates(
             skipped_no_mapping += 1
             continue
 
-        # Take first and last element in path as A and B
+        # Take first and last element in path as A and B (backward compat)
         nid_a, ntype_a = endpoints[0]
         nid_b, ntype_b = endpoints[-1]
 
@@ -462,6 +492,21 @@ def enrich_candidates(
         elem_a_dict = make_element_dict(el_a)
         elem_b_dict = make_element_dict(el_b)
 
+        # B3: Build node_group covering ALL distinct element endpoints in the path
+        # (not just the first and last).  Supports 1-3 element groups as discussed
+        # with mentor.  element_a / element_b are kept for backward compatibility.
+        node_group: List[Dict[str, Any]] = []
+        seen_group_eids: Set[str] = set()
+        for ep_nid, ep_ntype in endpoints:
+            ep_eid = node_to_element.get(ep_nid)
+            if not ep_eid or ep_eid in seen_group_eids:
+                continue
+            ep_el = mm_index["all_elements"].get(ep_eid)
+            if not ep_el:
+                continue
+            seen_group_eids.add(ep_eid)
+            node_group.append(make_element_dict(ep_el))
+
         # Build hub semantic summary from enriched descriptions
         hub_summary = build_hub_semantic_summary(
             elem_a_dict, elem_b_dict, edge_contexts,
@@ -481,8 +526,12 @@ def enrich_candidates(
             "overlap_with_existing_l1": False,
             "element_a": elem_a_dict,
             "element_b": elem_b_dict,
+            # B3: node_group lists all distinct element endpoints in the path
+            # (1-3 elements).  Supports real-user style templates that can
+            # reference a variable number of evidence nodes.
+            "node_group": node_group,
             "edge_contexts": edge_contexts,
-            # Hub semantic summary (MoDora cascade aggregation)
+            # Hub semantic summary (MoDora cascade aggregation, compressed ~50-80 words)
             "hub_semantic_summary": hub_summary,
             # Preserve hub metadata for analysis
             "hub_metadata": {
