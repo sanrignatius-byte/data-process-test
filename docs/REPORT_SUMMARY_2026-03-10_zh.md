@@ -85,13 +85,15 @@ C3 代码功能已上线，但数据覆盖率只达到 46%，这部分目标未�
 
 Smoke test 16 条 query，3 pass / 13 fail。**已定位到三个具体问题，且都有明确修复动作。**
 
-### 病灶 1：Formula Checker 假阳性拦截（主因，7 条 fail，其中 ≥3 条确认误判）
+### 病灶 1：`formula_symbol_grounding_missing` 假阳性拦截（主因，7 条 fail，figure+formula 全军覆没）
 
-Checker 要求 answer 包含 LaTeX `$...$` 格式的数学符号。但模型输出普遍使用平文写法（`epsilon_m`、`p(H_m|A)`、`f(A,C)`、`g+h`），触发 false positive。
+QC 函数 `_formula_symbol_hit()` 从 formula 的 `caption/content` 字段提取 LaTeX `$...$` 区域内的符号词（如 `epsilon`、`p(h_m|a)` 等），然后检查 answer 是否提到其中至少一个。
 
-已手动核查 7 条 fail 中的 3 条：answer 实质上正确引用了数学变量，只是格式不符合 checker 的强匹配规则，确认为 checker bug。剩余 4 条混有真实 grounding 缺失，需要修复后重跑区分。
+**根因**：当 formula 内容以 plain text 存储（无 `$...$` wrapper）时，提取逻辑 fallback 到整段文本，提取出的 terms 与模型 answer 中的自然语言表述无法匹配，导致 false positive。16 条样本中 figure+formula 共 8 条，其中 **7 条**触发此问题，pass 仅 1/8（12.5%）。
 
-**修复预期**：将 plain-text notation 纳入 grounding 匹配，figure+formula pass 率可从 12.5% 推至 ≥ 50%。
+已定位到 `generate_multihop_l1_queries.py` 第 1327-1363 行（`_extract_formula_symbol_terms` + `_formula_symbol_hit`）。需将 plain-text 数学符号写法（下划线记法 `epsilon_m`、函数记法 `P(A|B)` 等）加入匹配，并对无 `$` 内容的 formula 降低 grounding 要求。
+
+**修复预期**：figure+formula pass 率从 12.5% → ≥ 50%。
 
 ### 病灶 2：Yes/No 句式退化（3 条 fail）
 
@@ -103,12 +105,19 @@ Checker 要求 answer 包含 LaTeX `$...$` 格式的数学符号。但模型输�
 
 我复核了 0002 / 0003 两条样本：`text_evidence` 的确不含数字；现有写回的 `enriched_content` 也没有把 `91 / 106 / 59 / 44` 显式展开。这说明当前更准确的结论是：**现有验证池不足以下支持或反驳这些精确数字**。因此 P0 修复方向不是先约束模型“别报数字”，而是先把 `caption / content / enriched_content` 一并纳入 numeric validation pool，再区分真幻觉与 QC 误杀。
 
-### 两批对比
+### 两批对比与精确故障分布
 
 | 批次 | 条数 | QC pass | pass 率 | 主因 |
 |---|---|---|---|---|
 | 上批（v4.4） | 16 | ~9 | ~56% | — |
-| 本批（v4.5 smoke） | 16 | 3 | **18.75%** | formula checker bug（7）+ yes/no 回退（3）+ numeric validation blind spot（2） |
+| 本批（v4.5 smoke） | 16 | 3 | **18.75%** | `formula_symbol_grounding_missing`（7）+ `yes_no_answer`（3）+ `numeric_unsupported`（2）+ `weak_reasoning_connector`（2）+ `length_mix_missing`（2）+ `template_shortcut`（1） |
+
+**pair_type 细分**（来自 `data111/l1_img_run_20.jsonl`，各 8 条）：
+
+| pair_type | total | pass | fail 主因 |
+|---|---|---|---|
+| figure+formula | 8 | 1（12.5%） | `formula_symbol_grounding_missing` 7 条（几乎全军覆没） |
+| figure+table | 8 | 2（25%） | `yes_no_answer` 3、`numeric_unsupported` 2、`weak_reasoning_connector` 2 |
 
 本批 3 条 pass query 的 anchor_leak_jaccard 均低于 0.17，answer_balance 在 0.25-0.44 之间。样本量太小（3 条），不足以断言 enriched context 对质量有正面作用，但至少没有引入新的 leakage 模式，这是一个初步的正向信号。
 
@@ -120,48 +129,49 @@ Checker 要求 answer 包含 LaTeX `$...$` 格式的数学符号。但模型输�
 
 ## 五、节点重要性打分体系（本报告此前遗漏的核心模块）
 
-> **上周主管明确要求**：定义规则量化节点重要性，具体维度包括：承上启下桥接功能加分、包含核心模块（Introduction/Main Results）加分、边数多的加分。本节补充说明该体系的实际落地状态。
+> **上周主管明确要求**：定义规则量化节点重要性，具体维度包括：承上启下桥接功能加分、包含核心模块（Introduction/Main Results）加分、边数多的加分。本节如实说明当前落地状态，包含一处此前误报的重要修正。
 
-### 5.1 当前打分公式（已在代码中实现，`analyze_latex_graph_topology.py:813`）
+### 5.1 实际运行的打分公式（从 `data111/latex_graph_topology_report (1).json` 反查）
 
 ```
-hub_score = 0.40 × bridge_score
-          + 0.35 × connectivity_score
-          + 0.25 × core_module_score
-          + 20.0 × pagerank
-          - penalty
+hub_score = bridge_score + authority_score + 60 × pagerank
+
+其中：
+  bridge_score   = num_modalities × 15 + out_to_elements × 2
+  authority_score = in_from_paragraphs × 2
 ```
 
-各分量含义：
+**此为 2026-03-03 生成 `data/latex_graph_hubs.json` 时实际使用的公式**，已通过 `data111` 中的 topology report `note_scoring` 字段和 hub 数值反推验证。每个 hub 输出两个分量字段：`bridge_score`（段落到多模态元素的桥接能力）和 `authority_score`（被段落引用的次数，即"权威度"）。
 
-| 分量 | 权重 | 计算方式 | 对应主管要求 |
-|---|---|---|---|
-| `bridge_score` | **40%** | `bridge_role × 100`；`bridge_role=1.0` 当段落节点出边覆盖 ≥2 种元素模态（figure/table/formula）；`=0.5` 仅覆盖1种 | ✅ 桥接功能加分 |
-| `connectivity_score` | **35%** | `min(1, total_degree/degree_norm + cross_type_edges/degree_norm) × 100`；degree_norm 取全图 90 百分位 | ✅ 边数多的加分（自适应归一化） |
-| `core_module_score` | **25%** | 对节点 section_title + label + text_snippet 做正则匹配：introduction=1.0, main_result/experiment=0.9, method/framework=0.8, conclusion=0.6, related_work=0.3 | ✅ 核心模块加分 |
-| `pagerank` | 系数20 | 全图 PageRank，捕捉全局引用权威性 | ✅ 结构性中心度 |
-| `penalty` | -20 | 当 in_deg > out_deg×2 且跨模态出边 ≤1 时扣分（authority sink 惩罚） | ✅ 抑制虚假枢纽 |
-
-figure 节点还有额外 `core_module_score` 加成：含 architecture/framework/overview/pipeline 等词 → 满分1.0；含 result/performance/comparison/ablation → 0.8。
-
-### 5.2 当前状态与差距
-
-**已落地**：公式已在 `compute_hubs()` 函数中实现，每个 hub 节点均输出 `bridge_score / connectivity_score / core_module_score / hub_score` 四个字段，可在 `data/latex_graph_hubs.json` 中查询。
-
-**工程化差距（主管要求 vs. 当前实现）**：
-
-| 主管要求 | 当前状态 | 缺口 |
+| 分量 | 计算方式 | 对应主管要求 |
 |---|---|---|
-| 打分体系可解释 | 四字段全量输出，注释说明在 report JSON | ⚠️ 报告中未透出，不可视 |
-| 权重可调节 | 权重硬编码在函数体 | ❌ 无 CLI 参数，不支持调参实验 |
-| 打分驱动候选筛选 | hub_score 已用于 top-K hub 排序 | ⚠️ 但 500 条候选的 **pair 级重要性分**（两端 hub_score 聚合）尚未暴露到 enriched pair 输出 |
-| 节点重要性进入训练信号 | 未接入 | ❌ 无 `importance_weight` 字段在 JSONL 输出中 |
+| `bridge_score` | 覆盖模态数 × 15 + 出向元素边数 × 2 | ✅ 桥接功能加分、边数多的加分 |
+| `authority_score` | 被段落引用次数 × 2 | ⚠️ 近似于"入度多的加分"，但偏向 authority sink 而非桥接 |
+| `pagerank × 60` | 全图 PageRank × 60 | ✅ 结构性中心度 |
+| **核心模块加分** | — | ❌ **从未计算**（Introduction/Main Results 正则加分在当前运行数据中缺失） |
 
-### 5.3 本周补齐计划
+### 5.2 重要修正：此前报告存在误报
 
-1. **P0（周二前）**：在 `enrich_hub_candidates.py` 输出的 pair JSON 中新增 `pair_importance_score` 字段，定义为 `(hub_score_A + hub_score_B) / 2`，并将 `bridge_score` 和 `core_module_score` 作为 sub-fields 透出
-2. **P1（周三前）**：在 `analyze_latex_graph_topology.py` 的 argparse 中暴露 `--bridge-weight / --connectivity-weight / --core-weight` 三个权重参数，支持消融实验
-3. **P2（下周）**：在 JSONL 训练输出中加入 `node_importance` 字段，作为训练时的 sample weight 候选
+上一版本报告中描述的 4 分量公式（含 `connectivity_score` 和 `core_module_score`）**存在于当前代码的 `compute_hubs()` 函数（第 813 行），但该代码路径从未在实际数据上运行过**。`data111/latex_graph_hubs (1).json` 中所有 60 个 hub 节点均无 `connectivity_score` / `core_module_score` 字段，因为数据实际由旧版逻辑生成。
+
+因此主管的批评完全成立：**"核心模块加分（Introduction/Main Results）处于缺失状态"**——不是在报告里没说，而是在数据上真的没有算。
+
+### 5.3 差距全图
+
+| 主管要求 | 代码状态 | 数据状态 | 缺口等级 |
+|---|---|---|---|
+| 桥接功能加分 | ✅ 已实现 | ✅ 已落盘（`bridge_score`） | 无缺口 |
+| 边数多的加分 | ✅ 已实现（`out_to_elements×2`） | ✅ 已落盘 | 无缺口 |
+| 核心模块加分（Introduction/Main Results） | ✅ 代码已写（`core_module_score`，第 792-811 行） | ❌ **从未执行，数据中不存在** | **P0 缺口** |
+| 打分透传到 pair 级输出 | ❌ 未实现 | ❌ JSONL 无 `pair_importance_score` 字段 | P0 缺口 |
+| 节点重要性进入训练信号 | ❌ 未实现 | ❌ | P1 缺口 |
+| 权重可调节（CLI 参数） | ❌ 硬编码 | — | P1 缺口 |
+
+### 5.4 本周补齐计划
+
+1. **P0（周二前）**：重跑 `analyze_latex_graph_topology.py`，启用含 `core_module_score` 的 4 分量公式，更新 `data/latex_graph_hubs.json`；在 `enrich_hub_candidates.py` 输出的 pair JSON 中新增 `pair_importance_score = (hub_score_A + hub_score_B) / 2`，并将 `bridge_score`、`core_module_score` 作为 sub-fields 透出
+2. **P1（周三前）**：在 `analyze_latex_graph_topology.py` argparse 中暴露 `--bridge-weight / --connectivity-weight / --core-weight` 三个权重参数，支持消融实验
+3. **P2（下周）**：在 JSONL 训练输出中加入 `node_importance` 字段，作为训练时 sample weight 候选
 
 ---
 
