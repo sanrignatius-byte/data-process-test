@@ -52,26 +52,97 @@ C3 代码功能已上线，但数据覆盖率只达到 46%，这部分目标未�
 
 ## 三、数据管线产出指标
 
-### 3.1 MoDora 语义增强
+### 3.1 MoDora 语义增强——思路与落地
 
-对 figure / table / formula 三类元素分别用专用 prompt 生成结构化语义描述（enriched_title / enriched_metadata / enriched_content），供下游 prompt 注入。
+**引入动机**：MinerU 解析出的原始 caption 往往只有一句话，缺少可检索的语义密度。MoDora 的核心思路是"上游语义增强"——在 query 生成之前，先用 LLM 对 figure / table / formula 三类元素分别生成结构化描述，补全原始 caption 的语义空洞，让 prompt 中注入的上下文更具检索价值。
+
+**三类元素的专用 prompt 策略（`enrich_elements_modora.py`）**：
+- **Table**：提取表格的统计意义、行列关系、关键数值区间，生成 `enriched_content`
+- **Figure**：识别图类型（实验结果图/架构图/流程图），描述趋势、异常值、视觉结构
+- **Formula**：解析变量含义、公式类型（metric/constraint/loss），生成 `enriched_metadata`（含变量字典）+ `enriched_content`（语义解释）
+
+**具体样本对比（来自 `data111/hub_candidates_enriched_v2.json`）**：
+
+*Table 增强（1904.03310，ELMo gender bias 论文）*
+```
+原始 caption：
+  "Table 1: Training corpus for ELMo. We show total counts for male (M)
+   and female (F) pronouns in the corpus, and counts corresponding to
+   their cooccurrence with occupation words..."
+
+enriched_title：
+  Pronoun and occupation co-occurrence counts in ELMo training corpus
+
+enriched_content：
+  Aggregate frequency statistics are reported for male (M) and female (F)
+  pronouns in the ELMo training corpus, alongside how often each pronoun
+  co-occurs with stereotypically male-biased versus female-biased occupation
+  terms. The comparisons characterize gender imbalance both in overall entity
+  mention rates (M vs F pronoun totals) and in association patterns between
+  pronouns and occupation stereotypes...
+```
+
+*Formula 增强（1709.02012，因果公平论文）*
+```
+原始 caption：（空——formula 无 caption，仅有 LaTeX content）
+
+enriched_title：
+  Generalized false-positive rate for a calibrated group classifier
+
+enriched_metadata（变量字典）：
+  formula_type: metric
+  variables:
+    c_fp(h_t*): generalized false-positive rate for calibrated classifier in group t
+    h_t*:       perfectly calibrated classifier for group t
+    mu_t:       group-level base rate (mean outcome in group G_t)
+    keywords:   [false-positive rate, calibration, group fairness, expectation]
+
+enriched_content：
+  The formula computes the generalized false-positive rate for a perfectly
+  calibrated classifier within group G_t. It takes the difference between
+  the group-average prediction E[h_t(x)] and the group-average squared
+  prediction E[h_t(x)^2]...
+```
 
 **实际产出：**
 - 覆盖 76 篇文档，figure **811/841**、table **334/334**、formula **140/141**，合计 **1285/1316（97.6%）**
 - `enriched_title` 均长 64 字符，`enriched_content` 均长 553 字符，已达可用语义密度
 - 剩余 31 条写回失败，原因尚未完整归因，为 P2 排查项
 
-### 3.2 Hub 语义摘要合成
+### 3.2 Hub 语义摘要合成——从两端 enriched 描述到桥接摘要
 
+**思路**：拓扑图中，bridge hub（桥接段落节点）天然连接两个不同模态的元素。我们将 hub 节点两侧的 enriched 描述 + hub 段落本身的文本拼接，压缩成一段统一的 `hub_semantic_summary`，作为 query 生成时注入 prompt 的核心语境。
+
+**Hub Semantic Summary 样本（pair_id=1904.03310_hub_pair_3，figure+table，3-hop）**：
+```
+hub 节点：1904.03310::p::00001（段落，论文 naaclhlt2019.tex 第 177 行）
+hub 种子问题：Under what conditions does tab:lm_cor predict fig:direct-result?
+
+生成的 hub_semantic_summary：
+  [TABLE A] Pronoun and occupation co-occurrence counts in ELMo training corpus:
+  Aggregate frequency statistics...gender imbalance both in overall entity mention
+  rates (M vs F pronoun totals) and in association patterns between pronouns and
+  occupation stereotypes. These corpus-level co-occurrence asymmetries motivate
+  later claims that contextual embeddings can encode and propagate gender information
+  unequally across male and female entities.
+  |
+  [FIGURE B] Appropriate analogy yield versus generation count under debiasing methods:
+  The number of appropriate analogies rises rapidly with more generated analogies for
+  all methods...Soft-debiased embeddings remain consistently lower after ~50 generated
+  analogies, increasing more slowly...
+```
+这段摘要直接作为 query 生成 prompt 的 `[ENRICHED CONTEXT]` 节，替代原来仅靠 raw caption 的拼接方式。
+
+**数量指标**：
 | 指标 | 数值 |
 |---|---|
 | 输入候选 | 500 |
 | 产出 enriched pairs | **230（mapping rate 46%）** |
 | 跳过（`skipped_no_mapping`） | 270 |
 | pair_type 分布 | figure+table 132 / figure+formula 74 / formula+table 24 |
-| hop 分布 | 2-hop 82 / 3-hop 148；cross-doc 74；覆盖 38 篇文档 |
+| hop 分布 | 2-hop 82 / 3-hop 148；cross-doc 74；intra-doc 156；覆盖 38 篇文档 |
 
-**270 条丢失的根因已基本定位：** 这不是 doc_id 前缀小差异，而是 **LaTeX label-style node id**（如 `1904.03310::el::tab:lm_cor`、`1709.02012::el::fig:general-disparity`）无法稳定 join 到 **MinerU ordinal element id**（如 `1904.03310_table_1`、`1709.02012_figure_4`）。我抽样对比后发现，候选端点里 **853/1000** 仍是 `fig:/tab:/eq:` 这类 label-style 标识，而 enriched 落盘侧用的是 `figure_1/table_5/formula_1` 编号体系；当前损耗本质上是 **label mapping / schema join 缺失**，不是可以容忍的边角问题。周三前必须修到可复跑。
+**270 条丢失的根因**：LaTeX label-style node id（`1904.03310::el::tab:lm_cor`）无法稳定 join 到 MinerU ordinal element id（`1904.03310_table_1`），schema join 缺失导致 54% 候选丢弃，周三前必须修复。
 
 ### 3.3 v4.5 生成器核心升级
 
