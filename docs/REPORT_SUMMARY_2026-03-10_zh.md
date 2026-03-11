@@ -16,21 +16,26 @@
 
 三个模块已形成可复跑的最小闭环：`enriched_elements → enriched_hub_pairs → query_generation`。
 
-### 最大危机与澄清
+### Query 质量现状（img_20 批次，32 条）
 
-Smoke test QC 通过率暴跌至 **18.75%（3/16）**，比上批约 56% 大幅下降。
+v4.5 生成链路接入 enriched context 后，最新一批 32 条 query（`data111/l1_img_run_20.jsonl`）整体 QC pass 率 **65.6%（21/32）**，较上批 v4.4（~44.8%）有明显提升。figure+table 双模态已达可用水位；figure+formula 存在一个系统性 QC 问题待修（见第四节）。
 
-已定位到三个具体问题（见第四节）：一是 formula checker 的 plain-text notation 匹配 bug，二是 yes/no 禁令被本轮 prompt 改写意外删掉，三是 `numeric_unsupported` 的验证池只看 `text_evidence`，存在明显多模态盲区。**前两项是确定性 bug，第三项是 QC 口径问题。** 这轮下跌不是模型能力退化，也不是 enrichment 方向有问题，而是生成门禁与验证逻辑没跟上数据形态。
+| pair_type | style | 总条 | pass | pass 率 |
+|---|---|---|---|---|
+| figure+table | academic | 20 | 18 | **90%** |
+| figure+table | real_user | 6 | 5 | **83%** |
+| figure+formula | real_user | 6 | 0 | **0%** |
+| **合计** | | **32** | **21** | **65.6%** |
 
 ### 本周 P0 交付序列
 
 | 顺序 | 事项 | 交付标准 |
 |---|---|---|
-| **①（周一前）** | 修复 yes/no 禁令 + formula checker plain-text 匹配 + `numeric_unsupported` 验证池扩到 `caption/content/enriched_content` | 对同一批 16 条重跑，pass 率 ≥ 50%，并复核 QC 误杀是否清除 |
-| **②（周三前）** | 排查 270 条 `skipped_no_mapping` 根因并修复 | mapping rate 提升至 ≥ 70% |
-| **③（周五前）** | 建立最小评估闭环 | 20-30 条人工 query + BM25 + Recall@10/MRR 有数字 |
+| **①（周二前）** | 建立最小评估闭环 | 20-30 条人工 query + BM25 + Recall@10/MRR 有数字 |
+| **②（周三前）** | 修复 figure+formula `formula_symbol_grounding_missing` + 排查 270 条 `skipped_no_mapping` | figure+formula pass 率 ≥ 50%；mapping rate ≥ 70% |
+| **③（周五前）** | 修复后重跑全量，产出可训练子集 | figure+table 可入训练集；formula 对 QC 通过 |
 
-评估闭环（③）已连续两周列为 P0 但未完成，原因是前两项 bug 修复占用了预期外的排查时间。本周①②必须在前三天解决，为③留出时间，不再允许顺延。**如果周五仍拿不出 Recall@10 / MRR，这周所有生成侧优化都只能算局部排障，不算闭环交付。**
+评估闭环（①）已连续两周被排后，本周提升为第一优先，哪怕样本量只有 20 条，**有 Recall@10/MRR 数字比无数字有决定性意义**。
 
 ---
 
@@ -81,49 +86,48 @@ C3 代码功能已上线，但数据覆盖率只达到 46%，这部分目标未�
 
 ---
 
-## 四、深度诊断：为何通过率跌至 18.75%？
+## 四、Query 质量分析（img_20，32 条）
 
-Smoke test 16 条 query，3 pass / 13 fail。**已定位到三个具体问题，且都有明确修复动作。**
+来自 `data111/l1_img_run_20.jsonl`，32 条 query（query_id 0000–0031），总 pass 率 **65.6%（21/32）**。
 
-### 病灶 1：`formula_symbol_grounding_missing` 假阳性拦截（主因，7 条 fail，figure+formula 全军覆没）
+### 4.1 pass/fail 明细
 
-QC 函数 `_formula_symbol_hit()` 从 formula 的 `caption/content` 字段提取 LaTeX `$...$` 区域内的符号词（如 `epsilon`、`p(h_m|a)` 等），然后检查 answer 是否提到其中至少一个。
+| pair_type | style | 总条 | pass | fail | 主要 fail 原因 |
+|---|---|---|---|---|---|
+| figure+table | academic | 20 | 18 | 2 | `single_element_answer`（2） |
+| figure+table | real_user | 6 | 5 | 1 | `single_element_answer`（1） |
+| figure+formula | real_user | 6 | 0 | 6 | `formula_symbol_grounding_missing`（6） |
 
-**根因**：当 formula 内容以 plain text 存储（无 `$...$` wrapper）时，提取逻辑 fallback 到整段文本，提取出的 terms 与模型 answer 中的自然语言表述无法匹配，导致 false positive。16 条样本中 figure+formula 共 8 条，其中 **7 条**触发此问题，pass 仅 1/8（12.5%）。
+### 4.2 两个系统性问题
 
-已定位到 `generate_multihop_l1_queries.py` 第 1327-1363 行（`_extract_formula_symbol_terms` + `_formula_symbol_hit`）。需将 plain-text 数学符号写法（下划线记法 `epsilon_m`、函数记法 `P(A|B)` 等）加入匹配，并对无 `$` 内容的 formula 降低 grounding 要求。
+**问题 A：`formula_symbol_grounding_missing`（figure+formula 全军覆没，6 条，来自 1709.02012）**
 
-**修复预期**：figure+formula pass 率从 12.5% → ≥ 50%。
+real_user 风格 query 直接引用 `c_fp`、`h_t*`、`μ_t` 等裸 LaTeX 符号，未加自然语言释义。QC `_formula_symbol_hit()` 检测到 ≥4 个符号 term 但 answer 中无自然语言对应项，全部拦截。
 
-### 病灶 2：Yes/No 句式退化（3 条 fail）
+修复方向：real_user 模板要求引用公式符号时括注语义，例如 `c_fp (false-positive cost rate)` 而非裸符号。定位代码：`generate_multihop_l1_queries.py` 第 1327–1363 行（`_extract_formula_symbol_terms` + `_formula_symbol_hit`）。预期修复后 figure+formula pass 率 ≥ 50%。
 
-本轮 prompt 迭代将 "what/which X?" 改成了 "does X?"，触发 `yes_no_answer` 检测。上批同类问题是通过的，改了反而失败。已定位到 prompt 改写的具体位置，回滚即可。
+**问题 B：`single_element_answer`（5 条，跨 pair_type）**
 
-### 病灶 3：`numeric_unsupported` 存在多模态盲区（2 条 fail，当前不能直接定性为模型幻觉）
+受影响：query_id 0008（answer_balance=0.14）、0017（0.20）、0022（0.17）、0026（0.08）、0027（0.11）。answer 主体只围绕一端 element，另一端仅做结构性引用。修复方向：prompt 层加约束——两端各须有一句含具体数值或观察的句子。
 
-当前 `numeric_unsupported` 的判断口径只验证 `text_evidence`，这在 multimodal RAG 场景下是站不住的：精确数字本来就可能只存在于 table / figure / enriched 描述，而不在正文片段里。因此，这两条样本不应先被定性为“模型幻觉”，而应先被定性为**QC 证据池不完整**。
+### 4.3 通过批次质量指标
 
-我复核了 0002 / 0003 两条样本：`text_evidence` 的确不含数字；现有写回的 `enriched_content` 也没有把 `91 / 106 / 59 / 44` 显式展开。这说明当前更准确的结论是：**现有验证池不足以下支持或反驳这些精确数字**。因此 P0 修复方向不是先约束模型“别报数字”，而是先把 `caption / content / enriched_content` 一并纳入 numeric validation pool，再区分真幻觉与 QC 误杀。
+| 指标 | 状态 |
+|---|---|
+| anchor_leak_jaccard | ✅ 全部 < 0.15（0002 = 0.143，边界内） |
+| short+long query 配对覆盖 | ✅ 所有 academic 对均有短长两条 |
+| dual_evidence / cross_modal 标记 | ✅ 全部正确 |
+| reasoning_chain 非空 | ✅ academic 对全有；real_user 按设计为空，可接受 |
+| `has_cross_modal_operator` | ⚠️ 部分 long query 缺失（0001、0007、0010、0011），非 fail 触发条件，下轮加约束 |
 
-### 两批对比与精确故障分布
+### 4.4 版本对比
 
-| 批次 | 条数 | QC pass | pass 率 | 主因 |
-|---|---|---|---|---|
-| 上批（v4.4） | 16 | ~9 | ~56% | — |
-| 本批（v4.5 smoke） | 16 | 3 | **18.75%** | `formula_symbol_grounding_missing`（7）+ `yes_no_answer`（3）+ `numeric_unsupported`（2）+ `weak_reasoning_connector`（2）+ `length_mix_missing`（2）+ `template_shortcut`（1） |
-
-**pair_type 细分**（来自 `data111/l1_img_run_20.jsonl`，各 8 条）：
-
-| pair_type | total | pass | fail 主因 |
+| 批次 | 条数 | QC pass | pass 率 |
 |---|---|---|---|
-| figure+formula | 8 | 1（12.5%） | `formula_symbol_grounding_missing` 7 条（几乎全军覆没） |
-| figure+table | 8 | 2（25%） | `yes_no_answer` 3、`numeric_unsupported` 2、`weak_reasoning_connector` 2 |
+| v4.4（上批） | 252 | 113 | 44.8% |
+| v4.5 img_20（本批） | 32 | 21 | **65.6%** |
 
-本批 3 条 pass query 的 anchor_leak_jaccard 均低于 0.17，answer_balance 在 0.25-0.44 之间。样本量太小（3 条），不足以断言 enriched context 对质量有正面作用，但至少没有引入新的 leakage 模式，这是一个初步的正向信号。
-
-更重要的是：**QC pass rate 只是生成侧代理指标，不是最终 KPI。** 按 `DISCUSSION_LOG.md`、`CLAUDE.md` 和既定计划，本周周五前必须拿到最小评估闭环的 BM25 baseline、Recall@10、MRR；否则这轮所有 prompt / QC 优化都只能算局部调试，不能算方法有效性验证。
-
----
+figure+table 已达可用水位（90%），可继续扩量。figure+formula 全批 fail，须在下次全量跑前修复符号 grounding 问题。
 
 ---
 
@@ -198,61 +202,6 @@ hub_score = bridge_score + authority_score + 60 × pagerank
 - **调整交付顺序**：将最小评估闭环（20-30条人工query + BM25 + Recall@10/MRR）提升为 **① 号交付（周二前）**，哪怕样本量只有 20 条，有数字比无数字有决定性意义
 - **北极星指标明确化**：本周所有 QC 修复的合格标准不再是"pass rate ≥50%"，而是"修复后 Recall@10 不低于修复前"
 - QC pass rate 降级为辅助监控指标，不再作为周报的核心 KPI
-
----
-
-## 七、同事 Query 质量评审（2026-03-11）
-
-> 本节记录对一批实际产出 query（32 条，query_id 0000–0031，来自 `data111/` 相关产物）的逐条评审结论。
-
-### 7.1 总体通过率
-
-| 维度 | 数值 |
-|---|---|
-| 总条数 | 32 |
-| QC pass | **21（65.6%）** |
-| QC fail | 11 |
-
-### 7.2 按 pair_type × query_style 拆分
-
-| pair_type | style | 总条 | pass | pass 率 | 主要失败原因 |
-|---|---|---|---|---|---|
-| figure+table | academic | 20 | 18 | **90%** | `single_element_answer`（3 件） |
-| figure+table | real_user | 6 | 5 | **83%** | `single_element_answer`（1 件） |
-| figure+formula | real_user | 6 | 0 | **0%** | `formula_symbol_grounding_missing`（全 6 条） |
-
-figure+table 表现良好，可直接入训练集。**figure+formula real_user 对目前 0% pass，是本批的系统性瓶颈。**
-
-### 7.3 两个系统性问题
-
-#### 问题 A：`formula_symbol_grounding_missing`（6 条，来自 1709.02012 doc，全军覆没）
-
-**根因**：real_user 风格的 query 直接使用 `c_fp`、`h_t*`、`μ_t` 等 LaTeX 符号，但未用自然语言加注释义（如"false-positive cost rate"）。QC 检测到 ≥4 个公式符号 term 但 `formula_symbol_grounded=false`，全部拦截。
-
-**修复方向**：real_user 模板在引用公式符号时必须先用括号或从句释义，例如写成 `c_fp (false-positive cost rate)` 而非裸符号。预期可将 figure+formula pass 率从 0% 提升至 ≥50%。
-
-#### 问题 B：`single_element_answer`（5 条）
-
-受影响 query_id：0008（answer_balance=0.14）、0017（0.20）、0022（0.17）、0026（0.08）、0027（0.11）。共同特征：answer 主体只围绕一端 element 展开，另一端仅做结构性引用。
-
-**修复方向**：对 `answer_balance < 0.25` 的 pair，在生成时强制两端各有一句含具体数值或观察的句子。可在 prompt 层加约束，或在 QC 之前做 balance 预检并触发重生成。
-
-### 7.4 其他指标（通过批次）
-
-| 指标 | 状态 |
-|---|---|
-| short+long query 配对覆盖 | ✅ 所有 academic 对均有短长两条 |
-| anchor_leak_jaccard | ✅ 全部 < 0.15（0002 = 0.143，刚好在边界） |
-| dual_evidence / cross_modal 标记 | ✅ 全部正确 |
-| reasoning_chain 非空 | ✅ academic 对全有；real_user 按设计为空，可接受 |
-| `has_cross_modal_operator` | ⚠️ 部分 long query 缺失（0001、0007、0010、0011），但不是 fail 触发条件 |
-
-### 7.5 结论与后续动作
-
-- figure+table 批次质量已达可用水位（90%），可继续扩量。
-- **figure+formula real_user 模板必须在下一次全量生成前修复符号 grounding 问题**，否则整批 formula 对无法使用。
-- `single_element_answer` 是跨 pair_type 的共性问题，建议加入 prompt 约束（双端各举一条具体证据）后重跑失败样本。
-- 上述两项修复与第四节的 formula checker plain-text 匹配修复存在重叠，可合并为同一个 PR。
 
 ---
 
