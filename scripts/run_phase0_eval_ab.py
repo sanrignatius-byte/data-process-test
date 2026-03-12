@@ -118,6 +118,8 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
                 _to_text(e.get("content")),
                 _to_text(e.get("context_before")),
                 _to_text(e.get("context_after")),
+                _to_text(e.get("enriched_title")),
+                _to_text(e.get("enriched_content")),
             ]
             text = "\n".join([x for x in fields if x]).strip()
             if not text:
@@ -166,6 +168,17 @@ def query_spans(q: Dict[str, Any]) -> List[str]:
         if st:
             spans.append(st)
     return spans
+
+
+def query_element_ids(q: Dict[str, Any]) -> List[str]:
+    """Extract ground-truth element_ids from required_evidence_spans."""
+    ids = []
+    for s in (q.get("required_evidence_spans") or []):
+        eid = (s.get("element_id") if isinstance(s, dict) else None) or ""
+        eid = eid.strip()
+        if eid:
+            ids.append(eid)
+    return ids
 
 
 def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
@@ -226,14 +239,28 @@ def evaluate_method(
         ranked = sorted(scored, key=lambda x: x[1], reverse=True)
         top = ranked[:top_k]
 
-        hit_ranks: List[int] = []
+        # element_id-based hit (primary): check if ground-truth element is in top-k
+        gt_eids = set(query_element_ids(q))
+        eid_hit_ranks: List[int] = []
+        for rank_idx, (ci, _s) in enumerate(top, start=1):
+            if chunks[ci].chunk_id in gt_eids:
+                eid_hit_ranks.append(rank_idx)
+
+        # span overlap-based hit (secondary, for reference only)
+        hit_ranks_overlap: List[int] = []
         best_overlap = 0.0
         for rank_idx, (ci, _s) in enumerate(top, start=1):
             ctext = chunks[ci].text
-            ov = max(span_overlap(sp, ctext) for sp in spans)
+            ov = max((span_overlap(sp, ctext) for sp in spans), default=0.0)
             best_overlap = max(best_overlap, ov)
             if ov >= overlap_threshold:
-                hit_ranks.append(rank_idx)
+                hit_ranks_overlap.append(rank_idx)
+
+        # Use element_id hit if ground-truth ids are available, else fall back to overlap
+        if gt_eids:
+            hit_ranks = eid_hit_ranks
+        else:
+            hit_ranks = hit_ranks_overlap
 
         hit10 = 1.0 if hit_ranks else 0.0
         rr = reciprocal_rank_binary(hit_ranks)
@@ -245,6 +272,7 @@ def evaluate_method(
                 "hit_at_10": hit10,
                 "rr": rr,
                 "best_overlap_in_topk": round(best_overlap, 4),
+                "gt_element_ids": list(gt_eids),
             }
         )
 
@@ -278,8 +306,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Run Phase-0 locked A/B retrieval evaluation")
     ap.add_argument("--q1", type=Path, default=Path("data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
     ap.add_argument("--q2", type=Path, default=Path("data/l1_dual_evidence_queries_v3_pass.jsonl"))
-    ap.add_argument("--elements", type=Path, default=Path("data/multimodal_elements.json"))
-    ap.add_argument("--hubs", type=Path, default=Path("data/latex_graph_hubs.json"))
+    ap.add_argument("--q3", type=Path, default=None, help="Optional extra query file (e.g. data111/l1_img_run_20.jsonl)")
+    ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
+    ap.add_argument("--hubs", type=Path, default=Path("data111/latex_graph_hubs (1).json"))
     ap.add_argument("--output", type=Path, default=Path("data/phase0_eval_report.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--overlap-threshold", type=float, default=0.5)
@@ -288,6 +317,8 @@ def main() -> None:
     args = ap.parse_args()
 
     rows = load_jsonl(args.q1) + load_jsonl(args.q2)
+    if args.q3 is not None and args.q3.exists():
+        rows += load_jsonl(args.q3)
     queries = dedupe_queries(rows)
     chunks = build_chunks(args.elements, max_chars=args.max_chars)
     doc_hub_prior = load_doc_hub_prior(args.hubs)
