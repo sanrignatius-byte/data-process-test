@@ -45,7 +45,28 @@ log_run(
 ---
 
 ## 项目简介
-这是一个 M4（Multi-hop, Multi-modal, Multi-document, Multi-turn）Query 生成系统，用于训练多模态文档检索 embedding。
+这是一个以 **Document Graph for Document Understanding** 为核心的研究系统。核心创新是面向学术论文的多层异构图构建方法，支持多种下游任务（query 生成、QA、文档总结、多文档推理、证据定位）。M4 Query 生成（Multi-hop, Multi-modal, Multi-document, Multi-turn）是图的第一个应用示例，也是当前主要交付物。
+
+**战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
+
+## 当前状态（2026-03-12 更新｜战略升级：Document Graph as Core + 专利路径确认）
+
+### 本轮完成（相对 2026-03-10）
+
+- **Mentor 周会战略共识达成**：项目从"Query 生成工具"重新定位为"Document Graph for Document Understanding"系统
+  - Graph 核心贡献：节点/边构建方法 + Hub 评分 + 多任务应用
+  - Query 生成降级为 graph 的第一个 application（仍是当前主要交付物）
+- **时间线确认**：4 月申专利（公司专利），5 月开放论文投稿
+- **新方向纳入 roadmap**：Persona Hub + C-Pool 万金油查询库 + Graph RAG 调研 + 泛化方案设计
+- **讨论记录**：已更新至 `docs/DISCUSSION_LOG.md`（2026-03-12 节）
+
+### 本轮关键设计决策
+- **图架构文档化是最高优先**：Mentor 明确要求，每次周会前必须有独立的图文档（节点/边/成本/评分），不能再散落在 CLAUDE.md 中
+- **验证效果是 4 月目标**：design document graph → vs baseline（BM25/dense）在 QA 或 evidence localization 上的实验
+- **C-Pool 策略**：~50-100 条人工精选的万金油通用 query，QC 只验 evidence localization，不验 query 质量
+- **Persona Hub 扩展**：5 类用户人设（PhD/lazy/careful/practitioner/skeptic），按比例随机分配，增强多样性
+
+---
 
 ## 当前状态（2026-03-10 更新｜MoDora 深度整合 + Real-user Query 风格 + Enrichment 质量闸门）
 
@@ -468,7 +489,9 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-10 更新）
+## 下一步 TODO（2026-03-12 更新）
+
+### 已完成（历史）
 - ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
 - ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
 - ~~**P-0.5: Step 0 v3.2 v3 重跑**~~ ✅ **完成** — 集群跑出 118 对（G1+G2），stats 一致，cross-ref gate 正确
@@ -479,6 +502,13 @@ python scripts/generate_multihop_l1_queries.py \
 - ~~**LaTeX Topology v2 + Hub Multi-hop Candidates**~~ ✅ **完成** — 2551 nodes, 3471 edges, 500 candidates, 100% bridge hubs
 - ~~**公司 API 整合**~~ ✅ **完成** — `--provider company` via `local_api_logger`，SSE 流式解析 + token 自动记录
 - ~~**MoDora 整合方案设计**~~ ✅ **完成** — 4 workstream 并行，5 文件改动，同事反馈已纳入
+
+### 新增 P0（本月，支撑 4 月专利）
+- **【新】整理 `docs/GRAPH_ARCHITECTURE.md`**：Document Graph 完整文档——节点类型/边类型/获取方式（MinerU/LaTeX/LLM）/成本分层/Hub 评分公式。Mentor 明确要求，每次周会前必须有
+- **【新】设计 Graph 效果验证实验**：Document Graph vs BM25/dense baseline，在 QA 或 evidence localization 任务上验证效果，1 个月内出数据（→ 4 月）
+- **【新】建立 C-Pool 万金油查询库**：人工整理 50-100 条通用学术文档 query（总结/动机/方法/贡献/跨文档连接），每类 7-10 种表述变体，QC 只验 evidence localization
+
+### P0（原有 MoDora workstream，本周）
 - **C1（最高优先）：低质量 enrichment 过滤器**：在 query 生成前检测 enriched 字段噪声模式（glyph/icon/marker），命中回退原始 context
 - **A1：段落按 section 边界切分**：`_extract_paragraphs()` 遇 `\section{}` 先 flush 当前 block
 - **A2：section 节点参与路径枚举**：Strategy 4 + `--single-doc-only` flag
@@ -486,14 +516,25 @@ python scripts/generate_multihop_l1_queries.py \
 - **B2：`--query-style` CLI 开关**：academic（默认）/ real_user / mixed
 - **C3：hub summary 压缩重写**：从拼接升级为 50-80 词压缩
 - **D1：`qc_real_user_query()` 函数**：放宽 yes/no + template 限制，新增 retrievability_score
-- **P0（原有）：全量生成 L1 hub-multihop queries**：放入 `local_api_logger` + 设置 `COMPANY_API_KEY` 后，用 `--provider company` 跑 500 条 hub candidates
-- **P1（原有）：修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
-- **P0.1: Citation-based L2 候选替换**：用 123 条引用边（集群）做 L2 候选对（替代实体倒排索引），信号更强
-- **P1.2: figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 这几篇论文 0 pass 全失败，分析 root cause
-- **P2: label 匹配率继续提升**：49.8% → 更高，改善 page_span 覆盖（当前 19%）
+
+### 新增 P1（本月，支撑论文）
+- **【新】实现 Persona Hub**：5 类用户人设（PhD/lazy user/careful reader/practitioner/skeptic），加入 `--query-style` 路由，按比例分配
+- **【新】调研 Graph RAG**：Entity graph（Microsoft GraphRAG）、Query-sentence graph，整理对比文档，寻找低成本可借鉴方案
+- **【新】C-Pool QC 策略实现**：C-Pool query 跳过 query 评分，只做 evidence localization 验证
+- **【新】泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案（section title 提取 + 阅读顺序边 + LLM 大纲生成备选）
+
+### P1（原有）
+- **全量生成 L1 hub-multihop queries**：`--provider company` 跑 500 条 hub candidates
+- **修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
+- **Citation-based L2 候选替换**：用 123 条引用边做 L2 候选对（替代实体倒排索引）
+- **figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 零 pass 原因分析
+
+### P2（后续）
+- **label 匹配率继续提升**：49.8% → 更高，改善 page_span 覆盖（当前 19%）
 - **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
 - **L2 暂停实体路线**：实体倒排索引的 L2 暂停，改用 citation graph 做候选
-- 详见 `docs/DISCUSSION_LOG.md` 最新讨论
+
+详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-12 节）
 
 ### Step 0 v3.2 质量问题备忘（2026-02-20 分析）
 - **Hub 问题**：单个高频被引 element（如 1409.0575 Table 9）产生 O(N) 虚假对 → G1 每 element ≤3 pairs

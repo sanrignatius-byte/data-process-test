@@ -1943,4 +1943,243 @@ A3      B3 → D1+D2+D3
 ### 六、下一步
 - 立即开始 C1（enrichment 过滤器），预计改动量最小、收益最大
 - A1/A2 和 B1/B2 同步推进
+
+---
+
+## 日期：2026-03-12（Mentor 周会复盘｜Document Graph 战略定位 + 专利/论文路径）
+
+### 一、本次讨论背景
+
+本周 Mentor 周会，核心议题从"如何迭代 query 质量"升级到"**如何把这套方法做成可发表的系统级贡献**"。Mentor 明确提出了专利先行、论文跟进的时间线要求，并对 Document Graph 的战略定位给出了清晰指向。
+
+---
+
+### 二、战略定位调整（最重要）
+
+#### 2.1 核心创新重新定位
+
+> **原来定位**：M4 Query 生成系统（query generation as primary contribution）
+>
+> **新定位**：**Document Graph for Document Understanding**（graph as core contribution，query generation 是其中一个 application/byproduct）
+
+Mentor 原话：
+- "这个图你做了之后可以做啥？它不只是用来造 query 的"
+- "造 query 是咱们的一个贡献，咱们也可以去利用这个图去干其他的事"
+- "Graph 可以帮我们生成 query，也可以帮我们去做 QA，也可以帮我们去做推理任务——核心是 for document understanding"
+- "如果只是发篇论文说咱们建这个图为了造 query，它太窄了"
+
+#### 2.2 图的多种应用场景（Claim 点）
+
+| 应用场景 | 说明 |
+|----------|------|
+| Query 生成 | 当前已做，multi-hop / multi-modal |
+| QA（问答） | 利用图结构定位答案证据 |
+| 文档总结 | 抽取关键节点 + hub 生成摘要 |
+| 多文档推理 | 跨文档 bridge + citation 边做推理链 |
+| 证据定位 | 从 evidence 回溯原 PDF 段落/图表位置 |
+
+#### 2.3 核心创新点提炼要求
+
+Mentor 要求在 **1 个月内**（→ 4 月）验证 document graph 的效果，证明优于现有 baseline，用以：
+1. 申请公司专利（公司 KPI）
+2. 为论文投稿开绿灯（需先有专利）
+
+---
+
+### 三、专利/论文时间线
+
+| 时间节点 | 里程碑 |
+|----------|--------|
+| 2026-04 | 专利申请（技术点：document graph 构建方法） |
+| 2026-05 | 论文投稿开放（主管放行） |
+| 当前～04 | 验证 graph 效果 vs baseline，完成图文档整理 |
+
+**关键说明**：
+- 专利归公司（华为），论文归学生本人
+- 申专利 = 锁住技术点，后续论文不受阻拦
+- 不要过于谨慎（Mentor："不要在乎钱"，"key 随便用"）
+
+---
+
+### 四、Document Graph 架构文档化要求（高优先级）
+
+Mentor **明确要求**整理一份专门的 Graph 文档，包含以下内容：
+
+#### 4.1 节点类型（Nodes）
+
+需要清晰回答：每类节点的来源、成本和语义
+
+| 节点类型 | 来源 | 成本 | 说明 |
+|----------|------|------|------|
+| Figure | MinerU（自动） | 低 | 含 caption、图片路径 |
+| Table | MinerU（自动） | 低 | 含 caption、HTML 内容 |
+| Formula | MinerU（自动） | 低 | 含 context |
+| Paragraph | MinerU / LaTeX（自动） | 低 | 文本段落 |
+| Section | LaTeX（自动） | 低 | `\section{}` 边界 |
+| Architecture Figure | 大模型精分（LLM） | 中 | Figure 的子类型 |
+| Enriched Element | LLM（MoDora-style） | 高 | 含 enriched_title/metadata/content |
+
+#### 4.2 边类型（Edges）
+
+| 边类型 | 来源 | 成本 | 说明 |
+|--------|------|------|------|
+| 阅读顺序边（backbone） | MinerU / LaTeX（自动） | 低 | para→para 自然顺序 |
+| LaTeX 引用边（element_ref） | LaTeX `\ref{}`（自动） | 低 | figure/table/formula 文内引用 |
+| 段落引用边（paragraph_ref） | LaTeX（自动） | 低 | 段落间 \ref 关系 |
+| 跨文档引用边（cross_doc_cite） | LaTeX `.bbl` + 标题匹配（自动） | 低 | 123 条跨文档引用 |
+| 语义相似边 | Embedding（自动，中成本） | 中 | 高语义相似段落连接 |
+| Hub → Element 边 | 拓扑分析（自动） | 低 | bridge hub 指向两端多模态元素 |
+
+#### 4.3 成本分层
+
+```
+【零成本/低成本 - 纯自动化，可扩展到万篇文档】
+  - MinerU 解析 → figure/table/formula/paragraph
+  - LaTeX 引用解析 → element_ref / paragraph_ref
+  - .bbl 匹配 → cross_doc_cite
+
+【中成本 - 需要 GPU 或 API，per-document 一次性开销】
+  - Embedding 计算 → 语义相似边
+  - MoDora-style LLM enrichment → 增强节点语义
+
+【高成本 - 仅适合核心关键节点，不能全量处理】
+  - LLM 图结构分析（整个文章 table of contents → 大纲）
+  - Figure type 精分（architecture/plot/diagram 细分）
+```
+
+---
+
+### 五、Hub 评分体系（已实现，需文档化）
+
+当前 Hub 评分由 4 个维度构成：
+
+| 评分维度 | 方式 | 是否自动化 | 说明 |
+|----------|------|-----------|------|
+| Bridge Score | 规则公式 | ✅ 自动 | `num_modalities×15 + out_to_elements×2` |
+| PageRank | 图算法 | ✅ 自动 | 图中结构中心性，Mentor 认可 |
+| Background Degree（被引度） | 图统计 | ✅ 自动 | 被多少段落引用，反映重要性 |
+| 主题相关性（Relevance） | 正则 | ⚠️ 半自动 | (a) 固定模式（intro/result/conclusion） + (b) 标题关键词匹配 |
+
+**注意**：主题相关性中固定模式（intro/result/conclusion）可跨领域复用；标题关键词需要按文档动态提取，但仍是轻量规则，不需要大模型。
+
+---
+
+### 六、Query 多样性策略更新
+
+#### 6.1 Persona Hub（新增方向）
+
+Mentor 建议引入 **Persona Hub**（用户人设库），让 query 风格更加多元：
+
+| Persona 类型 | 特征 | 示例风格 |
+|-------------|------|----------|
+| PhD Researcher | 严谨、术语准确 | "What is the causal mechanism by which X affects Y?" |
+| Lazy User | 短词、靠猜意图 | "x faster than y why" |
+| Careful Reader | 完整句、细节导向 | "Can you explain what the authors mean when they say..." |
+| Practitioner | 应用导向 | "How would I implement this in production?" |
+| Skeptic | 质疑性提问 | "Is there any evidence that X doesn't hold when...?" |
+
+**实现思路**：对每个 query 随机分配 persona prefix，按比例分布（PhD 多，lazy 少），增强数据多样性。
+
+#### 6.2 C-Pool（万金油查询库，新增）
+
+Mentor 建议构建一批 **50-100 条无需合成的高频通用 query**，适用于任何学术文档：
+
+**类别举例**：
+- 总结类：7-10 种不同表述（"帮我总结这篇论文" / "这篇文章讲了什么" / "这文章大概啥意思"…）
+- 动机类："这个工作的 motivation 是什么？" / "作者为什么要做这个研究？"
+- 方法类："他们用了什么方法？" / "核心技术是什么？"
+- 贡献类："这篇论文的主要贡献是什么？"
+- 跨文档连接类："这些论文的动机能帮我串一下吗？"
+
+**QC 策略差异**：
+- C-Pool query 不需要评估 query 本身质量（因为是人工精选的）
+- 只需验证：evidence 能否正确定位到原文位置
+- 允许无标准答案（让检索模型自己去找证据）
+
+#### 6.3 QC 策略矩阵（完善）
+
+| Query 类型 | query 质量评估 | evidence 定位评估 | 答案评估 |
+|------------|---------------|-----------------|---------|
+| Academic multi-hop | 严格（现有 QC） | 必须 | 推理链要求 |
+| Real-user | 放宽（qc_real_user_query） | 必须 | 无推理链要求 |
+| C-Pool 万金油 | 跳过（人工保证） | 必须 | 可无标答 |
+| Persona-enhanced | 按底层 query 类型 | 必须 | 按底层 query 类型 |
+
+---
+
+### 七、Graph RAG 方向调研（新增）
+
+Mentor 建议调研以下方向作为对比和借鉴：
+
+#### 7.1 传统 Graph RAG
+- 实体提取 → 实体关系图 → community summary（如 Microsoft GraphRAG）
+- **优点**：实体级精度高，推理路径清晰
+- **缺点**：token 成本极高（per-document 全量提取），难以扩展到万篇文档
+- **借鉴点**：entity-level linking 可作为高精度可选层
+
+#### 7.2 Query-Sentence Graph（新思路）
+- 对每个段落，反向生成"这个段落可能被问到的 query"
+- 根据 query 之间的相似性，把语义相关的段落连在一起
+- **优点**：建图过程即数据生成，无额外边推断成本
+- **实现思路**：可用小模型（轻量 LLM）per-segment 生成假设 query，再用 embedding 聚类
+
+#### 7.3 低成本建图的泛化性
+
+> **Mentor 核心诉求**：把这套方法做成通用的，不只适用于有 LaTeX 源码的论文。
+
+| 场景 | 当前依赖 | 泛化方案 |
+|------|---------|---------|
+| 有 LaTeX | LaTeX `\ref{}`、`.bbl` | 当前已有 |
+| 纯 PDF | MinerU 解析 | 用 section title 提取、阅读顺序边 |
+| 无结构文档 | — | 用大模型分析 table of contents + 段落大纲生成 |
+| 万篇文档 | — | 低成本层（MinerU+规则）全量跑，高成本层（LLM）仅核心节点 |
+
+---
+
+### 八、进度对比与差距分析
+
+| Mentor 期望 | 当前状态 | Gap |
+|------------|---------|-----|
+| 图架构文档化（节点/边/成本） | ❌ 未有独立文档 | 需整理 `docs/GRAPH_ARCHITECTURE.md` |
+| Hub 评分文档化 | ⚠️ 分散在代码注释 | 需整理到文档 |
+| Document Graph 效果验证（1 个月） | ❌ 尚未启动 vs baseline | 需设计评测实验 |
+| Persona Hub 实现 | ❌ 未实现 | 加入 B workstream |
+| C-Pool 万金油查询库 | ❌ 未建立 | 需人工整理 ~50-100 条 |
+| Graph RAG 调研 | ❌ 未做 | 需调研报告 |
+| 自动化 pipeline 文档 | ⚠️ 分散在 CLAUDE.md | 需整理 flow 图 |
+| 专利技术点整理 | ⚠️ 有初步文档 | 见 `docs/PATENT_TECHNICAL_SUMMARY.md` |
+
+**当前已达标的部分**：
+- ✅ MoDora enrichment 整合（语义增强）
+- ✅ Hub 评分体系（bridge score + PageRank + background degree）
+- ✅ Real-user query 模板（5 类）+ `--query-style` 开关
+- ✅ QC 双轨制设计
+- ✅ 拓扑分析 v2（2551 nodes, 3471 edges, 500 candidates）
+- ✅ Pass rate 持续提升（v1: 6.4% → v4.2: 64.4%）
+
+---
+
+### 九、本次讨论形成的新 TODO（优先级排序）
+
+#### 新增 P0（本月内，支撑专利）
+1. **整理 `docs/GRAPH_ARCHITECTURE.md`**：节点类型/边类型/成本分层/评分体系，清晰到 Mentor 每次不用重新问
+2. **设计 Graph 效果验证实验**：vs naive retrieval（BM25/dense）在 QA 或 evidence localization 任务上
+3. **建立 C-Pool 万金油查询库**：人工整理 50-100 条通用 query，附上多种表述变体
+
+#### 新增 P1（本月，支撑论文）
+4. **调研 Graph RAG 相关工作**：Entity graph / Query-sentence graph，整理对比文档
+5. **实现 Persona Hub**：5 类 persona，加入 `--query-style` 路由，按比例分配
+6. **C-Pool QC 策略实现**：跳过 query 评分，只做 evidence localization 验证
+7. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
+
+#### 沿用 P0（MoDora workstream，本周）
+8. C1：enrichment 过滤器（噪声检测）
+9. A1/A2：section 粒度细化 + 路径枚举
+10. B1/B2：real-user 模板 + `--query-style` CLI
+
+---
+
+### 十、一句话结论
+
+> **项目定位从"Query 生成工具"升级为"Document Graph for Document Understanding"系统；核心创新是图的构建方法和多任务应用能力；1 个月内需完成效果验证以支撑专利申请，论文随后跟进。Query 生成是图的第一个应用示例，不是终点。**
 - 完成后在现有 500 candidates 上做 `--query-style real_user --limit 50` 验证喵
