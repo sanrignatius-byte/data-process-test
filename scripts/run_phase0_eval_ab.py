@@ -221,6 +221,7 @@ def evaluate_method(
     top_k: int,
     overlap_threshold: float,
     graph_alpha: float,
+    graph_rerank_topn: int,
 ) -> Dict[str, Any]:
     import numpy as np
 
@@ -247,16 +248,24 @@ def evaluate_method(
         elif method == "graph_hub_rerank":
             q_toks = tokenize(qtxt)
             raw_bm25 = [bm25.score(q_toks, i) for i in range(len(chunks))]
-            # Normalize BM25 to [0,1] before mixing with hub prior (which is already [0,1]),
-            # otherwise graph_alpha has negligible effect on large BM25 scores.
+            # Controlled re-rank: only adjust BM25 top-N candidates instead of globally
+            # perturbing every chunk. This makes graph prior a local tie-break signal.
+            ranked_bm25 = sorted(enumerate(raw_bm25), key=lambda x: x[1], reverse=True)
+            rerank_n = max(top_k, min(graph_rerank_topn, len(chunks)))
+            candidate_ids = {i for i, _ in ranked_bm25[:rerank_n]}
+
             bm25_min = min(raw_bm25)
             bm25_range = max(raw_bm25) - bm25_min
             scored = []
             for i, c in enumerate(chunks):
                 norm_base = (raw_bm25[i] - bm25_min) / max(bm25_range, 1e-9)
-                # Use element-level prior if available (more precise), else fall back to doc-level
-                prior = element_hub_prior.get(c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0))
-                scored.append((i, norm_base + graph_alpha * prior))
+                if i in candidate_ids:
+                    # Use element-level prior if available (more precise), else fall back to doc-level
+                    prior = element_hub_prior.get(c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0))
+                    score = norm_base + graph_alpha * prior
+                else:
+                    score = norm_base
+                scored.append((i, score))
         else:
             raise ValueError(method)
 
@@ -338,7 +347,9 @@ def main() -> None:
     ap.add_argument("--output", type=Path, default=Path("data/phase0_eval_report.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--overlap-threshold", type=float, default=0.5)
-    ap.add_argument("--graph-alpha", type=float, default=0.6)
+    ap.add_argument("--graph-alpha", type=float, default=0.2)
+    ap.add_argument("--graph-rerank-topn", type=int, default=100,
+                    help="Apply graph prior only within BM25 top-N candidates (controlled rerank)")
     ap.add_argument("--max-chars", type=int, default=1800)
     args = ap.parse_args()
 
@@ -372,6 +383,7 @@ def main() -> None:
         dense_matrix=dense_matrix, vectorizer=vectorizer,
         top_k=args.top_k, overlap_threshold=args.overlap_threshold,
         graph_alpha=args.graph_alpha,
+        graph_rerank_topn=args.graph_rerank_topn,
     )
     metrics_bm25 = evaluate_method("bm25", queries, **eval_kwargs)
     metrics_dense = evaluate_method("dense", queries, **eval_kwargs)
@@ -388,6 +400,7 @@ def main() -> None:
             "top_k": args.top_k,
             "overlap_threshold": args.overlap_threshold,
             "graph_alpha": args.graph_alpha,
+            "graph_rerank_topn": args.graph_rerank_topn,
             "max_chars": args.max_chars,
             "n_queries": len(queries),
             "n_chunks": len(chunks),
