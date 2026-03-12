@@ -148,6 +148,28 @@ def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
     return {k: v / mx for k, v in by_doc.items()}
 
 
+def load_element_hub_prior(hub_candidates_json: Path) -> Dict[str, float]:
+    """Element-level hub prior from enriched candidate pairs.
+
+    Each element that appears in any hub candidate pair gets a score = 1.0
+    (binary: hub-referenced element or not). More precise than doc-level prior
+    since only ~12% of elements are boosted vs ~41% with doc-level.
+    """
+    obj = json.loads(hub_candidates_json.read_text(encoding="utf-8"))
+    pairs = obj.get("pairs", []) or []
+    by_element: Dict[str, float] = {}
+    for p in pairs:
+        for key in ("element_a_id", "element_b_id"):
+            eid = str(p.get(key, "") or "").strip()
+            if eid:
+                qs = float(p.get("quality_score", 1.0) or 1.0)
+                by_element[eid] = max(by_element.get(eid, 0.0), qs)
+    if not by_element:
+        return {}
+    mx = max(by_element.values())
+    return {k: v / mx for k, v in by_element.items()}
+
+
 def span_overlap(span: str, text: str) -> float:
     span = (span or "").strip()
     text = (text or "").strip()
@@ -193,6 +215,7 @@ def evaluate_method(
     chunks: List[Chunk],
     bm25: BM25Lite,
     doc_hub_prior: Dict[str, float],
+    element_hub_prior: Dict[str, float],
     dense_matrix,
     vectorizer,
     top_k: int,
@@ -231,7 +254,8 @@ def evaluate_method(
             scored = []
             for i, c in enumerate(chunks):
                 norm_base = (raw_bm25[i] - bm25_min) / max(bm25_range, 1e-9)
-                prior = doc_hub_prior.get(c.doc_id, 0.0)
+                # Use element-level prior if available (more precise), else fall back to doc-level
+                prior = element_hub_prior.get(c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0))
                 scored.append((i, norm_base + graph_alpha * prior))
         else:
             raise ValueError(method)
@@ -309,6 +333,8 @@ def main() -> None:
     ap.add_argument("--q3", type=Path, default=None, help="Optional extra query file (e.g. data111/l1_img_run_20.jsonl)")
     ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
     ap.add_argument("--hubs", type=Path, default=Path("data111/latex_graph_hubs (1).json"))
+    ap.add_argument("--hub-candidates", type=Path, default=Path("data111/hub_candidates_enriched_v2.json"),
+                    help="Enriched hub candidate pairs for element-level prior")
     ap.add_argument("--output", type=Path, default=Path("data/phase0_eval_report.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--overlap-threshold", type=float, default=0.5)
@@ -322,6 +348,7 @@ def main() -> None:
     queries = dedupe_queries(rows)
     chunks = build_chunks(args.elements, max_chars=args.max_chars)
     doc_hub_prior = load_doc_hub_prior(args.hubs)
+    element_hub_prior = load_element_hub_prior(args.hub_candidates) if args.hub_candidates.exists() else {}
 
     if not queries:
         raise SystemExit("No queries loaded")
@@ -339,18 +366,16 @@ def main() -> None:
     dense_matrix = vectorizer.fit_transform([c.text for c in chunks])
     dense_matrix = normalize(dense_matrix)
 
-    metrics_bm25 = evaluate_method(
-        "bm25", queries, chunks, bm25, doc_hub_prior, dense_matrix, vectorizer,
-        top_k=args.top_k, overlap_threshold=args.overlap_threshold, graph_alpha=args.graph_alpha,
+    eval_kwargs = dict(
+        chunks=chunks, bm25=bm25, doc_hub_prior=doc_hub_prior,
+        element_hub_prior=element_hub_prior,
+        dense_matrix=dense_matrix, vectorizer=vectorizer,
+        top_k=args.top_k, overlap_threshold=args.overlap_threshold,
+        graph_alpha=args.graph_alpha,
     )
-    metrics_dense = evaluate_method(
-        "dense", queries, chunks, bm25, doc_hub_prior, dense_matrix, vectorizer,
-        top_k=args.top_k, overlap_threshold=args.overlap_threshold, graph_alpha=args.graph_alpha,
-    )
-    metrics_graph = evaluate_method(
-        "graph_hub_rerank", queries, chunks, bm25, doc_hub_prior, dense_matrix, vectorizer,
-        top_k=args.top_k, overlap_threshold=args.overlap_threshold, graph_alpha=args.graph_alpha,
-    )
+    metrics_bm25 = evaluate_method("bm25", queries, **eval_kwargs)
+    metrics_dense = evaluate_method("dense", queries, **eval_kwargs)
+    metrics_graph = evaluate_method("graph_hub_rerank", queries, **eval_kwargs)
 
     report = {
         "config": {
@@ -358,6 +383,8 @@ def main() -> None:
             "q2": str(args.q2),
             "elements": str(args.elements),
             "hubs": str(args.hubs),
+            "hub_candidates": str(args.hub_candidates),
+            "n_element_hub_prior": len(element_hub_prior),
             "top_k": args.top_k,
             "overlap_threshold": args.overlap_threshold,
             "graph_alpha": args.graph_alpha,
