@@ -118,6 +118,8 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
                 _to_text(e.get("content")),
                 _to_text(e.get("context_before")),
                 _to_text(e.get("context_after")),
+                _to_text(e.get("enriched_title")),
+                _to_text(e.get("enriched_content")),
             ]
             text = "\n".join([x for x in fields if x]).strip()
             if not text:
@@ -166,6 +168,17 @@ def query_spans(q: Dict[str, Any]) -> List[str]:
         if st:
             spans.append(st)
     return spans
+
+
+def query_element_ids(q: Dict[str, Any]) -> List[str]:
+    """Extract ground-truth element_ids from required_evidence_spans."""
+    ids = []
+    for s in (q.get("required_evidence_spans") or []):
+        eid = (s.get("element_id") if isinstance(s, dict) else None) or ""
+        eid = eid.strip()
+        if eid:
+            ids.append(eid)
+    return ids
 
 
 def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
@@ -226,14 +239,28 @@ def evaluate_method(
         ranked = sorted(scored, key=lambda x: x[1], reverse=True)
         top = ranked[:top_k]
 
-        hit_ranks: List[int] = []
+        # element_id-based hit (primary): check if ground-truth element is in top-k
+        gt_eids = set(query_element_ids(q))
+        eid_hit_ranks: List[int] = []
+        for rank_idx, (ci, _s) in enumerate(top, start=1):
+            if chunks[ci].chunk_id in gt_eids:
+                eid_hit_ranks.append(rank_idx)
+
+        # span overlap-based hit (secondary, for reference only)
+        hit_ranks_overlap: List[int] = []
         best_overlap = 0.0
         for rank_idx, (ci, _s) in enumerate(top, start=1):
             ctext = chunks[ci].text
-            ov = max(span_overlap(sp, ctext) for sp in spans)
+            ov = max((span_overlap(sp, ctext) for sp in spans), default=0.0)
             best_overlap = max(best_overlap, ov)
             if ov >= overlap_threshold:
-                hit_ranks.append(rank_idx)
+                hit_ranks_overlap.append(rank_idx)
+
+        # Use element_id hit if ground-truth ids are available, else fall back to overlap
+        if gt_eids:
+            hit_ranks = eid_hit_ranks
+        else:
+            hit_ranks = hit_ranks_overlap
 
         hit10 = 1.0 if hit_ranks else 0.0
         rr = reciprocal_rank_binary(hit_ranks)
@@ -245,6 +272,7 @@ def evaluate_method(
                 "hit_at_10": hit10,
                 "rr": rr,
                 "best_overlap_in_topk": round(best_overlap, 4),
+                "gt_element_ids": list(gt_eids),
             }
         )
 
