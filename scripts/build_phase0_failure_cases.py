@@ -20,7 +20,8 @@ def main() -> None:
     details = report.get("details", {}).get(args.method, [])
 
     failed = [d for d in details if float(d.get("hit_at_10", 0.0)) < 1.0]
-    failed = failed[: max(args.min_cases, len(failed))]
+    if len(failed) < args.min_cases:
+        print(f"[phase0] WARNING: only {len(failed)} failure cases found (min_cases={args.min_cases})")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as f:
