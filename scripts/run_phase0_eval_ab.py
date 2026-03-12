@@ -278,8 +278,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Run Phase-0 locked A/B retrieval evaluation")
     ap.add_argument("--q1", type=Path, default=Path("data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
     ap.add_argument("--q2", type=Path, default=Path("data/l1_dual_evidence_queries_v3_pass.jsonl"))
-    ap.add_argument("--elements", type=Path, default=Path("data/multimodal_elements.json"))
-    ap.add_argument("--hubs", type=Path, default=Path("data/latex_graph_hubs.json"))
+    ap.add_argument("--q3", type=Path, default=None, help="Optional extra query file (e.g. data111/l1_img_run_20.jsonl)")
+    ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
+    ap.add_argument("--hubs", type=Path, default=Path("data111/latex_graph_hubs (1).json"))
     ap.add_argument("--output", type=Path, default=Path("data/phase0_eval_report.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--overlap-threshold", type=float, default=0.5)
@@ -288,6 +289,8 @@ def main() -> None:
     args = ap.parse_args()
 
     rows = load_jsonl(args.q1) + load_jsonl(args.q2)
+    if args.q3 is not None and args.q3.exists():
+        rows += load_jsonl(args.q3)
     queries = dedupe_queries(rows)
     chunks = build_chunks(args.elements, max_chars=args.max_chars)
     doc_hub_prior = load_doc_hub_prior(args.hubs)

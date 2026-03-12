@@ -6,7 +6,12 @@
 ## 2) Locked test set（禁止临时改切片）
 - `data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`（113）
 - `data/l1_dual_evidence_queries_v3_pass.jsonl`（152）
+- `data111/l1_img_run_20.jsonl`（16，最新 enriched-hub run，3 qc_pass）
 - 去重并集作为最终测试集（按 `query_id`，若缺失则按 query 文本哈希）。
+
+## 2b) Corpus & Hub 版本（最新）
+- Elements（用于 chunking）：`data111/multimodal_elements_enriched.json`（MoDora enriched）
+- Hubs：`data111/latex_graph_hubs (1).json`
 
 ## 3) Ground-truth
 - 使用 query 内 `required_evidence_spans` 作为证据标注。
