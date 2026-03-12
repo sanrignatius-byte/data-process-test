@@ -204,16 +204,22 @@ def evaluate_method(
             q_toks = tokenize(qtxt)
             scored = [(i, bm25.score(q_toks, i)) for i in range(len(chunks))]
         elif method == "dense":
-            qv = vectorizer.transform([qtxt])
+            from sklearn.preprocessing import normalize as _normalize
+            qv = _normalize(vectorizer.transform([qtxt]))  # must normalize for cosine sim
             scores = (dense_matrix @ qv.T).toarray().reshape(-1)
             scored = list(enumerate(scores.tolist()))
         elif method == "graph_hub_rerank":
             q_toks = tokenize(qtxt)
+            raw_bm25 = [bm25.score(q_toks, i) for i in range(len(chunks))]
+            # Normalize BM25 to [0,1] before mixing with hub prior (which is already [0,1]),
+            # otherwise graph_alpha has negligible effect on large BM25 scores.
+            bm25_min = min(raw_bm25)
+            bm25_range = max(raw_bm25) - bm25_min
             scored = []
             for i, c in enumerate(chunks):
-                base = bm25.score(q_toks, i)
+                norm_base = (raw_bm25[i] - bm25_min) / max(bm25_range, 1e-9)
                 prior = doc_hub_prior.get(c.doc_id, 0.0)
-                scored.append((i, base + graph_alpha * prior))
+                scored.append((i, norm_base + graph_alpha * prior))
         else:
             raise ValueError(method)
 
