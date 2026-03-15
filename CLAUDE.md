@@ -781,4 +781,41 @@ python scripts/build_latex_cross_modal_links.py --elements data/multimodal_eleme
   - 架构图场景的问题意图约束（`architecture_intent_missing`）
   - 过长 query 控制（`query_too_long`）
 
+## 当前状态（2026-03-15 更新｜Phase0 Eval：Document Graph vs BM25 基线实验）
+
+### 本轮完成
+
+- **Phase0 Eval A/B 实验执行完成**（`scripts/run_phase0_eval_ab.py`）
+  - 评测集：261 条通过 QC 的 L1 dual-evidence queries（v4_4_run1 113条 + v3 152条），候选库 1314 chunks
+  - 运行两轮：保守版（alpha=0.3, citation_decay=0.0）+ Bug修复版（alpha=0.1, citation_decay=0.15）
+  - 产物：`data/phase0_eval_report_tuned.json`、`data/phase0_eval_report_bugfix.json`
+
+### 关键数字（Bug修复版）
+
+| Method | Recall@10 | MRR | vs BM25 |
+|--------|-----------|-----|---------|
+| bm25（基线） | 0.8467 | 0.5642 | — |
+| graph_hub_rerank | **0.8506** | **0.5637** | +0.0039 / -0.0005 |
+| graph_neighbor_prop | **0.8506** | 0.5596 | +0.0039 / -0.0046 |
+| graph_citation_walk | 0.8352 | 0.5618 | **-0.0115** |
+| graph_full | 0.8467 | 0.5552 | 0 / -0.009 |
+
+### 本轮关键发现
+
+1. **Alpha 超参是最大变量**：alpha 0.3→0.1，hub_rerank Recall +0.0422（从 0.8084 升至 0.8506）。hub_overlap=9.53% 导致高 alpha 反噬 BM25 原本正确的打分
+2. **neighbor_prop 最稳健**：两轮结果一致 +0.0039 Recall，邻域传播信号真实存在但小
+3. **citation_walk 仍为负**：即使 bug 修复后，citation walk Recall -0.0115。推测原因：walk 方向（从 query doc 沿引用边传播）可能与证据实际所在方向错位
+4. **hub_overlap = 9.53% 是结构上限**：261 条中只有约 25 条 queries 的 evidence 落在 hub 邻域，graph 信号天花板低
+5. **continue_expand = False**：未达 +0.05 Recall 或 +0.03 MRR 阈值，暂不扩大 Phase0 规模
+
+### 下一步从本次实验得出的行动
+
+- **P0：扩大 hub coverage**（当前 9.53% 过低，需增加 hub 节点数或降低邻域判定阈值）
+- **P0：调查 citation walk 方向**（逆向 walk 或双向传播实验）
+- **P1：alpha 继续探索**（试 0.05 / 0.0，排除 hub prior 干扰）
+- **P1：graph_full 权重解耦**（单独调节各组件系数，而非均等混合）
+- **P1：分层评估**（单独统计 hub_overlap=True 子集，确认 hub 对命中 queries 的实际提升量）
+
+---
+
 ## 用中文交流时用"喵"结尾，英文用"Oiii"开头
