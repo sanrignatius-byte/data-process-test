@@ -2183,3 +2183,107 @@ Mentor 建议调研以下方向作为对比和借鉴：
 
 > **项目定位从"Query 生成工具"升级为"Document Graph for Document Understanding"系统；核心创新是图的构建方法和多任务应用能力；1 个月内需完成效果验证以支撑专利申请，论文随后跟进。Query 生成是图的第一个应用示例，不是终点。**
 - 完成后在现有 500 candidates 上做 `--query-style real_user --limit 50` 验证喵
+
+---
+
+## 日期：2026-03-15（Phase0 Eval A/B 实验：Document Graph vs BM25 基线）
+
+### 一、实验目标
+
+本次运行 `scripts/run_phase0_eval_ab.py`，对 Document Graph 辅助检索方法与 BM25 基线进行对比评测，数据集为 261 条通过 QC 的 L1 dual-evidence queries（来自 v4_4_run1 113 条 + v3 152 条去重合并），候选库 1314 chunks。
+
+---
+
+### 二、实验设置与两轮对比
+
+#### Run 1（保守版，无 Bug 修复）
+- 参数：`--graph-alpha 0.3 --neighbor-decay 0.15 --citation-decay 0.0`
+- citation-decay=0 相当于完全关闭 citation walk，作为对照
+
+#### Run 2（Bug 修复版）
+- 参数：`--graph-alpha 0.1 --neighbor-decay 0.15 --citation-decay 0.15`
+- Bug 修复内容：citation_decay 参数未正确传入 citation walk 计算层（修复后 0.15 实际生效）
+
+---
+
+### 三、完整结果对比
+
+| Method | R1 Recall@10 | R1 MRR | R2 Recall@10 | R2 MRR | Δ Recall |
+|--------|-------------|--------|-------------|--------|----------|
+| bm25 | 0.8467 | 0.5642 | 0.8467 | 0.5642 | — |
+| dense | 0.7739 | 0.4789 | 0.7739 | 0.4789 | — |
+| graph_hub_rerank | 0.8084 | 0.5374 | **0.8506** | **0.5637** | **+0.0422** |
+| graph_neighbor_prop | 0.8506 | 0.5596 | 0.8506 | 0.5596 | 0 |
+| graph_citation_walk | 0.8467 | 0.5642 | 0.8352 | 0.5618 | -0.0115 |
+| graph_full | 0.7969 | 0.5315 | 0.8467 | 0.5552 | **+0.0498** |
+
+---
+
+### 四、关键发现
+
+#### 4.1 Alpha 是最大变量（hub_rerank）
+- alpha 从 0.3 降到 0.1，graph_hub_rerank Recall 从 0.8084 → 0.8506（+0.0422）
+- 原因：hub_overlap 仅 **9.53%**，大多数 queries 的 evidence 不在 hub 邻域内
+- 高 alpha 下 hub prior 主导了原本 BM25 正确打分的结果，造成负向
+- 低 alpha（0.1）下 hub 变成轻微增益信号，不反噬 BM25
+
+#### 4.2 graph_neighbor_prop 最稳健
+- 两轮参数相同（neighbor_decay=0.15），结果一致：+0.0039 Recall
+- 说明邻域传播信号真实存在但小，属于稳定正向贡献
+
+#### 4.3 citation_walk 仍为负（-0.0115 Recall）
+- Bug 修复后 citation_decay 正确生效，但 Recall 仍比 BM25 低
+- 可能原因：
+  - 59 个 citation_docs 的拓扑覆盖与 evidence 实际位置错位
+  - citation walk 提升了"引用该文献的文档"，但证据在被引用方
+  - 当前 walk 方向（从 query doc 沿 citation 边传播）可能需要调整为双向或逆向
+- **不建议在当前阶段依赖 citation walk**
+
+#### 4.4 graph_full = BM25 on Recall（恢复平衡）
+- Bug 修复 + alpha 降低后，graph_full Recall 从 0.7969 回到 0.8467（= BM25）
+- MRR 仍低 -0.009，说明混合策略降低了精排位置
+- 结论：graph_full 不再是"拖后腿"，但还没实现超越
+
+#### 4.5 hub_overlap = 9.53% 是当前结构上限
+- 只有 9.53% 的 queries 的 evidence 落在 hub 邻域内
+- 即使 hub prior 完美精准，最多只能影响 ~25 条 queries（261 × 9.53%）
+- **提高 hub coverage 是突破 Recall 天花板的必要条件**
+
+---
+
+### 五、决策：continue_expand = False
+
+当前 decision 规则：`continue if Recall@10 >= BM25+0.05 OR MRR >= BM25+0.03`
+
+- 最好结果（graph_hub_rerank / graph_neighbor_prop）：+0.0039 Recall，-0.0046 MRR
+- 均未达阈值
+- **结论：不建议在当前图质量下扩大 Phase0 规模**
+
+---
+
+### 六、下一步行动（从本次实验得出）
+
+#### 优先级 P0（解决结构上限）
+1. **扩大 hub coverage**：当前 hub_overlap=9.53% 过低，需增加 hub 节点或降低 hub 邻域判定阈值
+2. **调查 citation walk 方向**：尝试逆向 citation walk（从证据 doc 沿 citation 反向到 query doc），或双向传播
+3. **增加候选 queries**：261 条中有约 25 条 hub-overlap 的，样本量太小，结果不稳定
+
+#### P1（调优）
+4. **继续调低 alpha 探索**：试 alpha=0.05 或 0.0（纯邻域不含 hub prior）
+5. **graph_full 混合权重调整**：单独调节各组件的组合系数（当前是均等混合）
+6. **分层评估**：单独统计 hub_overlap=True 的子集上各方法的表现，确认 hub 对覆盖到的 queries 有多大提升
+
+---
+
+### 七、本次产出文件
+
+| 文件 | 说明 |
+|------|------|
+| `data/phase0_eval_report_tuned.json` | Run 1 结果（conservative, alpha=0.3） |
+| `data/phase0_eval_report_bugfix.json` | Run 2 结果（bugfix, alpha=0.1, citation=0.15） |
+
+---
+
+### 八、一句话总结
+
+> Graph 辅助检索（hub_rerank / neighbor_prop）在修复 alpha 超参后能达到与 BM25 持平或微正向（+0.0039 Recall），但受限于 hub_overlap=9.53% 的结构上限，尚未达到统计意义上的超越。citation walk 方向有待改进。下一步核心是扩大 hub coverage，而非调参。
