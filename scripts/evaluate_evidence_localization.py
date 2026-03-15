@@ -134,12 +134,18 @@ def build_corpus(elements_path: Path, graph_path: Optional[Path],
         docs = raw.get("documents", raw) if isinstance(raw, dict) else raw
         if isinstance(docs, dict):
             for doc_id, doc_data in docs.items():
+                if not isinstance(doc_data, dict):
+                    continue
                 for elem in doc_data.get("elements", []):
+                    if not isinstance(elem, dict):
+                        continue
                     eid = elem.get("element_id", "")
                     if eid:
                         all_elements[eid] = {**elem, "doc_id": doc_id}
         elif isinstance(docs, list):
             for elem in docs:
+                if not isinstance(elem, dict):
+                    continue
                 eid = elem.get("element_id", "")
                 if eid:
                     all_elements[eid] = elem
