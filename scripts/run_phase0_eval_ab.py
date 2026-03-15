@@ -6,9 +6,22 @@ Implements the locked protocol:
 - Fixed query pool from v4.4 pass + v3 pass (deduped union)
 - Ground-truth from required_evidence_spans
 - Localization hit if char overlap >= threshold (default 0.5)
-- Methods: bm25, dense(tfidf cosine), graph_hub_rerank(bm25 + hub prior)
+- Methods:
+    bm25                : BM25Lite baseline
+    dense               : TF-IDF cosine baseline
+    graph_hub_rerank    : BM25 + static hub prior boost (alpha-blending)
+    graph_neighbor_prop : BM25 + dynamic 1-hop intra-element neighbor propagation
+    graph_citation_walk : BM25 + cross-doc citation relevance propagation
+    graph_full          : BM25 + hub_boost + neighbor_prop + citation_walk (combined)
 
 Outputs a JSON report with Recall@10 / MRR and go/no-go decision gates.
+
+Graph signal design (搜广推 perspective):
+  hub_boost       : static prior — element appears in bridge-hub candidate pair
+  neighbor_prop   : dynamic label propagation — top-scoring elements propagate score
+                    to intra-doc neighbors (co-referenced / hub-pair adjacency)
+  citation_walk   : cross-doc authority propagation — high-scoring doc boosts
+                    elements in docs it cites / is cited by (1-hop citation walk)
 """
 
 from __future__ import annotations
@@ -21,7 +34,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
@@ -130,6 +143,10 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
     return chunks
 
 
+# ---------------------------------------------------------------------------
+# Prior / adjacency loaders
+# ---------------------------------------------------------------------------
+
 def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
     obj = json.loads(hubs_json.read_text(encoding="utf-8"))
     hubs = obj.get("hubs", []) or []
@@ -151,9 +168,8 @@ def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
 def load_element_hub_prior(hub_candidates_json: Path) -> Dict[str, float]:
     """Element-level hub prior from enriched candidate pairs.
 
-    Each element that appears in any hub candidate pair gets a score = 1.0
-    (binary: hub-referenced element or not). More precise than doc-level prior
-    since only ~12% of elements are boosted vs ~41% with doc-level.
+    Each element that appears in any hub candidate pair gets a score proportional
+    to its max quality_score across all pairs it participates in.
     """
     obj = json.loads(hub_candidates_json.read_text(encoding="utf-8"))
     pairs = obj.get("pairs", []) or []
@@ -170,6 +186,50 @@ def load_element_hub_prior(hub_candidates_json: Path) -> Dict[str, float]:
     return {k: v / mx for k, v in by_element.items()}
 
 
+def load_element_adjacency(hub_candidates_json: Path) -> Dict[str, Set[str]]:
+    """Build element→neighbor element adjacency from hub candidate pairs.
+
+    Used for neighbor propagation: an element's BM25 relevance signal is
+    propagated to its intra-graph neighbors (elements co-referenced in hub
+    candidate paths or sharing a bridge hub).
+
+    Returns: element_id → set of neighbor element_ids
+    """
+    obj = json.loads(hub_candidates_json.read_text(encoding="utf-8"))
+    pairs = obj.get("pairs", []) or []
+    adj: Dict[str, Set[str]] = defaultdict(set)
+    for p in pairs:
+        a = str(p.get("element_a_id", "") or "").strip()
+        b = str(p.get("element_b_id", "") or "").strip()
+        if a and b:
+            adj[a].add(b)
+            adj[b].add(a)
+    return dict(adj)
+
+
+def load_citation_adjacency(citation_graph_json: Path) -> Dict[str, Dict[str, Set[str]]]:
+    """Build doc→{cites, cited_by} adjacency from citation_graph.json.
+
+    Used for cross-doc citation walk: a high-scoring document propagates its
+    relevance to documents it cites and documents that cite it (1-hop walk).
+
+    Returns: doc_id → {"cites": set, "cited_by": set}
+    """
+    obj = json.loads(citation_graph_json.read_text(encoding="utf-8"))
+    raw_adj = obj.get("adjacency", {}) or {}
+    result: Dict[str, Dict[str, Set[str]]] = {}
+    for doc_id, info in raw_adj.items():
+        result[str(doc_id)] = {
+            "cites": set(str(x) for x in (info.get("cites") or [])),
+            "cited_by": set(str(x) for x in (info.get("cited_by") or [])),
+        }
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Hit evaluation helpers
+# ---------------------------------------------------------------------------
+
 def span_overlap(span: str, text: str) -> float:
     span = (span or "").strip()
     text = (text or "").strip()
@@ -177,7 +237,6 @@ def span_overlap(span: str, text: str) -> float:
         return 0.0
     if span in text:
         return 1.0
-    # longest matching block over span length
     m = SequenceMatcher(None, span, text).find_longest_match(0, len(span), 0, len(text))
     return m.size / max(1, len(span))
 
@@ -209,6 +268,29 @@ def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
     return 1.0 / min(hit_ranks)
 
 
+# ---------------------------------------------------------------------------
+# Core scoring: BM25 → normalized scores
+# ---------------------------------------------------------------------------
+
+def _bm25_norm_scores(
+    bm25: BM25Lite,
+    q_toks: List[str],
+    n_chunks: int,
+) -> List[float]:
+    """Return BM25 scores min-max normalized to [0, 1]."""
+    raw = [bm25.score(q_toks, i) for i in range(n_chunks)]
+    lo = min(raw)
+    hi = max(raw)
+    rng = hi - lo
+    if rng < 1e-9:
+        return [0.0] * n_chunks
+    return [(x - lo) / rng for x in raw]
+
+
+# ---------------------------------------------------------------------------
+# evaluate_method — all six methods in one function
+# ---------------------------------------------------------------------------
+
 def evaluate_method(
     method: str,
     queries: List[Dict[str, Any]],
@@ -216,21 +298,27 @@ def evaluate_method(
     bm25: BM25Lite,
     doc_hub_prior: Dict[str, float],
     element_hub_prior: Dict[str, float],
+    element_adjacency: Dict[str, Set[str]],
+    citation_adjacency: Dict[str, Dict[str, Set[str]]],
+    # index: chunk_id → index in chunks list
+    chunk_id_to_idx: Dict[str, int],
+    # index: doc_id → list of chunk indices
+    doc_to_chunk_idxs: Dict[str, List[int]],
     dense_matrix,
     vectorizer,
     top_k: int,
     overlap_threshold: float,
     graph_alpha: float,
     graph_rerank_topn: int,
+    neighbor_decay: float,
+    citation_decay: float,
 ) -> Dict[str, Any]:
-    import numpy as np
-
     r_at_10 = 0.0
     mrr = 0.0
     per_query = []
-    hub_bm25_overlap_rates: List[float] = []  # only populated for graph_hub_rerank
+    hub_bm25_overlap_rates: List[float] = []
 
-    chunk_tokens = [tokenize(c.text) for c in chunks]
+    n_chunks = len(chunks)
 
     for q in queries:
         qtxt = (q.get("query") or "").strip()
@@ -238,60 +326,216 @@ def evaluate_method(
         if not qtxt or not spans:
             continue
 
+        # ------------------------------------------------------------------
+        # 1. BM25 baseline
+        # ------------------------------------------------------------------
         if method == "bm25":
             q_toks = tokenize(qtxt)
-            scored = [(i, bm25.score(q_toks, i)) for i in range(len(chunks))]
+            scored = [(i, bm25.score(q_toks, i)) for i in range(n_chunks)]
+
+        # ------------------------------------------------------------------
+        # 2. Dense (TF-IDF cosine) baseline
+        # ------------------------------------------------------------------
         elif method == "dense":
+            import numpy as np
             from sklearn.preprocessing import normalize as _normalize
-            qv = _normalize(vectorizer.transform([qtxt]))  # must normalize for cosine sim
+            qv = _normalize(vectorizer.transform([qtxt]))
             scores = (dense_matrix @ qv.T).toarray().reshape(-1)
             scored = list(enumerate(scores.tolist()))
+
+        # ------------------------------------------------------------------
+        # 3. graph_hub_rerank: BM25 + static hub prior
+        #    Only boosts elements within BM25 top-N; alpha-blends normalized
+        #    BM25 with element/doc-level hub prior score.
+        # ------------------------------------------------------------------
         elif method == "graph_hub_rerank":
             q_toks = tokenize(qtxt)
-            raw_bm25 = [bm25.score(q_toks, i) for i in range(len(chunks))]
-            # Controlled re-rank: only adjust BM25 top-N candidates instead of globally
-            # perturbing every chunk. This makes graph prior a local tie-break signal.
-            ranked_bm25 = sorted(enumerate(raw_bm25), key=lambda x: x[1], reverse=True)
-            rerank_n = max(top_k, min(graph_rerank_topn, len(chunks)))
-            candidate_ids = {i for i, _ in ranked_bm25[:rerank_n]}
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+            ranked_bm25 = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)
+            rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
+            candidate_set = set(ranked_bm25[:rerank_n])
 
-            # Overlap diagnostic: how many hub-boosted elements are already in BM25 top-k?
-            bm25_top10_set = {i for i, _ in ranked_bm25[:top_k]}
+            bm25_top10_set = set(ranked_bm25[:top_k])
             hub_boosted_ids = {
-                i for i in candidate_ids
-                if element_hub_prior.get(chunks[i].chunk_id, doc_hub_prior.get(chunks[i].doc_id, 0.0)) > 0
+                i for i in candidate_set
+                if element_hub_prior.get(chunks[i].chunk_id,
+                   doc_hub_prior.get(chunks[i].doc_id, 0.0)) > 0
             }
             if hub_boosted_ids:
                 hub_bm25_overlap_rates.append(
                     len(bm25_top10_set & hub_boosted_ids) / len(hub_boosted_ids)
                 )
 
-            bm25_min = min(raw_bm25)
-            bm25_range = max(raw_bm25) - bm25_min
             scored = []
             for i, c in enumerate(chunks):
-                norm_base = (raw_bm25[i] - bm25_min) / max(bm25_range, 1e-9)
-                if i in candidate_ids:
-                    # Use element-level prior if available (more precise), else fall back to doc-level
-                    prior = element_hub_prior.get(c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0))
-                    score = norm_base + graph_alpha * prior
+                base = norm_bm25[i]
+                if i in candidate_set:
+                    prior = element_hub_prior.get(c.chunk_id,
+                            doc_hub_prior.get(c.doc_id, 0.0))
+                    s = base + graph_alpha * prior
                 else:
-                    score = norm_base
-                scored.append((i, score))
-        else:
-            raise ValueError(method)
+                    s = base
+                scored.append((i, s))
 
+        # ------------------------------------------------------------------
+        # 4. graph_neighbor_prop: BM25 + 1-hop intra-element neighbor propagation
+        #
+        #    Signal design (label propagation variant):
+        #      For each element e in BM25 top-N:
+        #        For each neighbor n of e (from hub candidate pairs):
+        #          neighbor_boost[n] += norm_bm25[e] * neighbor_decay
+        #    Final score = norm_bm25[i] + neighbor_boost[i]
+        #
+        #    This captures: "if a figure is relevant, co-referenced elements
+        #    (tables/formulas bridged via the same hub path) should also rank up."
+        # ------------------------------------------------------------------
+        elif method == "graph_neighbor_prop":
+            q_toks = tokenize(qtxt)
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+            ranked_bm25 = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)
+            rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
+
+            # Propagate from top-N seeds to their neighbors
+            neighbor_boost = [0.0] * n_chunks
+            for seed_idx in ranked_bm25[:rerank_n]:
+                seed_id = chunks[seed_idx].chunk_id
+                seed_score = norm_bm25[seed_idx]
+                nbrs = element_adjacency.get(seed_id, set())
+                for nbr_id in nbrs:
+                    nbr_idx = chunk_id_to_idx.get(nbr_id)
+                    if nbr_idx is not None:
+                        # Additive boost, capped to avoid score inflation
+                        neighbor_boost[nbr_idx] = min(
+                            neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
+                            neighbor_decay,  # cap at max one full decay unit
+                        )
+
+            scored = [(i, norm_bm25[i] + neighbor_boost[i]) for i in range(n_chunks)]
+
+        # ------------------------------------------------------------------
+        # 5. graph_citation_walk: BM25 + cross-doc citation relevance propagation
+        #
+        #    Signal design (authority propagation):
+        #      doc_score[d] = max(norm_bm25[i] for i in chunks of d)
+        #      For each doc d:
+        #        citation_boost[d] = sum(doc_score[d2] * citation_decay
+        #                               for d2 in cites[d] ∪ cited_by[d])
+        #      All chunks of doc d get += citation_boost[d]
+        #
+        #    This captures: "if paper A is relevant, papers A cites and papers
+        #    that cite A are more likely to contain supporting evidence."
+        # ------------------------------------------------------------------
+        elif method == "graph_citation_walk":
+            q_toks = tokenize(qtxt)
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+
+            # Aggregate doc-level relevance score
+            doc_score: Dict[str, float] = defaultdict(float)
+            for i, c in enumerate(chunks):
+                doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
+
+            # 1-hop citation walk: boost docs that cite or are cited by high-scoring docs
+            citation_boost: Dict[str, float] = defaultdict(float)
+            for doc_id, dscore in doc_score.items():
+                if dscore < 1e-6:
+                    continue
+                adj = citation_adjacency.get(doc_id, {})
+                for neighbor_doc in adj.get("cites", set()) | adj.get("cited_by", set()):
+                    citation_boost[neighbor_doc] += dscore * citation_decay
+
+            # Normalize citation_boost to [0, 1] range
+            if citation_boost:
+                max_cb = max(citation_boost.values())
+                if max_cb > 1e-9:
+                    citation_boost = {k: v / max_cb for k, v in citation_boost.items()}
+
+            scored = [
+                (i, norm_bm25[i] + citation_boost.get(chunks[i].doc_id, 0.0))
+                for i in range(n_chunks)
+            ]
+
+        # ------------------------------------------------------------------
+        # 6. graph_full: BM25 + hub_boost + neighbor_prop + citation_walk
+        #
+        #    Combined graph signal. Each component uses its own decay/alpha
+        #    so contributions are independently tunable. Final score:
+        #      s = norm_bm25
+        #          + graph_alpha   * hub_prior          (static bridge signal)
+        #          + neighbor_decay * neighbor_boost     (dynamic intra propagation)
+        #          + citation_decay * citation_boost     (cross-doc authority)
+        # ------------------------------------------------------------------
+        elif method == "graph_full":
+            q_toks = tokenize(qtxt)
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+            ranked_bm25 = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)
+            rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
+            candidate_set = set(ranked_bm25[:rerank_n])
+
+            # --- hub boost (static prior) ---
+            hub_boost_arr = [0.0] * n_chunks
+            for i in candidate_set:
+                c = chunks[i]
+                hub_boost_arr[i] = element_hub_prior.get(
+                    c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0)
+                )
+
+            # --- neighbor propagation (dynamic intra-element) ---
+            neighbor_boost = [0.0] * n_chunks
+            for seed_idx in ranked_bm25[:rerank_n]:
+                seed_id = chunks[seed_idx].chunk_id
+                seed_score = norm_bm25[seed_idx]
+                for nbr_id in element_adjacency.get(seed_id, set()):
+                    nbr_idx = chunk_id_to_idx.get(nbr_id)
+                    if nbr_idx is not None:
+                        neighbor_boost[nbr_idx] = min(
+                            neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
+                            neighbor_decay,
+                        )
+
+            # --- citation walk (cross-doc) ---
+            doc_score: Dict[str, float] = defaultdict(float)
+            for i, c in enumerate(chunks):
+                doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
+
+            citation_boost: Dict[str, float] = defaultdict(float)
+            for doc_id, dscore in doc_score.items():
+                if dscore < 1e-6:
+                    continue
+                adj = citation_adjacency.get(doc_id, {})
+                for nbr_doc in adj.get("cites", set()) | adj.get("cited_by", set()):
+                    citation_boost[nbr_doc] += dscore * citation_decay
+
+            if citation_boost:
+                max_cb = max(citation_boost.values())
+                if max_cb > 1e-9:
+                    citation_boost = {k: v / max_cb for k, v in citation_boost.items()}
+
+            # --- combine ---
+            scored = []
+            for i, c in enumerate(chunks):
+                s = (
+                    norm_bm25[i]
+                    + graph_alpha * hub_boost_arr[i]
+                    + neighbor_boost[i]
+                    + citation_decay * citation_boost.get(c.doc_id, 0.0)
+                )
+                scored.append((i, s))
+
+        else:
+            raise ValueError(f"Unknown method: {method!r}")
+
+        # ------------------------------------------------------------------
+        # Rank and compute metrics
+        # ------------------------------------------------------------------
         ranked = sorted(scored, key=lambda x: x[1], reverse=True)
         top = ranked[:top_k]
 
-        # element_id-based hit (primary): check if ground-truth element is in top-k
         gt_eids = set(query_element_ids(q))
         eid_hit_ranks: List[int] = []
         for rank_idx, (ci, _s) in enumerate(top, start=1):
             if chunks[ci].chunk_id in gt_eids:
                 eid_hit_ranks.append(rank_idx)
 
-        # span overlap-based hit (secondary, for reference only)
         hit_ranks_overlap: List[int] = []
         best_overlap = 0.0
         for rank_idx, (ci, _s) in enumerate(top, start=1):
@@ -301,11 +545,7 @@ def evaluate_method(
             if ov >= overlap_threshold:
                 hit_ranks_overlap.append(rank_idx)
 
-        # Use element_id hit if ground-truth ids are available, else fall back to overlap
-        if gt_eids:
-            hit_ranks = eid_hit_ranks
-        else:
-            hit_ranks = hit_ranks_overlap
+        hit_ranks = eid_hit_ranks if gt_eids else hit_ranks_overlap
 
         hit10 = 1.0 if hit_ranks else 0.0
         rr = reciprocal_rank_binary(hit_ranks)
@@ -336,9 +576,9 @@ def evaluate_method(
     return result
 
 
-def decision(graph_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -> Dict[str, Any]:
-    g_r10 = graph_metrics["recall_at_10"]
-    g_mrr = graph_metrics["mrr"]
+def decision(graph_full_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    g_r10 = graph_full_metrics["recall_at_10"]
+    g_mrr = graph_full_metrics["mrr"]
     b_r10 = bm25_metrics["recall_at_10"]
     b_mrr = bm25_metrics["mrr"]
 
@@ -346,6 +586,7 @@ def decision(graph_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -> Dic
     delta_mrr = g_mrr - b_mrr
     continue_expand = (delta_r10 >= 0.05) or (delta_mrr >= 0.03)
     return {
+        "primary_comparison": "graph_full vs bm25",
         "delta_recall_at_10_vs_bm25": round(delta_r10, 4),
         "delta_mrr_vs_bm25": round(delta_mrr, 4),
         "continue_expand": continue_expand,
@@ -357,32 +598,61 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Run Phase-0 locked A/B retrieval evaluation")
     ap.add_argument("--q1", type=Path, default=Path("data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
     ap.add_argument("--q2", type=Path, default=Path("data/l1_dual_evidence_queries_v3_pass.jsonl"))
-    ap.add_argument("--q3", type=Path, default=None, help="Optional extra query file (e.g. data111/l1_img_run_20.jsonl)")
+    ap.add_argument("--q3", type=Path, default=None, help="Optional extra query file")
     ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
     ap.add_argument("--hubs", type=Path, default=Path("data111/latex_graph_hubs (1).json"))
     ap.add_argument("--hub-candidates", type=Path, default=Path("data111/hub_candidates_enriched_v2.json"),
-                    help="Enriched hub candidate pairs for element-level prior")
+                    help="Enriched hub candidate pairs for element-level prior + adjacency")
+    ap.add_argument("--citation-graph", type=Path, default=Path("data/citation_graph.json"),
+                    help="Citation graph JSON for cross-doc citation walk")
     ap.add_argument("--output", type=Path, default=Path("data/phase0_eval_report.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--overlap-threshold", type=float, default=0.5)
-    ap.add_argument("--graph-alpha", type=float, default=0.2)
+    # Graph signal weights
+    ap.add_argument("--graph-alpha", type=float, default=0.2,
+                    help="Hub prior boost weight (graph_hub_rerank + graph_full)")
     ap.add_argument("--graph-rerank-topn", type=int, default=100,
-                    help="Apply graph prior only within BM25 top-N candidates (controlled rerank)")
+                    help="Apply graph prior only within BM25 top-N candidates")
+    ap.add_argument("--neighbor-decay", type=float, default=0.5,
+                    help="Neighbor propagation decay factor (graph_neighbor_prop + graph_full)")
+    ap.add_argument("--citation-decay", type=float, default=0.3,
+                    help="Citation walk decay factor (graph_citation_walk + graph_full)")
     ap.add_argument("--max-chars", type=int, default=1800)
     args = ap.parse_args()
 
+    # ------------------------------------------------------------------
+    # Load data
+    # ------------------------------------------------------------------
     rows = load_jsonl(args.q1) + load_jsonl(args.q2)
     if args.q3 is not None and args.q3.exists():
         rows += load_jsonl(args.q3)
     queries = dedupe_queries(rows)
     chunks = build_chunks(args.elements, max_chars=args.max_chars)
+
     doc_hub_prior = load_doc_hub_prior(args.hubs)
-    element_hub_prior = load_element_hub_prior(args.hub_candidates) if args.hub_candidates.exists() else {}
+    element_hub_prior = (
+        load_element_hub_prior(args.hub_candidates)
+        if args.hub_candidates.exists() else {}
+    )
+    element_adjacency = (
+        load_element_adjacency(args.hub_candidates)
+        if args.hub_candidates.exists() else {}
+    )
+    citation_adjacency = (
+        load_citation_adjacency(args.citation_graph)
+        if args.citation_graph.exists() else {}
+    )
 
     if not queries:
         raise SystemExit("No queries loaded")
     if not chunks:
         raise SystemExit("No chunks loaded")
+
+    # Build reverse lookup indices
+    chunk_id_to_idx: Dict[str, int] = {c.chunk_id: i for i, c in enumerate(chunks)}
+    doc_to_chunk_idxs: Dict[str, List[int]] = defaultdict(list)
+    for i, c in enumerate(chunks):
+        doc_to_chunk_idxs[c.doc_id].append(i)
 
     chunk_tokens = [tokenize(c.text) for c in chunks]
     bm25 = BM25Lite(chunk_tokens)
@@ -395,17 +665,49 @@ def main() -> None:
     dense_matrix = vectorizer.fit_transform([c.text for c in chunks])
     dense_matrix = normalize(dense_matrix)
 
+    # Diagnostic summary
+    n_elem_adj = sum(len(v) for v in element_adjacency.values())
+    n_cite_docs = len(citation_adjacency)
+    print(f"[phase0] queries={len(queries)}  chunks={len(chunks)}")
+    print(f"[phase0] element_hub_prior={len(element_hub_prior)}  "
+          f"element_adjacency_edges={n_elem_adj // 2}  "
+          f"citation_docs={n_cite_docs}")
+
     eval_kwargs = dict(
-        chunks=chunks, bm25=bm25, doc_hub_prior=doc_hub_prior,
+        chunks=chunks,
+        bm25=bm25,
+        doc_hub_prior=doc_hub_prior,
         element_hub_prior=element_hub_prior,
-        dense_matrix=dense_matrix, vectorizer=vectorizer,
-        top_k=args.top_k, overlap_threshold=args.overlap_threshold,
+        element_adjacency=element_adjacency,
+        citation_adjacency=citation_adjacency,
+        chunk_id_to_idx=chunk_id_to_idx,
+        doc_to_chunk_idxs=doc_to_chunk_idxs,
+        dense_matrix=dense_matrix,
+        vectorizer=vectorizer,
+        top_k=args.top_k,
+        overlap_threshold=args.overlap_threshold,
         graph_alpha=args.graph_alpha,
         graph_rerank_topn=args.graph_rerank_topn,
+        neighbor_decay=args.neighbor_decay,
+        citation_decay=args.citation_decay,
     )
-    metrics_bm25 = evaluate_method("bm25", queries, **eval_kwargs)
-    metrics_dense = evaluate_method("dense", queries, **eval_kwargs)
-    metrics_graph = evaluate_method("graph_hub_rerank", queries, **eval_kwargs)
+
+    all_methods = [
+        "bm25",
+        "dense",
+        "graph_hub_rerank",
+        "graph_neighbor_prop",
+        "graph_citation_walk",
+        "graph_full",
+    ]
+
+    metrics: Dict[str, Any] = {}
+    details: Dict[str, Any] = {}
+    for m_name in all_methods:
+        print(f"[phase0] running {m_name} ...")
+        res = evaluate_method(m_name, queries, **eval_kwargs)
+        metrics[m_name] = {k: v for k, v in res.items() if k != "per_query"}
+        details[m_name] = res["per_query"]
 
     report = {
         "config": {
@@ -414,38 +716,38 @@ def main() -> None:
             "elements": str(args.elements),
             "hubs": str(args.hubs),
             "hub_candidates": str(args.hub_candidates),
+            "citation_graph": str(args.citation_graph),
             "n_element_hub_prior": len(element_hub_prior),
+            "n_element_adjacency_edges": n_elem_adj // 2,
+            "n_citation_docs": n_cite_docs,
             "top_k": args.top_k,
             "overlap_threshold": args.overlap_threshold,
             "graph_alpha": args.graph_alpha,
             "graph_rerank_topn": args.graph_rerank_topn,
+            "neighbor_decay": args.neighbor_decay,
+            "citation_decay": args.citation_decay,
             "max_chars": args.max_chars,
             "n_queries": len(queries),
             "n_chunks": len(chunks),
         },
-        "metrics": {
-            "bm25": {k: v for k, v in metrics_bm25.items() if k != "per_query"},
-            "dense": {k: v for k, v in metrics_dense.items() if k != "per_query"},
-            "graph_hub_rerank": {k: v for k, v in metrics_graph.items() if k != "per_query"},
-        },
-        "decision": decision(metrics_graph, metrics_bm25),
-        "details": {
-            "bm25": metrics_bm25["per_query"],
-            "dense": metrics_dense["per_query"],
-            "graph_hub_rerank": metrics_graph["per_query"],
-        },
+        "metrics": metrics,
+        "decision": decision(metrics["graph_full"], metrics["bm25"]),
+        "details": details,
     }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    print("[phase0] report written:", args.output)
-    for name in ["bm25", "dense", "graph_hub_rerank"]:
-        m = report["metrics"][name]
-        overlap_str = ""
+    print("\n[phase0] report written:", args.output)
+    print(f"{'method':<22} {'n':>5}  {'Recall@10':>10}  {'MRR':>8}")
+    print("-" * 52)
+    for m_name in all_methods:
+        m = metrics[m_name]
+        extra = ""
         if "hub_bm25_overlap_mean" in m:
-            overlap_str = f"  hub_bm25_overlap={m['hub_bm25_overlap_mean']:.4f}"
-        print(f"  {name:16s} n={m['n']}  Recall@10={m['recall_at_10']:.4f}  MRR={m['mrr']:.4f}{overlap_str}")
+            extra = f"  hub_overlap={m['hub_bm25_overlap_mean']:.4f}"
+        print(f"  {m_name:<20} {m['n']:>5}  {m['recall_at_10']:>10.4f}  {m['mrr']:>8.4f}{extra}")
+    print()
     print("[phase0] decision:", report["decision"])
 
 

@@ -49,6 +49,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
+def load_json(path: Path) -> Dict[str, Any]:
+    """Load JSON with explicit UTF-8 decoding.
+
+    This avoids platform-dependent default encodings (e.g. cp1252 on Windows)
+    that can trigger UnicodeDecodeError for UTF-8 datasets.
+    """
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Text utilities
 # ─────────────────────────────────────────────────────────────────────────────
@@ -108,7 +117,8 @@ def bm25_score(query_tokens: List[str], doc_tokens: List[str],
 # ─────────────────────────────────────────────────────────────────────────────
 
 def build_corpus(elements_path: Path, graph_path: Optional[Path],
-                 mode: str) -> List[Dict[str, Any]]:
+                 mode: str,
+                 candidates_path: Optional[Path] = None) -> List[Dict[str, Any]]:
     """Build retrieval corpus from elements and optionally the graph.
 
     Each corpus entry has: id, text, element_type, doc_id.
@@ -121,33 +131,50 @@ def build_corpus(elements_path: Path, graph_path: Optional[Path],
     # Load all elements
     all_elements: Dict[str, Dict] = {}
     if elements_path.exists():
-        raw = json.loads(elements_path.read_text())
+        raw = load_json(elements_path)
         docs = raw.get("documents", raw) if isinstance(raw, dict) else raw
         if isinstance(docs, dict):
             for doc_id, doc_data in docs.items():
-                for elem in doc_data.get("elements", []):
+                if not isinstance(doc_data, dict):
+                    continue
+                elements_field = doc_data.get("elements", {})
+                # elements can be a dict {element_id: elem} or a list
+                if isinstance(elements_field, dict):
+                    elem_iter = elements_field.values()
+                elif isinstance(elements_field, list):
+                    elem_iter = elements_field
+                else:
+                    continue
+                for elem in elem_iter:
+                    if not isinstance(elem, dict):
+                        continue
                     eid = elem.get("element_id", "")
                     if eid:
                         all_elements[eid] = {**elem, "doc_id": doc_id}
         elif isinstance(docs, list):
             for elem in docs:
+                if not isinstance(elem, dict):
+                    continue
                 eid = elem.get("element_id", "")
                 if eid:
                     all_elements[eid] = elem
 
     corpus: List[Dict[str, Any]] = []
 
+    def _elem_text(elem: Dict) -> str:
+        """Standard text fields used by both modes (ensures fair comparison)."""
+        return " ".join([
+            elem.get("caption", "") or "",
+            elem.get("content", "") or "",
+            elem.get("context_before", "") or "",
+            elem.get("context_after", "") or "",
+        ])
+
     if mode == "bm25":
         for eid, elem in all_elements.items():
-            text_parts = [
-                elem.get("caption", "") or "",
-                elem.get("content", "") or "",
-                elem.get("context_before", "") or "",
-                elem.get("context_after", "") or "",
-            ]
             corpus.append({
                 "id": eid,
-                "text": " ".join(text_parts),
+                "text": _elem_text(elem),
                 "element_type": elem.get("element_type", ""),
                 "doc_id": elem.get("doc_id", ""),
             })
@@ -157,36 +184,66 @@ def build_corpus(elements_path: Path, graph_path: Optional[Path],
             print("WARNING: --graph not provided or not found; falling back to BM25 corpus")
             return build_corpus(elements_path, None, "bm25")
 
-        graph_data = json.loads(graph_path.read_text())
+        graph_data = load_json(graph_path)
         hub_elem_ids: Set[str] = set()
 
         # Collect element IDs from bridge_hubs
+        # bridge_hubs are paragraph nodes; collect via mapped_element_id if present.
         for hub in graph_data.get("bridge_hubs", []):
             mapped = hub.get("mapped_element_id")
             if mapped:
                 hub_elem_ids.add(mapped)
 
-        # Collect element IDs from adjacent_backbone_bridges (candidate pairs)
+        # Collect element IDs from adjacent_backbone_bridges (candidate pairs).
+        # Fields: element_ids_i / element_ids_j (lists) OR element_a_id / element_b_id.
+        # NOTE: latex_graph_hubs.json uses LaTeX label-based IDs (e.g. "doc::el::fig:x"),
+        # which differ from MinerU element IDs (e.g. "doc_figure_1"). If these IDs don't
+        # match all_elements, use --candidates (hub_candidates_enriched.json) instead.
         for cand in graph_data.get("adjacent_backbone_bridges", []):
-            for side in ("element_a_id", "element_b_id"):
-                eid = cand.get(side)
+            for list_field in ("element_ids_i", "element_ids_j"):
+                for eid in (cand.get(list_field) or []):
+                    if eid:
+                        hub_elem_ids.add(eid)
+            for scalar_field in ("element_a_id", "element_b_id"):
+                eid = cand.get(scalar_field)
                 if eid:
                     hub_elem_ids.add(eid)
 
-        # Build corpus from hub elements only (smaller, focused)
+        # If --candidates provided, collect MinerU element IDs from enriched pairs
+        # (hub_candidates_enriched.json uses MinerU IDs and is the canonical bridge)
+        if candidates_path and candidates_path.exists():
+            cands_raw = load_json(candidates_path)
+            cands_list = (cands_raw if isinstance(cands_raw, list)
+                          else cands_raw.get("candidates", cands_raw.get("pairs", [])))
+            extra_ids: Set[str] = set()
+            for c in cands_list:
+                if not isinstance(c, dict):
+                    continue
+                for field in ("element_a_id", "element_b_id"):
+                    eid = c.get(field)
+                    if eid:
+                        extra_ids.add(str(eid))
+            print(f"  Candidates file: {len(cands_list)} pairs → "
+                  f"{len(extra_ids)} unique MinerU element IDs")
+            hub_elem_ids |= extra_ids
+
+        total_all = len(all_elements)
+        total_hub = len(hub_elem_ids)
+        matched = len(hub_elem_ids & set(all_elements.keys()))
+        coverage = matched / max(total_all, 1) * 100
+        print(f"  Graph diagnostic: hub_elem_ids={total_hub}, "
+              f"all_elements={total_all}, "
+              f"matched={matched} ({coverage:.1f}% of corpus)")
+
+        # Build corpus from hub elements only (smaller, focused subset)
         selected_ids = hub_elem_ids if hub_elem_ids else set(all_elements.keys())
         for eid in selected_ids:
             elem = all_elements.get(eid)
             if not elem:
                 continue
-            text_parts = [
-                elem.get("caption", "") or "",
-                elem.get("content", "") or "",
-                elem.get("context_before", "") or "",
-            ]
             corpus.append({
                 "id": eid,
-                "text": " ".join(text_parts),
+                "text": _elem_text(elem),   # same fields as bm25 — fair comparison
                 "element_type": elem.get("element_type", ""),
                 "doc_id": elem.get("doc_id", ""),
             })
@@ -258,7 +315,7 @@ def reciprocal_rank(retrieved_ids: List[str], relevant_ids: Set[str]) -> float:
 def load_generated_queries(path: Path) -> List[Dict[str, Any]]:
     """Load queries from a .jsonl file (generate_multihop_l1_queries output)."""
     queries = []
-    with path.open() as f:
+    with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -271,7 +328,7 @@ def load_generated_queries(path: Path) -> List[Dict[str, Any]]:
 
 def load_cpool_queries(path: Path) -> List[Dict[str, Any]]:
     """Load queries from C-Pool JSON file."""
-    data = json.loads(path.read_text())
+    data = load_json(path)
     return data.get("queries", [])
 
 
@@ -298,6 +355,24 @@ def get_relevant_ids_from_query(q: Dict[str, Any]) -> Set[str]:
 # Main evaluation loop
 # ─────────────────────────────────────────────────────────────────────────────
 
+_SLICE_KEYS = ["pair_type", "query_type", "query_intent", "persona", "hop_distance"]
+
+
+def _aggregate_slice(rows: List[Dict], ks: List[int]) -> Dict[str, Any]:
+    """Aggregate per-query rows into summary metrics."""
+    n = len(rows)
+    if n == 0:
+        return {}
+    mrr = sum(r["rr"] for r in rows) / n
+    hit1 = sum(1 for r in rows if r["rr"] > 0 and
+               (1 / r["rr"]) <= 1.0001) / n   # rank-1 hit
+    out: Dict[str, Any] = {"n": n, "mrr": round(mrr, 4), "hit@1": round(hit1, 4)}
+    for k in ks:
+        key = f"recall@{k}"
+        out[key] = round(sum(r[key] for r in rows) / n, 4)
+    return out
+
+
 def evaluate(queries: List[Dict[str, Any]], corpus: List[Dict[str, Any]],
              idf: Dict[str, float], avg_dl: float,
              ks: List[int] = None) -> Dict[str, Any]:
@@ -310,6 +385,8 @@ def evaluate(queries: List[Dict[str, Any]], corpus: List[Dict[str, Any]],
     hit1_sum = 0.0
     per_query: List[Dict[str, Any]] = []
     skipped = 0
+    # slice accumulators: slice_key -> slice_value -> [per_query rows]
+    slice_rows: Dict[str, Dict[str, List]] = {sk: defaultdict(list) for sk in _SLICE_KEYS}
 
     for q in queries:
         query_text = q.get("query", "")
@@ -331,15 +408,22 @@ def evaluate(queries: List[Dict[str, Any]], corpus: List[Dict[str, Any]],
             recall_sums[k] += r_k
             q_recalls[f"recall@{k}"] = round(r_k, 4)
 
-        per_query.append({
+        row = {
             "query_id": q.get("query_id", q.get("id", "")),
             "query": query_text[:120],
             "relevant_ids": sorted(relevant),
             "retrieved_top5": retrieved_ids[:5],
             "rr": round(rr, 4),
             **q_recalls,
-        })
+        }
+        per_query.append(row)
         total += 1
+
+        # accumulate slice rows
+        for sk in _SLICE_KEYS:
+            sv = q.get(sk)
+            if sv is not None:
+                slice_rows[sk][str(sv)].append(row)
 
     if total == 0:
         return {"error": "no evaluable queries", "skipped": skipped}
@@ -353,6 +437,13 @@ def evaluate(queries: List[Dict[str, Any]], corpus: List[Dict[str, Any]],
     for k in ks:
         result[f"recall@{k}"] = round(recall_sums[k] / total, 4)
 
+    # Build breakdown: only include slice_keys that have at least one value
+    breakdown: Dict[str, Any] = {}
+    for sk, sv_map in slice_rows.items():
+        if sv_map:
+            breakdown[sk] = {sv: _aggregate_slice(rows, ks)
+                             for sv, rows in sorted(sv_map.items())}
+    result["breakdown"] = breakdown
     result["per_query"] = per_query
     return result
 
@@ -371,6 +462,9 @@ def main() -> None:
                     help="Path to multimodal_elements.json")
     ap.add_argument("--graph", default=None,
                     help="Path to latex_graph_hubs.json (required for --mode graph)")
+    ap.add_argument("--candidates", default=None,
+                    help="Path to hub_candidates_enriched.json; provides MinerU element IDs "
+                         "for --mode graph (bridges LaTeX-label IDs to MinerU IDs)")
     ap.add_argument("--mode", choices=["bm25", "graph"], default="bm25",
                     help="Retrieval mode: 'bm25' (all elements) or 'graph' (hub nodes only)")
     ap.add_argument("--output", default=None,
@@ -386,6 +480,7 @@ def main() -> None:
     queries_path = Path(args.queries)
     elements_path = Path(args.elements)
     graph_path = Path(args.graph) if args.graph else None
+    candidates_path = Path(args.candidates) if args.candidates else None
 
     print(f"Loading queries from: {queries_path}")
     if args.c_pool:
@@ -401,7 +496,7 @@ def main() -> None:
     print(f"Loaded {len(queries)} queries")
 
     print(f"Building corpus (mode={args.mode}) ...")
-    corpus = build_corpus(elements_path, graph_path, args.mode)
+    corpus = build_corpus(elements_path, graph_path, args.mode, candidates_path)
     print(f"  Corpus size: {len(corpus)} documents")
 
     print("Building IDF ...")
@@ -422,6 +517,24 @@ def main() -> None:
         print(f"  Recall@{k}:     {results.get(f'recall@{k}', 0):.4f}")
     print("────────────────────────────────────────────────────")
 
+    # Print per-slice breakdown
+    breakdown = results.get("breakdown", {})
+    if breakdown:
+        ks_sorted = sorted(args.ks)
+        for slice_key, sv_map in breakdown.items():
+            print(f"\n  ── Breakdown by {slice_key} ──")
+            header = f"  {'Value':<28} {'N':>5}  {'MRR':>7}  {'Hit@1':>7}" + \
+                     "".join(f"  {'R@'+str(k):>7}" for k in ks_sorted)
+            print(header)
+            print("  " + "-" * (len(header) - 2))
+            for sv, m in sv_map.items():
+                if not m:
+                    continue
+                row_str = f"  {sv:<28} {m['n']:>5}  {m['mrr']:>7.4f}  {m['hit@1']:>7.4f}"
+                for k in ks_sorted:
+                    row_str += f"  {m.get(f'recall@{k}', 0):>7.4f}"
+                print(row_str)
+
     # Save output
     if args.output:
         out_path = Path(args.output)
@@ -436,7 +549,7 @@ def main() -> None:
         "metrics": {k: v for k, v in results.items() if k != "per_query"},
         "per_query": results.get("per_query", []),
     }
-    out_path.write_text(json.dumps(out_data, ensure_ascii=False, indent=2))
+    out_path.write_text(json.dumps(out_data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\nResults saved to: {out_path}")
 
 
