@@ -788,6 +788,88 @@ _REAL_USER_STYLE_CYCLE = list(_REAL_USER_TEMPLATES.keys())
 
 
 # ──────────────────────────────────────────────────────────────
+# Persona Hub: 5 user personas injected as prompt prefix
+# Mentor suggestion (2026-03-04): rotate user personas to increase
+# query diversity and naturalness across different reader types.
+# ──────────────────────────────────────────────────────────────
+
+PERSONA_PREFIXES: Dict[str, str] = {
+    "phd": (
+        "You are a PhD student in machine learning who reads papers carefully "
+        "and asks precise, technically grounded questions that probe assumptions "
+        "and connect theory to empirical findings."
+    ),
+    "lazy": (
+        "You are a busy researcher who only skims papers. You ask short, direct "
+        "questions — often just a few words — expecting the system to fill in context. "
+        "You don't bother with full sentences when keywords suffice."
+    ),
+    "careful": (
+        "You are a meticulous reviewer who reads every word. You ask detailed "
+        "questions that cross-reference multiple parts of a paper, notice "
+        "inconsistencies, and want precise evidence-backed answers."
+    ),
+    "practitioner": (
+        "You are a ML engineer evaluating whether to adopt this method in production. "
+        "You care about practicality: compute cost, data requirements, ease of "
+        "implementation, and whether gains hold on realistic benchmarks."
+    ),
+    "skeptic": (
+        "You are a skeptical researcher who doubts extraordinary claims. You ask "
+        "challenging questions that probe whether results generalise, whether baselines "
+        "are fair, and whether limitations are honestly disclosed."
+    ),
+}
+
+# Ordered cycle for deterministic round-robin assignment
+_PERSONA_CYCLE = list(PERSONA_PREFIXES.keys())  # phd, lazy, careful, practitioner, skeptic
+
+# Distribution weights (% of queries per persona)
+_PERSONA_WEIGHTS = {
+    "phd": 0.30,
+    "lazy": 0.25,
+    "careful": 0.20,
+    "practitioner": 0.15,
+    "skeptic": 0.10,
+}
+
+
+def resolve_persona(pair_id: str) -> str:
+    """Deterministically assign a persona to a pair via stable hash + weighted selection.
+
+    Uses cumulative weight buckets so the distribution across a large run matches
+    _PERSONA_WEIGHTS without randomness.
+    """
+    if not pair_id:
+        return "phd"
+    stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
+    r = (stable % 100) / 100.0  # value in [0, 1)
+    cumulative = 0.0
+    for persona in _PERSONA_CYCLE:
+        cumulative += _PERSONA_WEIGHTS[persona]
+        if r < cumulative:
+            return persona
+    return "phd"
+
+
+def inject_persona_prefix(prompt: str, persona: str) -> str:
+    """Prepend the persona description to an existing prompt template.
+
+    The persona is inserted after any leading blank lines so the template
+    role line remains first, then the persona clarifies the reader context.
+    """
+    prefix = PERSONA_PREFIXES.get(persona, "")
+    if not prefix:
+        return prompt
+    # Replace first "You are a ..." sentence in the prompt with the persona
+    # so we don't double-define the role.  Fall back to simple prepend.
+    first_sentence_pat = re.compile(r"^(You are [^.]+\.)", re.MULTILINE)
+    if first_sentence_pat.search(prompt):
+        return first_sentence_pat.sub(prefix, prompt, count=1)
+    return prefix + "\n\n" + prompt
+
+
+# ──────────────────────────────────────────────────────────────
 # QC infrastructure (reused + extended from L2 script)
 # ──────────────────────────────────────────────────────────────
 
@@ -1640,6 +1722,49 @@ def qc_multihop_query(
     return issues, metrics
 
 
+# ── Query intent classification (objective vs subjective) ──────────────────
+# Objective queries have a specific, verifiable answer (a number, a name,
+# a yes/no fact).  Subjective queries are open-ended — the "answer" is a
+# summary or analysis whose quality is hard to verify automatically.
+# The distinction drives QC strictness: subjective queries skip
+# single_element_answer checks (no single correct evidence span exists).
+
+_SUBJECTIVE_QUERY_PATTERNS: List[re.Pattern] = [
+    re.compile(r"\b(summarize|summarise|summary|overview|describe|explain|discuss)\b", re.I),
+    re.compile(r"\bwhat (is|are|does|do|did)\b.{0,30}\b(about|mean|trying|aim|purpose|motivation|contribution|novel|limit)\b", re.I),
+    re.compile(r"\b(briefly|concisely|in (one|a few) (sentence|word|paragraph))\b", re.I),
+    re.compile(r"\b(tell me|give me|walk me|help me)\b", re.I),
+    re.compile(r"\b(what (distinguishes|makes|sets|defines))\b", re.I),
+    re.compile(r"\b(pros and cons|trade.?off|advantage|disadvantage|strength|weakness)\b", re.I),
+]
+
+_OBJECTIVE_QUERY_PATTERNS: List[re.Pattern] = [
+    re.compile(r"\b(how (many|much|often|long|far|large|small|fast|accurate))\b", re.I),
+    re.compile(r"\b(what (percentage|fraction|ratio|number|value|score|result|accuracy|f1|bleu|rouge))\b", re.I),
+    re.compile(r"\b(which (model|method|approach|baseline|dataset|benchmark))\b", re.I),
+    re.compile(r"\b(is there|does .+? show|does .+? outperform|is .+? better|is .+? worse)\b", re.I),
+    re.compile(r"\b(what (specific|exact|precise))\b", re.I),
+]
+
+
+def classify_query_intent(query: str) -> str:
+    """Classify query as 'objective' or 'subjective'.
+
+    Returns:
+        "subjective": open-ended, no single correct answer, evidence-finding task.
+        "objective": has a specific verifiable answer (number, name, comparison).
+
+    Heuristic rule-based classification; errs toward 'objective' when uncertain
+    so that QC checks remain strict by default.
+    """
+    q = (query or "").strip()
+    subj_hits = sum(1 for p in _SUBJECTIVE_QUERY_PATTERNS if p.search(q))
+    obj_hits = sum(1 for p in _OBJECTIVE_QUERY_PATTERNS if p.search(q))
+    if subj_hits > obj_hits:
+        return "subjective"
+    return "objective"
+
+
 def qc_real_user_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
@@ -1650,6 +1775,8 @@ def qc_real_user_query(
       - meta_language: no "figure"/"table"/"equation" in query
       - yes_no_question: no pure yes/no questions
       - single_element_answer: answer must draw on both elements
+        (SKIPPED for subjective queries — open-ended questions have no single
+        correct evidence span; retrievability_score is used instead)
       - empty/too_short/too_long: basic length sanity
 
     Removed / relaxed checks (relative to qc_multihop_query):
@@ -1661,13 +1788,17 @@ def qc_real_user_query(
       - architecture_intent_missing: not applicable
       - length_mix_missing: no SHORT+LONG bucket requirement
 
-    New metric:
+    New metrics:
+      - query_intent ("objective" | "subjective"): whether the query has a
+        specific verifiable answer or is open-ended.
       - retrievability_score (0–3): rough estimate of how retrievable the answer is
         from the two elements without additional context.
     """
     issues: List[str] = []
     metrics: Dict[str, Any] = {}
     q = obj.get("query", "")
+    query_intent = classify_query_intent(q)
+    metrics["query_intent"] = query_intent
     q_lower = q.lower().strip()
     a = obj.get("answer", "")
     q_words = query_word_count(q)
@@ -1690,10 +1821,14 @@ def qc_real_user_query(
     if is_yes_no_question(q):
         issues.append("yes_no_question")
 
-    # 4. Single-element answer (kept — dual evidence requirement is non-negotiable)
+    # 4. Single-element answer: enforced only for objective queries.
+    #    Subjective / open-ended queries (summarize, explain, describe…) often
+    #    don't have a single bounded answer that overlaps with element text, so
+    #    applying this check would incorrectly reject valid queries.
+    #    For subjective queries we rely on retrievability_score instead.
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
-    if a_tokens or a_num_tokens:
+    if (a_tokens or a_num_tokens) and query_intent == "objective":
         def _min_overlap_ru(elem: Dict) -> int:
             etype = str(elem.get("element_type", "")).lower()
             return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
@@ -2036,8 +2171,17 @@ def select_template(pair: Dict, query_style: str = "academic") -> str:
         return "figure_table_1hop"  # fallback
 
 
-def build_prompt(pair: Dict, query_style: str = "academic") -> str:
-    """Build the prompt text for a candidate pair."""
+def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = False) -> str:
+    """Build the prompt text for a candidate pair.
+
+    Args:
+        pair: Candidate element pair dict.
+        query_style: "academic" | "real_user" | "mixed".
+        use_persona: If True, replace the "You are …" role line with a
+            persona-specific prefix chosen deterministically by pair_id.
+            Persona distribution: phd 30%, lazy 25%, careful 20%,
+            practitioner 15%, skeptic 10%.
+    """
     template_name = select_template(pair, query_style)
     elem_a = pair["element_a"]
     elem_b = pair["element_b"]
@@ -2078,10 +2222,14 @@ def build_prompt(pair: Dict, query_style: str = "academic") -> str:
     latex_bridge_section = build_latex_bridge_section(pair)
     enriched_section = build_enriched_context_section(pair)
 
-    # Helper: append enriched section if non-empty
+    # Helper: append enriched section if non-empty, then optionally inject persona
+    _persona_id = resolve_persona(str(pair.get("pair_id", ""))) if use_persona else ""
+
     def _with_enriched(prompt_text: str) -> str:
         if enriched_section:
-            return prompt_text + "\n\n" + enriched_section
+            prompt_text = prompt_text + "\n\n" + enriched_section
+        if use_persona and _persona_id:
+            prompt_text = inject_persona_prefix(prompt_text, _persona_id)
         return prompt_text
 
     if template_name == "figure_table_1hop":
@@ -2444,6 +2592,19 @@ def main() -> None:
             "'mixed' (50%% academic / 50%% real_user by pair hash)"
         ),
     )
+    ap.add_argument(
+        "--use-persona",
+        action="store_true",
+        default=False,
+        help=(
+            "Inject a Persona Hub prefix into every prompt, replacing the default "
+            "'You are a PhD student…' role line with one of 5 reader personas "
+            "(phd/lazy/careful/practitioner/skeptic) assigned deterministically "
+            "by pair_id hash. Distribution: phd 30%%, lazy 25%%, careful 20%%, "
+            "practitioner 15%%, skeptic 10%%. "
+            "Compatible with all --query-style values."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -2470,6 +2631,7 @@ def main() -> None:
     print(f"  Provider: {args.provider}")
     print(f"  Model: {args.model}")
     print(f"  Query style: {args.query_style}")
+    print(f"  Persona Hub: {'enabled' if args.use_persona else 'disabled'}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Output: {args.output}")
     print()
@@ -2534,7 +2696,7 @@ def main() -> None:
             template_name = select_template(pair, effective_query_style)
 
             # Build prompt
-            prompt = build_prompt(pair, effective_query_style)
+            prompt = build_prompt(pair, effective_query_style, use_persona=args.use_persona)
             if not prompt:
                 print(f"  [{i+1}/{len(pairs)}] SKIP (no prompt template for {pair_type})")
                 continue
@@ -2624,6 +2786,8 @@ def main() -> None:
                     if not pair_has_length_mix:
                         issues.append("length_mix_missing")
                 metrics["query_style"] = effective_query_style
+                effective_persona = resolve_persona(str(pair.get("pair_id", ""))) if args.use_persona else "none"
+                metrics["persona"] = effective_persona
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -2646,9 +2810,11 @@ def main() -> None:
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
                     "cross_modal": True,
                     "query_style": effective_query_style,
+                    "persona": effective_persona,
                     "image_paths": [p for p in [img_a_path, img_b_path] if p],
                     "quality_tier": pair.get("quality_tier", "unknown"),
                     "query_type": q_obj.get("query_type", "unknown"),
+                    "query_intent": metrics.get("query_intent", "objective"),
                     "required_evidence_spans": q_obj.get("required_evidence_spans", []),
                     "visual_anchors": q_obj.get("visual_anchors", []),
                     "text_evidence": q_obj.get("text_evidence", ""),
@@ -2690,6 +2856,7 @@ def main() -> None:
     print(f"Dual-Evidence L1 Generation Summary (v4.5)")
     print(f"{'='*60}")
     print(f"  Query style:           {args.query_style}")
+    print(f"  Persona Hub:           {'enabled' if args.use_persona else 'disabled'}")
     print(f"  Total pairs processed: {len(pairs)}")
     print(f"  Total queries written: {query_idx}")
     print(f"  QC passed:             {kept}")
