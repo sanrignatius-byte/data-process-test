@@ -434,23 +434,30 @@ def evaluate_method(
             for i, c in enumerate(chunks):
                 doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
 
-            # 1-hop citation walk: boost docs that cite or are cited by high-scoring docs
+            # 1-hop citation walk: boost docs that cite or are cited by high-scoring docs.
+            # Gate: only propagate from docs whose relevance score is meaningfully high
+            # (> 0.5 of normalized range) to avoid flooding the graph from weak signals.
             citation_boost: Dict[str, float] = defaultdict(float)
+            score_gate = 0.5
             for doc_id, dscore in doc_score.items():
-                if dscore < 1e-6:
+                if dscore < score_gate:
                     continue
                 adj = citation_adjacency.get(doc_id, {})
-                for neighbor_doc in adj.get("cites", set()) | adj.get("cited_by", set()):
+                # "A cites B" is stronger signal than "A cited_by B" — use separate weights
+                for neighbor_doc in adj.get("cites", set()):
                     citation_boost[neighbor_doc] += dscore * citation_decay
+                for neighbor_doc in adj.get("cited_by", set()):
+                    citation_boost[neighbor_doc] += dscore * citation_decay * 0.5
 
-            # Normalize citation_boost to [0, 1] range
+            # Normalize to [0, 1], then apply citation_decay as final scale factor
+            # so the max possible boost is citation_decay (not +1.0 unbounded)
             if citation_boost:
                 max_cb = max(citation_boost.values())
                 if max_cb > 1e-9:
                     citation_boost = {k: v / max_cb for k, v in citation_boost.items()}
 
             scored = [
-                (i, norm_bm25[i] + citation_boost.get(chunks[i].doc_id, 0.0))
+                (i, norm_bm25[i] + citation_decay * citation_boost.get(chunks[i].doc_id, 0.0))
                 for i in range(n_chunks)
             ]
 
@@ -498,12 +505,15 @@ def evaluate_method(
                 doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
 
             citation_boost: Dict[str, float] = defaultdict(float)
+            score_gate = 0.5
             for doc_id, dscore in doc_score.items():
-                if dscore < 1e-6:
+                if dscore < score_gate:
                     continue
                 adj = citation_adjacency.get(doc_id, {})
-                for nbr_doc in adj.get("cites", set()) | adj.get("cited_by", set()):
+                for nbr_doc in adj.get("cites", set()):
                     citation_boost[nbr_doc] += dscore * citation_decay
+                for nbr_doc in adj.get("cited_by", set()):
+                    citation_boost[nbr_doc] += dscore * citation_decay * 0.5
 
             if citation_boost:
                 max_cb = max(citation_boost.values())
