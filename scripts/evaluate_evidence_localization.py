@@ -49,6 +49,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
+def load_json(path: Path) -> Dict[str, Any]:
+    """Load JSON with explicit UTF-8 decoding.
+
+    This avoids platform-dependent default encodings (e.g. cp1252 on Windows)
+    that can trigger UnicodeDecodeError for UTF-8 datasets.
+    """
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Text utilities
 # ─────────────────────────────────────────────────────────────────────────────
@@ -121,7 +130,7 @@ def build_corpus(elements_path: Path, graph_path: Optional[Path],
     # Load all elements
     all_elements: Dict[str, Dict] = {}
     if elements_path.exists():
-        raw = json.loads(elements_path.read_text())
+        raw = load_json(elements_path)
         docs = raw.get("documents", raw) if isinstance(raw, dict) else raw
         if isinstance(docs, dict):
             for doc_id, doc_data in docs.items():
@@ -157,7 +166,7 @@ def build_corpus(elements_path: Path, graph_path: Optional[Path],
             print("WARNING: --graph not provided or not found; falling back to BM25 corpus")
             return build_corpus(elements_path, None, "bm25")
 
-        graph_data = json.loads(graph_path.read_text())
+        graph_data = load_json(graph_path)
         hub_elem_ids: Set[str] = set()
 
         # Collect element IDs from bridge_hubs
@@ -271,7 +280,7 @@ def load_generated_queries(path: Path) -> List[Dict[str, Any]]:
 
 def load_cpool_queries(path: Path) -> List[Dict[str, Any]]:
     """Load queries from C-Pool JSON file."""
-    data = json.loads(path.read_text())
+    data = load_json(path)
     return data.get("queries", [])
 
 
@@ -436,7 +445,7 @@ def main() -> None:
         "metrics": {k: v for k, v in results.items() if k != "per_query"},
         "per_query": results.get("per_query", []),
     }
-    out_path.write_text(json.dumps(out_data, ensure_ascii=False, indent=2))
+    out_path.write_text(json.dumps(out_data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\nResults saved to: {out_path}")
 
 
