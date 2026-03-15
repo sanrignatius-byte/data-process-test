@@ -819,7 +819,13 @@ def compute_hubs(
                      0.25 * core_module_score + 20.0 * pr.get(nid, 0.0) - penalty)
 
         # Hub category
-        if node.node_type == "paragraph" and len(out_modalities) >= 2:
+        # A node is a "bridge" when it structurally connects ≥2 distinct element
+        # modalities (figure/table/formula).  Both paragraph nodes (via \ref{})
+        # and section nodes (via section_contains_element edges) can serve this
+        # bridging role.  Section nodes that contain elements from ≥2 modalities
+        # should therefore be promoted to "bridge" alongside paragraphs.
+        if (node.node_type in {"paragraph", "section", "subsection", "subsubsection"}
+                and len(out_modalities) >= 2):
             hub_category = "bridge"
         elif node.node_type in ELEMENT_MODALITIES and in_deg > out_deg:
             hub_category = "authority"
@@ -866,14 +872,20 @@ def compute_bridge_hubs(
     out_adj: Dict[str, Set[str]],
     top_k: int,
 ) -> List[Dict[str, Any]]:
-    """Paragraph nodes co-referencing ≥2 distinct element modalities (true bridge hubs).
+    """Nodes co-referencing ≥2 distinct element modalities (true bridge hubs).
+
+    Includes paragraph nodes (via \\ref{}) and section/subsection/subsubsection
+    nodes (via section_contains_element edges).  Section-level bridges capture
+    the structural importance of sections that contain multiple modality types,
+    which paragraphs may miss when elements are spread across sub-sections.
 
     Scored by:
       bridge_score = modality_count * 10 + out_degree
     """
+    _BRIDGE_NODE_TYPES = {"paragraph", "section", "subsection", "subsubsection"}
     bridges: List[Dict[str, Any]] = []
     for nid, node in nodes.items():
-        if node.node_type != "paragraph":
+        if node.node_type not in _BRIDGE_NODE_TYPES:
             continue
         neighbors = out_adj.get(nid, set())
         modalities = {nodes[nb].node_type for nb in neighbors if nodes[nb].node_type in ELEMENT_MODALITIES}
@@ -882,8 +894,9 @@ def compute_bridge_hubs(
         bridges.append({
             "node_id": nid,
             "doc_id": node.doc_id,
-            "node_type": "paragraph",
+            "node_type": node.node_type,
             "label": node.label,
+            "section_title": node.section_title,
             "line_no": node.line_no,
             "paragraph_order": node.paragraph_order,
             "out_degree": len(neighbors),
