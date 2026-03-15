@@ -228,6 +228,7 @@ def evaluate_method(
     r_at_10 = 0.0
     mrr = 0.0
     per_query = []
+    hub_bm25_overlap_rates: List[float] = []  # only populated for graph_hub_rerank
 
     chunk_tokens = [tokenize(c.text) for c in chunks]
 
@@ -253,6 +254,17 @@ def evaluate_method(
             ranked_bm25 = sorted(enumerate(raw_bm25), key=lambda x: x[1], reverse=True)
             rerank_n = max(top_k, min(graph_rerank_topn, len(chunks)))
             candidate_ids = {i for i, _ in ranked_bm25[:rerank_n]}
+
+            # Overlap diagnostic: how many hub-boosted elements are already in BM25 top-k?
+            bm25_top10_set = {i for i, _ in ranked_bm25[:top_k]}
+            hub_boosted_ids = {
+                i for i in candidate_ids
+                if element_hub_prior.get(chunks[i].chunk_id, doc_hub_prior.get(chunks[i].doc_id, 0.0)) > 0
+            }
+            if hub_boosted_ids:
+                hub_bm25_overlap_rates.append(
+                    len(bm25_top10_set & hub_boosted_ids) / len(hub_boosted_ids)
+                )
 
             bm25_min = min(raw_bm25)
             bm25_range = max(raw_bm25) - bm25_min
@@ -310,12 +322,18 @@ def evaluate_method(
         )
 
     n = max(1, len(per_query))
-    return {
+    result: Dict[str, Any] = {
         "n": len(per_query),
         "recall_at_10": round(r_at_10 / n, 4),
         "mrr": round(mrr / n, 4),
         "per_query": per_query,
     }
+    if hub_bm25_overlap_rates:
+        result["hub_bm25_overlap_mean"] = round(
+            sum(hub_bm25_overlap_rates) / len(hub_bm25_overlap_rates), 4
+        )
+        result["hub_bm25_overlap_n_queries"] = len(hub_bm25_overlap_rates)
+    return result
 
 
 def decision(graph_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -> Dict[str, Any]:
@@ -424,7 +442,10 @@ def main() -> None:
     print("[phase0] report written:", args.output)
     for name in ["bm25", "dense", "graph_hub_rerank"]:
         m = report["metrics"][name]
-        print(f"  {name:16s} n={m['n']}  Recall@10={m['recall_at_10']:.4f}  MRR={m['mrr']:.4f}")
+        overlap_str = ""
+        if "hub_bm25_overlap_mean" in m:
+            overlap_str = f"  hub_bm25_overlap={m['hub_bm25_overlap_mean']:.4f}"
+        print(f"  {name:16s} n={m['n']}  Recall@10={m['recall_at_10']:.4f}  MRR={m['mrr']:.4f}{overlap_str}")
     print("[phase0] decision:", report["decision"])
 
 
