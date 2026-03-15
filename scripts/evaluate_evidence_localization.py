@@ -258,7 +258,7 @@ def reciprocal_rank(retrieved_ids: List[str], relevant_ids: Set[str]) -> float:
 def load_generated_queries(path: Path) -> List[Dict[str, Any]]:
     """Load queries from a .jsonl file (generate_multihop_l1_queries output)."""
     queries = []
-    with path.open() as f:
+    with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
