@@ -136,7 +136,15 @@ def build_corpus(elements_path: Path, graph_path: Optional[Path],
             for doc_id, doc_data in docs.items():
                 if not isinstance(doc_data, dict):
                     continue
-                for elem in doc_data.get("elements", []):
+                elements_field = doc_data.get("elements", {})
+                # elements can be a dict {element_id: elem} or a list
+                if isinstance(elements_field, dict):
+                    elem_iter = elements_field.values()
+                elif isinstance(elements_field, list):
+                    elem_iter = elements_field
+                else:
+                    continue
+                for elem in elem_iter:
                     if not isinstance(elem, dict):
                         continue
                     eid = elem.get("element_id", "")
