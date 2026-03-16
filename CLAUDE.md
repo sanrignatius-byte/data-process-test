@@ -49,6 +49,28 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-03-16 更新｜Phase0 Eval v3 达标 + Graph 首次显著超越 BM25）
+
+### 本轮完成（相对 2026-03-15）
+
+- **Phase0 效果验证达标** — `continue_expand = True` ✅
+  - graph_full：R@10=0.8736 (+0.0269 vs BM25), MRR=0.6045 (+0.0403 vs BM25)
+  - 满足决策门 MRR ≥ BM25 + 0.03（实际 +0.0403）
+  - 详见 `docs/EXPERIMENT_RECORD_2026-03-16.md`
+- **三项工程修复**：quality_score 从常量 0.8 → 拓扑特征加权 [0.13, 0.88]；hub coverage 从 9.53% → 90.42%（纳入 adjacent_backbone_bridges 397 个 element）；citation walk 加入双向 + 2-hop co-citation
+- **组件权重解耦**：新增 `--hub-weight/--nprop-weight/--cite-weight` 独立调参；最优配置 hw=0.15, nd=0.20, cw=0.0
+- **关键发现**：neighbor_prop（1-hop 邻域标签传播）是核心信号，能拯救 11 条 BM25 遗漏的 queries；citation_walk 为负贡献（doc-level 粒度与 element-level 证据定位不匹配），应在 graph_full 中关闭；2-hop 不如 1-hop
+- **MoDora 四工作流代码全部已实现**（A1/A2/B1/B2/C1/C3/D1 + Persona Hub），但尚未全量运行验证
+- **产物文件**：`data111/hub_candidates_enriched_v3.json`、`data/phase0_eval_report_v3_tuned.json`
+
+### 本轮关键结论
+- **Graph 效果验证已达标，支撑 4 月专利申请**。核心机制（bridge hub topology → element adjacency → 1-hop label propagation）全程纯规则，零 LLM 成本
+- **MoDora workstream 代码就绪但未经全量实战检验**：需要用 `--provider company` 跑 500 candidates 的 real-user + persona queries 来验证
+- **`docs/GRAPH_ARCHITECTURE.md` 需要大幅扩充**：当前仅 42 行框架，缺少 eval 结果、最优配置、构建公式细节
+- **C-Pool 万金油查询库**和 **Graph RAG 调研**仍未启动
+
+---
+
 ## 当前状态（2026-03-12 更新｜战略升级：Document Graph as Core + 专利路径确认）
 
 ### 本轮完成（相对 2026-03-10）
@@ -489,52 +511,50 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-12 更新）
+## 下一步 TODO（2026-03-16 更新）
 
 ### 已完成（历史）
-- ~~**P0: Citation graph 质量验证**~~ ✅ **完成** — 人工抽查误匹配率 0%，Jaccard ≥ 0.55 可信
-- ~~**Step 0 v3.2 质量分析**~~ ✅ **完成** — 发现 hub 问题 + proximity 无语义门禁，已实现 G1+G2 修复
-- ~~**P-0.5: Step 0 v3.2 v3 重跑**~~ ✅ **完成** — 集群跑出 118 对（G1+G2），stats 一致，cross-ref gate 正确
-- ~~**P1: L1 cross-modal v3（LaTeX bridge 注入）**~~ ✅ **完成** — 236 条，72 pass (30.5%)，$1.66
-- ~~**P1.1: L1 dual-evidence v4（Conceptual Masking + Operator）**~~ ✅ **完成** — 236 条，139 pass (58.9%)，$2.07
-- ~~**P1.1.1: L1 dual-evidence v4.1（opus figure+formula prompt + operator diversity）**~~ ✅ **完成** — 236 条，138 pass (58.5%)，$2.39
-- ~~**P1.1.2: L1 dual-evidence v4.2（PhD persona + verb diversity + natural operators）**~~ ✅ **完成** — 236 条，152 pass (64.4%)，$2.57
-- ~~**LaTeX Topology v2 + Hub Multi-hop Candidates**~~ ✅ **完成** — 2551 nodes, 3471 edges, 500 candidates, 100% bridge hubs
-- ~~**公司 API 整合**~~ ✅ **完成** — `--provider company` via `local_api_logger`，SSE 流式解析 + token 自动记录
-- ~~**MoDora 整合方案设计**~~ ✅ **完成** — 4 workstream 并行，5 文件改动，同事反馈已纳入
+- ~~**Phase0 Eval v2 首轮**~~ ✅ **完成** — graph 与 BM25 持平，hub_overlap=9.53%，continue_expand=False
+- ~~**Phase0 Eval v3 三项修复**~~ ✅ **完成** — quality_score 重建 + hub coverage 扩大 + citation walk 修复
+- ~~**Phase0 组件权重解耦 + Grid Search**~~ ✅ **完成** — graph_full MRR +0.0403，`continue_expand=True`
+- ~~**MoDora 四工作流代码实现**~~ ✅ **完成** — A1/A2/B1/B2/C1/C3/D1 + Persona Hub 全部已实现（代码就绪，未全量运行）
+- ~~前序历史~~ ✅ 见 `docs/DISCUSSION_LOG.md`
 
-### 新增 P0（本月，支撑 4 月专利）
-- **【新】整理 `docs/GRAPH_ARCHITECTURE.md`**：Document Graph 完整文档——节点类型/边类型/获取方式（MinerU/LaTeX/LLM）/成本分层/Hub 评分公式。Mentor 明确要求，每次周会前必须有
-- **【新】设计 Graph 效果验证实验**：Document Graph vs BM25/dense baseline，在 QA 或 evidence localization 任务上验证效果，1 个月内出数据（→ 4 月）
-- **【新】建立 C-Pool 万金油查询库**：人工整理 50-100 条通用学术文档 query（总结/动机/方法/贡献/跨文档连接），每类 7-10 种表述变体，QC 只验 evidence localization
+### MoDora 工作流代码完成度（代码就绪，待全量验证）
 
-### P0（原有 MoDora workstream，本周）
-- **C1（最高优先）：低质量 enrichment 过滤器**：在 query 生成前检测 enriched 字段噪声模式（glyph/icon/marker），命中回退原始 context
-- **A1：段落按 section 边界切分**：`_extract_paragraphs()` 遇 `\section{}` 先 flush 当前 block
-- **A2：section 节点参与路径枚举**：Strategy 4 + `--single-doc-only` flag
-- **B1：5 类 real-user prompt 模板**：factual_lookup / summary / comparison / how_works / what_if
-- **B2：`--query-style` CLI 开关**：academic（默认）/ real_user / mixed
-- **C3：hub summary 压缩重写**：从拼接升级为 50-80 词压缩
-- **D1：`qc_real_user_query()` 函数**：放宽 yes/no + template 限制，新增 retrievability_score
+| 工作流 | 代码 | 文件 | 待验证 |
+|--------|------|------|--------|
+| A1: Section 粒度切分 | ✅ | `src/parsers/latex_reference_extractor.py` | 需重跑 pipeline 验证切分效果 |
+| A2: Strategy 4 + `--single-doc-only` | ✅ | `scripts/analyze_latex_graph_topology.py` | 需验证 section-bridged candidates 质量 |
+| B1: 5 类 real-user 模板 | ✅ | `scripts/generate_multihop_l1_queries.py` | 需 `--query-style real_user` 全量跑 |
+| B2: `--query-style` CLI | ✅ | `scripts/generate_multihop_l1_queries.py` | 同上 |
+| C1: Enrichment 噪声过滤器 | ✅ | `scripts/generate_multihop_l1_queries.py` | 随 query 生成自动生效 |
+| C3: Hub summary 压缩重写 | ✅ | `scripts/enrich_hub_candidates.py` | 已在 v3 enrichment 中使用 |
+| D1: `qc_real_user_query()` | ✅ | `scripts/generate_multihop_l1_queries.py` | 需 real_user queries 触发 |
+| Persona Hub (5 类) | ✅ | `scripts/generate_multihop_l1_queries.py` | 需 `--use-persona` 全量跑 |
+| MoDora enrichment 脚本 | ✅ | `scripts/enrich_elements_modora.py` | 需跑生成 `multimodal_elements_enriched.json` |
 
-### 新增 P1（本月，支撑论文）
-- **【新】实现 Persona Hub**：5 类用户人设（PhD/lazy user/careful reader/practitioner/skeptic），加入 `--query-style` 路由，按比例分配
-- **【新】调研 Graph RAG**：Entity graph（Microsoft GraphRAG）、Query-sentence graph，整理对比文档，寻找低成本可借鉴方案
-- **【新】C-Pool QC 策略实现**：C-Pool query 跳过 query 评分，只做 evidence localization 验证
-- **【新】泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案（section title 提取 + 阅读顺序边 + LLM 大纲生成备选）
+### P0（本周，支撑周会 + 专利）
 
-### P1（原有）
-- **全量生成 L1 hub-multihop queries**：`--provider company` 跑 500 条 hub candidates
-- **修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
-- **Citation-based L2 候选替换**：用 123 条引用边做 L2 候选对（替代实体倒排索引）
-- **figure+formula QC 深析**：1809.10083/1906.02589/1802.08139/1803.04383/2109.03952 零 pass 原因分析
+1. **扩充 `docs/GRAPH_ARCHITECTURE.md`**：当前仅 42 行框架，需补充 eval 结果 + 最优配置 + 构建公式 + hub 评分细节 + 成本分层。Mentor 明确要求
+2. **全量生成 real-user + persona queries**：`--provider company --query-style mixed --use-persona` 跑 500 hub candidates，产出新 queries 并重跑 eval 验证图信号在新 query 类型上的泛化性
+3. **跑 MoDora element enrichment**：生成 `data/multimodal_elements_enriched.json`（当前缺失），使 enrichment 过滤器（C1）和 enriched context 在全量生成中生效
+
+### P1（本月，支撑论文数据）
+
+4. **建立 C-Pool 万金油查询库**：人工整理 50-100 条通用学术 query（总结/动机/方法/贡献/跨文档连接），QC 只验 evidence localization
+5. **C-Pool QC 策略**：跳过 query 评分，只做 evidence localization 验证
+6. **Citation walk 改进**：当前 doc-level 为负，尝试 element-level cross-doc linking（用 embedding 相似边替代 citation 边）
+7. **修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
+8. **调研 Graph RAG**：Entity graph（Microsoft GraphRAG）、Query-sentence graph，整理对比文档
 
 ### P2（后续）
-- **label 匹配率继续提升**：49.8% → 更高，改善 page_span 覆盖（当前 19%）
-- **评估闭环**：人工写 30 条测试 query + BM25 baseline + Recall@10/MRR
-- **L2 暂停实体路线**：实体倒排索引的 L2 暂停，改用 citation graph 做候选
 
-详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-12 节）
+9. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
+10. **label 匹配率继续提升**：49.8% → 更高
+11. **L2 重启**：用 citation graph 做 L2 候选对（替代实体倒排索引）
+
+详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-16 节）+ `docs/EXPERIMENT_RECORD_2026-03-16.md`
 
 ### Step 0 v3.2 质量问题备忘（2026-02-20 分析）
 - **Hub 问题**：单个高频被引 element（如 1409.0575 Table 9）产生 O(N) 虚假对 → G1 每 element ≤3 pairs
