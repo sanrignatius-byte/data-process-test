@@ -13,6 +13,7 @@ import base64
 import hashlib
 import json
 import os
+import random
 import re
 import sys
 import time
@@ -1768,6 +1769,7 @@ def classify_query_intent(query: str) -> str:
 def qc_real_user_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
+    persona: str = "",
 ) -> Tuple[List[str], Dict[str, Any]]:
     """QC checks for real-user style queries (relaxed relative to academic style).
 
@@ -1816,6 +1818,13 @@ def qc_real_user_query(
         issues.append("query_too_short")
     elif q_words > 35:
         issues.append("query_too_long")
+
+    # 2b. Lazy persona hard length constraint: max SHORT_QUERY_MAX_WORDS (14 words).
+    #     The lazy persona is supposed to produce terse, keyword-style queries;
+    #     anything longer defeats the purpose of that persona.
+    if persona == "lazy" and q_words > SHORT_QUERY_MAX_WORDS:
+        issues.append("lazy_query_too_long")
+    metrics["persona_applied"] = persona or "none"
 
     # 3. Yes/no question (kept)
     if is_yes_no_question(q):
@@ -1899,8 +1908,14 @@ def qc_real_user_query(
     source_text_parts: List[str] = [
         str(pair.get("element_a", {}).get("caption", "") or ""),
         str(pair.get("element_a", {}).get("content", "") or ""),
+        str(pair.get("element_a", {}).get("enriched_content", "") or ""),
+        str(pair.get("element_a", {}).get("context_before", "") or ""),
+        str(pair.get("element_a", {}).get("context_after", "") or ""),
         str(pair.get("element_b", {}).get("caption", "") or ""),
         str(pair.get("element_b", {}).get("content", "") or ""),
+        str(pair.get("element_b", {}).get("enriched_content", "") or ""),
+        str(pair.get("element_b", {}).get("context_before", "") or ""),
+        str(pair.get("element_b", {}).get("context_after", "") or ""),
         str(evidence or ""),
     ]
     for s in obj.get("required_evidence_spans", []) or []:
@@ -2285,7 +2300,7 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
         # Real-user templates use a generic two-element layout
         style_key = template_name[len("real_user_"):]
         ru_template = _REAL_USER_TEMPLATES.get(style_key, PROMPT_REAL_USER_FACTUAL)
-        return _with_enriched(ru_template.format(
+        formatted = ru_template.format(
             elem_a_id=elem_a["element_id"],
             elem_a_type=elem_a.get("element_type", "element"),
             elem_a_caption=(elem_a.get("caption", "") or "")[:400],
@@ -2296,7 +2311,33 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
             elem_b_context=_context(elem_b),
             edge_context=edge_text,
             latex_bridge=latex_bridge_section,
-        ))
+        )
+        # Inject formula grounding constraint for figure+formula pairs
+        pair_type = pair.get("pair_type", "")
+        if pair_type == "figure+formula" and formula_elem:
+            formula_vars = extract_formula_variables((formula_elem.get("content", "") or "")[:1200])
+            formatted += (
+                "\n\n## FORMULA GROUNDING (MANDATORY)"
+                "\nOne of the elements above is a mathematical formula. "
+                "Your answer MUST explicitly reference at least one specific "
+                "symbol, variable name, or mathematical term from the formula "
+                f"(e.g. {formula_vars[:120] if formula_vars else 'loss function, gradient, coefficient'}). "
+                "An answer that only discusses the visual element without "
+                "grounding in the formula's notation will be rejected."
+            )
+        # Inject formula grounding for formula+table pairs too
+        elif pair_type == "formula+table" and formula_elem:
+            formula_vars = extract_formula_variables((formula_elem.get("content", "") or "")[:1200])
+            formatted += (
+                "\n\n## FORMULA GROUNDING (MANDATORY)"
+                "\nOne of the elements above is a mathematical formula. "
+                "Your answer MUST explicitly reference at least one specific "
+                "symbol, variable name, or mathematical term from the formula "
+                f"(e.g. {formula_vars[:120] if formula_vars else 'loss function, gradient, coefficient'}). "
+                "An answer that only discusses the tabular data without "
+                "grounding in the formula's notation will be rejected."
+            )
+        return _with_enriched(formatted)
 
     return ""
 
@@ -2578,6 +2619,12 @@ def main() -> None:
         help="Company API key (default: $COMPANY_API_KEY)",
     )
     ap.add_argument("--limit", type=int, default=0, help="Limit pairs (0=all)")
+    ap.add_argument(
+        "--shuffle",
+        action="store_true",
+        default=False,
+        help="Shuffle candidate pairs before processing (improves doc diversity when using --limit)",
+    )
     ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
@@ -2623,6 +2670,9 @@ def main() -> None:
         sys.exit(1)
     cand_data = json.loads(cand_path.read_text(encoding="utf-8"))
     pairs = cand_data.get("pairs", [])
+    if args.shuffle:
+        random.seed(42)  # deterministic shuffle for reproducibility
+        random.shuffle(pairs)
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
@@ -2632,6 +2682,7 @@ def main() -> None:
     print(f"  Model: {args.model}")
     print(f"  Query style: {args.query_style}")
     print(f"  Persona Hub: {'enabled' if args.use_persona else 'disabled'}")
+    print(f"  Shuffle:     {'enabled (seed=42)' if args.shuffle else 'disabled'}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Output: {args.output}")
     print()
@@ -2772,8 +2823,9 @@ def main() -> None:
             for q_obj in queries:
                 # Route to the appropriate QC function based on query style
                 is_real_user_style = effective_query_style == "real_user"
+                effective_persona = resolve_persona(str(pair.get("pair_id", ""))) if args.use_persona else ""
                 if is_real_user_style:
-                    issues, metrics = qc_real_user_query(q_obj, pair)
+                    issues, metrics = qc_real_user_query(q_obj, pair, persona=effective_persona)
                 else:
                     issues, metrics = qc_multihop_query(q_obj, pair)
                     sig = query_opening_signature(q_obj.get("query", ""))
@@ -2786,7 +2838,8 @@ def main() -> None:
                     if not pair_has_length_mix:
                         issues.append("length_mix_missing")
                 metrics["query_style"] = effective_query_style
-                effective_persona = resolve_persona(str(pair.get("pair_id", ""))) if args.use_persona else "none"
+                if not effective_persona:
+                    effective_persona = "none"
                 metrics["persona"] = effective_persona
 
                 # Normalize image paths
