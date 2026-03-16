@@ -384,6 +384,51 @@ def build_hub_semantic_summary(
     return summary
 
 
+def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
+    """Build per-hub quality scores from topology features.
+
+    Instead of a constant 0.8 for all hubs, compute a continuous score
+    from bridge_score, pagerank, and out_to_elements — fields already
+    present in the hubs list produced by analyze_latex_graph_topology.py.
+
+    Score = w1 * norm(bridge_score) + w2 * norm(pagerank) + w3 * norm(out_to_elements)
+
+    The resulting score is in [0, 1] with meaningful variance across hubs.
+    """
+    hubs = hub_data.get("hubs", [])
+    if not hubs:
+        # Fallback: also check if candidates carry hub metadata
+        return {}
+
+    bridge_scores = [float(h.get("bridge_score", 0)) for h in hubs]
+    pageranks = [float(h.get("pagerank", 0)) for h in hubs]
+    out_to_elems = [float(h.get("out_to_elements", 0)) for h in hubs]
+
+    def _norm(vals):
+        lo, hi = min(vals), max(vals)
+        rng = hi - lo
+        if rng < 1e-9:
+            return [0.5] * len(vals)
+        return [(v - lo) / rng for v in vals]
+
+    n_bs = _norm(bridge_scores)
+    n_pr = _norm(pageranks)
+    n_oe = _norm(out_to_elems)
+
+    # Weights: bridge_score dominates (captures multi-modality coverage),
+    # pagerank adds structural centrality, out_to_elements adds reach.
+    w1, w2, w3 = 0.5, 0.25, 0.25
+
+    hub_scores: Dict[str, float] = {}
+    for i, h in enumerate(hubs):
+        node_id = h.get("node_id", "")
+        score = w1 * n_bs[i] + w2 * n_pr[i] + w3 * n_oe[i]
+        # Ensure minimum floor of 0.1 so all hubs get some signal
+        hub_scores[node_id] = max(0.1, round(score, 4))
+
+    return hub_scores
+
+
 def enrich_candidates(
     hub_data: Dict[str, Any],
     mm_index: Dict[str, Any],
@@ -396,6 +441,9 @@ def enrich_candidates(
     candidates = hub_data["candidates"]
     if limit > 0:
         candidates = candidates[:limit]
+
+    # Build per-hub quality scores from topology features (replaces constant 0.8)
+    hub_quality = _build_hub_quality_scores(hub_data)
 
     pairs: List[Dict[str, Any]] = []
     skipped_no_mapping = 0
@@ -522,7 +570,7 @@ def enrich_candidates(
             "pair_type": pair_type,
             "hop_distance": cand["hop_distance"],
             "path": mapped_path,
-            "quality_score": 0.8,  # default for topology-validated candidates
+            "quality_score": hub_quality.get(cand.get("hub_node_id", ""), 0.5),
             "overlap_with_existing_l1": False,
             "element_a": elem_a_dict,
             "element_b": elem_b_dict,
@@ -545,6 +593,33 @@ def enrich_candidates(
             },
         }
         pairs.append(pair_dict)
+
+    # ── Build adjacent bridge element mappings (MinerU IDs) ──
+    # These elements aren't in the top-60 hub candidate pairs but appear in
+    # adjacent_backbone_bridges. Including them expands hub coverage for eval.
+    adj_bridge_elements: Dict[str, float] = {}  # eid → quality_score
+    adj_bridges = hub_data.get("adjacent_backbone_bridges", [])
+    if adj_bridges:
+        adj_bridge_adjacency: List[Dict[str, Any]] = []
+        for ab in adj_bridges:
+            mapped_i = []
+            mapped_j = []
+            for nid in (ab.get("element_ids_i") or []):
+                eid = node_to_element.get(str(nid))
+                if eid:
+                    mapped_i.append(eid)
+                    adj_bridge_elements[eid] = max(adj_bridge_elements.get(eid, 0), 0.4)
+            for nid in (ab.get("element_ids_j") or []):
+                eid = node_to_element.get(str(nid))
+                if eid:
+                    mapped_j.append(eid)
+                    adj_bridge_elements[eid] = max(adj_bridge_elements.get(eid, 0), 0.4)
+            if mapped_i and mapped_j:
+                adj_bridge_adjacency.append({
+                    "doc_id": ab.get("doc_id", ""),
+                    "elements_i": mapped_i,
+                    "elements_j": mapped_j,
+                })
 
     # Summary statistics
     by_type: Dict[str, int] = defaultdict(int)
@@ -580,8 +655,13 @@ def enrich_candidates(
             "docs_covered": len(docs_covered),
             "cross_doc": cross_doc_count,
             "intra_doc": len(pairs) - cross_doc_count,
+            "adjacent_bridge_elements_count": len(adj_bridge_elements),
         },
         "pairs": pairs,
+        # Additional elements from adjacent_backbone_bridges mapped to MinerU IDs.
+        # These expand hub coverage beyond the top-60 bridge hubs.
+        "adjacent_bridge_elements": {eid: score for eid, score in adj_bridge_elements.items()},
+        "adjacent_bridge_adjacency": adj_bridge_adjacency if adj_bridges else [],
     }
 
     return result
@@ -613,6 +693,11 @@ def main():
         "--enriched-elements",
         default=None,
         help="Optional MoDora-enriched elements file (multimodal_elements_enriched.json)",
+    )
+    ap.add_argument(
+        "--hubs",
+        default="data/latex_graph_hubs.json",
+        help="Hub topology data (for quality_score computation from bridge_score/pagerank)",
     )
     ap.add_argument("--limit", type=int, default=0, help="Limit candidates (0=all)")
     args = ap.parse_args()
@@ -650,6 +735,18 @@ def main():
                     if "enriched_title" in el:
                         enriched_elements[eid] = el
         print(f"  Enriched elements available: {len(enriched_elements)}")
+
+    # Load hubs topology data for quality_score computation
+    hubs_path = Path(args.hubs)
+    if hubs_path.exists():
+        with open(hubs_path, encoding="utf-8") as f:
+            hubs_topo = json.load(f)
+        print(f"  Hubs topology: {len(hubs_topo.get('hubs', []))} hubs loaded")
+        # Merge hubs into hub_data so enrich_candidates can access them
+        hub_data["hubs"] = hubs_topo.get("hubs", [])
+        hub_data["adjacent_backbone_bridges"] = hubs_topo.get("adjacent_backbone_bridges", [])
+    else:
+        print(f"  WARNING: hubs file {hubs_path} not found, quality_score will use default 0.5")
 
     print("\nBuilding indices...")
     mm_index = build_mm_index(mm_data)
