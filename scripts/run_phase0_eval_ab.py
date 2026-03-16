@@ -340,6 +340,11 @@ def evaluate_method(
     graph_rerank_topn: int,
     neighbor_decay: float,
     citation_decay: float,
+    # Decoupled component weights for graph_full
+    hub_weight: float | None = None,
+    nprop_weight: float | None = None,
+    cite_weight: float | None = None,
+    neighbor_hops: int = 1,
 ) -> Dict[str, Any]:
     r_at_10 = 0.0
     mrr = 0.0
@@ -423,7 +428,7 @@ def evaluate_method(
             ranked_bm25 = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)
             rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
 
-            # Propagate from top-N seeds to their neighbors
+            # Propagate from top-N seeds to their neighbors (1-hop or 2-hop)
             neighbor_boost = [0.0] * n_chunks
             for seed_idx in ranked_bm25[:rerank_n]:
                 seed_id = chunks[seed_idx].chunk_id
@@ -432,11 +437,22 @@ def evaluate_method(
                 for nbr_id in nbrs:
                     nbr_idx = chunk_id_to_idx.get(nbr_id)
                     if nbr_idx is not None:
-                        # Additive boost, capped to avoid score inflation
                         neighbor_boost[nbr_idx] = min(
                             neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
-                            neighbor_decay,  # cap at max one full decay unit
+                            neighbor_decay,
                         )
+                    # 2-hop: propagate from neighbors to their neighbors (decay²)
+                    if neighbor_hops >= 2:
+                        nbrs2 = element_adjacency.get(nbr_id, set())
+                        for nbr2_id in nbrs2:
+                            if nbr2_id == seed_id:
+                                continue  # skip backtrack
+                            nbr2_idx = chunk_id_to_idx.get(nbr2_id)
+                            if nbr2_idx is not None:
+                                neighbor_boost[nbr2_idx] = min(
+                                    neighbor_boost[nbr2_idx] + seed_score * neighbor_decay * neighbor_decay,
+                                    neighbor_decay * neighbor_decay,
+                                )
 
             scored = [(i, norm_bm25[i] + neighbor_boost[i]) for i in range(n_chunks)]
 
@@ -515,12 +531,14 @@ def evaluate_method(
         # ------------------------------------------------------------------
         # 6. graph_full: BM25 + hub_boost + neighbor_prop + citation_walk
         #
-        #    Combined graph signal. Each component uses its own decay/alpha
-        #    so contributions are independently tunable. Final score:
+        #    Combined graph signal with decoupled component weights:
         #      s = norm_bm25
-        #          + graph_alpha   * hub_prior          (static bridge signal)
-        #          + neighbor_decay * neighbor_boost     (dynamic intra propagation)
-        #          + citation_decay * citation_boost     (cross-doc authority)
+        #          + hub_w   * hub_prior          (static bridge signal)
+        #          + nprop_w * neighbor_boost      (dynamic intra propagation)
+        #          + cite_w  * citation_boost      (cross-doc authority)
+        #
+        #    hub_w, nprop_w, cite_w default to graph_alpha, 1.0, citation_decay
+        #    but can be independently tuned via --hub-weight/--nprop-weight/--cite-weight.
         # ------------------------------------------------------------------
         elif method == "graph_full":
             q_toks = tokenize(qtxt)
@@ -529,67 +547,85 @@ def evaluate_method(
             rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
             candidate_set = set(ranked_bm25[:rerank_n])
 
+            # Resolve component weights (use explicit overrides or defaults)
+            _hw = hub_weight if hub_weight is not None else graph_alpha
+            _nw = nprop_weight if nprop_weight is not None else 1.0
+            _cw = cite_weight if cite_weight is not None else citation_decay
+
             # --- hub boost (static prior) ---
             hub_boost_arr = [0.0] * n_chunks
-            for i in candidate_set:
-                c = chunks[i]
-                hub_boost_arr[i] = element_hub_prior.get(
-                    c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0)
-                )
+            if _hw > 1e-9:
+                for i in candidate_set:
+                    c = chunks[i]
+                    hub_boost_arr[i] = element_hub_prior.get(
+                        c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0)
+                    )
 
-            # --- neighbor propagation (dynamic intra-element) ---
+            # --- neighbor propagation (dynamic intra-element, 1 or 2-hop) ---
             neighbor_boost = [0.0] * n_chunks
-            for seed_idx in ranked_bm25[:rerank_n]:
-                seed_id = chunks[seed_idx].chunk_id
-                seed_score = norm_bm25[seed_idx]
-                for nbr_id in element_adjacency.get(seed_id, set()):
-                    nbr_idx = chunk_id_to_idx.get(nbr_id)
-                    if nbr_idx is not None:
-                        neighbor_boost[nbr_idx] = min(
-                            neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
-                            neighbor_decay,
-                        )
+            if _nw > 1e-9:
+                for seed_idx in ranked_bm25[:rerank_n]:
+                    seed_id = chunks[seed_idx].chunk_id
+                    seed_score = norm_bm25[seed_idx]
+                    for nbr_id in element_adjacency.get(seed_id, set()):
+                        nbr_idx = chunk_id_to_idx.get(nbr_id)
+                        if nbr_idx is not None:
+                            neighbor_boost[nbr_idx] = min(
+                                neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
+                                neighbor_decay,
+                            )
+                        # 2-hop propagation
+                        if neighbor_hops >= 2:
+                            for nbr2_id in element_adjacency.get(nbr_id, set()):
+                                if nbr2_id == seed_id:
+                                    continue
+                                nbr2_idx = chunk_id_to_idx.get(nbr2_id)
+                                if nbr2_idx is not None:
+                                    neighbor_boost[nbr2_idx] = min(
+                                        neighbor_boost[nbr2_idx] + seed_score * neighbor_decay * neighbor_decay,
+                                        neighbor_decay * neighbor_decay,
+                                    )
 
             # --- citation walk (cross-doc, bidirectional + 2-hop co-citation) ---
-            doc_score: Dict[str, float] = defaultdict(float)
-            for i, c in enumerate(chunks):
-                doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
+            citation_boost_map: Dict[str, float] = defaultdict(float)
+            if _cw > 1e-9:
+                doc_score: Dict[str, float] = defaultdict(float)
+                for i, c in enumerate(chunks):
+                    doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
 
-            citation_boost: Dict[str, float] = defaultdict(float)
-            score_gate = 0.3
-            for doc_id, dscore in doc_score.items():
-                if dscore < score_gate:
-                    continue
-                adj = citation_adjacency.get(doc_id, {})
-                for nbr_doc in adj.get("cites", set()):
-                    citation_boost[nbr_doc] += dscore * citation_decay
-                for nbr_doc in adj.get("cited_by", set()):
-                    citation_boost[nbr_doc] += dscore * citation_decay * 0.5
+                score_gate = 0.3
+                for doc_id, dscore in doc_score.items():
+                    if dscore < score_gate:
+                        continue
+                    adj = citation_adjacency.get(doc_id, {})
+                    for nbr_doc in adj.get("cites", set()):
+                        citation_boost_map[nbr_doc] += dscore * citation_decay
+                    for nbr_doc in adj.get("cited_by", set()):
+                        citation_boost_map[nbr_doc] += dscore * citation_decay * 0.5
 
-            # 2-hop co-citation reverse propagation
-            for doc_id, dscore in doc_score.items():
-                if dscore < score_gate:
-                    continue
-                adj = citation_adjacency.get(doc_id, {})
-                for citing_doc in adj.get("cited_by", set()):
-                    citing_adj = citation_adjacency.get(citing_doc, {})
-                    for co_cited in citing_adj.get("cites", set()):
-                        if co_cited != doc_id:
-                            citation_boost[co_cited] += dscore * citation_decay * 0.3
+                for doc_id, dscore in doc_score.items():
+                    if dscore < score_gate:
+                        continue
+                    adj = citation_adjacency.get(doc_id, {})
+                    for citing_doc in adj.get("cited_by", set()):
+                        citing_adj = citation_adjacency.get(citing_doc, {})
+                        for co_cited in citing_adj.get("cites", set()):
+                            if co_cited != doc_id:
+                                citation_boost_map[co_cited] += dscore * citation_decay * 0.3
 
-            if citation_boost:
-                max_cb = max(citation_boost.values())
-                if max_cb > 1e-9:
-                    citation_boost = {k: v / max_cb for k, v in citation_boost.items()}
+                if citation_boost_map:
+                    max_cb = max(citation_boost_map.values())
+                    if max_cb > 1e-9:
+                        citation_boost_map = {k: v / max_cb for k, v in citation_boost_map.items()}
 
-            # --- combine ---
+            # --- combine with decoupled weights ---
             scored = []
             for i, c in enumerate(chunks):
                 s = (
                     norm_bm25[i]
-                    + graph_alpha * hub_boost_arr[i]
-                    + neighbor_boost[i]
-                    + citation_decay * citation_boost.get(c.doc_id, 0.0)
+                    + _hw * hub_boost_arr[i]
+                    + _nw * neighbor_boost[i]
+                    + _cw * citation_boost_map.get(c.doc_id, 0.0)
                 )
                 scored.append((i, s))
 
@@ -689,6 +725,15 @@ def main() -> None:
                     help="Neighbor propagation decay factor (graph_neighbor_prop + graph_full)")
     ap.add_argument("--citation-decay", type=float, default=0.3,
                     help="Citation walk decay factor (graph_citation_walk + graph_full)")
+    # Independent component weights for graph_full (decoupled from individual method params)
+    ap.add_argument("--hub-weight", type=float, default=None,
+                    help="Hub prior weight in graph_full (default: same as --graph-alpha)")
+    ap.add_argument("--nprop-weight", type=float, default=None,
+                    help="Neighbor propagation weight in graph_full (default: 1.0, uses neighbor_decay internally)")
+    ap.add_argument("--cite-weight", type=float, default=None,
+                    help="Citation walk weight in graph_full (default: same as --citation-decay). Set to 0 to disable.")
+    ap.add_argument("--neighbor-hops", type=int, default=1,
+                    help="Number of neighbor propagation hops (1 or 2)")
     ap.add_argument("--max-chars", type=int, default=1800)
     args = ap.parse_args()
 
@@ -762,6 +807,10 @@ def main() -> None:
         graph_rerank_topn=args.graph_rerank_topn,
         neighbor_decay=args.neighbor_decay,
         citation_decay=args.citation_decay,
+        hub_weight=args.hub_weight,
+        nprop_weight=args.nprop_weight,
+        cite_weight=args.cite_weight,
+        neighbor_hops=args.neighbor_hops,
     )
 
     all_methods = [
