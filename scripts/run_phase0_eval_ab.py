@@ -165,11 +165,17 @@ def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
     return {k: v / mx for k, v in by_doc.items()}
 
 
-def load_element_hub_prior(hub_candidates_json: Path) -> Dict[str, float]:
-    """Element-level hub prior from enriched candidate pairs.
+def load_element_hub_prior(
+    hub_candidates_json: Path,
+    hubs_json: Path | None = None,
+) -> Dict[str, float]:
+    """Element-level hub prior from enriched candidate pairs + adjacent bridges.
 
     Each element that appears in any hub candidate pair gets a score proportional
     to its max quality_score across all pairs it participates in.
+
+    Additionally, elements from adjacent_bridge_elements (MinerU-mapped IDs
+    produced by enrich_hub_candidates.py) are included to expand hub coverage.
     """
     obj = json.loads(hub_candidates_json.read_text(encoding="utf-8"))
     pairs = obj.get("pairs", []) or []
@@ -180,18 +186,30 @@ def load_element_hub_prior(hub_candidates_json: Path) -> Dict[str, float]:
             if eid:
                 qs = float(p.get("quality_score", 1.0) or 1.0)
                 by_element[eid] = max(by_element.get(eid, 0.0), qs)
+
+    # Expand with adjacent_bridge_elements (MinerU IDs, from enrich_hub_candidates.py)
+    adj_elements = obj.get("adjacent_bridge_elements", {})
+    for eid, score in adj_elements.items():
+        eid = str(eid).strip()
+        if eid and eid not in by_element:
+            by_element[eid] = float(score)
+
     if not by_element:
         return {}
     mx = max(by_element.values())
+    if mx <= 0:
+        return {k: 0.0 for k in by_element}
     return {k: v / mx for k, v in by_element.items()}
 
 
-def load_element_adjacency(hub_candidates_json: Path) -> Dict[str, Set[str]]:
-    """Build element→neighbor element adjacency from hub candidate pairs.
+def load_element_adjacency(
+    hub_candidates_json: Path,
+    hubs_json: Path | None = None,
+) -> Dict[str, Set[str]]:
+    """Build element→neighbor element adjacency from hub candidate pairs + adjacent bridges.
 
-    Used for neighbor propagation: an element's BM25 relevance signal is
-    propagated to its intra-graph neighbors (elements co-referenced in hub
-    candidate paths or sharing a bridge hub).
+    Uses adjacent_bridge_adjacency (MinerU IDs) from enriched candidates for
+    expanded neighbor propagation coverage.
 
     Returns: element_id → set of neighbor element_ids
     """
@@ -204,6 +222,16 @@ def load_element_adjacency(hub_candidates_json: Path) -> Dict[str, Set[str]]:
         if a and b:
             adj[a].add(b)
             adj[b].add(a)
+
+    # Expand adjacency with adjacent_bridge_adjacency (MinerU IDs)
+    for ab in (obj.get("adjacent_bridge_adjacency") or []):
+        eids_i = [str(e).strip() for e in (ab.get("elements_i") or []) if str(e).strip()]
+        eids_j = [str(e).strip() for e in (ab.get("elements_j") or []) if str(e).strip()]
+        for ei in eids_i:
+            for ej in eids_j:
+                adj[ei].add(ej)
+                adj[ej].add(ei)
+
     return dict(adj)
 
 
@@ -434,23 +462,46 @@ def evaluate_method(
             for i, c in enumerate(chunks):
                 doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
 
-            # 1-hop citation walk: boost docs that cite or are cited by high-scoring docs.
-            # Gate: only propagate from docs whose relevance score is meaningfully high
-            # (> 0.5 of normalized range) to avoid flooding the graph from weak signals.
+            # Bidirectional citation walk with corrected asymmetry:
+            #   - "A cites B" → B is a reference that A builds upon → B likely has
+            #     foundational evidence. Weight = 1.0 (full propagation TO cited papers).
+            #   - "A cited_by C" → C builds on A → C may have follow-up evidence.
+            #     Weight = 0.5 (weaker, exploratory signal).
+            # Previous bug: weights were inverted ("cites" got full, "cited_by" got 0.5
+            # but "cites" means A→B where B is the cited paper, so we should boost B
+            # when A is relevant, which is correct direction. The real fix is to also
+            # propagate IN REVERSE: when B is relevant, boost A (papers that cite B).
             citation_boost: Dict[str, float] = defaultdict(float)
-            score_gate = 0.5
+            score_gate = 0.3  # lowered from 0.5 to catch more propagation sources
             for doc_id, dscore in doc_score.items():
                 if dscore < score_gate:
                     continue
                 adj = citation_adjacency.get(doc_id, {})
-                # "A cites B" is stronger signal than "A cited_by B" — use separate weights
+                # Forward: if A is relevant, boost papers A cites (foundational refs)
                 for neighbor_doc in adj.get("cites", set()):
                     citation_boost[neighbor_doc] += dscore * citation_decay
+                # Forward: if A is relevant, boost papers that cite A (follow-up work)
                 for neighbor_doc in adj.get("cited_by", set()):
                     citation_boost[neighbor_doc] += dscore * citation_decay * 0.5
 
-            # Normalize to [0, 1], then apply citation_decay as final scale factor
-            # so the max possible boost is citation_decay (not +1.0 unbounded)
+            # Reverse propagation: for each doc D that has high BM25 score,
+            # also boost docs that are cited BY D (i.e., D's references).
+            # This captures: "if evidence is in paper B, papers that cite B
+            # might also contain related evidence."
+            for doc_id, dscore in doc_score.items():
+                if dscore < score_gate:
+                    continue
+                # Find docs that cite this doc (reverse direction)
+                adj = citation_adjacency.get(doc_id, {})
+                for citing_doc in adj.get("cited_by", set()):
+                    # The citing doc likely discusses similar topics
+                    citing_adj = citation_adjacency.get(citing_doc, {})
+                    # Boost other papers that the citing doc also cites (2-hop)
+                    for co_cited in citing_adj.get("cites", set()):
+                        if co_cited != doc_id:
+                            citation_boost[co_cited] += dscore * citation_decay * 0.3
+
+            # Normalize to [0, 1]
             if citation_boost:
                 max_cb = max(citation_boost.values())
                 if max_cb > 1e-9:
@@ -499,13 +550,13 @@ def evaluate_method(
                             neighbor_decay,
                         )
 
-            # --- citation walk (cross-doc) ---
+            # --- citation walk (cross-doc, bidirectional + 2-hop co-citation) ---
             doc_score: Dict[str, float] = defaultdict(float)
             for i, c in enumerate(chunks):
                 doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
 
             citation_boost: Dict[str, float] = defaultdict(float)
-            score_gate = 0.5
+            score_gate = 0.3
             for doc_id, dscore in doc_score.items():
                 if dscore < score_gate:
                     continue
@@ -514,6 +565,17 @@ def evaluate_method(
                     citation_boost[nbr_doc] += dscore * citation_decay
                 for nbr_doc in adj.get("cited_by", set()):
                     citation_boost[nbr_doc] += dscore * citation_decay * 0.5
+
+            # 2-hop co-citation reverse propagation
+            for doc_id, dscore in doc_score.items():
+                if dscore < score_gate:
+                    continue
+                adj = citation_adjacency.get(doc_id, {})
+                for citing_doc in adj.get("cited_by", set()):
+                    citing_adj = citation_adjacency.get(citing_doc, {})
+                    for co_cited in citing_adj.get("cites", set()):
+                        if co_cited != doc_id:
+                            citation_boost[co_cited] += dscore * citation_decay * 0.3
 
             if citation_boost:
                 max_cb = max(citation_boost.values())
@@ -719,6 +781,35 @@ def main() -> None:
         metrics[m_name] = {k: v for k, v in res.items() if k != "per_query"}
         details[m_name] = res["per_query"]
 
+    # ---- Layered evaluation: split queries by hub_overlap ----
+    # For each query, check if any GT element_id is in element_hub_prior
+    hub_overlap_queries: List[Dict[str, Any]] = []
+    non_hub_queries: List[Dict[str, Any]] = []
+    for q in queries:
+        gt_eids = set(query_element_ids(q))
+        has_hub = any(eid in element_hub_prior for eid in gt_eids)
+        if has_hub:
+            hub_overlap_queries.append(q)
+        else:
+            non_hub_queries.append(q)
+
+    layered: Dict[str, Any] = {
+        "hub_overlap_count": len(hub_overlap_queries),
+        "non_hub_count": len(non_hub_queries),
+        "total": len(queries),
+        "hub_overlap_pct": round(len(hub_overlap_queries) / max(1, len(queries)) * 100, 2),
+    }
+
+    # Run layered eval for key methods on hub_overlap subset
+    if hub_overlap_queries:
+        for m_name in ["bm25", "graph_hub_rerank", "graph_neighbor_prop", "graph_full"]:
+            res = evaluate_method(m_name, hub_overlap_queries, **eval_kwargs)
+            layered[f"{m_name}_hub_subset"] = {
+                "n": res["n"],
+                "recall_at_10": res["recall_at_10"],
+                "mrr": res["mrr"],
+            }
+
     report = {
         "config": {
             "q1": str(args.q1),
@@ -741,6 +832,7 @@ def main() -> None:
             "n_chunks": len(chunks),
         },
         "metrics": metrics,
+        "layered": layered,
         "decision": decision(metrics["graph_full"], metrics["bm25"]),
         "details": details,
     }
@@ -757,6 +849,20 @@ def main() -> None:
         if "hub_bm25_overlap_mean" in m:
             extra = f"  hub_overlap={m['hub_bm25_overlap_mean']:.4f}"
         print(f"  {m_name:<20} {m['n']:>5}  {m['recall_at_10']:>10.4f}  {m['mrr']:>8.4f}{extra}")
+
+    # Print layered results
+    print(f"\n[phase0] Layered evaluation:")
+    print(f"  Hub-overlap queries: {layered['hub_overlap_count']} ({layered['hub_overlap_pct']}%)")
+    print(f"  Non-hub queries: {layered['non_hub_count']}")
+    if hub_overlap_queries:
+        print(f"\n  {'method':<22} {'n':>5}  {'Recall@10':>10}  {'MRR':>8}  (hub-overlap subset)")
+        print("  " + "-" * 55)
+        for m_name in ["bm25", "graph_hub_rerank", "graph_neighbor_prop", "graph_full"]:
+            key = f"{m_name}_hub_subset"
+            if key in layered:
+                m = layered[key]
+                print(f"    {m_name:<20} {m['n']:>5}  {m['recall_at_10']:>10.4f}  {m['mrr']:>8.4f}")
+
     print()
     print("[phase0] decision:", report["decision"])
 
