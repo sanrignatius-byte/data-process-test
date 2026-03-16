@@ -2614,7 +2614,7 @@ def main() -> None:
         elif args.provider == "openai":
             args.model = "gpt-4o"
         else:  # company
-            args.model = "claude-sonnet-4-20250514"
+            args.model = "gpt-5.4"
 
     # Load candidates
     cand_path = Path(args.candidates)

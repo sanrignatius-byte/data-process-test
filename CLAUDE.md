@@ -60,7 +60,7 @@ log_run(
 - **三项工程修复**：quality_score 从常量 0.8 → 拓扑特征加权 [0.13, 0.88]；hub coverage 从 9.53% → 90.42%（纳入 adjacent_backbone_bridges 397 个 element）；citation walk 加入双向 + 2-hop co-citation
 - **组件权重解耦**：新增 `--hub-weight/--nprop-weight/--cite-weight` 独立调参；最优配置 hw=0.15, nd=0.20, cw=0.0
 - **关键发现**：neighbor_prop（1-hop 邻域标签传播）是核心信号，能拯救 11 条 BM25 遗漏的 queries；citation_walk 为负贡献（doc-level 粒度与 element-level 证据定位不匹配），应在 graph_full 中关闭；2-hop 不如 1-hop
-- **MoDora 四工作流代码全部已实现**（A1/A2/B1/B2/C1/C3/D1 + Persona Hub），但尚未全量运行验证
+- **MoDora 工作流代码已实现并通过静态审计**（A1/A2/B1/B2/C1 + Persona Hub；其余子项以脚本能力为准），但尚未完成 500 candidates 全量运行验证
 - **产物文件**：`data111/hub_candidates_enriched_v3.json`、`data/phase0_eval_report_v3_tuned.json`
 
 ### 本轮关键结论
