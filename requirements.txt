@@ -1,32 +1,73 @@
 # MinerU Multimodal Contrastive Learning Data Factory
-# Requirements for NTU EEE Cluster (4x A2000 GPUs)
+# Requirements for cluster (3x GV100 GPUs, CUDA 12.8)
+# torch 系从 PyTorch 官方源安装：
+#   pip install torch==2.8.0 torchaudio==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu124
 
-# Core Dependencies
-pyyaml>=6.0
-tqdm>=4.66.0
-requests>=2.31.0
-aiohttp>=3.9.0
+# === PyTorch (CUDA 12.4, 兼容 CUDA 12.8 driver) ===
+torch==2.8.0
+torchaudio==2.8.0
+torchvision==0.23.0
+
+# === Core / IO ===
+aiohttp==3.13.3
+aiohappyeyeballs==2.6.1
+aiosignal==1.4.0
+async-timeout==5.0.1
+attrs==25.4.0
+certifi==2026.1.4
+charset-normalizer==3.4.4
+filelock==3.20.0
+frozenlist==1.8.0
+fsspec==2025.12.0
+idna==3.11
+multidict==6.7.1
+propcache==0.4.1
+requests==2.32.5
+urllib3==2.6.3
+yarl==1.22.0
+
+# === ML / Science ===
+numpy>=1.24.0
+scipy==1.15.3
+scikit-learn==1.7.2
+joblib==1.5.3
+threadpoolctl==3.6.0
+sympy==1.14.0
+mpmath==1.3.0
+networkx==3.4.2
+
+# === HuggingFace / Transformers ===
+huggingface-hub==0.36.0
+transformers==4.57.6
+tokenizers==0.22.2
+safetensors==0.7.0
+sentence-transformers>=2.2.0
+
+# === Vision / Multimodal ===
+av==16.1.0
+matplotlib==3.10.8
 Pillow>=10.0.0
+qwen-vl-utils==0.0.14
+PyQt6==6.9.1
 
-# MinerU (PDF Parsing) - Install with: pip install mineru[all]
-# Note: This is installed separately as it has complex dependencies
-# mineru[all]>=2.0.0
-
-# LLM APIs
+# === LLM APIs ===
 openai>=1.0.0
 anthropic>=0.18.0
 
-# Embeddings (optional, for hard negative mining)
-sentence-transformers>=2.2.0
-
-# Data Processing
-numpy>=1.24.0
+# === Data Processing ===
 pandas>=2.0.0
+PyYAML==6.0.3
+regex==2026.1.15
+tqdm==4.67.1
+rank-bm25==0.2.2
 
-# Async Support
-asyncio-throttle>=1.0.0
+# === Templates / Misc ===
+Jinja2==3.1.6
+MarkupSafe==2.1.5
+mkl-service==2.5.2
+python-dotenv>=1.0.0
 
-# Development
+# === Development ===
 pytest>=7.0.0
 black>=23.0.0
 isort>=5.12.0
