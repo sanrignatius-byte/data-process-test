@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
 REPO_ROOTS = (
+    "/home/d00855555/query_myx/data-process-test/",
     "/projects/_hdd/myyyx1/data-process-test/",
     "/projects/myyyx1/data-process-test/",
 )

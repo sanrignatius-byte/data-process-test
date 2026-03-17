@@ -2561,6 +2561,7 @@ def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
 # ──────────────────────────────────────────────────────────────
 
 REPO_ROOTS = [
+    "/home/d00855555/query_myx/data-process-test/",
     "/projects/_hdd/myyyx1/data-process-test/",
     "/projects/myyyx1/data-process-test/",
 ]

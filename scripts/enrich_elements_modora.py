@@ -156,6 +156,7 @@ Produce a structured description with exactly three fields:
 # Known path prefixes from different environments that should be
 # re-rooted to PROJECT_ROOT when running elsewhere.
 _KNOWN_PREFIXES = [
+    "/home/d00855555/query_myx/data-process-test/",
     "/projects/_hdd/myyyx1/data-process-test/",
     "/projects/myyyx1/data-process-test/",
 ]

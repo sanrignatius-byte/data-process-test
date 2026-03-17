@@ -229,7 +229,8 @@ def main():
     ban_prefixes = ["how does figure", "what does figure",
                     "what does the figure", "what is shown", "what is depicted"]
 
-    repo_roots = ["/projects/_hdd/myyyx1/data-process-test/",
+    repo_roots = ["/home/d00855555/query_myx/data-process-test/",
+                  "/projects/_hdd/myyyx1/data-process-test/",
                   "/projects/myyyx1/data-process-test/"]
 
     with open(queries_path, 'w', encoding='utf-8') as f:
