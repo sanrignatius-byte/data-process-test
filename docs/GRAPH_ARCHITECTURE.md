@@ -1,6 +1,21 @@
-# Document Graph for Document Understanding — 技术方案 v3
+# Document Graph for Document Understanding — 技术方案 v4
 
-> 2026-03-17 | 汇报版
+> 2026-03-17 | 汇报版 + 专利素材
+
+---
+
+## 术语定义
+
+| 术语 | 定义 |
+|------|------|
+| **Bridge Hub（桥接枢纽节点）** | 同时引用**至少两种不同模态**元素（figure / table / formula 中的两种及以上）的段落节点。是跨模态信息传播的关键中间节点 |
+| **Authority Node（权威节点）** | 被大量其他节点引用（高入度），但自身不桥接不同模态的节点。是信息的目的地而非中转站 |
+| **Adjacent Backbone Bridge（相邻骨干桥接）** | 文档阅读顺序中相邻的两个段落节点，分别引用不同模态的元素，且通过 backbone 边连接的桥接结构 |
+| **Hub 覆盖集** | 所有 Bridge Hub 及 Adjacent Backbone Bridge 所引用的元素节点的集合 |
+| **Hub 覆盖率（hub_overlap）** | 评测集中 ground truth 证据落入 hub 覆盖集的 **query 占比**（分母为总 query 数） |
+| **1-hop 邻域** | 与目标节点通过 paragraph_ref / element_ref / backbone 边直接连接的节点集合 |
+| **显式引用标记** | 文档中标记元素间引用关系的结构化标注，如 LaTeX `\ref{}`、Word 交叉引用、HTML `<a>` 锚点等 |
+| **chunk** | 文档解析后的最小检索单元，对应一个多模态元素（段落 / 图表 / 表格 / 公式）及其上下文 |
 
 ---
 
@@ -8,7 +23,9 @@
 
 ### 1.1 要解决什么问题
 
-学术论文中，一个研究问题的完整回答往往分散在**多种模态**的元素里——例如"模型的公平性如何随数据分布变化"，答案的一半在 **Figure 3**（性能曲线趋势）、另一半在 **Table 2**（不同子群的精确数值）。我们需要一个检索系统能**同时定位到这两个跨模态证据**。
+**技术问题**：在多模态文档的信息检索中，一个查询所需的完整证据往往分散在**不同模态**的元素中——例如"模型的公平性如何随数据分布变化"，答案的一半在 **Figure 3**（性能曲线趋势）、另一半在 **Table 2**（不同子群的精确数值）。现有基于词面匹配的检索方法仅对单个 chunk 独立打分，未利用文档自身的显式结构信号建立不同模态元素间的关联，导致**跨模态证据的召回率和准确率低**。
+
+本方法要解决的核心技术问题是：**如何在不依赖大语言模型的前提下，利用文档的显式结构信号建立多模态元素间的关联，提升跨模态证据的检索召回率和排序准确率，同时保持低成本可扩展性。**
 
 ### 1.2 BM25 为什么不够
 
@@ -18,7 +35,7 @@ BM25 是纯词面匹配。当 query 描述 figure 中的"accuracy curve"，BM25 
 
 ### 1.3 核心洞察：文档自带结构信号
 
-学术论文（尤其有 LaTeX 源码的）本身包含丰富的**显式结构信号**：
+多模态文档（尤其是学术论文、技术报告等含显式引用标记的文档）本身包含丰富的**显式结构信号**：
 
 ```
 论文原文中的一段话（paragraph）：
@@ -26,11 +43,11 @@ BM25 是纯词面匹配。当 query 描述 figure 中的"accuracy curve"，BM25 
    for minority groups. The exact numbers are in Table 2."
 ```
 
-这段话里有两个 `\ref{}`——一个指向 Figure 3，一个指向 Table 2。这意味着：
-- 这个**段落**是一个**桥梁（Bridge）**：它同时连接了 figure 和 table 两种模态
+这段话里有两个显式引用标记（如 LaTeX `\ref{}`、Word 交叉引用等）——一个指向 Figure 3，一个指向 Table 2。这意味着：
+- 这个**段落**是一个**桥梁（Bridge Hub）**：它同时连接了 figure 和 table 两种模态
 - 如果 BM25 命中了 Figure 3，我们**沿着这个桥梁段落的引用边**就能找到 Table 2
 
-**这就是本方法的核心思路**：把这些已有的引用关系、段落顺序构建成图，利用图的拓扑结构做检索增强。整个过程**零 LLM 成本**——不需要大模型提取任何东西，信号来自文档本身。
+**这就是本方法的核心思路**：把这些已有的引用关系、段落顺序构建成图，利用图的拓扑结构做检索增强。图构建与 rerank 全过程**零 LLM 调用**——不需要大模型提取任何东西，信号来自文档本身的显式结构。
 
 ---
 
@@ -42,7 +59,7 @@ BM25 是纯词面匹配。当 query 描述 figure 中的"accuracy curve"，BM25 
 
 **"异构"**：图中有 4 种节点（paragraph / figure / table / formula），不同类型节点间的边具有不同语义——paragraph→figure 是"这段话讨论了这张图"，paragraph→paragraph（backbone）是"这两段在原文中紧邻"。
 
-**核心主张**：仅靠文档解析器的输出 + LaTeX 显式引用关系，就能自动构建这样的多层异构图，无需 LLM 参与。
+**核心主张**：仅靠文档解析器的输出 + 文档内显式引用标记（如 LaTeX `\ref{}`、Word 交叉引用、HTML 锚点等），就能自动构建这样的多层异构图，无需 LLM 参与。
 
 ### 发明点 2：Bridge Hub 识别（桥接枢纽识别）
 
@@ -63,7 +80,7 @@ BM25 是纯词面匹配。当 query 描述 figure 中的"accuracy curve"，BM25 
 
 连续两段各引用不同模态——这在学术写作中极为常见（先说"图上看到什么"，接着说"表里具体数字"）。虽然没有单个段落同时 `\ref{}` 两种模态，但**阅读顺序上的相邻性**同样编码了跨模态关联。
 
-**数据验证**：Bridge Hub 60 个（覆盖 31 篇），Adjacent Backbone Bridge 369 条（覆盖 68 篇）。纳入 adjacent bridges 后，hub 覆盖率从 9.53% 跃升至 **90.42%**，是效果提升最大的单一因素。
+**数据验证**：Bridge Hub 60 个（覆盖 31 篇），Adjacent Backbone Bridge 369 条（覆盖 68 篇）。纳入 adjacent bridges 后，hub 覆盖率（评测集中 ground truth 证据落入 hub 覆盖集的 query 占比）从 9.53%（25/261）跃升至 **90.42%**（236/261），是效果提升最大的单一因素。
 
 ### 发明点 3：1-hop Neighbor Propagation（邻域标签传播检索增强）
 
@@ -94,21 +111,21 @@ $$G = (V, E, \tau_V, \tau_E)$$
 
 | 类型 | 构建方式 | 数量 | 编码的语义 |
 |------|---------|------|-----------|
-| **backbone** | 同文档段落按行号排序 → $p_i \to p_{i+1}$ | 1269 | **阅读顺序**：连续段落在原文中紧邻，语义最相关。Adjacent Backbone Bridge 就靠这种边发现 |
-| **paragraph_ref** | 段落文本中出现 `\ref{label}` → 段落→被引元素 | 1688 | **"这段话讨论了这个元素"**：Bridge Hub 就是通过这种边同时指向多种模态 |
-| **element_ref** | 两个非 paragraph 元素间的直接 `\ref{}` | 80 | **元素间直接引用**（高置信但稀少） |
-| **cross_doc_cite** | `.bbl` 参考文献标题与 corpus 内文档做模糊匹配（Jaccard ≥ 0.55） | 434 | **跨文档学术引用**：论文 A 引用了论文 B |
+| **backbone** | 同文档段落按解析器输出的阅读顺序排序 → $p_i \to p_{i+1}$ | 1269 | **阅读顺序**：连续段落在原文中紧邻，语义最相关。Adjacent Backbone Bridge 就靠这种边发现 |
+| **paragraph_ref** | 段落文本中出现显式引用标记（如 `\ref{label}`）→ 段落→被引元素 | 1688 | **"这段话讨论了这个元素"**：Bridge Hub 就是通过这种边同时指向多种模态 |
+| **element_ref** | 两个非 paragraph 元素间的直接显式引用 | 80 | **元素间直接引用**（高置信但稀少） |
+| **cross_doc_cite** | 参考文献列表（如 `.bbl`）中的标题与 corpus 内文档做模糊匹配（基于空格分词的 token 集合 Jaccard ≥ 0.55） | 434 | **跨文档引用**：文档 A 引用了文档 B |
 
 当前图规模：**2551 nodes / 3471 edges**，覆盖 82 篇文档。
 
-### 3.3 Label 匹配（LaTeX label → 解析器元素）
+### 3.3 引用标记与解析器元素的对齐
 
-LaTeX 中写 `\ref{fig:roc}` 指的是一个 label，但文档解析器输出的是 `figure_3` 这样的编号元素。两者之间需要做匹配：
+文档源码中的引用标记（如 LaTeX `\ref{fig:roc}`）指向一个内部 label，但文档解析器输出的是 `figure_3` 这样的编号元素。两者之间需要做对齐匹配：
 
-1. **数字提取**：`fig:3` → 找同文档中 `number=3` 的 figure（高置信）
-2. **Caption Jaccard fallback**：若数字匹配失败，用 caption 文本的 token overlap（阈值 0.25）
+1. **数字提取**：从引用标记中提取数字（如 `fig:3` → `3`），匹配同文档中 `number=3` 的同类型元素（高置信）
+2. **Caption Jaccard fallback**：若数字匹配失败，对引用上下文与候选元素 caption 做基于空格分词的 token 集合 Jaccard 相似度匹配（阈值 0.25）
 
-当前匹配率：**49.8%**（主要瓶颈：MinerU 编号与 LaTeX 编号有偏移）。
+当前匹配率：**49.8%**（主要瓶颈：解析器编号与源码编号有偏移）。纯 backbone 边不依赖此对齐步骤，因此即使匹配率有限，阅读顺序信号仍可完整保留。
 
 ---
 
@@ -147,9 +164,10 @@ Step 2 — Hub Prior（静态先验）
     直觉：hub 邻域内的元素更可能是有价值的跨模态证据，给予微量加分
 
 Step 3 — 1-hop Neighbor Propagation（动态传播）
-    对 c 的每个图邻居 n（通过 paragraph_ref / element_ref / backbone 相连）：
-        prop ← max(s_bm25(n)) × (1 - λ_decay)
-        s(c) ← max(s(c), s(c) + prop)
+    neighbor_boost(c) ← λ × max_{n ∈ N(c)} s_bm25(n)
+    其中 N(c) 为 c 在图 G 中通过 paragraph_ref / element_ref / backbone 边
+    直接连接的 1-hop 邻域节点集合，λ = 1 - λ_decay
+    s(c) ← s(c) + neighbor_boost(c)
     直觉：BM25 命中了 figure → 分数沿图边流向关联的 table → table 排名上升
 
 Step 4 — 输出 reranked top-k
@@ -178,9 +196,10 @@ BM25 打分:
   paragraph_17 —paragraph_ref→ table_2
   (paragraph_17 是 bridge hub：同时引用了 figure 和 table)
 
-1-hop propagation:
-  figure_3 的邻居包含 table_2（通过 paragraph_17 桥接）
-  table_2.score ← 0.31 + 0.82 × 0.80 = 0.966   ← 大幅提升
+1-hop propagation（λ = 1 - 0.20 = 0.80）:
+  table_2 的 1-hop 邻域 N(table_2) 包含 figure_3（通过 paragraph_17 桥接）
+  neighbor_boost = 0.80 × max(s_bm25(n)) = 0.80 × 0.82 = 0.656
+  table_2.score ← 0.31 + 0.656 = 0.966   ← 大幅提升
 
 Reranked top-10: figure_3 和 table_2 都进入 → 跨模态 evidence pair 完整召回 ✅
 ```
@@ -220,7 +239,7 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 | **hub_prior 是辅助信号** | 独立仅 +0.0015 MRR，但与 neighbor_prop 协同后总增益达 +0.0403 |
 | **citation_walk 为负** | -0.0153 Recall，0 wins / 4 losses → 已关闭（doc-level 粒度与 element-level 需求错位） |
 | **1-hop > 2-hop** | 2-hop MRR 0.5962 < 1-hop 0.6045（扩散引入噪声） |
-| **hub_overlap 是决定因素** | 9.53% → 90.42%（纳入 adjacent backbone bridges）是最大单一增益来源 |
+| **hub_overlap 是决定因素** | 9.53%（25/261 queries）→ 90.42%（236/261 queries）（纳入 adjacent backbone bridges）是最大单一增益来源 |
 
 ### 迭代过程
 
@@ -241,32 +260,40 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 | 层级 2（中） | Embedding 语义边 / MoDora 元素增强 | 可选 | 千篇 |
 | 层级 3（高） | Figure 精分 / Hub 摘要重写 | 是 | 百篇 |
 
-**层级 1 已产生 +0.0403 MRR 增益。** 这意味着无需任何 LLM 调用，仅靠文档自身结构信号即可显著超越 BM25。
+**层级 1 已产生 +0.0403 MRR 增益。** 这意味着图构建与 rerank 环节无需任何 LLM 调用，仅靠文档自身结构信号即可超越 BM25。
 
 ---
 
 ## 9. vs 现有方法
 
-| 维度 | 本方法 | GraphRAG | Dense Retrieval |
-|------|--------|----------|-----------------|
-| 建图成本 | **零 LLM** | 极高（per-doc LLM 实体提取） | 无图 |
-| 多模态 | **原生支持**（fig/tab/formula 为一等节点） | 仅文本实体 | 仅文本 |
-| 跨模态桥接 | **结构化（1-hop prop via bridge hub）** | 实体共现（无模态区分） | 无 |
-| 可扩展 | **万篇+** | 百篇级（token 成本线性增） | 万篇+ |
+**主要参考文献**：BM25 [Robertson et al., "The Probabilistic Relevance Framework: BM25 and Beyond", FnTIR 2009]；GraphRAG [Edge et al., "From Local to Global: A Graph RAG Approach to Query-Focused Summarization", arXiv 2024]；PRF [Rocchio, 1971; Lavrenko & Croft, "Relevance-Based Language Models", SIGIR 2001]。
+
+| 维度 | 本方法 | GraphRAG | PRF | Dense Retrieval |
+|------|--------|----------|-----|-----------------|
+| 建图成本 | **零 LLM**（图构建+rerank） | 极高（per-doc LLM 实体提取） | 无图 | 无图 |
+| 增强对象 | **候选 chunk 的分数**（沿结构边传播） | 社区摘要→全局答案 | **query 本身**（加词扩展） | 无增强 |
+| 增强信号来源 | **文档显式结构边** | LLM 提取的语义关系 | 初始 top-k 文档的词频 | 无 |
+| 多模态 | **原生支持**（fig/tab/formula 为一等节点） | 仅文本实体 | 无（仅文本） | 仅文本 |
+| 跨模态桥接 | **结构化（1-hop prop via bridge hub）** | 实体共现（无模态区分） | 无 | 无 |
+| 可扩展 | **万篇+** | 百篇级（token 成本线性增） | 万篇+ | 万篇+ |
+
+**与 PRF 的核心区别**：PRF 扩展的是 query 的表达（在 query 中加入 top-k 文档的高频词），本方法扩展的是**候选 chunk 的分数**（沿文档结构边从高分邻居传播分数到低分邻居）。PRF 无法利用文档内的结构关系，也不区分模态。
 
 **新颖性总结**：
-- **信号来源不同**：GraphRAG 靠 LLM 提取语义关系；本方法靠文档已有的显式结构（`\ref{}`、阅读顺序）——成本低 2-3 个数量级
+- **信号来源不同**：GraphRAG 靠 LLM 提取语义关系；PRF 靠初始检索结果的词频统计；本方法靠文档已有的显式结构（引用标记、阅读顺序）——零额外 LLM 成本
 - **原生多模态**：figure / table / formula 是图中的一等公民节点，不是文本实体的附属
-- **桥接机制独特**：Bridge Hub + Adjacent Backbone Bridge 是本方法特有的跨模态中间节点识别方式
+- **桥接机制独特**：Bridge Hub + Adjacent Backbone Bridge 是本方法特有的跨模态中间节点识别方式，利用了学术写作中"先描图再述表"的独有 pattern
 
 ---
 
-## 10. 已知局限 & 下一步
+## 10. 改进方向 & 下一步
 
-| 局限 | 影响 | 下一步 |
-|------|------|--------|
-| 评测集由本系统辅助生成 | 循环评估风险 | P0：引入外部标注 + 统计显著性检验 |
-| 86 篇 / 261 queries 规模有限 | 泛化性待检验 | P0：扩到 500+ queries（real-user + persona） |
-| 3/4 边类型依赖 LaTeX | 纯 PDF 适用性受限 | P1：backbone + 正则引用模式替代 |
-| Citation walk 为负 | 跨文档信号未被利用 | P1：element-level cross-doc linking |
-| 35/82 篇零候选 | 覆盖不均匀 | P1：降 cap / adj_bridge 单独生成 |
+| 当前状态 | 改进方向 | 优先级 |
+|----------|---------|--------|
+| 评测集 261 queries（本系统辅助生成） | 引入外部标注 + bootstrap CI 统计显著性检验 | P0 |
+| 86 篇文档规模 | 扩到 500+ queries（real-user + persona），验证泛化性 | P0 |
+| paragraph_ref / element_ref 边当前基于 LaTeX 引用标记 | 扩展至正则引用模式（"Figure X" / "Table Y"），使方法适用于纯 PDF 文档 | P1 |
+| Citation walk 当前为负贡献（doc-level 粒度） | 改进为 element-level cross-doc linking | P1 |
+| 35/82 篇零候选 | 降 cap / Adjacent Backbone Bridge 单独生成路径 | P1 |
+
+> **注**：backbone 边（阅读顺序）和 Adjacent Backbone Bridge 不依赖任何引用标记格式，仅依赖文档解析器的段落顺序输出，因此天然适用于任何格式的文档。

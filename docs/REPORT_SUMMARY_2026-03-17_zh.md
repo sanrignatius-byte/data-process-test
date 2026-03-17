@@ -8,14 +8,14 @@
 
 ### 本周最重要的一件事
 
-**Document Graph 首次显著超越 BM25 基线，Phase0 效果验证达标。**
+**Document Graph 首次超越 BM25 基线，Phase0 效果验证达标。**
 
 | 指标 | graph_full | vs BM25 | 达标阈值 |
 |------|-----------|---------|---------|
 | Recall@10 | **0.8736** | **+0.0269** (+3.2%) | — |
 | MRR | **0.6045** | **+0.0403** (+7.1%) | ≥ +0.03 ✅ |
 
-`continue_expand = True` ✅ — 核心机制：bridge hub topology → element adjacency → 1-hop neighbor propagation，全程纯规则，**零 LLM 成本**。
+`continue_expand = True` ✅ — 核心机制：bridge hub topology → element adjacency → 1-hop neighbor propagation，图构建与 rerank 全程纯规则，**零额外 LLM 调用**。
 
 ### 本周产出总览
 
@@ -24,7 +24,7 @@
 | Phase0 Eval 达标 | graph_full MRR +0.0403 vs BM25，首次超越 |
 | 三项工程修复 | quality_score 重建 + hub coverage ×9.5（9.53%→90.42%）+ citation walk 方向修复 |
 | 组件权重解耦 | `--hub-weight / --nprop-weight / --cite-weight` 独立调参，最优配置锁定 |
-| MoDora 全四工作流代码完成 | A1/A2 + B1/B2 + C1/C3 + D1 + Persona Hub，全部已实现 |
+| MoDora 全四工作流代码完成 | A1/A2 + B1/B2 + C1/C3 + D1 + Persona Hub，全部已实现（待全量验证） |
 | Graph 技术方案文档 v3 | `GRAPH_ARCHITECTURE.md` 从 42 行框架重写为完整技术方案 |
 
 本周合并 **21 个 PR**（#82 ~ #103），55 个 commits。
@@ -51,7 +51,7 @@
 
 - 评测集：261 条 QC-pass L1 dual-evidence queries（v4_4_run1: 113 + v3: 152）
 - 候选库：1314 chunks（76 篇文档）
-- 基线：BM25（k1=1.5, b=0.75）+ TF-IDF dense
+- 基线：BM25（k1=1.5, b=0.75）稀疏检索 + TF-IDF dense（TF-IDF 向量余弦相似度检索）
 
 ### 3.2 迭代过程（从 -0.009 到 +0.040）
 
@@ -67,7 +67,7 @@
 | 修复项 | 修复前 | 修复后 | 影响 |
 |--------|--------|--------|------|
 | quality_score | 常量 0.8（无区分度） | 拓扑加权 [0.13, 0.88]（31 值） | hub prior 有区分度 |
-| **hub coverage** | **161 元素，9.53%** | **403 元素，90.42%** | **最大单一增益来源** |
+| **hub coverage** | **161 元素，query 覆盖率 9.53%（25/261）** | **403 元素，query 覆盖率 90.42%（236/261）** | **最大单一增益来源** |
 | citation walk | 单向传播 | 双向 + 2-hop co-citation | 负贡献减弱（仍为负，最终关闭） |
 
 hub coverage 提升的核心手段：将 **369 条 adjacent backbone bridges** 纳入 hub 覆盖集（纯规则，零额外成本）。
@@ -76,14 +76,14 @@ hub coverage 提升的核心手段：将 **369 条 adjacent backbone bridges** �
 
 | 组件 | MRR Δ vs BM25 | 角色 |
 |------|---------------|------|
-| **1-hop neighbor_prop** | **+0.0313** | 核心信号（~70% 增益），拯救 10 条 BM25 miss queries |
+| **1-hop neighbor_prop** | **+0.0313** | 核心信号（~70% 增益），单组件拯救 10 条 BM25 miss queries |
 | hub_prior | +0.0015 | 静态辅助，与 neighbor_prop 协同 |
 | citation_walk | **-0.0024** | 负贡献（doc-level vs element-level 错位），已关闭 |
 | 2-hop propagation | 低于 1-hop | 扩散噪声，不采用 |
 
 ### 3.5 Per-query 分析
 
-Graph full 拯救 **11 条** BM25 完全遗漏的 queries → **全部是跨模态 dual-evidence**（fig+tab: 5, fig+formula: 4, formula+tab: 2）。这验证了 neighbor propagation 在跨模态桥接场景的独特价值。
+Graph full（neighbor_prop + hub_prior 组合）拯救 **11 条** BM25 完全遗漏的 queries（neighbor_prop 单组件为 10 条，+1 条来自 hub_prior 协同）→ **全部是跨模态 dual-evidence**（fig+tab: 5, fig+formula: 4, formula+tab: 2）。这验证了 neighbor propagation 在跨模态桥接场景的独特价值。
 
 ---
 
