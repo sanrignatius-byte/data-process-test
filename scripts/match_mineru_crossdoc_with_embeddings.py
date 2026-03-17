@@ -24,6 +24,7 @@ import numpy as np
 
 
 REPO_ROOTS = (
+    "/home/d00855555/query_myx/data-process-test/",
     "/projects/_hdd/myyyx1/data-process-test/",
     "/projects/myyyx1/data-process-test/",
 )
