@@ -39,7 +39,7 @@
 | Phase0 Eval 达标 | graph_full MRR +0.0403 vs BM25，首次超越 |
 | 三项工程修复 | quality_score 重建 + hub coverage ×9.5（9.53%→90.42%）+ citation walk 方向修复 |
 | 组件权重解耦 | `--hub-weight / --nprop-weight / --cite-weight` 独立调参，最优配置锁定 |
-| MoDora 全四工作流代码完成 | A1/A2 + B1/B2 + C1/C3 + D1 + Persona Hub，全部已实现（待全量验证） |
+| MoDora 全四工作流代码完成 | A1/A2 + B1/B2 + C1/C3 + D1 + PersonaHub 多样化人设，全部已实现（待全量验证） |
 | Graph 技术方案文档 v3 | `GRAPH_ARCHITECTURE.md` 从 42 行框架重写为完整技术方案 |
 
 > **产出术语补充**
@@ -48,7 +48,7 @@
 > - **hub coverage（Hub 覆盖率）**：评测集中 ground truth 证据落入 hub 覆盖集的 query 占比。9.53% 意味着只有约 25 条 query 的证据元素被 hub 识别覆盖到——图信号根本无法施加影响。提升到 90.42% 后，图才有足够的"作用面积"产生效果。
 > - **citation walk（引用随机游走）**：沿跨文档引用边传播分数的机制——如果论文 A 引用了论文 B，把 A 中命中 chunk 的部分分数传给 B 中的相关 chunk。因为引用边是文档级而非元素级（知道 A 引用了 B，但不知道 A 的哪段引用了 B 的哪个元素），导致信号太粗糙，实验结果为负贡献，已关闭。
 > - **MoDora**：一种面向文档理解的上游语义增强方法（Modality-aware Document Representation）。我们借鉴其核心思路——对 figure/table/formula 三类元素用 LLM 生成结构化描述（enriched content），增强元素的语义密度——但不迁移其检索框架。四个工作流覆盖节点粒度细化（A）、real-user 查询风格（B）、enrichment 质量闸门（C）、QC 体系重构（D）。
-> - **Persona Hub**：5 类模拟用户人设（PhD 学生 / 偷懒读者 / 仔细读者 / 工业实践者 / 怀疑论者），在 query 生成时随机分配，目的是增强生成 query 的多样性和自然度。
+> - **PersonaHub 多样化人设**：借鉴 PersonaHub（Ge et al., 2024, arXiv:2406.20094, Tencent AI Lab）的方法论——用多样化的人设描述驱动 LLM 生成差异化数据。我们从 PersonaHub 的 Text-to-Persona 格式出发，针对学术文档理解场景策展了 50 类读者人设（涵盖 PhD 学生、资深审稿人、产业工程师、政策分析师、跨领域研究者等），在 query 生成时按 pair_id 哈希确定性分配，提升查询的多样性和自然度。人设数据文件：`data/personahub_academic_personas.json`。
 
 本周合并 **21 个 PR**（#82 ~ #103），55 个 commits。
 
@@ -147,7 +147,7 @@ Graph full（neighbor_prop + hub_prior 组合）拯救 **11 条** BM25 完全遗
 | C1: Enrichment 噪声过滤器 | ✅ 代码完成 | 同上 |
 | C3: Hub summary 压缩重写 | ✅ 代码完成 | `scripts/enrich_hub_candidates.py` |
 | D1: `qc_real_user_query()` | ✅ 代码完成 | 同上 |
-| Persona Hub (5 类) | ✅ 代码完成 | 同上 |
+| PersonaHub 多样化人设 (50 类) | ✅ 代码完成 | 同上 |
 
 **以上均为代码就绪，尚未进行 500 candidates 全量运行验证。**
 
@@ -186,12 +186,17 @@ Graph full（neighbor_prop + hub_prior 组合）拯救 **11 条** BM25 完全遗
 
 | 优先级 | 事项 | 交付标准 |
 |--------|------|---------|
-| **P0** | 全量生成 real-user + persona queries（500 candidates） | `--provider company --query-style mixed --use-persona`，产出 400+ 新 queries |
+| **P0** | 全量生成 real-user + PersonaHub persona queries（500 candidates） | `--provider company --query-style mixed --use-persona`，50 类 PersonaHub 人设驱动，产出 400+ 新 queries |
 | **P0** | 扩大评测集 + 重跑 eval | 新 queries 上 graph_full 仍优于 BM25（验证泛化性） |
 | **P0** | 跑 MoDora element enrichment | 产出 `multimodal_elements_enriched.json`，使 C1 噪声过滤在全量生成中生效 |
+| **P0** | **C-Pool 泛用型查询库（Mentor 要求）** | 人工整理 50-100 条通用学术 query（总结/动机/方法/贡献/跨文档连接），QC 只验 evidence localization。详见下方说明 |
 | P1 | 修复 35/82 篇零候选文档 | 降 per_combo_cap 或 adj_bridge 单独路径 |
 | P1 | Citation walk 改进方向探索 | element-level cross-doc linking 替代 doc-level citation 边 |
 | P1 | 统计显著性检验 | bootstrap CI + paired test，加强实验说服力 |
+
+**C-Pool 泛用型查询库说明**（Mentor 2026-03-12 提出）：
+
+C-Pool 是一组**不依赖特定文档内容**的通用学术查询模板，用于测试检索系统在泛化场景下的鲁棒性。典型 query 如"这篇论文的核心贡献是什么？""方法部分的 baseline 对比有哪些？""Figure 1 展示了什么？"等。这类 query 不走 multihop 生成流程，由人工策展 + 轻量模板扩展生成。QC 策略为只验 evidence localization 准确性，不评 query 本身的质量。当前状态：**尚未启动**，计划下周与 PersonaHub persona 全量生成并行推进。
 
 ---
 
@@ -205,7 +210,7 @@ Graph full（neighbor_prop + hub_prior 组合）拯救 **11 条** BM25 完全遗
 | **Graph 效果验证** | **✅ MRR +0.0403** | 本周核心成果 |
 | **组件权重解耦** | **✅ 最优配置锁定** | hw=0.15, nd=0.20, cw=0.0 |
 | MoDora enrichment 数据 | 1285/1316（97.6%） | — |
-| MoDora 四工作流代码 | ✅ 全部完成 | 本周补齐 A1/A2 + Persona Hub |
+| MoDora 四工作流代码 | ✅ 全部完成 | 本周补齐 A1/A2 + PersonaHub 人设 |
 | v4.5 生成链路 | 代码完成 + bug 修复 | PR #102 |
 | 公司 API | 就绪 | — |
 | Graph 技术方案文档 | **v3 重写完成** | 支撑专利 + 汇报 |

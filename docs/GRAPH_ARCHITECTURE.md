@@ -291,7 +291,7 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 | 当前状态 | 改进方向 | 优先级 |
 |----------|---------|--------|
 | 评测集 261 queries（本系统辅助生成） | 引入外部标注 + bootstrap CI 统计显著性检验 | P0 |
-| 86 篇文档规模 | 扩到 500+ queries（real-user + persona），验证泛化性 | P0 |
+| 86 篇文档规模 | 扩到 500+ queries（real-user + PersonaHub persona），验证泛化性 | P0 |
 | paragraph_ref / element_ref 边当前基于 LaTeX 引用标记 | 扩展至正则引用模式（"Figure X" / "Table Y"），使方法适用于纯 PDF 文档 | P1 |
 | Citation walk 当前为负贡献（doc-level 粒度） | 改进为 element-level cross-doc linking | P1 |
 | 35/82 篇零候选 | 降 cap / Adjacent Backbone Bridge 单独生成路径 | P1 |
