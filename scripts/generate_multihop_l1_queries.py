@@ -1953,6 +1953,233 @@ def qc_real_user_query(
 
 
 # ──────────────────────────────────────────────────────────────
+# M4 Multi-hop Reasoning Depth QC (Schema 1 validation)
+# ──────────────────────────────────────────────────────────────
+
+# Causal/logical connectors that indicate serial reasoning (step N depends on step N-1)
+_SERIAL_REASONING_MARKERS = re.compile(
+    r"\b(because|therefore|thus|hence|consequently|as a result|this (?:means|implies|suggests|explains|shows)|"
+    r"which (?:means|implies|suggests|explains|leads|causes)|"
+    r"due to|owing to|given that|since .{5,30}then|"
+    r"if .{5,40}then|from .{5,40}(?:follows|we (?:can|see|know))|"
+    r"(?:step|first|second|third|next|finally|building on|combining))\b",
+    re.IGNORECASE,
+)
+
+# Parallel/additive connectors that indicate evidence combination (not serial reasoning)
+_PARALLEL_EVIDENCE_MARKERS = re.compile(
+    r"\b((?:both|together|combined|alongside|in addition|additionally|also|moreover|furthermore|"
+    r"similarly|likewise|and .{0,10}respectively|while .{5,30}also))\b",
+    re.IGNORECASE,
+)
+
+# Evidence type indicators for reasoning_steps classification
+_EVIDENCE_TYPE_PATTERNS = {
+    "observation": re.compile(r"\b(show|display|illustrate|reveal|depict|present|indicate|demonstrate)\b", re.I),
+    "attribution": re.compile(r"\b(cause|due to|because|result from|attribute|ablation|removing|without)\b", re.I),
+    "explanation": re.compile(r"\b(prove|equation|formula|inequality|theorem|bound|derive|constraint)\b", re.I),
+    "verification": re.compile(r"\b(confirm|validate|verify|consistent with|align|match|support)\b", re.I),
+    "prediction": re.compile(r"\b(predict|expect|would|should|if .{5,30} then|hypothesize|imply)\b", re.I),
+}
+
+
+def classify_reasoning_structure(
+    reasoning_chain: str,
+    answer: str,
+    evidence_spans: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Classify the reasoning structure of a query as parallel vs serial.
+
+    Returns a dict with:
+      - reasoning_depth_estimate: int (1=single, 2=parallel, 3+=serial chain)
+      - structure: "parallel" | "serial" | "mixed"
+      - serial_markers_found: list of matched serial reasoning phrases
+      - parallel_markers_found: list of matched parallel evidence phrases
+      - evidence_types: list of detected evidence types per span
+      - is_true_multihop: bool (True if serial with depth >= 3)
+    """
+    combined_text = (reasoning_chain or "") + " " + (answer or "")
+
+    serial_hits = _SERIAL_REASONING_MARKERS.findall(combined_text)
+    parallel_hits = _PARALLEL_EVIDENCE_MARKERS.findall(combined_text)
+
+    # Classify evidence types per span
+    evidence_types = []
+    for span_obj in (evidence_spans or []):
+        span_text = str(span_obj.get("span", "")) if isinstance(span_obj, dict) else ""
+        best_type = "observation"  # default
+        best_count = 0
+        for etype, pat in _EVIDENCE_TYPE_PATTERNS.items():
+            hits = len(pat.findall(span_text))
+            if hits > best_count:
+                best_count = hits
+                best_type = etype
+        evidence_types.append(best_type)
+
+    # Count distinct evidence sources
+    distinct_elements = len(set(
+        str(s.get("element_id", ""))
+        for s in (evidence_spans or [])
+        if isinstance(s, dict) and s.get("element_id")
+    ))
+
+    # Estimate reasoning depth
+    n_serial = len(serial_hits)
+    n_parallel = len(parallel_hits)
+
+    if n_serial >= 3 and distinct_elements >= 3:
+        depth = max(3, min(distinct_elements, n_serial))
+        structure = "serial"
+    elif n_serial >= 2 and distinct_elements >= 2:
+        depth = max(2, distinct_elements)
+        structure = "serial" if n_serial > n_parallel else "mixed"
+    elif distinct_elements >= 2:
+        depth = 2
+        structure = "parallel"
+    else:
+        depth = 1
+        structure = "parallel"
+
+    # Detect step-deletion vulnerability: if all evidence is used in a flat AND,
+    # it's parallel even if serial markers exist
+    # Heuristic: if answer contains "both" + "and" patterns, likely parallel
+    flat_and_pattern = re.compile(
+        r"\b(both .{5,60} and )\b", re.I
+    )
+    if flat_and_pattern.search(answer) and structure == "serial":
+        structure = "mixed"  # downgrade: serial markers but flat combination in answer
+
+    is_true_multihop = structure == "serial" and depth >= 3
+
+    return {
+        "reasoning_depth_estimate": depth,
+        "structure": structure,
+        "serial_markers_found": serial_hits[:5],  # cap for storage
+        "parallel_markers_found": parallel_hits[:5],
+        "evidence_types": evidence_types,
+        "distinct_evidence_elements": distinct_elements,
+        "is_true_multihop": is_true_multihop,
+    }
+
+
+def qc_reasoning_depth(
+    obj: Dict[str, Any],
+    pair: Dict[str, Any],
+    min_depth: int = 3,
+) -> Tuple[List[str], Dict[str, Any]]:
+    """QC check for true multi-hop reasoning depth (M4 Schema 1 validation).
+
+    This checks whether a query requires genuine serial reasoning (A → B → C)
+    rather than parallel evidence combination (A ∧ B → Answer).
+
+    Checks:
+      1. reasoning_depth: estimated depth of reasoning chain
+      2. serial_reasoning: presence of causal/logical connectors indicating steps
+      3. step_deletion_heuristic: whether answer references multiple distinct
+         causal links (proxy for step-deletion test)
+      4. evidence_diversity: reasoning steps use different evidence types
+
+    Args:
+        obj: The generated query object
+        pair: The candidate pair
+        min_depth: Minimum reasoning depth to consider as "true multi-hop" (default 3)
+
+    Returns:
+        (issues, metrics) tuple compatible with existing QC framework
+    """
+    issues: List[str] = []
+    metrics: Dict[str, Any] = {}
+
+    reasoning_chain = obj.get("reasoning_chain", "")
+    answer = obj.get("answer", "")
+    evidence_spans = obj.get("required_evidence_spans", []) or []
+    reasoning_steps = obj.get("reasoning_steps", []) or []
+
+    # ── If explicit reasoning_steps are provided (new Schema 1 format) ──
+    if reasoning_steps and len(reasoning_steps) >= 2:
+        metrics["has_explicit_reasoning_steps"] = True
+        metrics["num_reasoning_steps"] = len(reasoning_steps)
+
+        # Check step dependencies form a chain (not all independent)
+        has_dependency_chain = False
+        for step in reasoning_steps[1:]:
+            deps = step.get("depends_on_steps", [])
+            if deps:
+                has_dependency_chain = True
+                break
+        metrics["has_dependency_chain"] = has_dependency_chain
+        if not has_dependency_chain:
+            issues.append("reasoning_steps_no_dependencies")
+
+        # Check all steps use different evidence elements
+        step_elements = [s.get("evidence_element_id", "") for s in reasoning_steps]
+        unique_step_elements = set(e for e in step_elements if e)
+        metrics["unique_step_elements"] = len(unique_step_elements)
+        if len(unique_step_elements) < len(reasoning_steps):
+            issues.append("reasoning_steps_duplicate_evidence")
+
+        # Check evidence types are diverse (not all "observation")
+        step_types = [s.get("evidence_type", "observation") for s in reasoning_steps]
+        unique_types = set(step_types)
+        metrics["reasoning_step_types"] = step_types
+        if len(unique_types) < 2:
+            issues.append("reasoning_steps_uniform_type")
+
+        # Check reasoning roles have progression (premise → intermediate → conclusion)
+        roles = [s.get("reasoning_role", "") for s in reasoning_steps]
+        if roles:
+            has_premise = "premise" in roles
+            has_conclusion = "conclusion" in roles
+            metrics["has_premise_conclusion_arc"] = has_premise and has_conclusion
+            if not (has_premise and has_conclusion):
+                issues.append("reasoning_steps_no_arc")
+
+        # Depth from explicit steps
+        depth = len(reasoning_steps)
+        metrics["reasoning_depth"] = depth
+        if depth < min_depth:
+            issues.append(f"reasoning_depth_insufficient_{depth}_of_{min_depth}")
+
+    else:
+        # ── Heuristic analysis of free-text reasoning chain + answer ──
+        metrics["has_explicit_reasoning_steps"] = False
+
+        analysis = classify_reasoning_structure(
+            reasoning_chain, answer, evidence_spans,
+        )
+        metrics.update({
+            "reasoning_depth": analysis["reasoning_depth_estimate"],
+            "reasoning_structure": analysis["structure"],
+            "serial_markers": analysis["serial_markers_found"],
+            "parallel_markers": analysis["parallel_markers_found"],
+            "evidence_types_detected": analysis["evidence_types"],
+            "distinct_evidence_elements": analysis["distinct_evidence_elements"],
+            "is_true_multihop": analysis["is_true_multihop"],
+        })
+
+        # For existing dual-evidence queries, classify but don't hard-fail
+        # (they were designed as parallel, not serial)
+        depth = analysis["reasoning_depth_estimate"]
+        if depth < min_depth:
+            # Soft classification, not hard fail for backward compat
+            metrics["reasoning_depth_gap"] = min_depth - depth
+
+    # ── Step-deletion heuristic (works for both formats) ──
+    # Count distinct causal links in the answer: "A causes B", "B leads to C"
+    causal_link_pattern = re.compile(
+        r"(?:because|since|due to|as a result of|which (?:causes|leads|explains|means)|"
+        r"therefore|thus|hence|consequently|this (?:causes|leads|explains|means))",
+        re.IGNORECASE,
+    )
+    causal_links = causal_link_pattern.findall(answer)
+    metrics["causal_link_count"] = len(causal_links)
+    metrics["step_deletion_proxy"] = len(causal_links) >= (min_depth - 1)
+    # A true 3-step chain needs at least 2 causal links: A→B and B→C
+
+    return issues, metrics
+
+
+# ──────────────────────────────────────────────────────────────
 # Image encoding
 # ──────────────────────────────────────────────────────────────
 
@@ -2859,6 +3086,21 @@ def main() -> None:
                 metrics["query_style"] = effective_query_style
                 metrics["persona"] = effective_persona_id
 
+                # M4 reasoning depth analysis (advisory, not hard-fail for existing data)
+                rd_issues, rd_metrics = qc_reasoning_depth(q_obj, pair, min_depth=3)
+                metrics["m4_reasoning_depth"] = rd_metrics.get("reasoning_depth", 2)
+                metrics["m4_reasoning_structure"] = rd_metrics.get("reasoning_structure", "parallel")
+                metrics["m4_is_true_multihop"] = rd_metrics.get("is_true_multihop", False)
+                metrics["m4_causal_link_count"] = rd_metrics.get("causal_link_count", 0)
+                metrics["m4_step_deletion_proxy"] = rd_metrics.get("step_deletion_proxy", False)
+                if rd_metrics.get("has_explicit_reasoning_steps"):
+                    # Hard-fail explicit reasoning_steps that don't pass schema validation
+                    issues.extend(rd_issues)
+                    metrics["m4_explicit_step_issues"] = rd_issues
+                else:
+                    # Advisory only for backward-compat dual-evidence queries
+                    metrics["m4_depth_advisory_issues"] = rd_issues
+
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
                 img_b_path = normalize_path(pair["element_b"].get("image_path", "") or "")
@@ -2877,6 +3119,9 @@ def main() -> None:
                     "pair_type": pair_type,
                     "hop_distance": hop,
                     "path": pair.get("path", []),
+                    "reasoning_steps": q_obj.get("reasoning_steps", []),  # M4 Schema 1: explicit reasoning chain steps
+                    "reasoning_depth": metrics.get("m4_reasoning_depth", 2),
+                    "reasoning_structure": metrics.get("m4_reasoning_structure", "parallel"),
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
                     "cross_modal": True,
                     "query_style": effective_query_style,
