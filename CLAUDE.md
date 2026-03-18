@@ -49,36 +49,39 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
-## 当前状态（2026-03-18 更新｜M4 战略重定位 + Schema 设计 + Step-deletion QC）
+## 当前状态（2026-03-18 更新｜M4 战略重定位 + Schema 设计 + Reasoning-depth Tagging）
 
 ### 本轮完成（相对 2026-03-16）
 
 - **M4 战略重定位完成** — 诚实评估：当前为 M1.5（跨模态 + 伪多跳），非 M4
   - 项目对外口径重定义为 "Graph-backed Cross-modal Dual-evidence Benchmark (M4-Foundation)"
   - 详见 `docs/M4_STRATEGY_REVIEW_2026-03-18.md`
-- **M4 三套数据 Schema 设计完成** — `docs/M4_SCHEMAS.md`
+- **M4 三套数据 Schema 设计完成（Schema-ready，非 Generator-ready）** — `docs/M4_SCHEMAS.md`
   - Schema 1: Strict Multi-hop Reasoning Chain（`reasoning_steps[]` + `depends_on_steps` + `evidence_type`）
   - Schema 2: Element-level Cross-document Bridge（`bridge_type` + `bridge_evidence` + `confidence`）
   - Schema 3: Multi-turn Session（`turns[]` + `coreference_type` + `turn_dependency_qc`）
   - 三者关系：Schema 2 提供跨文档边 → Schema 1 在图上生成推理链 → Schema 3 将推理链 session 化
-- **Step-deletion QC 已实现并集成** — `qc_reasoning_depth()` in `generate_multihop_l1_queries.py`
-  - `classify_reasoning_structure()`：区分 parallel（A∧B→Answer）vs serial（A→B→C→Answer）
+  - **注意**：当前生成脚本仍是 dual-evidence pair 容器，只是兼容新字段透传；3-step native generator 待 Phase 1 实现
+- **Reasoning-depth 启发式标记已集成** — `qc_reasoning_depth()` in `generate_multihop_l1_queries.py`
+  - `classify_reasoning_structure()`：用语言表面特征（连接词模式）区分 parallel vs serial，**适合 auto-tagging / profiling，不适合作为严格 M4 合格判定**
   - `m4_reasoning_depth`、`m4_reasoning_structure`、`m4_is_true_multihop` 新增到 QC metrics
-  - 对现有 dual-evidence 数据为 advisory（不 hard fail），对新 Schema 1 数据为 hard fail
-  - Step-deletion 代理指标：`causal_link_count ≥ min_depth - 1`
+  - 对现有 dual-evidence 数据为 advisory（不 hard fail），对新 Schema 1 显式 `reasoning_steps[]` 数据做结构验证（hard fail）
+  - Step-deletion **proxy**（非真正 step-deletion test）：`causal_link_count ≥ min_depth - 1`，基于 answer 中因果连接词计数
+  - **已知局限**：① 写作风格可欺骗（爱写 because/therefore 会被高估）；② 不同 query_style 的连接词分布不同导致不鲁棒；③ evidence_type 判别依赖 span 词面
+  - **待做**：30-50 条人工标注误差审计（precision/recall），验证 heuristic 可信度
 - **现有数据自动标记**：所有新生成 query 将自动携带 `reasoning_depth` 和 `reasoning_structure` 字段
 
 ### 本轮关键决策
 - **当前 multi-hop 是"双证据并行取证"而非"串行推理链"**，hop_distance 是拓扑距离不是推理深度
-- **验证真正多跳的标准是 step-deletion test**：删掉任意中间步骤后答案不可得
+- **验证真正多跳的标准是 step-deletion test**：删掉任意中间步骤后答案不可得（当前仅有 proxy heuristic，真正 step-deletion 验证待 Phase 1）
 - **不同时铺开三条线**：优先 Phase 1（严格 multi-hop）→ Phase 2（element-level cross-doc）→ Phase 3（multi-turn）
 - **50-100 条 gold 3-step queries 比 500 条 2-evidence 拼接更有论文价值**
 
 ### M4 路线图
 | 阶段 | 目标 | 时间 |
 |------|------|------|
-| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema | 本周 |
-| Phase 1 | 严格 multi-hop：3-4 hop 因果路径枚举 + 推理链 query 生成 + step-deletion QC | 1-2 周 |
+| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 本周 |
+| Phase 1 | 严格 multi-hop：3-4 hop 因果路径枚举 + 推理链 query 生成 + **真正的** step-deletion 验证 | 1-2 周 |
 | Phase 2 | 高精度 multi-doc：element-level embedding 跨文档边 + 小规模 eval | 1-2 周 |
 | Phase 3 | Multi-turn session：路径→对话链 + turn_dependency QC | 1-2 周 |
 | Phase 4 | M4 联合验证 | 1 周 |
@@ -577,28 +580,34 @@ python scripts/generate_multihop_l1_queries.py \
 ### P0（本周，M4 Phase 1 启动）
 
 1. **~~M4 Strategy Review + Schema 设计~~** ✅ 完成 — `docs/M4_STRATEGY_REVIEW_2026-03-18.md` + `docs/M4_SCHEMAS.md`
-2. **~~Step-deletion QC 实现~~** ✅ 完成 — `qc_reasoning_depth()` 已集成到 `generate_multihop_l1_queries.py`
-3. **严格 Multi-hop 路径枚举升级**：在图上找 3-4 节点的因果路径（不只是拓扑路径），每步有不同 evidence_type（observation → attribution → explanation）
-4. **3-step 推理链 query 生成 prompt 设计**：LLM 输出需包含 `reasoning_steps[]` + `depends_on_steps` 字段，匹配 Schema 1 格式
-5. **产出 50-100 条 gold 3-step queries**：人工验证推理深度，通过 step-deletion test
+2. **~~Reasoning-depth heuristic tagging~~** ✅ 完成 — `qc_reasoning_depth()` 已集成（advisory auto-tagger，非严格验证器）
+3. **Reasoning-depth heuristic 误差审计**：抽 30-50 条人工标 serial/parallel/mixed，对比脚本分类结果，算 precision/recall
+4. **严格 Multi-hop 路径枚举升级**：在图上找 3-4 节点的因果路径（不只是拓扑路径），每步有不同 evidence_type（observation → attribution → explanation）
+5. **3-step 推理链 query 生成 prompt 设计**：LLM 输出需包含 `reasoning_steps[]` + `depends_on_steps` 字段，匹配 Schema 1 格式
+6. **产出 50-100 条 gold 3-step queries**：人工验证推理深度，通过真正的 step-deletion test（删 step 重判 answer derivability）
+
+### P0.5（并行保底交付线 — 不因战略升级停摆已有可交付）
+
+7. **全量生成 real-user + persona queries**：`--provider company --query-style mixed --use-persona` 跑 500 hub candidates
+8. **跑 MoDora element enrichment**：生成 `data/multimodal_elements_enriched.json`
+9. **扩充 `docs/GRAPH_ARCHITECTURE.md`**：补充 eval 结果 + 最优配置 + hub 评分细节
 
 ### P1（2 周内，M4 Phase 2 — Multi-document）
 
-6. **构建 element-level cross-doc edges**：用已有 Qwen3-Embedding-4B 匹配（`crossdoc_embedding_matches`）建立元素级跨文档边，输出 `cross_doc_edges_v1.jsonl`
-7. **小规模 eval 验证 element-level > doc-level**：证明 element-level 桥接比 citation walk 更合理
-8. **跨文档 multi-hop 路径枚举**：路径可跨越文档边界
+10. **构建 element-level cross-doc edges**：用已有 Qwen3-Embedding-4B 匹配（`crossdoc_embedding_matches`）建立元素级跨文档边，输出 `cross_doc_edges_v1.jsonl`
+11. **小规模 eval 验证 element-level > doc-level**：证明 element-level 桥接比 citation walk 更合理
+12. **跨文档 multi-hop 路径枚举**：路径可跨越文档边界
 
 ### P2（1 个月内，M4 Phase 3 — Multi-turn + 收尾）
 
-9. **Multi-turn session 生成**：将推理链转写为对话，每 hop → 一 turn，加入指代和省略
-10. **Turn-dependency QC**：`qc_turn_dependency()` — 删掉前轮信息后当前轮不可回答
-11. **M4 联合验证**：multi-hop + multi-doc + multi-turn + multi-modal 全覆盖 eval
+13. **Multi-turn session 生成**：将推理链转写为对话，每 hop → 一 turn，加入指代和省略
+14. **Turn-dependency QC**：`qc_turn_dependency()` — 删掉前轮信息后当前轮不可回答
+15. **M4 联合验证**：multi-hop + multi-doc + multi-turn + multi-modal 全覆盖 eval
 
 ### P3（持续）
 
-12. **全量生成 real-user + persona queries**：验证图信号泛化性
-13. **C-Pool 万金油查询库**：50-100 条通用学术 query
-14. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
+16. **C-Pool 万金油查询库**：50-100 条通用学术 query
+17. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
 
 详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-16 节）+ `docs/EXPERIMENT_RECORD_2026-03-16.md`
 
