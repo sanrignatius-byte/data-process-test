@@ -98,7 +98,7 @@ BM25 是纯词面匹配。当 query 描述 figure 中的"accuracy curve"，BM25 
 
 $$G = (V, E, \tau_V, \tau_E)$$
 
-### 3.1 节点类型 $\mathcal{T}_V$
+### 3.1 节点类型 \(\mathcal{T}_V\)
 
 | 类型 | 来源 | 成本 | 在图中的角色 |
 |------|------|------|-------------|
@@ -107,11 +107,11 @@ $$G = (V, E, \tau_V, \tau_E)$$
 | **table** | 文档解析 | 零 | 结构化数据证据（HTML 表格 + caption） |
 | **formula** | 文档解析 | 零 | 数学模型证据（LaTeX 公式 + 上下文） |
 
-### 3.2 边类型 $\mathcal{T}_E$
+### 3.2 边类型 \(\mathcal{T}_E\)
 
 | 类型 | 构建方式 | 数量 | 编码的语义 |
 |------|---------|------|-----------|
-| **backbone** | 同文档段落按解析器输出的阅读顺序排序 → $p_i \to p_{i+1}$ | 1269 | **阅读顺序**：连续段落在原文中紧邻，语义最相关。Adjacent Backbone Bridge 就靠这种边发现 |
+| **backbone** | 同文档段落按解析器输出的阅读顺序排序 → \(p_i \to p_{i+1}\) | 1269 | **阅读顺序**：连续段落在原文中紧邻，语义最相关。Adjacent Backbone Bridge 就靠这种边发现 |
 | **paragraph_ref** | 段落文本中出现显式引用标记（如 `\ref{label}`）→ 段落→被引元素 | 1688 | **"这段话讨论了这个元素"**：Bridge Hub 就是通过这种边同时指向多种模态 |
 | **element_ref** | 两个非 paragraph 元素间的直接显式引用 | 80 | **元素间直接引用**（高置信但稀少） |
 | **cross_doc_cite** | 参考文献列表（如 `.bbl`）中的标题与 corpus 内文档做模糊匹配（基于空格分词的 token 集合 Jaccard ≥ 0.55） | 434 | **跨文档引用**：文档 A 引用了文档 B |
@@ -142,7 +142,7 @@ $$\text{bridge\_score}(h) = |\text{modalities}(h)| \times 15 + |\text{out\_to\_e
 
 $$\text{quality\_score}(h) = 0.5 \times \hat{s}_{bridge} + 0.25 \times \hat{s}_{pagerank} + 0.25 \times \hat{s}_{out\_elem}$$
 
-$\hat{s}$ 为 min-max 归一化。分布 [0.13, 0.88]（v2 版本是常量 0.8，无区分度）。
+\(\hat{s}\) 为 min-max 归一化。分布 [0.13, 0.88]（v2 版本是常量 0.8，无区分度）。
 
 **排序规则**：`sort_key = (is_bridge, bridge_score, quality_score)` — 桥接类**强制排在**权威类之前，不论权威类的总分多高。
 
@@ -177,8 +177,8 @@ Step 4 — 输出 reranked top-k
 
 | 参数 | 最优值 | 为什么 |
 |------|--------|--------|
-| $w_{hub}$ | **0.15** | hub prior 是轻微加分，不能喧宾夺主；>0.20 开始反噬 BM25 本身正确的排名 |
-| $\lambda_{decay}$ | **0.20** | 传播保留 80% 的原始分数；过低（保留太多）→ 噪声扩散；过高（保留太少）→ 传播无效 |
+| \(w_{hub}\) | **0.15** | hub prior 是轻微加分，不能喧宾夺主；>0.20 开始反噬 BM25 本身正确的排名 |
+| \(\lambda_{decay}\) | **0.20** | 传播保留 80% 的原始分数；过低（保留太多）→ 噪声扩散；过高（保留太少）→ 传播无效 |
 | cite\_weight | **0**（关闭） | citation walk 实验为负贡献（doc-level 粒度 vs element-level 需求错位） |
 | neighbor\_hops | **1** | 1-hop 严格优于 2-hop；当前图密度下 2-hop 扩散太多弱关联节点 |
 
