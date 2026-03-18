@@ -49,6 +49,42 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-03-18 更新｜M4 战略重定位 + Schema 设计 + Step-deletion QC）
+
+### 本轮完成（相对 2026-03-16）
+
+- **M4 战略重定位完成** — 诚实评估：当前为 M1.5（跨模态 + 伪多跳），非 M4
+  - 项目对外口径重定义为 "Graph-backed Cross-modal Dual-evidence Benchmark (M4-Foundation)"
+  - 详见 `docs/M4_STRATEGY_REVIEW_2026-03-18.md`
+- **M4 三套数据 Schema 设计完成** — `docs/M4_SCHEMAS.md`
+  - Schema 1: Strict Multi-hop Reasoning Chain（`reasoning_steps[]` + `depends_on_steps` + `evidence_type`）
+  - Schema 2: Element-level Cross-document Bridge（`bridge_type` + `bridge_evidence` + `confidence`）
+  - Schema 3: Multi-turn Session（`turns[]` + `coreference_type` + `turn_dependency_qc`）
+  - 三者关系：Schema 2 提供跨文档边 → Schema 1 在图上生成推理链 → Schema 3 将推理链 session 化
+- **Step-deletion QC 已实现并集成** — `qc_reasoning_depth()` in `generate_multihop_l1_queries.py`
+  - `classify_reasoning_structure()`：区分 parallel（A∧B→Answer）vs serial（A→B→C→Answer）
+  - `m4_reasoning_depth`、`m4_reasoning_structure`、`m4_is_true_multihop` 新增到 QC metrics
+  - 对现有 dual-evidence 数据为 advisory（不 hard fail），对新 Schema 1 数据为 hard fail
+  - Step-deletion 代理指标：`causal_link_count ≥ min_depth - 1`
+- **现有数据自动标记**：所有新生成 query 将自动携带 `reasoning_depth` 和 `reasoning_structure` 字段
+
+### 本轮关键决策
+- **当前 multi-hop 是"双证据并行取证"而非"串行推理链"**，hop_distance 是拓扑距离不是推理深度
+- **验证真正多跳的标准是 step-deletion test**：删掉任意中间步骤后答案不可得
+- **不同时铺开三条线**：优先 Phase 1（严格 multi-hop）→ Phase 2（element-level cross-doc）→ Phase 3（multi-turn）
+- **50-100 条 gold 3-step queries 比 500 条 2-evidence 拼接更有论文价值**
+
+### M4 路线图
+| 阶段 | 目标 | 时间 |
+|------|------|------|
+| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema | 本周 |
+| Phase 1 | 严格 multi-hop：3-4 hop 因果路径枚举 + 推理链 query 生成 + step-deletion QC | 1-2 周 |
+| Phase 2 | 高精度 multi-doc：element-level embedding 跨文档边 + 小规模 eval | 1-2 周 |
+| Phase 3 | Multi-turn session：路径→对话链 + turn_dependency QC | 1-2 周 |
+| Phase 4 | M4 联合验证 | 1 周 |
+
+---
+
 ## 当前状态（2026-03-16 更新｜Phase0 Eval v3 达标 + Graph 首次显著超越 BM25）
 
 ### 本轮完成（相对 2026-03-15）
@@ -434,6 +470,9 @@ python scripts/generate_multihop_l1_queries.py \
 | `scripts/enrich_elements_modora.py` | **MoDora-style [T]/[M]/[C] 元素语义增强（figure/table/formula）** |
 | `data/multimodal_elements_enriched.json` | **MoDora enriched 元素（含 enriched_title/metadata/content）——待生成** |
 | `docs/MODORA_INTEGRATION_ANALYSIS.md` | **MoDora CCTree 整合分析文档** |
+| `docs/M4_STRATEGY_REVIEW_2026-03-18.md` | **M4 战略重定位文档（诚实现状评估 + 路线图）** |
+| `docs/M4_SCHEMAS.md` | **M4 三套数据 Schema（multi-hop / cross-doc / multi-turn）** |
+| `docs/M4_RESEARCH_NOTES.md` | M4 学术背景调研（M4DocBench / CoQA / TRACE / RT-RAG） |
 | `main.py` | **公司 API 连通性测试脚本（yunwu.ai demo）** |
 | `local_api_logger/` | **公司 API 日志库（wrap_requests_call + token 统计）——需用户放入** |
 
@@ -511,9 +550,10 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-16 更新）
+## 下一步 TODO（2026-03-18 更新）
 
 ### 已完成（历史）
+- ~~**M4 Strategy Review + Schema 设计**~~ ✅ **完成** — 诚实重定位为 M4-Foundation；三套 Schema 落地；step-deletion QC 集成
 - ~~**Phase0 Eval v2 首轮**~~ ✅ **完成** — graph 与 BM25 持平，hub_overlap=9.53%，continue_expand=False
 - ~~**Phase0 Eval v3 三项修复**~~ ✅ **完成** — quality_score 重建 + hub coverage 扩大 + citation walk 修复
 - ~~**Phase0 组件权重解耦 + Grid Search**~~ ✅ **完成** — graph_full MRR +0.0403，`continue_expand=True`
@@ -534,25 +574,31 @@ python scripts/generate_multihop_l1_queries.py \
 | PersonaHub 人设 (50 类) | ✅ | `scripts/generate_multihop_l1_queries.py` + `data/personahub_academic_personas.json` | 需 `--use-persona` 全量跑 |
 | MoDora enrichment 脚本 | ✅ | `scripts/enrich_elements_modora.py` | 需跑生成 `multimodal_elements_enriched.json` |
 
-### P0（本周，支撑周会 + 专利）
+### P0（本周，M4 Phase 1 启动）
 
-1. **扩充 `docs/GRAPH_ARCHITECTURE.md`**：当前仅 42 行框架，需补充 eval 结果 + 最优配置 + 构建公式 + hub 评分细节 + 成本分层。Mentor 明确要求
-2. **全量生成 real-user + persona queries**：`--provider company --query-style mixed --use-persona` 跑 500 hub candidates，产出新 queries 并重跑 eval 验证图信号在新 query 类型上的泛化性
-3. **跑 MoDora element enrichment**：生成 `data/multimodal_elements_enriched.json`（当前缺失），使 enrichment 过滤器（C1）和 enriched context 在全量生成中生效
+1. **~~M4 Strategy Review + Schema 设计~~** ✅ 完成 — `docs/M4_STRATEGY_REVIEW_2026-03-18.md` + `docs/M4_SCHEMAS.md`
+2. **~~Step-deletion QC 实现~~** ✅ 完成 — `qc_reasoning_depth()` 已集成到 `generate_multihop_l1_queries.py`
+3. **严格 Multi-hop 路径枚举升级**：在图上找 3-4 节点的因果路径（不只是拓扑路径），每步有不同 evidence_type（observation → attribution → explanation）
+4. **3-step 推理链 query 生成 prompt 设计**：LLM 输出需包含 `reasoning_steps[]` + `depends_on_steps` 字段，匹配 Schema 1 格式
+5. **产出 50-100 条 gold 3-step queries**：人工验证推理深度，通过 step-deletion test
 
-### P1（本月，支撑论文数据）
+### P1（2 周内，M4 Phase 2 — Multi-document）
 
-4. **建立 C-Pool 万金油查询库**：人工整理 50-100 条通用学术 query（总结/动机/方法/贡献/跨文档连接），QC 只验 evidence localization
-5. **C-Pool QC 策略**：跳过 query 评分，只做 evidence localization 验证
-6. **Citation walk 改进**：当前 doc-level 为负，尝试 element-level cross-doc linking（用 embedding 相似边替代 citation 边）
-7. **修复 35/82 篇零候选文档**：降 per_combo cap / adj_bridge 单独路径
-8. **调研 Graph RAG**：Entity graph（Microsoft GraphRAG）、Query-sentence graph，整理对比文档
+6. **构建 element-level cross-doc edges**：用已有 Qwen3-Embedding-4B 匹配（`crossdoc_embedding_matches`）建立元素级跨文档边，输出 `cross_doc_edges_v1.jsonl`
+7. **小规模 eval 验证 element-level > doc-level**：证明 element-level 桥接比 citation walk 更合理
+8. **跨文档 multi-hop 路径枚举**：路径可跨越文档边界
 
-### P2（后续）
+### P2（1 个月内，M4 Phase 3 — Multi-turn + 收尾）
 
-9. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
-10. **label 匹配率继续提升**：49.8% → 更高
-11. **L2 重启**：用 citation graph 做 L2 候选对（替代实体倒排索引）
+9. **Multi-turn session 生成**：将推理链转写为对话，每 hop → 一 turn，加入指代和省略
+10. **Turn-dependency QC**：`qc_turn_dependency()` — 删掉前轮信息后当前轮不可回答
+11. **M4 联合验证**：multi-hop + multi-doc + multi-turn + multi-modal 全覆盖 eval
+
+### P3（持续）
+
+12. **全量生成 real-user + persona queries**：验证图信号泛化性
+13. **C-Pool 万金油查询库**：50-100 条通用学术 query
+14. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
 
 详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-16 节）+ `docs/EXPERIMENT_RECORD_2026-03-16.md`
 
