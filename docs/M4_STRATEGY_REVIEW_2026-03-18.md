@@ -93,7 +93,7 @@ Turn 3: 对应 Hop 3 → "公式 (7) 能解释这种不一致吗？"（依赖 Tu
 | 3-4 hop 因果路径枚举 | 图上路径搜索升级 | 从拓扑路径→因果路径 |
 | 推理链 query 生成 | LLM prompt + 生成脚本 | 每条 query 附带 `reasoning_steps[]` |
 | **真正的** step-deletion test | 50-100 条 gold 3-step queries | 删 step 重判 answer derivability（替代当前 proxy） |
-| Heuristic 误差审计 | 30-50 条人工标注 | 验证 classify_reasoning_structure() 的 precision/recall |
+| Heuristic 误差审计 | 30-50 条人工标注 | 用 `scripts/audit_reasoning_depth_heuristic.py` 验证 `classify_reasoning_structure()` 的 precision/recall |
 
 ### Phase 2（1-2 周）：高精度 Multi-document
 

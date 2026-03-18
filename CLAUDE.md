@@ -582,6 +582,9 @@ python scripts/generate_multihop_l1_queries.py \
 1. **~~M4 Strategy Review + Schema 设计~~** ✅ 完成 — `docs/M4_STRATEGY_REVIEW_2026-03-18.md` + `docs/M4_SCHEMAS.md`
 2. **~~Reasoning-depth heuristic tagging~~** ✅ 完成 — `qc_reasoning_depth()` 已集成（advisory auto-tagger，非严格验证器）
 3. **Reasoning-depth heuristic 误差审计**：抽 30-50 条人工标 serial/parallel/mixed，对比脚本分类结果，算 precision/recall
+   - 审计脚本：`scripts/audit_reasoning_depth_heuristic.py`
+   - 导出人工标注样本：`python scripts/audit_reasoning_depth_heuristic.py export-sample --input data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl --output data/reasoning_depth_heuristic_audit_sample.csv --sample-size 40`
+   - 生成评估报告：`python scripts/audit_reasoning_depth_heuristic.py evaluate --input data/reasoning_depth_heuristic_audit_sample.csv --output data/reasoning_depth_heuristic_audit_report.json`
 4. **严格 Multi-hop 路径枚举升级**：在图上找 3-4 节点的因果路径（不只是拓扑路径），每步有不同 evidence_type（observation → attribution → explanation）
 5. **3-step 推理链 query 生成 prompt 设计**：LLM 输出需包含 `reasoning_steps[]` + `depends_on_steps` 字段，匹配 Schema 1 格式
 6. **产出 50-100 条 gold 3-step queries**：人工验证推理深度，通过真正的 step-deletion test（删 step 重判 answer derivability）
