@@ -286,14 +286,87 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 
 ---
 
-## 10. 改进方向 & 下一步
+## 10. M4 达成度与改进路线图
+
+本项目的核心交付定位为 **M4 Query 生成**：**M**ulti-hop × **M**ulti-modal × **M**ulti-document × **M**ulti-turn。当前图的拓扑基础已具备支撑 M4 的能力，但 query 生成策略和 QC 体系仍有显著缺口。
+
+### 10.1 当前达成度
+
+| M4 维度 | 当前状态 | 图是否已支撑 | 差距 |
+|---------|---------|-------------|------|
+| **Multi-modal** | ✅ 已验证（graph rerank +7.1% MRR） | ✅ 4 种节点类型原生支持 | — |
+| **Multi-hop** | ⚠️ 图上有 2-3 hop 路径，但 query 是并行取证 | ✅ 路径已可枚举 | query 生成需从"并行取证"升级为"串行推理链" |
+| **Multi-document** | ❌ citation walk 为负 → 关闭 | ⚠️ cross_doc_cite 边已有但粒度为 doc-level | 需补充 element-level 跨文档边 |
+| **Multi-turn** | ❌ 零进展 | ✅ 路径天然可分段 | 需设计 turn 生成策略 + 对话上下文格式 |
+
+### 10.2 从 M1.5 到 M4 的技术路线
+
+#### Phase 1：真正的 Multi-hop（串行推理链）
+
+**现状**：当前 dual-evidence query 是并行取证——答案 = 证据 A + 证据 B，两片拼接即可。
+
+**目标**：升级为 3-4 步因果推理链，每一步在逻辑上依赖前一步的结论。
+
+```
+当前（并行取证，非真正多跳）：
+  Q: "模型公平性如何随数据分布变化？"
+  A: Figure 3 的趋势 + Table 2 的数值
+
+目标（串行推理链）：
+  Hop 1: Figure 3 → 模型 X 在子群 A 上性能下降       （观察）
+  Hop 2: Table 5 → 消融实验显示下降原因是特征 F 缺失  （归因）
+  Hop 3: 公式 (7) → 特征 F 在子群 A 的分布满足不等式  （数学解释）
+  → 三步因果递进
+```
+
+**实现路径**：
+1. 在图上枚举 3-4 节点的**跨模态因果路径**（paragraph → figure → paragraph → formula → table）
+2. Query 生成 prompt 要求 LLM 构造**推理链**（答案必须包含"因为 A 所以 B，又因为 B 所以 C"）
+3. QC 新增 `reasoning_depth`：检测答案中因果连接词的嵌套层数（≥2 才算真正多跳）
+
+**图的支撑**：当前图的 backbone + paragraph_ref 路径已可枚举 3-4 hop 跨模态链路，无需新增边类型。
+
+#### Phase 2：Multi-document（element-level 跨文档桥接）
+
+**现状**：cross_doc_cite 边是 doc-level 粒度（"A 引用了 B"），不知道 A 的哪段话与 B 的哪个元素相关。导致 citation walk 引入噪声，实验为负。
+
+**目标**：建立 element-level 跨文档边，使多跳路径可跨越文档边界。
+
+**实现路径**：
+1. **Embedding 语义边**：利用已有的 Qwen3-Embedding-4B 跨文档匹配结果（`crossdoc_embedding_matches`），将 element-level 余弦相似度 > 阈值的跨文档对作为新边加入图中
+2. **共享实体桥接**：两篇文档的元素引用了同一个方法名 / 数据集名 / 指标名 → 建立 `cross_doc_entity` 边
+3. 将新边纳入 neighbor propagation，使分数可跨文档传播
+
+**路径示例**：
+```
+Doc A: paragraph → figure（观察）→ paragraph → [cross_doc_entity] → Doc B: table（对比数据）
+```
+
+#### Phase 3：Multi-turn（路径→对话链）
+
+**现状**：所有 query 均为单轮独立查询，无对话上下文。
+
+**目标**：同一推理路径上生成多轮递进式查询，后续 turn 依赖前序 turn 的答案。
+
+**实现路径**：
+1. **Turn 生成策略**：给定一条 3-4 hop 路径，每个 hop 对应一个 turn，后续 turn 的 prompt 包含前序 turn 的 query + answer 作为上下文
+2. **数据格式**：`session_id` 串联多轮，每轮记录 `turn_number`、`depends_on_turns`、`cumulative_evidence`
+3. **QC**：新增 `turn_dependency` 检测——删掉前一轮的 answer 后，当前轮是否仍可独立回答？不可回答才算真正的多轮依赖
+
+**示例**：
+```
+Turn 1: "Figure 3 显示了什么趋势？"              → 证据: figure_3
+Turn 2: "Table 2 中哪些子群和这个趋势一致？"      → 证据: table_2（依赖 Turn 1 的 "趋势" 上下文）
+Turn 3: "公式 (7) 能解释不一致的原因吗？"         → 证据: formula_7（依赖 Turn 1+2 的上下文）
+```
+
+### 10.3 近期改进项（M1.5 巩固）
 
 | 当前状态 | 改进方向 | 优先级 |
 |----------|---------|--------|
 | 评测集 261 queries（本系统辅助生成） | 引入外部标注 + bootstrap CI 统计显著性检验 | P0 |
 | 86 篇文档规模 | 扩到 500+ queries（real-user + PersonaHub persona），验证泛化性 | P0 |
 | paragraph_ref / element_ref 边当前基于 LaTeX 引用标记 | 扩展至正则引用模式（"Figure X" / "Table Y"），使方法适用于纯 PDF 文档 | P1 |
-| Citation walk 当前为负贡献（doc-level 粒度） | 改进为 element-level cross-doc linking | P1 |
 | 35/82 篇零候选 | 降 cap / Adjacent Backbone Bridge 单独生成路径 | P1 |
 
 > **注**：backbone 边（阅读顺序）和 Adjacent Backbone Bridge 不依赖任何引用标记格式，仅依赖文档解析器的段落顺序输出，因此天然适用于任何格式的文档。

@@ -182,17 +182,79 @@ Graph full（neighbor_prop + hub_prior 组合）拯救 **11 条** BM25 完全遗
 
 ---
 
-## 六、下周计划
+## 六、M4 达成度自检与差距分析
 
-| 优先级 | 事项 | 交付标准 |
-|--------|------|---------|
-| **P0** | 全量生成 real-user + PersonaHub persona queries（500 candidates） | `--provider company --query-style mixed --use-persona`，50 类 PersonaHub 人设驱动，产出 400+ 新 queries |
-| **P0** | 扩大评测集 + 重跑 eval | 新 queries 上 graph_full 仍优于 BM25（验证泛化性） |
-| **P0** | 跑 MoDora element enrichment | 产出 `multimodal_elements_enriched.json`，使 C1 噪声过滤在全量生成中生效 |
-| **P0** | **C-Pool 泛用型查询库（Mentor 要求）** | 人工整理 50-100 条通用学术 query（总结/动机/方法/贡献/跨文档连接），QC 只验 evidence localization。详见下方说明 |
-| P1 | 修复 35/82 篇零候选文档 | 降 per_combo_cap 或 adj_bridge 单独路径 |
-| P1 | Citation walk 改进方向探索 | element-level cross-doc linking 替代 doc-level citation 边 |
-| P1 | 统计显著性检验 | bootstrap CI + paired test，加强实验说服力 |
+> **M4** = **M**ulti-hop × **M**ulti-modal × **M**ulti-document × **M**ulti-turn，是本项目的核心交付定位。
+
+### 6.1 当前达成度
+
+| 维度 | 要求 | 当前状态 | 达标？ | 差距 |
+|------|------|---------|--------|------|
+| **Multi-modal** | 跨模态证据 | fig+tab / fig+formula / formula+tab，graph rerank 已超越 BM25 | ✅ | 基本达标 |
+| **Multi-hop** | 多步推理链 | 图上有 2-3 hop 拓扑路径，但 query 实际只需 2 片证据**并行拼接** | ⚠️ | **"双证据拼接"≠"多步推理"** |
+| **Multi-document** | 跨文档证据 | citation walk 实验为负 → 关闭；L2 跨文档 query 暂停 | ❌ | 基本停滞 |
+| **Multi-turn** | 多轮对话 | 零进展，无设计方案 | ❌ | 完全空白 |
+
+**结论：当前约 M1.5（跨模态 + 伪多跳），离 M4 仍有显著距离。**
+
+### 6.2 差距分析
+
+**Multi-hop — "并行取证"vs"串行推理链"**
+
+当前的 dual-evidence query 本质上是**并行取证**：答案 = Figure 3 的趋势 + Table 2 的数值，两片拼起来就够。真正的 multi-hop 应该是**串行推理链**：
+
+```
+Hop 1: Figure 3 → 模型 X 在子群 A 上性能下降（观察）
+Hop 2: Table 5 → 消融实验显示，下降原因是特征 F 缺失（原因）
+Hop 3: 公式 (7) → 特征 F 在子群 A 的分布满足某不等式（数学解释）
+→ 三步因果递进才能回答完整问题
+```
+
+当前图的 2-3 hop 路径是**拓扑距离**（经过几条边），不是**推理深度**（需要几步逻辑推导）。
+
+**Multi-document — 跨文档桥梁信号太粗糙**
+
+根本原因：文档内有 `\ref{}` 这样的显式硬链接（element-level），跨文档只有引用关系（doc-level，"A 引用了 B"），不知道 A 的哪段话和 B 的哪个元素有实质关联。
+
+**Multi-turn — 从零开始**
+
+需要在同一推理路径上生成多轮递进式查询：后续 turn 依赖前序 turn 的答案上下文，缺少前序 turn 无法独立回答。
+
+### 6.3 M4 路线图
+
+| 阶段 | 目标 | 关键改动 | 预计周期 |
+|------|------|---------|---------|
+| **本周** | 锁定 M1.5 基线 | PersonaHub 全量 + C-Pool + eval 重跑 | 本周 |
+| **Phase 1** | **真正的 Multi-hop** | 图上找 3-4 节点**因果路径**；query 生成要求 LLM 构造推理链（非并行取证）；QC 新增 `reasoning_depth` 检测 | 1-2 周 |
+| **Phase 2** | **Multi-document** | element-level embedding 跨文档边（用 Qwen3-Embedding-4B 已有匹配结果）+ 共享实体桥接 → 跨文档 multi-hop 路径 | 1-2 周 |
+| **Phase 3** | **Multi-turn** | 同一路径生成多轮递进查询；`session_id` + `depends_on_turns`；QC 新增 `turn_dependency`（删掉前一轮后能否回答） | 1-2 周 |
+| **Phase 4** | **M4 联合验证** | 全维度覆盖 query 集 + 统计显著性检验 | 1 周 |
+
+**核心认知**：图的拓扑基础（多模态节点 + backbone + 引用边 + 跨文档引用边）已具备支撑 M4 的能力。**欠缺的不是图本身，而是在图上生成 M4 query 的策略和 QC 体系。**
+
+---
+
+## 七、下周计划（M4 路线图对齐）
+
+### 本周目标：锁定 M1.5 基线（Multi-modal + 伪 Multi-hop）
+
+| 优先级 | 事项 | 交付标准 | M4 维度 |
+|--------|------|---------|---------|
+| **P0** | 全量生成 real-user + PersonaHub persona queries（500 candidates） | `--provider company --query-style mixed --use-persona`，50 类 PersonaHub 人设驱动，产出 400+ 新 queries | Multi-modal |
+| **P0** | 扩大评测集 + 重跑 eval | 新 queries 上 graph_full 仍优于 BM25（验证泛化性） | 基线巩固 |
+| **P0** | 跑 MoDora element enrichment | 产出 `multimodal_elements_enriched.json`，使 C1 噪声过滤在全量生成中生效 | Multi-modal |
+| **P0** | **C-Pool 泛用型查询库（Mentor 要求）** | 人工整理 50-100 条通用学术 query，QC 只验 evidence localization | 基线巩固 |
+
+### 后续阶段：从 M1.5 → M4
+
+| 阶段 | 事项 | 交付标准 | M4 维度 |
+|------|------|---------|---------|
+| **Phase 1** | **真正的 Multi-hop 推理链** | 在图上枚举 3-4 hop 跨模态因果路径，query 生成要求串行推理（非并行取证），QC 新增 `reasoning_depth ≥ 2` | **Multi-hop** |
+| **Phase 2** | **Element-level 跨文档边** | Qwen3-Embedding 跨文档匹配 + 共享实体桥接 → 新边纳入 neighbor propagation → 跨文档 multi-hop 路径 | **Multi-document** |
+| **Phase 3** | **Multi-turn 对话链** | 同一路径多轮递进生成，`session_id` + `depends_on_turns`，QC 新增 `turn_dependency` | **Multi-turn** |
+| **Phase 4** | **M4 联合验证** | 全维度覆盖 query 集 + bootstrap CI 统计显著性检验 | M4 全覆盖 |
+| P1 | 修复 35/82 篇零候选文档 | 降 per_combo_cap 或 adj_bridge 单独路径 | 基础设施 |
+| P1 | 统计显著性检验 | bootstrap CI + paired test，加强实验说服力 | 基线巩固 |
 
 **C-Pool 泛用型查询库说明**（Mentor 2026-03-12 提出）：
 
