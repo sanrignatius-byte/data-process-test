@@ -80,10 +80,11 @@ Turn 3: 对应 Hop 3 → "公式 (7) 能解释这种不一致吗？"（依赖 Tu
 | 任务 | 交付物 | 说明 |
 |------|--------|------|
 | M4 Strategy Review | 本文档 | 诚实重定位 |
-| Reasoning Step Schema | `docs/M4_SCHEMAS.md` | 定义 3-step 推理链数据格式 |
-| Step-deletion QC | `qc_reasoning_depth()` in generation script | 验证真正多跳 |
-| Cross-doc bridge schema | `cross_doc_edges` schema | element-level 桥接数据格式 |
-| Multi-turn session schema | `session` schema | 对话链数据格式 |
+| Reasoning Step Schema | `docs/M4_SCHEMAS.md`（Schema-ready） | 定义 3-step 推理链数据格式；当前生成脚本尚未升级为 native generator |
+| Reasoning-depth heuristic | `qc_reasoning_depth()` in generation script | 启发式 auto-tagging（非严格验证器），用连接词模式区分 parallel/serial |
+| Step-deletion proxy | `step_deletion_proxy` metric | 因果连接词计数 ≥ min_depth-1 的代理指标；真正 step-deletion test 待 Phase 1 |
+| Cross-doc bridge schema | `cross_doc_edges` schema（Schema-ready） | element-level 桥接数据格式 |
+| Multi-turn session schema | `session` schema（Schema-ready） | 对话链数据格式 |
 
 ### Phase 1（1-2 周）：严格 Multi-hop
 
@@ -91,8 +92,8 @@ Turn 3: 对应 Hop 3 → "公式 (7) 能解释这种不一致吗？"（依赖 Tu
 |------|--------|------|
 | 3-4 hop 因果路径枚举 | 图上路径搜索升级 | 从拓扑路径→因果路径 |
 | 推理链 query 生成 | LLM prompt + 生成脚本 | 每条 query 附带 `reasoning_steps[]` |
-| Step-deletion QC 验证 | 50-100 条 gold 3-step queries | 人工验证推理深度 |
-| reasoning_depth 评估 | eval 脚本 | 自动化推理深度检测 |
+| **真正的** step-deletion test | 50-100 条 gold 3-step queries | 删 step 重判 answer derivability（替代当前 proxy） |
+| Heuristic 误差审计 | 30-50 条人工标注 | 验证 classify_reasoning_structure() 的 precision/recall |
 
 ### Phase 2（1-2 周）：高精度 Multi-document
 
@@ -123,8 +124,12 @@ Turn 3: 对应 Hop 3 → "公式 (7) 能解释这种不一致吗？"（依赖 Tu
 
 1. **图已具备 M4 的拓扑基础**（多模态节点 + backbone + 引用边 + 跨文档引用边），欠缺的不是图本身，而是在图上生成 M4 query 的策略和 QC 体系。
 
-2. **不要同时铺开三条线**。优先把严格 multi-hop schema 和 step-deletion QC 做实（Phase 1），这是回答"你们到底是在做 multi-hop 还是在做双证据拼接"的关键。
+2. **不要同时铺开三条线**。优先把严格 multi-hop schema 和真正的 step-deletion 验证做实（Phase 1），这是回答"你们到底是在做 multi-hop 还是在做双证据拼接"的关键。
 
 3. **每个 Phase 的交付物应该是质量而非数量**。50-100 条真正 3-step 的 gold 样本，比 500 条 2-evidence 拼接更有论文价值。
 
 4. **项目对外口径**：Graph-backed M4-Foundation，不是"已完成 M4 数据闭环"。已验证的是图检索增益和跨模态 dual-evidence 生成能力，M4 的三个缺口正在系统性补齐。
+
+5. **区分 Schema-ready 与 Generator-ready**。M4_SCHEMAS.md 定义了目标数据格式，但当前生成脚本仍是 dual-evidence pair 容器 + 新字段透传。3-step native generator（3+ element path 枚举 + Schema 1 原生输出 + element_ids 与 reasoning_steps 一致）是 Phase 1 的核心工程任务。
+
+6. **不因战略升级停摆已有可交付**。在 M4 研究主线之外，保留并行的保底交付线（full-run + eval + GRAPH_ARCHITECTURE 扩充），确保 4 月节点有东西可交。

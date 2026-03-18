@@ -2067,21 +2067,31 @@ def qc_reasoning_depth(
     pair: Dict[str, Any],
     min_depth: int = 3,
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """QC check for true multi-hop reasoning depth (M4 Schema 1 validation).
+    """Reasoning depth analysis and auto-tagging (M4 Schema 1 support).
 
-    This checks whether a query requires genuine serial reasoning (A → B → C)
-    rather than parallel evidence combination (A ∧ B → Answer).
+    Two modes:
+      A) If obj contains explicit `reasoning_steps[]` (new Schema 1 format):
+         performs structural validation (dependencies, element diversity, role arc)
+         and returns hard-fail issues.
+      B) Otherwise: heuristic analysis of free-text reasoning_chain + answer
+         using causal/parallel connector patterns. Returns advisory metrics only.
 
-    Checks:
-      1. reasoning_depth: estimated depth of reasoning chain
-      2. serial_reasoning: presence of causal/logical connectors indicating steps
-      3. step_deletion_heuristic: whether answer references multiple distinct
-         causal links (proxy for step-deletion test)
-      4. evidence_diversity: reasoning steps use different evidence types
+    IMPORTANT — Known limitations of heuristic mode (B):
+      - Based on language surface features (connector words), NOT actual reasoning
+        structure. Writing style can inflate or deflate depth estimates.
+      - Not robust across query styles (academic vs real_user have different
+        connector distributions).
+      - evidence_type classification depends on span keyword matching.
+      - step_deletion_proxy is causal-link word count, NOT a true step-deletion
+        test (which would require deleting a step and re-judging answer derivability).
+
+    Best used for: auto-tagging / dataset profiling / analytics.
+    NOT suitable for: strict M4 qualification gate (until Phase 1 real validation).
 
     Args:
         obj: The generated query object
-        pair: The candidate pair
+        pair: The candidate pair (currently unused in heuristic mode; reserved for
+              future graph-topology-aware validation)
         min_depth: Minimum reasoning depth to consider as "true multi-hop" (default 3)
 
     Returns:

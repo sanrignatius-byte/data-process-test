@@ -5,6 +5,26 @@
 
 ---
 
+## Implementation Status: Schema-ready vs Generator-ready
+
+| 状态 | 含义 | 当前位置 |
+|------|------|---------|
+| **Schema-ready** | 数据格式已定义，字段语义明确，可用于人工标注和验证 | ✅ 三套 Schema 均已完成 |
+| **Tagger-ready** | 生成脚本可在输出中透传新字段 + 启发式 auto-tagging | ✅ `reasoning_depth` / `reasoning_structure` / `reasoning_steps` 已接入 |
+| **Generator-ready** | 生成脚本原生支持 3+ element 路径枚举 + Schema-native 输出 | ❌ 待 Phase 1 实现 |
+
+**当前状态**：所有 Schema 处于 **Schema-ready + Tagger-ready** 阶段。
+生成脚本 `generate_multihop_l1_queries.py` 仍以 dual-evidence pair 为容器，
+新增字段（`reasoning_steps`、`reasoning_depth`、`reasoning_structure`）通过透传挂载。
+
+**Generator-ready 升级要点**（Phase 1 工程任务）：
+- `element_ids` 从固定 2 元素 → 与 `reasoning_steps[].evidence_element_id` 一致的 N 元素
+- 路径枚举从 2-3 hop 拓扑路径 → 3-4 节点因果路径
+- LLM prompt 要求输出 Schema 1 格式的 `reasoning_steps[]`
+- QC 从启发式 proxy → 真正 step-deletion 验证
+
+---
+
 ## Schema 1: Strict Multi-hop Reasoning Chain（严格多跳推理链）
 
 ### 核心原则
@@ -62,7 +82,9 @@
     {"from": "table", "to": "formula", "transition_type": "formalization"}  // 从归因到数学解释
   ],
 
-  // === Step-deletion QC 结果 ===
+  // === Step-deletion 验证结果（Phase 1 目标格式） ===
+  // 注意：当前代码中只有 proxy heuristic（因果连接词计数），
+  // 真正的 step-deletion test（删 step 重判 answer derivability）待 Phase 1 实现
   "step_deletion_qc": {
     "passed": true,
     "results": [
