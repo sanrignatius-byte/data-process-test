@@ -60,7 +60,7 @@ log_run(
 - **三项工程修复**：quality_score 从常量 0.8 → 拓扑特征加权 [0.13, 0.88]；hub coverage 从 9.53% → 90.42%（纳入 adjacent_backbone_bridges 397 个 element）；citation walk 加入双向 + 2-hop co-citation
 - **组件权重解耦**：新增 `--hub-weight/--nprop-weight/--cite-weight` 独立调参；最优配置 hw=0.15, nd=0.20, cw=0.0
 - **关键发现**：neighbor_prop（1-hop 邻域标签传播）是核心信号，能拯救 11 条 BM25 遗漏的 queries；citation_walk 为负贡献（doc-level 粒度与 element-level 证据定位不匹配），应在 graph_full 中关闭；2-hop 不如 1-hop
-- **MoDora 工作流代码已实现并通过静态审计**（A1/A2/B1/B2/C1 + Persona Hub；其余子项以脚本能力为准），但尚未完成 500 candidates 全量运行验证
+- **MoDora 工作流代码已实现并通过静态审计**（A1/A2/B1/B2/C1 + PersonaHub；其余子项以脚本能力为准），但尚未完成 500 candidates 全量运行验证
 - **产物文件**：`data111/hub_candidates_enriched_v3.json`、`data/phase0_eval_report_v3_tuned.json`
 
 ### 本轮关键结论
@@ -79,14 +79,14 @@ log_run(
   - Graph 核心贡献：节点/边构建方法 + Hub 评分 + 多任务应用
   - Query 生成降级为 graph 的第一个 application（仍是当前主要交付物）
 - **时间线确认**：4 月申专利（公司专利），5 月开放论文投稿
-- **新方向纳入 roadmap**：Persona Hub + C-Pool 万金油查询库 + Graph RAG 调研 + 泛化方案设计
+- **新方向纳入 roadmap**：PersonaHub + C-Pool 万金油查询库 + Graph RAG 调研 + 泛化方案设计
 - **讨论记录**：已更新至 `docs/DISCUSSION_LOG.md`（2026-03-12 节）
 
 ### 本轮关键设计决策
 - **图架构文档化是最高优先**：Mentor 明确要求，每次周会前必须有独立的图文档（节点/边/成本/评分），不能再散落在 CLAUDE.md 中
 - **验证效果是 4 月目标**：design document graph → vs baseline（BM25/dense）在 QA 或 evidence localization 上的实验
 - **C-Pool 策略**：~50-100 条人工精选的万金油通用 query，QC 只验 evidence localization，不验 query 质量
-- **Persona Hub 扩展**：5 类用户人设（PhD/lazy/careful/practitioner/skeptic），按比例随机分配，增强多样性
+- **PersonaHub 人设驱动**：借鉴 PersonaHub（Ge et al., 2024, arXiv:2406.20094）方法论，策展 50 类学术领域读者人设，按 pair_id 哈希确定性分配，增强 query 多样性
 
 ---
 
@@ -517,7 +517,7 @@ python scripts/generate_multihop_l1_queries.py \
 - ~~**Phase0 Eval v2 首轮**~~ ✅ **完成** — graph 与 BM25 持平，hub_overlap=9.53%，continue_expand=False
 - ~~**Phase0 Eval v3 三项修复**~~ ✅ **完成** — quality_score 重建 + hub coverage 扩大 + citation walk 修复
 - ~~**Phase0 组件权重解耦 + Grid Search**~~ ✅ **完成** — graph_full MRR +0.0403，`continue_expand=True`
-- ~~**MoDora 四工作流代码实现**~~ ✅ **完成** — A1/A2/B1/B2/C1/C3/D1 + Persona Hub 全部已实现（代码就绪，未全量运行）
+- ~~**MoDora 四工作流代码实现**~~ ✅ **完成** — A1/A2/B1/B2/C1/C3/D1 + PersonaHub 全部已实现（代码就绪，未全量运行）
 - ~~前序历史~~ ✅ 见 `docs/DISCUSSION_LOG.md`
 
 ### MoDora 工作流代码完成度（代码就绪，待全量验证）
@@ -531,7 +531,7 @@ python scripts/generate_multihop_l1_queries.py \
 | C1: Enrichment 噪声过滤器 | ✅ | `scripts/generate_multihop_l1_queries.py` | 随 query 生成自动生效 |
 | C3: Hub summary 压缩重写 | ✅ | `scripts/enrich_hub_candidates.py` | 已在 v3 enrichment 中使用 |
 | D1: `qc_real_user_query()` | ✅ | `scripts/generate_multihop_l1_queries.py` | 需 real_user queries 触发 |
-| Persona Hub (5 类) | ✅ | `scripts/generate_multihop_l1_queries.py` | 需 `--use-persona` 全量跑 |
+| PersonaHub 人设 (50 类) | ✅ | `scripts/generate_multihop_l1_queries.py` + `data/personahub_academic_personas.json` | 需 `--use-persona` 全量跑 |
 | MoDora enrichment 脚本 | ✅ | `scripts/enrich_elements_modora.py` | 需跑生成 `multimodal_elements_enriched.json` |
 
 ### P0（本周，支撑周会 + 专利）

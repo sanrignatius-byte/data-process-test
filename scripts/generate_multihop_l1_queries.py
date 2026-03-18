@@ -789,85 +789,95 @@ _REAL_USER_STYLE_CYCLE = list(_REAL_USER_TEMPLATES.keys())
 
 
 # ──────────────────────────────────────────────────────────────
-# Persona Hub: 5 user personas injected as prompt prefix
-# Mentor suggestion (2026-03-04): rotate user personas to increase
-# query diversity and naturalness across different reader types.
+# PersonaHub integration: diverse reader personas for query generation
+#
+# Based on PersonaHub methodology (Ge et al., 2024):
+#   "Scaling Synthetic Data Creation with 1,000,000,000 Personas"
+#   arXiv:2406.20094 | Dataset: proj-persona/PersonaHub (HuggingFace)
+#   GitHub: tencent-ailab/persona-hub
+#
+# We curate a domain-adapted subset of academic personas following
+# PersonaHub's Text-to-Persona format.  Each persona is a short
+# natural-language description injected as prompt prefix via {persona}.
+# When HuggingFace access is available, these can be augmented with
+# personas sampled directly from PersonaHub's persona.jsonl (200K+).
 # ──────────────────────────────────────────────────────────────
 
-PERSONA_PREFIXES: Dict[str, str] = {
-    "phd": (
-        "You are a PhD student in machine learning who reads papers carefully "
-        "and asks precise, technically grounded questions that probe assumptions "
-        "and connect theory to empirical findings."
-    ),
-    "lazy": (
-        "You are a busy researcher who only skims papers. You ask short, direct "
-        "questions — often just a few words — expecting the system to fill in context. "
-        "You don't bother with full sentences when keywords suffice."
-    ),
-    "careful": (
-        "You are a meticulous reviewer who reads every word. You ask detailed "
-        "questions that cross-reference multiple parts of a paper, notice "
-        "inconsistencies, and want precise evidence-backed answers."
-    ),
-    "practitioner": (
-        "You are a ML engineer evaluating whether to adopt this method in production. "
-        "You care about practicality: compute cost, data requirements, ease of "
-        "implementation, and whether gains hold on realistic benchmarks."
-    ),
-    "skeptic": (
-        "You are a skeptical researcher who doubts extraordinary claims. You ask "
-        "challenging questions that probe whether results generalise, whether baselines "
-        "are fair, and whether limitations are honestly disclosed."
-    ),
-}
-
-# Ordered cycle for deterministic round-robin assignment
-_PERSONA_CYCLE = list(PERSONA_PREFIXES.keys())  # phd, lazy, careful, practitioner, skeptic
-
-# Distribution weights (% of queries per persona)
-_PERSONA_WEIGHTS = {
-    "phd": 0.30,
-    "lazy": 0.25,
-    "careful": 0.20,
-    "practitioner": 0.15,
-    "skeptic": 0.10,
-}
+_PERSONAHUB_PERSONAS: Optional[List[Dict[str, str]]] = None  # lazy-loaded cache
 
 
-def resolve_persona(pair_id: str) -> str:
-    """Deterministically assign a persona to a pair via stable hash + weighted selection.
+def _load_personahub_personas(path: Optional[str] = None) -> List[Dict[str, str]]:
+    """Load PersonaHub-format personas from JSON file.
 
-    Uses cumulative weight buckets so the distribution across a large run matches
-    _PERSONA_WEIGHTS without randomness.
+    Returns a list of dicts with at least 'id' and 'persona' keys.
+    Falls back to a minimal built-in set if the file is unavailable.
     """
-    if not pair_id:
-        return "phd"
+    global _PERSONAHUB_PERSONAS
+    if _PERSONAHUB_PERSONAS is not None:
+        return _PERSONAHUB_PERSONAS
+
+    if path is None:
+        path = str(PROJECT_ROOT / "data" / "personahub_academic_personas.json")
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        personas = data.get("personas", [])
+        if personas:
+            _PERSONAHUB_PERSONAS = personas
+            return _PERSONAHUB_PERSONAS
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        print(f"  WARNING: Failed to load PersonaHub personas from {path}: {e}")
+        print("  Falling back to built-in minimal persona set.")
+
+    # Minimal fallback (should not be needed in normal operation)
+    _PERSONAHUB_PERSONAS = [
+        {"id": "phd_ml_fairness", "persona": "A third-year PhD student researching algorithmic fairness who is preparing for their qualifying exam and needs to deeply understand how different fairness metrics interact with model performance across demographic groups."},
+        {"id": "ml_engineer_production", "persona": "A machine learning engineer at a mid-size tech company evaluating whether to adopt a new method in production, primarily concerned with compute cost, data requirements, latency constraints, and whether reported gains hold on real-world benchmarks."},
+        {"id": "reviewer_harsh", "persona": "An experienced conference reviewer known for thorough and critical reviews, who systematically checks whether baselines are fair, experiments are reproducible, and limitations are honestly disclosed."},
+        {"id": "busy_professor", "persona": "A tenured professor with heavy administrative duties who only has 15 minutes to skim a paper before a committee meeting and needs to quickly grasp the main contribution and its significance."},
+        {"id": "undergrad_first_paper", "persona": "An undergraduate computer science student reading their first machine learning research paper, struggling with mathematical notation and needing concrete examples to understand abstract concepts."},
+    ]
+    return _PERSONAHUB_PERSONAS
+
+
+def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
+    """Deterministically assign a PersonaHub persona to a pair via stable hash.
+
+    Uses the PersonaHub-format persona list (loaded from JSON file).
+    Returns the persona description text (not the id).
+    """
+    personas = _load_personahub_personas(persona_file)
+    if not pair_id or not personas:
+        return personas[0]["persona"] if personas else ""
     stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
-    r = (stable % 100) / 100.0  # value in [0, 1)
-    cumulative = 0.0
-    for persona in _PERSONA_CYCLE:
-        cumulative += _PERSONA_WEIGHTS[persona]
-        if r < cumulative:
-            return persona
-    return "phd"
+    idx = stable % len(personas)
+    return personas[idx]["persona"]
+
+
+def resolve_persona_id(pair_id: str, persona_file: Optional[str] = None) -> str:
+    """Return the persona id (short label) for logging/slicing."""
+    personas = _load_personahub_personas(persona_file)
+    if not pair_id or not personas:
+        return personas[0]["id"] if personas else "unknown"
+    stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
+    idx = stable % len(personas)
+    return personas[idx]["id"]
 
 
 def inject_persona_prefix(prompt: str, persona: str) -> str:
-    """Prepend the persona description to an existing prompt template.
+    """Prepend a PersonaHub persona description to an existing prompt template.
 
-    The persona is inserted after any leading blank lines so the template
-    role line remains first, then the persona clarifies the reader context.
+    The persona replaces the first "You are a ..." sentence in the prompt
+    so we don't double-define the role.  Falls back to simple prepend.
     """
-    prefix = PERSONA_PREFIXES.get(persona, "")
-    if not prefix:
+    if not persona:
         return prompt
-    # Replace first "You are a ..." sentence in the prompt with the persona
-    # so we don't double-define the role.  Fall back to simple prepend.
+    # Replace first "You are a ..." sentence with the persona
     first_sentence_pat = re.compile(r"^(You are [^.]+\.)", re.MULTILINE)
     if first_sentence_pat.search(prompt):
-        return first_sentence_pat.sub(prefix, prompt, count=1)
-    return prefix + "\n\n" + prompt
+        return first_sentence_pat.sub(persona, prompt, count=1)
+    return persona + "\n\n" + prompt
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1819,10 +1829,11 @@ def qc_real_user_query(
     elif q_words > 35:
         issues.append("query_too_long")
 
-    # 2b. Lazy persona hard length constraint: max SHORT_QUERY_MAX_WORDS (14 words).
-    #     The lazy persona is supposed to produce terse, keyword-style queries;
-    #     anything longer defeats the purpose of that persona.
-    if persona == "lazy" and q_words > SHORT_QUERY_MAX_WORDS:
+    # 2b. Skim-reader persona hard length constraint: max SHORT_QUERY_MAX_WORDS (14 words).
+    #     Personas whose id contains "skim" or "lazy" or "busy" or "conference_attendee"
+    #     are expected to produce terse queries; anything longer defeats the purpose.
+    _skim_keywords = ("skim", "lazy", "busy", "conference_attendee")
+    if persona and any(kw in persona for kw in _skim_keywords) and q_words > SHORT_QUERY_MAX_WORDS:
         issues.append("lazy_query_too_long")
     metrics["persona_applied"] = persona or "none"
 
@@ -2238,13 +2249,13 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
     enriched_section = build_enriched_context_section(pair)
 
     # Helper: append enriched section if non-empty, then optionally inject persona
-    _persona_id = resolve_persona(str(pair.get("pair_id", ""))) if use_persona else ""
+    _persona_text = resolve_persona(str(pair.get("pair_id", ""))) if use_persona else ""
 
     def _with_enriched(prompt_text: str) -> str:
         if enriched_section:
             prompt_text = prompt_text + "\n\n" + enriched_section
-        if use_persona and _persona_id:
-            prompt_text = inject_persona_prefix(prompt_text, _persona_id)
+        if use_persona and _persona_text:
+            prompt_text = inject_persona_prefix(prompt_text, _persona_text)
         return prompt_text
 
     if template_name == "figure_table_1hop":
@@ -2645,11 +2656,12 @@ def main() -> None:
         action="store_true",
         default=False,
         help=(
-            "Inject a Persona Hub prefix into every prompt, replacing the default "
-            "'You are a PhD student…' role line with one of 5 reader personas "
-            "(phd/lazy/careful/practitioner/skeptic) assigned deterministically "
-            "by pair_id hash. Distribution: phd 30%%, lazy 25%%, careful 20%%, "
-            "practitioner 15%%, skeptic 10%%. "
+            "Inject a PersonaHub persona prefix into every prompt, replacing the "
+            "default 'You are a PhD student…' role line with a diverse reader "
+            "persona from data/personahub_academic_personas.json (50 personas "
+            "curated following PersonaHub methodology, Ge et al. 2024, "
+            "arXiv:2406.20094). Persona assigned deterministically by pair_id "
+            "hash for reproducibility. "
             "Compatible with all --query-style values."
         ),
     )
@@ -2682,7 +2694,11 @@ def main() -> None:
     print(f"  Provider: {args.provider}")
     print(f"  Model: {args.model}")
     print(f"  Query style: {args.query_style}")
-    print(f"  Persona Hub: {'enabled' if args.use_persona else 'disabled'}")
+    if args.use_persona:
+        _personas = _load_personahub_personas()
+        print(f"  PersonaHub:  enabled ({len(_personas)} personas loaded)")
+    else:
+        print(f"  PersonaHub:  disabled")
     print(f"  Shuffle:     {'enabled (seed=42)' if args.shuffle else 'disabled'}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Output: {args.output}")
@@ -2824,9 +2840,11 @@ def main() -> None:
             for q_obj in queries:
                 # Route to the appropriate QC function based on query style
                 is_real_user_style = effective_query_style == "real_user"
-                effective_persona = resolve_persona(str(pair.get("pair_id", ""))) if args.use_persona else ""
+                _pair_id_str = str(pair.get("pair_id", ""))
+                effective_persona_id = resolve_persona_id(_pair_id_str) if args.use_persona else "none"
+                effective_persona_text = resolve_persona(_pair_id_str) if args.use_persona else ""
                 if is_real_user_style:
-                    issues, metrics = qc_real_user_query(q_obj, pair, persona=effective_persona)
+                    issues, metrics = qc_real_user_query(q_obj, pair, persona=effective_persona_id)
                 else:
                     issues, metrics = qc_multihop_query(q_obj, pair)
                     sig = query_opening_signature(q_obj.get("query", ""))
@@ -2839,9 +2857,7 @@ def main() -> None:
                     if not pair_has_length_mix:
                         issues.append("length_mix_missing")
                 metrics["query_style"] = effective_query_style
-                if not effective_persona:
-                    effective_persona = "none"
-                metrics["persona"] = effective_persona
+                metrics["persona"] = effective_persona_id
 
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
@@ -2864,7 +2880,7 @@ def main() -> None:
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
                     "cross_modal": True,
                     "query_style": effective_query_style,
-                    "persona": effective_persona,
+                    "persona": effective_persona_id,
                     "image_paths": [p for p in [img_a_path, img_b_path] if p],
                     "quality_tier": pair.get("quality_tier", "unknown"),
                     "query_type": q_obj.get("query_type", "unknown"),
@@ -2910,7 +2926,7 @@ def main() -> None:
     print(f"Dual-Evidence L1 Generation Summary (v4.5)")
     print(f"{'='*60}")
     print(f"  Query style:           {args.query_style}")
-    print(f"  Persona Hub:           {'enabled' if args.use_persona else 'disabled'}")
+    print(f"  PersonaHub:            {'enabled' if args.use_persona else 'disabled'}")
     print(f"  Total pairs processed: {len(pairs)}")
     print(f"  Total queries written: {query_idx}")
     print(f"  QC passed:             {kept}")
