@@ -3000,8 +3000,14 @@ def main() -> None:
         help="Shuffle candidate pairs before processing (improves doc diversity when using --limit)",
     )
     ap.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
+    ap.add_argument("--max-retries", type=int, default=3, help="Max retries per pair on transient errors (403/timeout/5xx)")
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
+    ap.add_argument(
+        "--retry-failed",
+        default="",
+        help="Path to a _failed.json from a previous run; only re-process those pair_ids",
+    )
     ap.add_argument(
         "--query-style",
         choices=["academic", "real_user", "mixed"],
@@ -3050,6 +3056,18 @@ def main() -> None:
         random.shuffle(pairs)
     if args.limit > 0:
         pairs = pairs[:args.limit]
+
+    # --retry-failed: filter to only previously failed pair_ids
+    if args.retry_failed:
+        retry_path = Path(args.retry_failed)
+        if retry_path.exists():
+            retry_data = json.loads(retry_path.read_text(encoding="utf-8"))
+            retry_ids = set(r["pair_id"] for r in retry_data.get("failed_pairs", []))
+            pairs = [p for p in pairs if p.get("pair_id") in retry_ids]
+            print(f"  Retry mode: {len(pairs)} pairs from {retry_path.name}")
+        else:
+            print(f"  WARN: --retry-failed file not found: {retry_path}")
+
 
     print(f"Dual-Evidence L1 Query Generation (v4.5)")
     print(f"  Candidates: {len(pairs)}")
@@ -3112,6 +3130,7 @@ def main() -> None:
     # Stats
     type_stats = defaultdict(int)
     qc_issue_stats = defaultdict(int)
+    failed_pairs_log: List[Dict[str, Any]] = []
 
     # Dry-run should never mutate output files.
     out_stream = open(os.devnull, "w", encoding="utf-8") if args.dry_run else out_path.open("w", encoding="utf-8")
@@ -3155,22 +3174,52 @@ def main() -> None:
             print(f"  [{i+1}/{len(pairs)}] {pair['pair_id']} ({pair_type}, {hop}-hop, {img_count} imgs)...",
                   end=" ", flush=True)
 
-            # API call
-            try:
-                raw, in_tok, out_tok = call_api(
-                    client=client,
-                    model=args.model,
-                    prompt=prompt,
-                    images=images,
-                    provider=args.provider,
-                )
-                total_input_tokens += in_tok
-                total_output_tokens += out_tok
-            except Exception as e:
-                print(f"API ERROR: {e}")
-                if "rate" in str(e).lower() or "429" in str(e):
-                    print("  Rate limited, waiting 30s...")
-                    time.sleep(30)
+            # API call with retry
+            raw = None
+            in_tok = out_tok = 0
+            api_success = False
+            for attempt in range(1, args.max_retries + 1):
+                try:
+                    raw, in_tok, out_tok = call_api(
+                        client=client,
+                        model=args.model,
+                        prompt=prompt,
+                        images=images,
+                        provider=args.provider,
+                    )
+                    total_input_tokens += in_tok
+                    total_output_tokens += out_tok
+                    api_success = True
+                    break
+                except Exception as e:
+                    err_str = str(e)
+                    is_transient = any(k in err_str.lower() for k in [
+                        "timeout", "timed out", "connection", "503", "502",
+                        "429", "rate", "reset", "broken pipe",
+                    ])
+                    is_forbidden = "403" in err_str
+                    if is_forbidden and img_count >= 2 and attempt == 1:
+                        # 403 with multiple images → likely payload too large,
+                        # retry with single image (keep only first non-None)
+                        print(f"403 (2 imgs) → retry with 1 img...", end=" ", flush=True)
+                        images = [img for img in images if img is not None][:1]
+                        img_count = len([x for x in images if x is not None])
+                        continue
+                    if is_transient or (is_forbidden and attempt < args.max_retries):
+                        backoff = 2 ** attempt  # 2s, 4s, 8s
+                        print(f"RETRY {attempt}/{args.max_retries} (wait {backoff}s)...", end=" ", flush=True)
+                        time.sleep(backoff)
+                        continue
+                    # Non-transient or exhausted retries
+                    print(f"API ERROR: {e}")
+                    failed_pairs_log.append({
+                        "pair_id": pair["pair_id"],
+                        "error": err_str[:300],
+                        "attempts": attempt,
+                    })
+                    break
+
+            if not api_success:
                 continue
 
             obj = parse_json(raw)
@@ -3223,6 +3272,17 @@ def main() -> None:
                         issues.append("length_mix_missing")
                 metrics["query_style"] = effective_query_style
                 metrics["persona"] = effective_persona_id
+
+                # Level 3: relax QC checks that don't apply to 3-step reasoning chain
+                if is_l3:
+                    _L3_EXEMPT = {
+                        "missing_reasoning_chain",   # L3 uses reasoning_steps[], not reasoning_chain
+                        "single_element_answer",     # L3 has 3 evidence nodes, not just 2
+                        "missing_dual_anchor",       # L3 bridge paragraph has no visual anchor
+                        "evidence_spans_incomplete",  # L3 has 3 spans including bridge
+                        "weak_reasoning_connector",  # L3 QC is structural, not surface-level
+                    }
+                    issues = [iss for iss in issues if iss not in _L3_EXEMPT]
 
                 # M4 reasoning depth analysis (advisory, not hard-fail for existing data)
                 rd_issues, rd_metrics = qc_reasoning_depth(q_obj, pair, min_depth=3)
@@ -3330,6 +3390,21 @@ def main() -> None:
         print(f"\n  QC issue breakdown:")
         for iss, cnt in sorted(qc_issue_stats.items(), key=lambda x: -x[1]):
             print(f"    {iss}: {cnt}")
+
+    # Write failed pairs sidecar for later --retry-failed
+    if failed_pairs_log:
+        failed_path = out_path.with_name(out_path.stem + "_failed.json")
+        failed_data = {
+            "source": str(args.candidates),
+            "total_pairs": len(pairs),
+            "failed_count": len(failed_pairs_log),
+            "failed_pairs": failed_pairs_log,
+        }
+        failed_path.write_text(json.dumps(failed_data, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"\n  API failures:          {len(failed_pairs_log)}")
+        print(f"  Failed pairs log:      {failed_path}")
+        print(f"  To retry:  python {Path(__file__).name} --candidates {args.candidates} "
+              f"--output {out_path} --retry-failed {failed_path} ...")
     print(f"{'='*60}")
 
     log_run(
