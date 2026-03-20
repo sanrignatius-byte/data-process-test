@@ -462,6 +462,100 @@ CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). que
 
 
 # ──────────────────────────────────────────────────────────────
+# Level 3: 3-step reasoning chain prompt (M4 Schema 1)
+# ──────────────────────────────────────────────────────────────
+
+PROMPT_3STEP_REASONING_CHAIN = """You are building a benchmark that tests whether a system can follow a multi-step reasoning chain across different evidence sources. The chain MUST have exactly 3 steps, each grounded in a different piece of evidence.
+
+## Evidence Path (3 nodes)
+
+### Node 1: {elem_a_type} ({elem_a_id})
+Caption: {elem_a_caption}
+Context: {elem_a_context}
+{elem_a_image_note}
+
+### Node 2 (Bridge): paragraph
+{bridge_text}
+
+### Node 3: {elem_b_type} ({elem_b_id})
+Caption: {elem_b_caption}
+Context: {elem_b_context}
+{elem_b_image_note}
+
+## YOUR TASK
+
+Generate 1 query that REQUIRES all 3 evidence nodes in sequence to answer. The reasoning must be SERIAL (step 2 depends on step 1, step 3 depends on step 2), NOT parallel evidence gathering.
+
+### SERIAL vs PARALLEL — critical distinction
+SERIAL (REQUIRED): "Node 1 shows X → Node 2 explains why X happens via mechanism M → Node 3 confirms M produces outcome Y"
+PARALLEL (FORBIDDEN): "Node 1 says A, Node 3 says B, therefore A+B" — this is just two independent lookups
+
+### STEP-DELETION TEST (self-check before outputting)
+For each step, ask: "If I remove THIS step's evidence, can I still derive the answer?"
+- If YES for any step → your chain is too weak, rewrite it
+- If NO for all 3 steps → your chain is valid
+
+## STRICT RULES
+1. Query MUST require ALL 3 evidence nodes. Removing ANY node makes the answer underivable.
+2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions.
+3. NEVER use meta-language: "figure", "table", "equation", "the text", "according to", "as shown in".
+4. Max 30 words for the query. Answer max 4 sentences.
+5. ENTITY AMNESTY: use exact paper terminology (method names, metrics, variables).
+6. Each reasoning_step MUST have a DIFFERENT evidence_type from: observation, attribution, explanation, verification, prediction.
+7. The role arc MUST follow: premise → intermediate → conclusion.
+
+## Output format (JSON only):
+{{
+  "queries": [
+    {{
+      "query": "A question requiring serial 3-step reasoning (max 30 words)",
+      "answer": "Answer citing specific evidence from all 3 nodes, max 4 sentences",
+      "query_type": "causal_chain|mechanism_trace|conditional_prediction",
+      "reasoning_steps": [
+        {{
+          "step_id": 1,
+          "evidence_element_id": "{elem_a_id}",
+          "evidence_type": "observation",
+          "evidence_span": "extractive phrase from Node 1",
+          "reasoning_role": "premise",
+          "depends_on_steps": [],
+          "produces_claim": "What this step establishes (1 sentence)"
+        }},
+        {{
+          "step_id": 2,
+          "evidence_element_id": "bridge_paragraph",
+          "evidence_type": "attribution",
+          "evidence_span": "extractive phrase from Node 2 (bridge)",
+          "reasoning_role": "intermediate",
+          "depends_on_steps": [1],
+          "produces_claim": "How this step connects step 1's observation to a mechanism (1 sentence)"
+        }},
+        {{
+          "step_id": 3,
+          "evidence_element_id": "{elem_b_id}",
+          "evidence_type": "explanation",
+          "evidence_span": "extractive phrase from Node 3",
+          "reasoning_role": "conclusion",
+          "depends_on_steps": [1, 2],
+          "produces_claim": "What final conclusion requires both prior steps (1 sentence)"
+        }}
+      ],
+      "required_evidence_spans": [
+        {{"element_id": "{elem_a_id}", "span": "extractive phrase from Node 1", "evidence_type": "observation"}},
+        {{"element_id": "bridge_paragraph", "span": "extractive phrase from bridge", "evidence_type": "attribution"}},
+        {{"element_id": "{elem_b_id}", "span": "extractive phrase from Node 3", "evidence_type": "explanation"}}
+      ],
+      "visual_anchors": [
+        {{"element_id": "{elem_a_id}", "anchor": "physical location in Node 1 (evaluation only)"}},
+        {{"element_id": "{elem_b_id}", "anchor": "physical location in Node 3 (evaluation only)"}}
+      ],
+      "text_evidence": "direct quote from bridge paragraph context, min 40 chars"
+    }}
+  ]
+}}"""
+
+
+# ──────────────────────────────────────────────────────────────
 # Real-user query style prompt templates (B1)
 # ──────────────────────────────────────────────────────────────
 # These templates generate naturally phrased queries as a curious
@@ -2415,6 +2509,10 @@ def select_template(pair: Dict, query_style: str = "academic") -> str:
         stable_hash = int(hashlib.md5(pid.encode("utf-8")).hexdigest()[:8], 16) if pid else 0
         return f"real_user_{_REAL_USER_STYLE_CYCLE[stable_hash % len(_REAL_USER_STYLE_CYCLE)]}"
 
+    # Level 3: 3-step reasoning chain (activated by reasoning_chain_target flag)
+    if pair.get("reasoning_chain_target"):
+        return "3step_reasoning_chain"
+
     # academic (default)
     a_type = pair["element_a_type"]
     b_type = pair["element_b_type"]
@@ -2494,6 +2592,33 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
         if use_persona and _persona_text:
             prompt_text = inject_persona_prefix(prompt_text, _persona_text)
         return prompt_text
+
+    if template_name == "3step_reasoning_chain":
+        # Level 3: 3-step reasoning chain prompt
+        # Build bridge text from edge contexts and intermediate path nodes
+        bridge_parts: List[str] = []
+        for ec in pair.get("edge_contexts", []):
+            t = (ec.get("text", "") or "").strip()
+            if t:
+                bridge_parts.append(t)
+        hub_summary = (pair.get("hub_semantic_summary") or "").strip()
+        if hub_summary and hub_summary not in " | ".join(bridge_parts):
+            bridge_parts.append(hub_summary)
+        bridge_text = "\n".join(bridge_parts) if bridge_parts else "(bridge paragraph context not available)"
+
+        return _with_enriched(PROMPT_3STEP_REASONING_CHAIN.format(
+            elem_a_type=elem_a.get("element_type", "element"),
+            elem_a_id=elem_a["element_id"],
+            elem_a_caption=(elem_a.get("caption", "") or "")[:400],
+            elem_a_context=_context(elem_a),
+            elem_a_image_note="[Image provided above]" if elem_a.get("image_path") else "",
+            bridge_text=bridge_text[:800],
+            elem_b_type=elem_b.get("element_type", "element"),
+            elem_b_id=elem_b["element_id"],
+            elem_b_caption=(elem_b.get("caption", "") or "")[:400],
+            elem_b_context=_context(elem_b),
+            elem_b_image_note="[Image provided above]" if elem_b.get("image_path") else "",
+        ))
 
     if template_name == "figure_table_1hop":
         return _with_enriched(PROMPT_FIGURE_TABLE_1HOP.format(
@@ -3074,6 +3199,8 @@ def main() -> None:
             pair_has_short, pair_has_long = has_length_mix(queries)
             pair_has_length_mix = pair_has_short and pair_has_long
 
+            is_l3 = pair.get("reasoning_chain_target", False)
+
             for q_obj in queries:
                 # Route to the appropriate QC function based on query style
                 is_real_user_style = effective_query_style == "real_user"
@@ -3091,7 +3218,8 @@ def main() -> None:
                             issues.append("opening_repetition")
                     metrics["pair_has_short_query"] = pair_has_short
                     metrics["pair_has_long_query"] = pair_has_long
-                    if not pair_has_length_mix:
+                    # Level 3 generates 1 query, not 2 — skip length mix check
+                    if not pair_has_length_mix and not is_l3:
                         issues.append("length_mix_missing")
                 metrics["query_style"] = effective_query_style
                 metrics["persona"] = effective_persona_id
@@ -3116,7 +3244,9 @@ def main() -> None:
                 img_b_path = normalize_path(pair["element_b"].get("image_path", "") or "")
 
                 entry = {
-                    "query_id": f"l1_de_{doc_id}_{query_idx:04d}",
+                    "query_id": f"l{'3' if is_l3 else '1'}_de_{doc_id}_{query_idx:04d}",
+                    "difficulty_level": 3 if is_l3 else 2,
+                    "difficulty_label": "reasoning_chain" if is_l3 else "dual_evidence",
                     "reasoning_chain": q_obj.get("reasoning_chain", ""),
                     "query": q_obj.get("query", ""),
                     "answer": q_obj.get("answer", ""),
