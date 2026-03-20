@@ -1,0 +1,153 @@
+{
+  "generated_at_utc": "2026-03-20T08:16:24.452113+00:00",
+  "repo_root": "/workspace/data-process-test",
+  "current_assets": {
+    "level1_single": [
+      {
+        "logical_name": "l1_multihop_v3",
+        "path": "data/l1_multihop_queries_v3.jsonl",
+        "exists": true,
+        "record_count": 236,
+        "notes": "Current best single-element/L1-style pool mentioned in status docs."
+      }
+    ],
+    "level2_dual_evidence": [
+      {
+        "logical_name": "dual_evidence_queries_v3_pass",
+        "path": "data/l1_dual_evidence_queries_v3_pass.jsonl",
+        "exists": true,
+        "record_count": 149,
+        "notes": "QC-passed dual-evidence queries; conservative baseline for M2 Level 2."
+      },
+      {
+        "logical_name": "dual_evidence_triplets_v2_pass",
+        "path": "data/l1_dual_evidence_triplets_v2_pass.jsonl",
+        "exists": true,
+        "record_count": 173,
+        "notes": "Triplet training/eval view over the same dual-evidence core set."
+      },
+      {
+        "logical_name": "dual_evidence_queries_v4_4_run1",
+        "path": "data/l1_dual_evidence_queries_v4_4_run1.jsonl",
+        "exists": true,
+        "record_count": 252,
+        "notes": "Larger but not fully passed set; useful expansion pool once re-QC'd."
+      }
+    ],
+    "level3_reasoning_chain": [
+      {
+        "logical_name": "long_chain_iterative_v2",
+        "path": "data/l1_dual_evidence_long_chain_queries_v2_iterative.jsonl",
+        "exists": true,
+        "record_count": 20,
+        "notes": "Nearest existing precursor to 3-step reasoning data; currently small and not yet true native Level 3."
+      },
+      {
+        "logical_name": "l2_queries_v3",
+        "path": "data/l2_queries_v3.jsonl",
+        "exists": true,
+        "record_count": 42,
+        "notes": "Cross-doc/L2 experiments; useful schema reference, not yet final M2 Level 3."
+      }
+    ],
+    "retrieval_eval": [
+      {
+        "logical_name": "phase0_eval_report_tuned",
+        "path": "data/phase0_eval_report_v3_tuned.json",
+        "exists": true,
+        "record_count": null,
+        "notes": "Best current retrieval enhancement report for experiment B packaging."
+      },
+      {
+        "logical_name": "phase0_eval_report_fixed",
+        "path": "data/phase0_eval_report_v3_fixed.json",
+        "exists": true,
+        "record_count": null,
+        "notes": "Conservative locked-protocol report for comparison."
+      }
+    ],
+    "embedding_bridge_probe": [
+      {
+        "logical_name": "crossdoc_embedding_matches",
+        "path": "data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B.jsonl",
+        "exists": true,
+        "record_count": 590,
+        "notes": "Raw embedding-based element matching candidates."
+      },
+      {
+        "logical_name": "crossdoc_embedding_audit",
+        "path": "data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_v2_rerank_audit.json",
+        "exists": true,
+        "record_count": null,
+        "notes": "Existing audit evidence for embedding-based virtual edges."
+      }
+    ]
+  },
+  "phase0_best_report": {
+    "path": "data/phase0_eval_report_v3_tuned.json",
+    "exists": true,
+    "bm25": {
+      "recall_at_10": 0.8467,
+      "mrr": 0.5642,
+      "n": 261
+    },
+    "graph_full": {
+      "recall_at_10": 0.8736,
+      "mrr": 0.6045,
+      "n": 261
+    },
+    "delta_vs_bm25": {
+      "recall_at_10": 0.0269,
+      "mrr": 0.0403
+    }
+  },
+  "target_output_status": [
+    {
+      "group": "data",
+      "path": "data/m2/m2_level1_single.jsonl",
+      "exists": false
+    },
+    {
+      "group": "data",
+      "path": "data/m2/m2_level2_dual_evidence.jsonl",
+      "exists": false
+    },
+    {
+      "group": "data",
+      "path": "data/m2/m2_level3_3step.jsonl",
+      "exists": false
+    },
+    {
+      "group": "data",
+      "path": "data/m2/m2_general_queries.jsonl",
+      "exists": false
+    },
+    {
+      "group": "experiments",
+      "path": "experiments/exp_A_difficulty_gradient.json",
+      "exists": false
+    },
+    {
+      "group": "experiments",
+      "path": "experiments/exp_B_retrieval_enhancement.json",
+      "exists": false
+    },
+    {
+      "group": "experiments",
+      "path": "experiments/exp_C_qa_triangle.json",
+      "exists": false
+    },
+    {
+      "group": "docs",
+      "path": "docs/GRAPH_ARCHITECTURE.md",
+      "exists": true
+    }
+  ],
+  "execution_notes": [
+    "Stage 1 can start immediately from current artifacts without waiting for new long jobs.",
+    "Level 2 already has a conservative passed subset plus a larger re-QC candidate pool.",
+    "Level 3 is the biggest gap: current long-chain artifacts are precursors, not yet the final native 3-step benchmark.",
+    "Experiment B can be packaged immediately from the tuned Phase-0 report, while experiments A/C still need dedicated outputs.",
+    "Embedding-based virtual edges already have raw matches + audit artifacts, so Stage 4 can start from a small-doc probe instead of a cold start."
+  ]
+}
