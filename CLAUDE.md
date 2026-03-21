@@ -49,6 +49,43 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-03-20 更新｜M2 Experiment Pipeline 落地 + 三层数据 + 三组实验脚本）
+
+### 本轮完成（相对 2026-03-18）
+
+- **M2 实验 pipeline 全部代码和数据就绪**
+  - 三层数据打包完成：Level 1 (974 single-element) + Level 2 (157 dual-evidence) + Level 3 (130 候选待生成)
+  - 三组实验脚本落地：Exp A (难度梯度) + Exp B (检索增强, 复用 Phase0) + Exp C (QA 三角)
+- **Level 3 候选筛选完成** — `scripts/filter_l3_candidates.py`
+  - 从 500 条 hub candidates 筛出 130 条适合 3-step 推理链的候选
+  - 筛选条件：hop≥3、bridge paragraph 存在且有实质内容、两端元素跨模态、每文档 ≤5 条
+  - 分布：figure+formula:67 / figure+table:42 / formula+table:21，覆盖 34 篇文档
+- **`PROMPT_3STEP_REASONING_CHAIN` 新 prompt 落地** — M4 Schema 1 的 native generator
+  - 要求 LLM 输出 `reasoning_steps[]` + `depends_on_steps` + `evidence_type`
+  - 三步角色弧：premise → intermediate → conclusion
+  - 内嵌 step-deletion self-check 指令
+  - 证据类型强制不同（observation / attribution / explanation / verification / prediction）
+- **generator 扩展**：`select_template()` 和 `build_prompt()` 支持 `reasoning_chain_target` 标志自动选择 L3 prompt
+- **输出新增字段**：`difficulty_level`（1/2/3）、`difficulty_label`（single_element / dual_evidence / reasoning_chain）
+- **产物文件**：`data/m2/level1_single_element.jsonl`、`data/m2/level2_dual_evidence.jsonl`、`data/m2/all_levels_combined.jsonl`、`data/m2/l3_candidates_filtered.json`、`data/m2/exp_b_retrieval_enhancement.json`
+
+### 本轮关键决策
+- **三层难度梯度定义**：L1=单证据定位 → L2=双模态协同 → L3=3-step 串行推理链（删任一步则不可回答）
+- **Exp B 直接复用 Phase0 结果**（graph_full R@10=0.8736, MRR=0.6045），不重复实验
+- **L3 尚未生成**：130 条候选已就绪，需用公司 API 生成 50-100 条 gold queries 后才能跑 Exp A/C
+
+### M4 路线图（更新）
+| 阶段 | 目标 | 时间 |
+|------|------|------|
+| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
+| Phase 1 🔧 | M2 pipeline 代码就绪 + L3 候选筛选 + 3-step prompt 设计 | **已完成（代码）** |
+| Phase 1 ⏳ | **用公司 API 生成 L3 queries + 跑 Exp A/C** | **本周** |
+| Phase 2 | 高精度 multi-doc：element-level embedding 跨文档边 + 小规模 eval | 1-2 周 |
+| Phase 3 | Multi-turn session：路径→对话链 + turn_dependency QC | 1-2 周 |
+| Phase 4 | M4 联合验证 | 1 周 |
+
+---
+
 ## 当前状态（2026-03-18 更新｜M4 战略重定位 + Schema 设计 + Reasoning-depth Tagging）
 
 ### 本轮完成（相对 2026-03-16）
@@ -61,7 +98,7 @@ log_run(
   - Schema 2: Element-level Cross-document Bridge（`bridge_type` + `bridge_evidence` + `confidence`）
   - Schema 3: Multi-turn Session（`turns[]` + `coreference_type` + `turn_dependency_qc`）
   - 三者关系：Schema 2 提供跨文档边 → Schema 1 在图上生成推理链 → Schema 3 将推理链 session 化
-  - **注意**：当前生成脚本仍是 dual-evidence pair 容器，只是兼容新字段透传；3-step native generator 待 Phase 1 实现
+  - **注意**：当前生成脚本已支持 3-step native generator（`PROMPT_3STEP_REASONING_CHAIN`），dual-evidence pair 容器同时保留
 - **Reasoning-depth 启发式标记已集成** — `qc_reasoning_depth()` in `generate_multihop_l1_queries.py`
   - `classify_reasoning_structure()`：用语言表面特征（连接词模式）区分 parallel vs serial，**适合 auto-tagging / profiling，不适合作为严格 M4 合格判定**
   - `m4_reasoning_depth`、`m4_reasoning_structure`、`m4_is_true_multihop` 新增到 QC metrics
@@ -76,15 +113,6 @@ log_run(
 - **验证真正多跳的标准是 step-deletion test**：删掉任意中间步骤后答案不可得（当前仅有 proxy heuristic，真正 step-deletion 验证待 Phase 1）
 - **不同时铺开三条线**：优先 Phase 1（严格 multi-hop）→ Phase 2（element-level cross-doc）→ Phase 3（multi-turn）
 - **50-100 条 gold 3-step queries 比 500 条 2-evidence 拼接更有论文价值**
-
-### M4 路线图
-| 阶段 | 目标 | 时间 |
-|------|------|------|
-| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 本周 |
-| Phase 1 | 严格 multi-hop：3-4 hop 因果路径枚举 + 推理链 query 生成 + **真正的** step-deletion 验证 | 1-2 周 |
-| Phase 2 | 高精度 multi-doc：element-level embedding 跨文档边 + 小规模 eval | 1-2 周 |
-| Phase 3 | Multi-turn session：路径→对话链 + turn_dependency QC | 1-2 周 |
-| Phase 4 | M4 联合验证 | 1 周 |
 
 ---
 
@@ -476,6 +504,15 @@ python scripts/generate_multihop_l1_queries.py \
 | `docs/M4_STRATEGY_REVIEW_2026-03-18.md` | **M4 战略重定位文档（诚实现状评估 + 路线图）** |
 | `docs/M4_SCHEMAS.md` | **M4 三套数据 Schema（multi-hop / cross-doc / multi-turn）** |
 | `docs/M4_RESEARCH_NOTES.md` | M4 学术背景调研（M4DocBench / CoQA / TRACE / RT-RAG） |
+| `scripts/filter_l3_candidates.py` | **M2: L3 候选筛选（hop≥3 + bridge paragraph + 跨模态，130/500 条）** |
+| `scripts/package_m2_levels.py` | **M2: 三层数据打包（L1+L2+combined，统一 schema）** |
+| `scripts/run_exp_a_difficulty.py` | **M2 Exp A: BM25 Recall@10 难度梯度实验（L1 vs L2 vs L3）** |
+| `scripts/run_exp_c_qa_triangle.py` | **M2 Exp C: BM25 vs Graph 证据覆盖 + LLM QA 对比** |
+| `data/m2/level1_single_element.jsonl` | **M2 Level 1 数据（974 条单元素 query）** |
+| `data/m2/level2_dual_evidence.jsonl` | **M2 Level 2 数据（157 条双证据 query）** |
+| `data/m2/all_levels_combined.jsonl` | **M2 全量合并（1131 条，含 difficulty_level 字段）** |
+| `data/m2/l3_candidates_filtered.json` | **M2 Level 3 候选（130 条 3-hop 候选，待生成 query）** |
+| `data/m2/exp_b_retrieval_enhancement.json` | **M2 Exp B 结果（复用 Phase0 eval v3）** |
 | `main.py` | **公司 API 连通性测试脚本（yunwu.ai demo）** |
 | `local_api_logger/` | **公司 API 日志库（wrap_requests_call + token 统计）——需用户放入** |
 
@@ -553,7 +590,7 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-18 更新）
+## 下一步 TODO（2026-03-20 更新）
 
 ### 已完成（历史）
 - ~~**M4 Strategy Review + Schema 设计**~~ ✅ **完成** — 诚实重定位为 M4-Foundation；三套 Schema 落地；step-deletion QC 集成
@@ -561,6 +598,7 @@ python scripts/generate_multihop_l1_queries.py \
 - ~~**Phase0 Eval v3 三项修复**~~ ✅ **完成** — quality_score 重建 + hub coverage 扩大 + citation walk 修复
 - ~~**Phase0 组件权重解耦 + Grid Search**~~ ✅ **完成** — graph_full MRR +0.0403，`continue_expand=True`
 - ~~**MoDora 四工作流代码实现**~~ ✅ **完成** — A1/A2/B1/B2/C1/C3/D1 + PersonaHub 全部已实现（代码就绪，未全量运行）
+- ~~**M2 pipeline 代码 + 数据打包**~~ ✅ **完成** — 三层数据 + L3 候选筛选 + 3-step prompt + 三组实验脚本
 - ~~前序历史~~ ✅ 见 `docs/DISCUSSION_LOG.md`
 
 ### MoDora 工作流代码完成度（代码就绪，待全量验证）
@@ -577,42 +615,41 @@ python scripts/generate_multihop_l1_queries.py \
 | PersonaHub 人设 (50 类) | ✅ | `scripts/generate_multihop_l1_queries.py` + `data/personahub_academic_personas.json` | 需 `--use-persona` 全量跑 |
 | MoDora enrichment 脚本 | ✅ | `scripts/enrich_elements_modora.py` | 需跑生成 `multimodal_elements_enriched.json` |
 
-### P0（本周，M4 Phase 1 启动）
+### P0（本周，M2 实验执行 — L3 生成 + Exp A/C）
 
-1. **~~M4 Strategy Review + Schema 设计~~** ✅ 完成 — `docs/M4_STRATEGY_REVIEW_2026-03-18.md` + `docs/M4_SCHEMAS.md`
-2. **~~Reasoning-depth heuristic tagging~~** ✅ 完成 — `qc_reasoning_depth()` 已集成（advisory auto-tagger，非严格验证器）
-3. **Reasoning-depth heuristic 误差审计**：抽 30-50 条人工标 serial/parallel/mixed，对比脚本分类结果，算 precision/recall
+1. **~~M4 Strategy Review + Schema 设计~~** ✅ 完成
+2. **~~Reasoning-depth heuristic tagging~~** ✅ 完成
+3. **~~M2 pipeline 代码 + 数据打包~~** ✅ 完成 — 三层数据 + L3 候选 130 条 + 3-step prompt + Exp A/B/C 脚本
+4. **用公司 API 生成 L3 queries**：`python scripts/generate_multihop_l1_queries.py --candidates data/m2/l3_candidates_filtered.json --output data/m2/l3_reasoning_chain_queries.jsonl --pass-only --provider company --model gpt-5.4 --delay 0.5`，目标 50-100 条 pass
+5. **跑 Exp A（难度梯度）**：依赖 L3 queries 落地，`python scripts/run_exp_a_difficulty.py`
+6. **跑 Exp C（QA 三角）**：依赖 L3 queries 落地，`python scripts/run_exp_c_qa_triangle.py --provider company`
+7. **Reasoning-depth heuristic 误差审计**：抽 30-50 条人工标 serial/parallel/mixed，对比脚本分类结果，算 precision/recall
    - 审计脚本：`scripts/audit_reasoning_depth_heuristic.py`
-   - 导出人工标注样本：`python scripts/audit_reasoning_depth_heuristic.py export-sample --input data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl --output data/reasoning_depth_heuristic_audit_sample.csv --sample-size 40`
-   - 生成评估报告：`python scripts/audit_reasoning_depth_heuristic.py evaluate --input data/reasoning_depth_heuristic_audit_sample.csv --output data/reasoning_depth_heuristic_audit_report.json`
-4. **严格 Multi-hop 路径枚举升级**：在图上找 3-4 节点的因果路径（不只是拓扑路径），每步有不同 evidence_type（observation → attribution → explanation）
-5. **3-step 推理链 query 生成 prompt 设计**：LLM 输出需包含 `reasoning_steps[]` + `depends_on_steps` 字段，匹配 Schema 1 格式
-6. **产出 50-100 条 gold 3-step queries**：人工验证推理深度，通过真正的 step-deletion test（删 step 重判 answer derivability）
 
 ### P0.5（并行保底交付线 — 不因战略升级停摆已有可交付）
 
-7. **全量生成 real-user + persona queries**：`--provider company --query-style mixed --use-persona` 跑 500 hub candidates
-8. **跑 MoDora element enrichment**：生成 `data/multimodal_elements_enriched.json`
-9. **扩充 `docs/GRAPH_ARCHITECTURE.md`**：补充 eval 结果 + 最优配置 + hub 评分细节
+8. **全量生成 real-user + persona queries**：`--provider company --query-style mixed --use-persona` 跑 500 hub candidates
+9. **跑 MoDora element enrichment**：生成 `data/multimodal_elements_enriched.json`
+10. **扩充 `docs/GRAPH_ARCHITECTURE.md`**：补充 eval 结果 + 最优配置 + hub 评分细节
 
 ### P1（2 周内，M4 Phase 2 — Multi-document）
 
-10. **构建 element-level cross-doc edges**：用已有 Qwen3-Embedding-4B 匹配（`crossdoc_embedding_matches`）建立元素级跨文档边，输出 `cross_doc_edges_v1.jsonl`
-11. **小规模 eval 验证 element-level > doc-level**：证明 element-level 桥接比 citation walk 更合理
-12. **跨文档 multi-hop 路径枚举**：路径可跨越文档边界
+11. **构建 element-level cross-doc edges**：用已有 Qwen3-Embedding-4B 匹配（`crossdoc_embedding_matches`）建立元素级跨文档边，输出 `cross_doc_edges_v1.jsonl`
+12. **小规模 eval 验证 element-level > doc-level**：证明 element-level 桥接比 citation walk 更合理
+13. **跨文档 multi-hop 路径枚举**：路径可跨越文档边界
 
 ### P2（1 个月内，M4 Phase 3 — Multi-turn + 收尾）
 
-13. **Multi-turn session 生成**：将推理链转写为对话，每 hop → 一 turn，加入指代和省略
-14. **Turn-dependency QC**：`qc_turn_dependency()` — 删掉前轮信息后当前轮不可回答
-15. **M4 联合验证**：multi-hop + multi-doc + multi-turn + multi-modal 全覆盖 eval
+14. **Multi-turn session 生成**：将推理链转写为对话，每 hop → 一 turn，加入指代和省略
+15. **Turn-dependency QC**：`qc_turn_dependency()` — 删掉前轮信息后当前轮不可回答
+16. **M4 联合验证**：multi-hop + multi-doc + multi-turn + multi-modal 全覆盖 eval
 
 ### P3（持续）
 
-16. **C-Pool 万金油查询库**：50-100 条通用学术 query
-17. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
+17. **C-Pool 万金油查询库**：50-100 条通用学术 query
+18. **泛化方案设计**：纯 PDF（无 LaTeX）场景下的低成本建图方案
 
-详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-16 节）+ `docs/EXPERIMENT_RECORD_2026-03-16.md`
+详见 `docs/DISCUSSION_LOG.md` 最新讨论（2026-03-20 节）+ `docs/EXPERIMENT_RECORD_2026-03-16.md`
 
 ### Step 0 v3.2 质量问题备忘（2026-02-20 分析）
 - **Hub 问题**：单个高频被引 element（如 1409.0575 Table 9）产生 O(N) 虚假对 → G1 每 element ≤3 pairs
@@ -684,6 +721,25 @@ python scripts/build_latex_cross_modal_links.py \
     --latex-graph data/latex_reference_graph.json \
     --output data/latex_cross_modal_pairs.json
 
+# === M2 experiment pipeline ===
+# 打包三层数据
+python scripts/package_m2_levels.py
+
+# 筛选 L3 候选
+python scripts/filter_l3_candidates.py
+
+# 生成 L3 queries（公司 API）
+python scripts/generate_multihop_l1_queries.py \
+    --candidates data/m2/l3_candidates_filtered.json \
+    --output data/m2/l3_reasoning_chain_queries.jsonl \
+    --pass-only --provider company --model gpt-5.4 --delay 0.5
+
+# Exp A: 难度梯度
+python scripts/run_exp_a_difficulty.py
+
+# Exp C: QA 三角
+python scripts/run_exp_c_qa_triangle.py --provider company
+
 # === 公司 API（yunwu.ai）pipeline ===
 # 连通性测试
 export COMPANY_API_KEY="sk-your-key"
@@ -743,6 +799,13 @@ python scripts/generate_multihop_l1_queries.py --candidates data/hub_candidates_
 
 # Step 2 备选: Anthropic 直连
 python scripts/generate_multihop_l1_queries.py --candidates data/hub_candidates_enriched.json --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl --pass-only --provider anthropic --model claude-sonnet-4-5-20250929 --delay 0.3
+
+# === M2 experiment pipeline ===
+python scripts/package_m2_levels.py
+python scripts/filter_l3_candidates.py
+python scripts/generate_multihop_l1_queries.py --candidates data/m2/l3_candidates_filtered.json --output data/m2/l3_reasoning_chain_queries.jsonl --pass-only --provider company --model gpt-5.4 --delay 0.5
+python scripts/run_exp_a_difficulty.py
+python scripts/run_exp_c_qa_triangle.py --provider company
 
 # === 其他常用命令 ===
 # 连通性测试（公司 API）
