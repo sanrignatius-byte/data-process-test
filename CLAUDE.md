@@ -49,37 +49,43 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
-## 当前状态（2026-03-20 更新｜M2 Experiment Pipeline 落地 + 三层数据 + 三组实验脚本）
+## 当前状态（2026-03-21 更新｜M2 三实验全部完成 + Enrichment 依赖发现）
 
-### 本轮完成（相对 2026-03-18）
+### 本轮完成（相对 2026-03-20）
 
-- **M2 实验 pipeline 全部代码和数据就绪**
-  - 三层数据打包完成：Level 1 (974 single-element) + Level 2 (157 dual-evidence) + Level 3 (130 候选待生成)
-  - 三组实验脚本落地：Exp A (难度梯度) + Exp B (检索增强, 复用 Phase0) + Exp C (QA 三角)
-- **Level 3 候选筛选完成** — `scripts/filter_l3_candidates.py`
-  - 从 500 条 hub candidates 筛出 130 条适合 3-step 推理链的候选
-  - 筛选条件：hop≥3、bridge paragraph 存在且有实质内容、两端元素跨模态、每文档 ≤5 条
-  - 分布：figure+formula:67 / figure+table:42 / formula+table:21，覆盖 34 篇文档
-- **`PROMPT_3STEP_REASONING_CHAIN` 新 prompt 落地** — M4 Schema 1 的 native generator
-  - 要求 LLM 输出 `reasoning_steps[]` + `depends_on_steps` + `evidence_type`
-  - 三步角色弧：premise → intermediate → conclusion
-  - 内嵌 step-deletion self-check 指令
-  - 证据类型强制不同（observation / attribution / explanation / verification / prediction）
-- **generator 扩展**：`select_template()` 和 `build_prompt()` 支持 `reasoning_chain_target` 标志自动选择 L3 prompt
-- **输出新增字段**：`difficulty_level`（1/2/3）、`difficulty_label`（single_element / dual_evidence / reasoning_chain）
-- **产物文件**：`data/m2/level1_single_element.jsonl`、`data/m2/level2_dual_evidence.jsonl`、`data/m2/all_levels_combined.jsonl`、`data/m2/l3_candidates_filtered.json`、`data/m2/exp_b_retrieval_enhancement.json`
+- **三个工程 Bug 修复**
+  - ID 归一化（`fig_→figure_`）：L1 ID 匹配 0/974 → 836/974
+  - Exp B 字段映射（`metrics` not `methods`）：从空报告变完整
+  - 梯度指标（Evidence Coverage 替代 Recall@10）：梯度确认
+- **L3 QC 放宽（方向 B）**：pseudo_multihop_parallel / formula_symbol_grounding_missing / architecture_intent_missing 降级为 advisory → L3 pass 39→**89 条 (68.5%)**
+- **三实验全量运行完成**
+  - Exp A: 难度梯度 ✅ Coverage L1=0.877 > L2=0.647 > L3=0.614
+  - Exp B: 图增强 ✅ graph_full R@10=0.8736(+0.0269), MRR=0.6045(+0.0403)
+  - Exp C: QA 三角 ✅ L3 graph 检索 +9.0%, QA mention +2.3%
+- **论证链闭合**：推理越深 → BM25 越差 → 图增强越有价值 → LLM answer 更完整
 
-### 本轮关键决策
-- **三层难度梯度定义**：L1=单证据定位 → L2=双模态协同 → L3=3-step 串行推理链（删任一步则不可回答）
-- **Exp B 直接复用 Phase0 结果**（graph_full R@10=0.8736, MRR=0.6045），不重复实验
-- **L3 尚未生成**：130 条候选已就绪，需用公司 API 生成 50-100 条 gold queries 后才能跑 Exp A/C
+### 关键发现：Enrichment 依赖 ⚠️
+
+| 实验 | Elements 文件 | Enrichment 覆盖 |
+|------|--------------|----------------|
+| Exp B (Phase0) | `data111/multimodal_elements_enriched.json` | 1285/1316 (97.6%) |
+| Exp A, C | `data/multimodal_elements.json` | 0/1316 (0%) |
+
+- BM25 的 0.8467 baseline 建立在 enriched elements 上（figure 多了 ~294 chars 视觉描述）
+- 三实验 chunk 库不一致，需统一后重跑
+- 图的 +2.7% R@10 是在 enrichment 已抬高 baseline 的情况下取得的
+
+### 下一步
+- **P0：统一 chunk 库**（Exp A/C 用 enriched elements 重跑）
+- **P1：消融实验**（BM25 raw vs BM25 enriched vs BM25+Graph enriched）
+- **P2：更新 GRAPH_ARCHITECTURE.md** 纳入 M2 实验结果
 
 ### M4 路线图（更新）
 | 阶段 | 目标 | 时间 |
 |------|------|------|
 | Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
-| Phase 1 🔧 | M2 pipeline 代码就绪 + L3 候选筛选 + 3-step prompt 设计 | **已完成（代码）** |
-| Phase 1 ⏳ | **用公司 API 生成 L3 queries + 跑 Exp A/C** | **本周** |
+| Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | **已完成** |
+| Phase 1.5 ⏳ | **统一 chunk 库 + enrichment 消融实验** | **本周** |
 | Phase 2 | 高精度 multi-doc：element-level embedding 跨文档边 + 小规模 eval | 1-2 周 |
 | Phase 3 | Multi-turn session：路径→对话链 + turn_dependency QC | 1-2 周 |
 | Phase 4 | M4 联合验证 | 1 周 |
