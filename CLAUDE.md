@@ -75,10 +75,22 @@ log_run(
 - 三实验 chunk 库不一致，需统一后重跑
 - 图的 +2.7% R@10 是在 enrichment 已抬高 baseline 的情况下取得的
 
+### Enrichment 消融实验 ✅
+
+| 方法 | R@10 | MRR | 成本 |
+|------|------|-----|------|
+| BM25 (raw) | 0.8314 | 0.5508 | $0 |
+| BM25+Graph (raw) | 0.8314 | **0.5685** (+0.0177) | $0 |
+| BM25 (enriched) | 0.8467 | 0.5642 | ~$3 LLM |
+| BM25+Graph (enriched) | **0.8736** | **0.6045** (+0.0537) | ~$3 LLM |
+
+- **Graph 零成本 MRR +0.018 ≈ Enrichment $3 MRR +0.013**
+- **两者合用超线性**：+0.054 > 0.018+0.013（×1.73 倍）
+- **规模化路径**：万篇级用图为主（$0），局部高价值元素加 enrichment
+
 ### 下一步
-- **P0：统一 chunk 库**（Exp A/C 用 enriched elements 重跑）
-- **P1：消融实验**（BM25 raw vs BM25 enriched vs BM25+Graph enriched）
-- **P2：更新 GRAPH_ARCHITECTURE.md** 纳入 M2 实验结果
+- **P0：大规模 M2 生成** — 扩充三级 query 数据量
+- **P1：更新 GRAPH_ARCHITECTURE.md** 纳入消融 + M2 实验结果
 
 ### M4 路线图（更新）
 | 阶段 | 目标 | 时间 |

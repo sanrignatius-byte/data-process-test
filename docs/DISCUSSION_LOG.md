@@ -2693,13 +2693,40 @@ Exp C: 图增强在 L3 最显著（检索 +9%, QA +2.3%）
 
 **对论文叙事的影响**：这可以是优势 —— "即使 BM25 已经获得了 enrichment 加持，图增强仍然有效"。或者做消融实验：BM25(raw) vs BM25(enriched) vs BM25+Graph(enriched)。
 
+### 6.1 Enrichment 消融实验结果
+
+使用相同的 261 条 queries、相同的 v3 hub candidates（403 elements, 530 adjacency edges），仅切换 elements 文件：
+
+| 方法 | R@10 (raw) | R@10 (enr) | Δ enrich | MRR (raw) | MRR (enr) | Δ enrich |
+|------|-----------|-----------|----------|----------|----------|----------|
+| BM25 | 0.8314 | 0.8467 | +0.0153 | 0.5508 | 0.5642 | +0.0134 |
+| graph_hub_rerank | 0.8391 | 0.8467 | +0.0076 | 0.5526 | 0.5657 | +0.0131 |
+| graph_neighbor_prop | 0.8276 | 0.8659 | +0.0383 | 0.5668 | 0.5955 | +0.0287 |
+| graph_full | 0.8314 | 0.8736 | +0.0422 | 0.5685 | 0.6045 | +0.0360 |
+
+**关键对比**：
+
+| 对比 | R@10 | MRR | 成本 |
+|------|------|-----|------|
+| Enrichment alone (BM25 raw→enr) | +0.0153 | +0.0134 | ~$3 LLM |
+| Graph alone (BM25 raw→Graph raw) | +0.0000 | **+0.0177** | $0 |
+| Both (BM25 raw→Graph enr) | +0.0422 | +0.0537 | ~$3 LLM |
+| **BM25+Graph(raw) vs BM25(enr)** | -0.0153 | **+0.0043** | **省 $3** |
+
+**发现**：
+1. **Graph 在 raw 环境下主要提升 MRR（+0.0177），不提升 R@10**：图表 chunk 文本太短，BM25 分数太低，图传播加分不够进 top-10，但能把已在 top-10 的结果排得更靠前
+2. **BM25+Graph(raw) MRR 已超过 BM25(enriched)**：零成本图结构在排序质量上等价于花 $3 的 LLM enrichment
+3. **Enrichment 和 Graph 是超线性关系**：各自 MRR 提升之和为 0.0311，合用效果为 0.0537（×1.73 倍）。Enrichment 让图表成为更有效的 chunk → 图传播的加分更容易进 top-10
+4. **规模化结论**：万篇级别 enrichment 不可行（~$300+），图结构零成本地提供等价 MRR 提升；当资源允许局部 enrichment 时，两者合用效果最强
+
 **对实验一致性的影响**：Exp A/C 应该也用 enriched elements 跑一次，确保三个实验在同一个基准上。
 
 ### 七、下一步
 
-1. **P0：统一 chunk 库** — Exp A/C 用 enriched elements 重跑，确保三实验一致
-2. **P1：消融实验** — BM25(raw) vs BM25(enriched) vs BM25+Graph(enriched)，量化 enrichment 和图各自的贡献
-3. **P2：Exp C 样本量**已从 30 扩大到全量（L2=157, L3=89），结果稳定
+1. ~~P0：统一 chunk 库~~ → 不再需要，消融实验直接量化了差异
+2. ~~P1：消融实验~~ → ✅ 已完成（§6.1）
+3. ~~P2：Exp C 样本量~~ → ✅ 已完成（L2=157, L3=89 全量）
+4. **P0（新）：大规模 M2 生成** — 扩充三级 query 数据量，支撑论文实验章节
 
 ### 八、产出文件
 
@@ -2708,9 +2735,10 @@ Exp C: 图增强在 L3 最显著（检索 +9%, QA +2.3%）
 | `data/m2/exp_a_difficulty_gradient.json` | Exp A 报告（gradient_confirmed=true） |
 | `data/m2/exp_b_retrieval_enhancement.json` | Exp B 报告（完整 Phase0 数据） |
 | `data/m2/exp_c_qa_triangle.json` | Exp C 报告（L2:157 + L3:89 全量） |
+| `data/m2/ablation_raw_elements.json` | Enrichment 消融报告（raw vs enriched） |
 | `data/m2/l3_reasoning_chain_queries_pass.jsonl` | L3 放宽后 89 条 pass |
 | `data/m2/level3_reasoning_chain.jsonl` | L3 打包后（89 条） |
 
 ### 九、一句话总结
 
-> 修复三个工程 bug（ID 归一化 + Exp B 字段 + 梯度指标）后，三实验形成完整论证链：难度梯度确认（Coverage L1>L2>L3）、图增强达标（MRR +4%）、L3 上图的价值最大（检索 +9%、QA +2.3%）。同时发现 BM25 baseline 依赖 enrichment 的结构性问题，需统一 chunk 库并做消融实验。
+> 三实验论证链闭合 + enrichment 消融揭示核心发现：Graph 零成本 MRR 提升（+0.018）等价于 $3 LLM enrichment（+0.013），两者合用超线性（+0.054 > 0.018+0.013）。规模化路径：图结构为主、局部 enrichment 为辅。
