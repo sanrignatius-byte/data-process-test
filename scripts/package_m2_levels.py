@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -61,17 +61,49 @@ def package_level1() -> List[Dict[str, Any]]:
     return rows
 
 
-def package_level2() -> List[Dict[str, Any]]:
-    """Level 2: Dual-evidence queries (deduped union of v3_pass + v4.4_pass + new batch)."""
-    v3 = load_jsonl(DATA_DIR / "l1_dual_evidence_queries_v3_pass.jsonl")
-    v44 = load_jsonl(DATA_DIR / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl")
-    # New batch from M2 scale-up
-    l2_new = load_jsonl(M2_DIR / "l2_new_batch_pass.jsonl")
+def _glob_l2_pass_files() -> List[Path]:
+    """Find all L2 pass files (including production batches)."""
+    import glob
+    files = [
+        DATA_DIR / "l1_dual_evidence_queries_v3_pass.jsonl",
+        DATA_DIR / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl",
+        M2_DIR / "l2_new_batch_pass.jsonl",
+    ]
+    # Auto-discover production batch L2 pass files
+    for p in sorted(M2_DIR.glob("l2_production_*_pass.jsonl")):
+        if p not in files:
+            files.append(p)
+    return files
 
-    # Deduplicate by pair_id (prefer newer batches)
+
+def _glob_l3_pass_files() -> List[Path]:
+    """Find all L3 pass files (including production batches)."""
+    files = [
+        M2_DIR / "l3_reasoning_chain_queries_pass.jsonl",
+        M2_DIR / "l3_new_batch_pass.jsonl",
+    ]
+    # Auto-discover production batch L3 pass files
+    for p in sorted(M2_DIR.glob("l3_production_*_pass.jsonl")):
+        if p not in files:
+            files.append(p)
+    return files
+
+
+def package_level2() -> List[Dict[str, Any]]:
+    """Level 2: Dual-evidence queries (deduped union of all sources)."""
+    all_files = _glob_l2_pass_files()
+
+    # Load all, newer files first (later files override)
+    batches: List[Tuple[List[Dict[str, Any]], str]] = []
+    for f in reversed(all_files):
+        rows = load_jsonl(f)
+        if rows:
+            batches.append((rows, f.stem))
+
+    # Deduplicate by pair_id (prefer newer batches = first in list)
     seen_pairs: set = set()
     deduped: List[Dict[str, Any]] = []
-    for batch, label in [(l2_new, "new"), (v44, "v4.4"), (v3, "v3")]:
+    for batch, label in batches:
         for r in batch:
             pid = r.get("pair_id", "")
             if pid and pid in seen_pairs:
@@ -81,19 +113,26 @@ def package_level2() -> List[Dict[str, Any]]:
             r["difficulty_label"] = "dual_evidence"
             deduped.append(r)
 
-    print(f"  Level 2: {len(deduped)} dual-evidence queries (v3={len(v3)}, v4.4={len(v44)}, new={len(l2_new)}, deduped)")
+    sources = ", ".join(f"{f.stem}:{len(load_jsonl(f))}" for f in all_files if f.exists())
+    print(f"  Level 2: {len(deduped)} dual-evidence queries ({sources}, deduped)")
     return deduped
 
 
 def package_level3() -> List[Dict[str, Any]]:
-    """Level 3: 3-step reasoning chain queries (existing + new batch)."""
-    existing = load_jsonl(M2_DIR / "l3_reasoning_chain_queries_pass.jsonl")
-    new_batch = load_jsonl(M2_DIR / "l3_new_batch_pass.jsonl")
+    """Level 3: 3-step reasoning chain queries (all sources deduped)."""
+    all_files = _glob_l3_pass_files()
+
+    # Load all, newer files first
+    batches: List[List[Dict[str, Any]]] = []
+    for f in reversed(all_files):
+        rows = load_jsonl(f)
+        if rows:
+            batches.append(rows)
 
     # Deduplicate by pair_id
     seen_pairs: set = set()
     rows: List[Dict[str, Any]] = []
-    for batch in [new_batch, existing]:  # prefer newer
+    for batch in batches:
         for r in batch:
             pid = r.get("pair_id", "")
             if pid and pid in seen_pairs:
@@ -106,7 +145,8 @@ def package_level3() -> List[Dict[str, Any]]:
     if not rows:
         print(f"  Level 3: not yet generated")
         return []
-    print(f"  Level 3: {len(rows)} reasoning-chain queries (existing={len(existing)}, new={len(new_batch)}, deduped)")
+    sources = ", ".join(f"{f.stem}:{len(load_jsonl(f))}" for f in all_files if f.exists())
+    print(f"  Level 3: {len(rows)} reasoning-chain queries ({sources}, deduped)")
     return rows
 
 

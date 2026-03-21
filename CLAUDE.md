@@ -38,6 +38,9 @@ log_run(
 - `batch_figure_understanding_api.py` ✅ 已接入
 - `generate_l2_queries.py` ✅ 已接入
 - `enrich_elements_modora.py` ✅ 已接入（v1.1 补入）
+- `run_exp_c_qa_triangle.py` ✅ 已接入
+- `build_embedding_edges.py` — 不调用 LLM，无需接入
+- `run_production_batch.py` — 包装脚本，内部调用 generate_multihop_l1_queries.py（已接入）
 - **新增任何调用 LLM 的脚本时必须同步接入**
 
 **违规判定**：任何发起 API 请求但未调用 `log_run()` 的 PR 视为未通过 review。
@@ -49,7 +52,7 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
-## 当前状态（2026-03-21 更新｜M2 三实验全部完成 + Enrichment 依赖发现）
+## 当前状态（2026-03-21 更新｜M2 三实验全部完成 + Enrichment 消融 + Exp C Enriched 复验）
 
 ### 本轮完成（相对 2026-03-20）
 
@@ -57,23 +60,32 @@ log_run(
   - ID 归一化（`fig_→figure_`）：L1 ID 匹配 0/974 → 836/974
   - Exp B 字段映射（`metrics` not `methods`）：从空报告变完整
   - 梯度指标（Evidence Coverage 替代 Recall@10）：梯度确认
-- **L3 QC 放宽（方向 B）**：pseudo_multihop_parallel / formula_symbol_grounding_missing / architecture_intent_missing 降级为 advisory → L3 pass 39→**89 条 (68.5%)**
-- **三实验全量运行完成**
-  - Exp A: 难度梯度 ✅ Coverage L1=0.877 > L2=0.647 > L3=0.614
+- **L3 QC 放宽（方向 B）**：pseudo_multihop_parallel / formula_symbol_grounding_missing / architecture_intent_missing / missing_reasoning_chain 降级为 advisory → L3 pass 39→**89 条 (68.5%)**；新批次 26/39 pass (66.7%)
+- **M2 数据扩充**：L2 新增 53 条（82 候选 → 53 pass），L3 新增 26 条（39 候选 → 26 pass）
+- **三实验全量运行完成（enriched elements, L2=210, L3=115）**
+  - Exp A: 难度梯度 — Coverage L1=0.971 > L2=0.610 > L3=0.617（L1→L2 陡降，L2≈L3）
   - Exp B: 图增强 ✅ graph_full R@10=0.8736(+0.0269), MRR=0.6045(+0.0403)
-  - Exp C: QA 三角 ✅ L3 graph 检索 +9.0%, QA mention +2.3%
-- **论证链闭合**：推理越深 → BM25 越差 → 图增强越有价值 → LLM answer 更完整
+  - Exp C: QA 三角 — 图检索覆盖 +1.9%(L2)/+6.1%(L3)，QA mention -0.5%(L2)/-1.7%(L3)
+- **Enrichment 消融实验完成**：Graph 零成本 MRR +0.018 ≈ Enrichment $3 MRR +0.013
+
+### Exp C 核心发现：检索提升 ≠ QA 提升
+
+| | L2 检索Δ | L2 QA Δ | L3 检索Δ | L3 QA Δ |
+|---|---|---|---|---|
+| raw elements (n=157/89) | +0.96% | +1.91% | **+9.0%** | +2.25% |
+| enriched elements (n=210/115) | +1.9% | **-0.48%** | **+6.1%** | **-1.74%** |
+
+- **图一致地提升检索覆盖**（L3 +6.1%），但 enriched 环境下 LLM 并不更多引用图检索到的 evidence
+- **解读**：enrichment 已让 BM25 提供"足够好"的 evidence，图的边际 QA 价值有限
+- **论文叙事修正**：Graph 核心价值是检索层（尤其 raw/规模化场景），非 QA 层；QA mention 不是好的评估指标（受 LLM 引用偏好影响）
 
 ### 关键发现：Enrichment 依赖 ⚠️
 
 | 实验 | Elements 文件 | Enrichment 覆盖 |
 |------|--------------|----------------|
 | Exp B (Phase0) | `data111/multimodal_elements_enriched.json` | 1285/1316 (97.6%) |
-| Exp A, C | `data/multimodal_elements.json` | 0/1316 (0%) |
-
-- BM25 的 0.8467 baseline 建立在 enriched elements 上（figure 多了 ~294 chars 视觉描述）
-- 三实验 chunk 库不一致，需统一后重跑
-- 图的 +2.7% R@10 是在 enrichment 已抬高 baseline 的情况下取得的
+| Exp A, C (raw) | `data/multimodal_elements.json` | 0/1316 (0%) |
+| Exp A, C (enriched) | enriched elements | 1285/1316 (97.6%) |
 
 ### Enrichment 消融实验 ✅
 
@@ -88,19 +100,30 @@ log_run(
 - **两者合用超线性**：+0.054 > 0.018+0.013（×1.73 倍）
 - **规模化路径**：万篇级用图为主（$0），局部高价值元素加 enrichment
 
-### 下一步
-- **P0：大规模 M2 生成** — 扩充三级 query 数据量
-- **P1：更新 GRAPH_ARCHITECTURE.md** 纳入消融 + M2 实验结果
+### 下一步（两条支线并行，2026-03-22 启动）
+
+**支线 A（学校集群）：量产 query**
+- 目标：L2+L3 从 325 扩到 550+，总计 1500+ queries
+- 脚本：`scripts/run_production_batch.py`（自动过滤已用 pair_id → 生成 → 合并）
+- 资源：151 已 enriched 未用 + 270 待 enrich → 预计新增 ~228 pass
+- 成本：~$12-15（enrichment + generation + Exp C 重跑）
+
+**支线 B（公司集群）：Embedding 语义边**
+- 目标：验证 embedding 相似度能否补充图的边（mentor 建议方向）
+- 脚本：`scripts/build_embedding_edges.py`（新）+ `run_phase0_eval_ab.py --embedding-edges`
+- 步骤：元素 embedding → pairwise 相似度 → 阈值过滤 → 融合到图中重跑检索
+- 不需要 LLM API，只需 sentence-transformers + GPU
 
 ### M4 路线图（更新）
 | 阶段 | 目标 | 时间 |
 |------|------|------|
 | Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
-| Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | **已完成** |
-| Phase 1.5 ⏳ | **统一 chunk 库 + enrichment 消融实验** | **本周** |
-| Phase 2 | 高精度 multi-doc：element-level embedding 跨文档边 + 小规模 eval | 1-2 周 |
-| Phase 3 | Multi-turn session：路径→对话链 + turn_dependency QC | 1-2 周 |
-| Phase 4 | M4 联合验证 | 1 周 |
+| Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | 已完成 |
+| Phase 1.5 ✅ | Enrichment 消融实验 + Exp C enriched 复验 | 已完成 |
+| **Phase 2A ⏳** | **量产 1500+ queries** → 初代 benchmark 数据集 | 本周 |
+| **Phase 2B ⏳** | **Embedding 语义边** → 图增强 v2 | 本周 |
+| Phase 3 | 合并 2A+2B → 增强图 + 大数据集 → 最终实验 | 下周 |
+| Phase 4 | Multi-turn session + M4 联合验证 | 1-2 周 |
 
 ---
 

@@ -208,7 +208,7 @@ Reranked top-10: figure_3 和 table_2 都进入 → 跨模态 evidence pair 完�
 
 ## 6. 实验结果
 
-### 主结果（261 条 dual-evidence queries，1314 候选 chunks）
+### 6.1 Exp B — 检索增强（261 条 queries，1314 候选 chunks）
 
 | Method | Recall@10 | Δ vs BM25 | MRR | Δ vs BM25 |
 |--------|-----------|-----------|-----|-----------|
@@ -218,20 +218,49 @@ Reranked top-10: figure_3 和 table_2 都进入 → 跨模态 evidence pair 完�
 
 MRR **+7.1%** 相对提升，达到 continue\_expand 阈值（+0.03）✅
 
-### Hub-overlap 子集（236 queries，90.42%）
+#### Hub-overlap 子集（236 queries，90.42%）
 
 | Method | Recall@10 | Δ | MRR | Δ |
 |--------|-----------|---|-----|---|
 | BM25 | 0.8602 | — | 0.5652 | — |
 | **Graph full** | **0.8898** | **+0.0296** | **0.6102** | **+0.0450** |
 
-### Per-query 命中分析
+#### Per-query 命中分析
 
 Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual-evidence 类型**（fig+tab: 5, fig+formula: 4, formula+tab: 2）。损失 4 条。净增 +7。
 
+### 6.2 Exp A — 难度梯度（974 + 210 + 115 条 queries）
+
+用 evidence coverage（全部证据命中比例）验证三级 query 的难度递增：
+
+| Level | n | Evidence Coverage | Recall@10 | MRR |
+|-------|---|------------------|-----------|-----|
+| L1 (single_element) | 974 | **0.971** | 0.712 | 0.508 |
+| L2 (dual_evidence) | 210 | **0.610** | 0.833 | 0.553 |
+| L3 (reasoning_chain) | 115 | **0.617** | 0.965 | 0.746 |
+
+- **L1→L2 陡降 -37%**：单模态→跨模态是核心难度分水岭
+- L2≈L3 持平：推理链长度差异不足以在 evidence coverage 上拉开差距
+- Recall@10 反升是统计假象：多证据 query 有更多"中奖机会"
+
+### 6.3 Exp C — QA 三角印证（Graph 检索→LLM 回答质量）
+
+用 LLM (gpt-5.4) 在 BM25 vs Graph 检索结果上分别做 QA，对比 evidence mention：
+
+| 条件 | L2 检索Δ | L2 QA Δ | L3 检索Δ | L3 QA Δ |
+|------|---------|---------|---------|---------|
+| raw elements (n=157/89) | +0.96% | +1.91% | **+8.99%** | +2.25% |
+| enriched elements (n=210/115) | +1.90% | -0.48% | **+6.09%** | -1.74% |
+
+- **图一致提升检索覆盖**：L3 +6%~9%，推理链越深图的增益越大
+- **QA mention 在 enriched 环境下中性**：enrichment 已让 BM25 提供"足够好"的 evidence
+- **核心结论**：Graph 的价值在检索层（尤其 raw/规模化场景），QA 层需更好的评估指标
+
 ---
 
-## 7. 消融实验（关键结论）
+## 7. 消融实验
+
+### 7.1 图组件消融
 
 | 消融项 | 结论 |
 |--------|------|
@@ -239,7 +268,27 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 | **hub_prior 是辅助信号** | 独立仅 +0.0015 MRR，但与 neighbor_prop 协同后总增益达 +0.0403 |
 | **citation_walk 为负** | -0.0153 Recall，0 wins / 4 losses → 已关闭（doc-level 粒度与 element-level 需求错位） |
 | **1-hop > 2-hop** | 2-hop MRR 0.5962 < 1-hop 0.6045（扩散引入噪声） |
-| **hub_overlap 是决定因素** | 9.53%（25/261 queries）→ 90.42%（236/261 queries）（纳入 adjacent backbone bridges）是最大单一增益来源 |
+| **hub_overlap 是决定因素** | 9.53%→90.42% hub 覆盖率提升是最大单一增益来源 |
+
+### 7.2 Enrichment 消融（核心发现）
+
+同一 261 条 queries，仅切换 elements 文件（raw vs enriched）：
+
+| 方法 | R@10 (raw) | R@10 (enr) | MRR (raw) | MRR (enr) |
+|------|-----------|-----------|----------|----------|
+| BM25 | 0.8314 | 0.8467 | 0.5508 | 0.5642 |
+| BM25+Graph | 0.8314 | **0.8736** | **0.5685** | **0.6045** |
+
+| 对比 | MRR Δ | 成本 |
+|------|-------|------|
+| Enrichment alone | +0.0134 | ~$3 LLM |
+| **Graph alone** | **+0.0177** | **$0** |
+| Both combined | +0.0537 | ~$3 LLM |
+
+**三个关键发现**：
+1. **Graph 零成本 MRR +0.018 > Enrichment $3 MRR +0.013**
+2. **两者合用超线性**：各自之和 0.031，合用 0.054（×1.73 倍）
+3. **规模化路径**：万篇级用图为主（$0），局部高价值元素加 enrichment
 
 ### 迭代过程
 
@@ -290,10 +339,10 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 
 | 当前状态 | 改进方向 | 优先级 |
 |----------|---------|--------|
-| 评测集 261 queries（本系统辅助生成） | 引入外部标注 + bootstrap CI 统计显著性检验 | P0 |
-| 86 篇文档规模 | 扩到 500+ queries（real-user + PersonaHub persona），验证泛化性 | P0 |
+| L1=974, L2=210, L3=115（共 1299 条） | **量产 1000 条 production query**（L2+L3 为主），配严格 QC | P0 |
+| 仅基于 LaTeX \ref 的显式引用边 | **Embedding 语义边**：用 embedding model 算节点间相似度，阈值以上连边（补充隐式关联） | P0 |
 | paragraph_ref / element_ref 边当前基于 LaTeX 引用标记 | 扩展至正则引用模式（"Figure X" / "Table Y"），使方法适用于纯 PDF 文档 | P1 |
 | Citation walk 当前为负贡献（doc-level 粒度） | 改进为 element-level cross-doc linking | P1 |
-| 35/82 篇零候选 | 降 cap / Adjacent Backbone Bridge 单独生成路径 | P1 |
+| QA evaluation 用 evidence mention（不够好） | 改进为 answer correctness / completeness 评估 | P1 |
 
 > **注**：backbone 边（阅读顺序）和 Adjacent Backbone Bridge 不依赖任何引用标记格式，仅依赖文档解析器的段落顺序输出，因此天然适用于任何格式的文档。

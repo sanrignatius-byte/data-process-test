@@ -735,6 +735,9 @@ def main() -> None:
     ap.add_argument("--neighbor-hops", type=int, default=1,
                     help="Number of neighbor propagation hops (1 or 2)")
     ap.add_argument("--max-chars", type=int, default=1800)
+    ap.add_argument("--embedding-edges", type=Path, default=None,
+                    help="Embedding-based edges JSON (from build_embedding_edges.py). "
+                         "Merged into element adjacency for neighbor propagation.")
     args = ap.parse_args()
 
     # ------------------------------------------------------------------
@@ -755,6 +758,28 @@ def main() -> None:
         load_element_adjacency(args.hub_candidates)
         if args.hub_candidates.exists() else {}
     )
+    # Merge embedding-based edges if provided
+    if args.embedding_edges and args.embedding_edges.exists():
+        embed_data = json.loads(args.embedding_edges.read_text(encoding="utf-8"))
+        embed_edge_list = embed_data.get("edges", [])
+        n_new = 0
+        for e in embed_edge_list:
+            a = str(e.get("element_a_id", "")).strip()
+            b = str(e.get("element_b_id", "")).strip()
+            if a and b:
+                if a not in element_adjacency:
+                    element_adjacency[a] = set()
+                elif not isinstance(element_adjacency[a], set):
+                    element_adjacency[a] = set(element_adjacency[a])
+                if b not in element_adjacency:
+                    element_adjacency[b] = set()
+                elif not isinstance(element_adjacency[b], set):
+                    element_adjacency[b] = set(element_adjacency[b])
+                if b not in element_adjacency[a]:
+                    n_new += 1
+                element_adjacency[a].add(b)
+                element_adjacency[b].add(a)
+        print(f"  Merged {n_new} new embedding edges from {args.embedding_edges.name}")
     citation_adjacency = (
         load_citation_adjacency(args.citation_graph)
         if args.citation_graph.exists() else {}
