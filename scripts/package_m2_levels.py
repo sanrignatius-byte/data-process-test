@@ -62,45 +62,51 @@ def package_level1() -> List[Dict[str, Any]]:
 
 
 def package_level2() -> List[Dict[str, Any]]:
-    """Level 2: Dual-evidence queries (deduped union of v3_pass + v4.4_pass)."""
+    """Level 2: Dual-evidence queries (deduped union of v3_pass + v4.4_pass + new batch)."""
     v3 = load_jsonl(DATA_DIR / "l1_dual_evidence_queries_v3_pass.jsonl")
     v44 = load_jsonl(DATA_DIR / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl")
+    # New batch from M2 scale-up
+    l2_new = load_jsonl(M2_DIR / "l2_new_batch_pass.jsonl")
 
-    # Deduplicate by pair_id (prefer v4.4 which is newer)
+    # Deduplicate by pair_id (prefer newer batches)
     seen_pairs: set = set()
     deduped: List[Dict[str, Any]] = []
-    for r in v44:
-        pid = r.get("pair_id", "")
-        if pid and pid in seen_pairs:
-            continue
-        seen_pairs.add(pid)
-        r["difficulty_level"] = 2
-        r["difficulty_label"] = "dual_evidence"
-        deduped.append(r)
-    for r in v3:
-        pid = r.get("pair_id", "")
-        if pid and pid in seen_pairs:
-            continue
-        seen_pairs.add(pid)
-        r["difficulty_level"] = 2
-        r["difficulty_label"] = "dual_evidence"
-        deduped.append(r)
+    for batch, label in [(l2_new, "new"), (v44, "v4.4"), (v3, "v3")]:
+        for r in batch:
+            pid = r.get("pair_id", "")
+            if pid and pid in seen_pairs:
+                continue
+            seen_pairs.add(pid)
+            r["difficulty_level"] = 2
+            r["difficulty_label"] = "dual_evidence"
+            deduped.append(r)
 
-    print(f"  Level 2: {len(deduped)} dual-evidence queries (v3={len(v3)}, v4.4={len(v44)}, deduped)")
+    print(f"  Level 2: {len(deduped)} dual-evidence queries (v3={len(v3)}, v4.4={len(v44)}, new={len(l2_new)}, deduped)")
     return deduped
 
 
 def package_level3() -> List[Dict[str, Any]]:
-    """Level 3: 3-step reasoning chain queries (if already generated)."""
-    path = DATA_DIR / "m2" / "l3_reasoning_chain_queries_pass.jsonl"
-    if not path.exists():
-        print(f"  Level 3: not yet generated ({path})")
+    """Level 3: 3-step reasoning chain queries (existing + new batch)."""
+    existing = load_jsonl(M2_DIR / "l3_reasoning_chain_queries_pass.jsonl")
+    new_batch = load_jsonl(M2_DIR / "l3_new_batch_pass.jsonl")
+
+    # Deduplicate by pair_id
+    seen_pairs: set = set()
+    rows: List[Dict[str, Any]] = []
+    for batch in [new_batch, existing]:  # prefer newer
+        for r in batch:
+            pid = r.get("pair_id", "")
+            if pid and pid in seen_pairs:
+                continue
+            seen_pairs.add(pid)
+            r["difficulty_level"] = 3
+            r["difficulty_label"] = "reasoning_chain"
+            rows.append(r)
+
+    if not rows:
+        print(f"  Level 3: not yet generated")
         return []
-    rows = load_jsonl(path)
-    for r in rows:
-        r["difficulty_level"] = 3
-        r["difficulty_label"] = "reasoning_chain"
-    print(f"  Level 3: {len(rows)} reasoning-chain queries")
+    print(f"  Level 3: {len(rows)} reasoning-chain queries (existing={len(existing)}, new={len(new_batch)}, deduped)")
     return rows
 
 
