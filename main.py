@@ -90,38 +90,38 @@ def main():
     payload = {
         "model": args.model,
         "messages": [{"role": "user", "content": args.prompt}],
-        "stream": True,
-        "stream_options": {"include_usage": True},
     }
 
     print(f"\nAPI URL: {args.api_url}")
     print(f"Model:   {args.model}")
     print(f"Prompt:  {args.prompt}")
-    print("\nSending streaming request...")
-    print("Note: stream_options.include_usage is set for token stats\n")
+    print("\nSending request (non-streaming)...\n")
 
     try:
-        stream = wrap_requests_call(
-            model=args.model,
-            url=args.api_url,
+        import requests as _requests
+        resp = _requests.post(
+            args.api_url,
             headers=headers,
-            payload=payload,
-            user="demo",
+            json=payload,
+            timeout=60,
             verify=False,
         )
+        resp.raise_for_status()
+        rj = resp.json()
 
-        reasoning, content, usage = collect_stream_data(stream)
+        content = ""
+        choices = rj.get("choices", [])
+        if choices:
+            content = choices[0].get("message", {}).get("content", "")
+        usage = rj.get("usage", {})
 
         print("-" * 80)
-        print("\nStreaming response complete!")
-        if reasoning:
-            print(f"\n[Reasoning]\n{reasoning}")
         print(f"\n[Content]\n{content}")
-        if usage:
-            print(f"\n[Usage] input={usage.get('prompt_tokens', '?')}, "
-                  f"output={usage.get('completion_tokens', '?')}, "
-                  f"total={usage.get('total_tokens', '?')}")
-        print("\nLog recorded automatically.")
+        print(f"\n[Usage] input={usage.get('prompt_tokens', '?')}, "
+              f"output={usage.get('completion_tokens', '?')}, "
+              f"total={usage.get('total_tokens', '?')}")
+        print(f"\n[Model] {rj.get('model', '?')}")
+        print("\nConnectivity test PASSED.")
 
     except Exception as e:
         print(f"Request failed: {e}")

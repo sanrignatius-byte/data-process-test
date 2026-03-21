@@ -2816,7 +2816,7 @@ def call_api(
         return text, in_tok, out_tok
 
     if provider == "company":
-        from local_api_logger import wrap_requests_call
+        import requests as _requests
 
         # Build OpenAI-compatible content array (yunwu.ai is OpenAI-compat)
         user_content: List[Dict[str, Any]] = []
@@ -2842,19 +2842,26 @@ def call_api(
             ],
             "max_tokens": 1536,
             "temperature": 0.4,
-            "stream": True,
-            "stream_options": {"include_usage": True},
         }
 
-        stream = wrap_requests_call(
-            model=model,
-            url=_COMPANY_API_URL,
+        # Non-streaming path (more compatible with company API proxies)
+        resp = _requests.post(
+            _COMPANY_API_URL,
             headers=headers,
-            payload=payload,
-            user="l1_dual_evidence",
+            json=payload,
+            timeout=120,
             verify=False,
         )
-        text, in_tok, out_tok = _collect_company_stream(stream)
+        resp.raise_for_status()
+        rj = resp.json()
+        choices = rj.get("choices", [])
+        text = ""
+        if choices:
+            msg = choices[0].get("message", {})
+            text = msg.get("content", "") or ""
+        usage = rj.get("usage", {})
+        in_tok = int(usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0) or 0)
+        out_tok = int(usage.get("completion_tokens", 0) or usage.get("output_tokens", 0) or 0)
         return text, in_tok, out_tok
 
     # Default: anthropic
