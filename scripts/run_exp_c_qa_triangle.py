@@ -188,15 +188,23 @@ def span_overlap(span: str, text: str) -> float:
     return m.size / max(1, len(span))
 
 
+def _normalize_element_id(eid: str) -> str:
+    """Normalize L1-style short IDs (fig_/tab_/eq_) to chunk-style IDs (figure_/table_/formula_)."""
+    eid = re.sub(r'^([0-9.]+)_fig_', r'\1_figure_', eid)
+    eid = re.sub(r'^([0-9.]+)_tab_', r'\1_table_', eid)
+    eid = re.sub(r'^([0-9.]+)_eq_', r'\1_formula_', eid)
+    return eid
+
+
 def query_ground_truth_ids(q: Dict[str, Any]) -> Set[str]:
     gt_ids: Set[str] = set()
     for s in (q.get("required_evidence_spans") or []):
         eid = s.get("element_id", "") if isinstance(s, dict) else ""
         if eid:
-            gt_ids.add(eid)
+            gt_ids.add(_normalize_element_id(eid))
     for eid in (q.get("element_ids") or []):
         if eid:
-            gt_ids.add(eid)
+            gt_ids.add(_normalize_element_id(eid))
     return gt_ids
 
 

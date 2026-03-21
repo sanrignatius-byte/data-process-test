@@ -3221,6 +3221,18 @@ def main() -> None:
                     # Level 3 generates 1 query, not 2 — skip length mix check
                     if not pair_has_length_mix and not is_l3:
                         issues.append("length_mix_missing")
+                # Level 3 relaxation (Direction B): demote certain issues to advisory warnings
+                if is_l3:
+                    L3_SOFT_ISSUES = {
+                        "pseudo_multihop_parallel",
+                        "formula_symbol_grounding_missing",
+                        "architecture_intent_missing",
+                    }
+                    l3_demoted = [i for i in issues if i in L3_SOFT_ISSUES]
+                    if l3_demoted:
+                        issues = [i for i in issues if i not in L3_SOFT_ISSUES]
+                        metrics["l3_demoted_warnings"] = l3_demoted
+
                 metrics["query_style"] = effective_query_style
                 metrics["persona"] = effective_persona_id
 

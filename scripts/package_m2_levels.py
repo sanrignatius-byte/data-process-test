@@ -122,13 +122,15 @@ def repackage_exp_b() -> Dict[str, Any]:
         return {}
 
     # Extract key numbers for experiment B
-    methods = report.get("methods", report.get("results", {}))
+    # Phase0 report structure: config.n_queries/n_chunks, metrics.{method}.{recall_at_10,mrr}
+    cfg = report.get("config", {})
+    methods = report.get("metrics", report.get("methods", report.get("results", {})))
     exp_b = {
         "experiment": "B_retrieval_enhancement",
         "description": "Document Graph vs BM25 baseline retrieval",
         "source_report": str(report_paths[0].name),
-        "query_count": report.get("query_count", report.get("n_queries", 0)),
-        "chunk_count": report.get("chunk_count", report.get("n_chunks", 0)),
+        "query_count": cfg.get("n_queries", report.get("query_count", 0)),
+        "chunk_count": cfg.get("n_chunks", report.get("chunk_count", 0)),
         "results": {},
     }
 
@@ -138,6 +140,20 @@ def repackage_exp_b() -> Dict[str, Any]:
                 exp_b["results"][method_name] = {
                     "recall_at_10": method_data.get("recall_at_10", method_data.get("recall@10")),
                     "mrr": method_data.get("mrr", method_data.get("MRR")),
+                    "n": method_data.get("n"),
+                }
+
+    # Also include layered results if available
+    layered = report.get("layered", {})
+    if layered:
+        exp_b["hub_overlap_pct"] = layered.get("hub_overlap_pct")
+        exp_b["layered_results"] = {}
+        for k, v in layered.items():
+            if isinstance(v, dict) and "recall_at_10" in v:
+                exp_b["layered_results"][k] = {
+                    "recall_at_10": v.get("recall_at_10"),
+                    "mrr": v.get("mrr"),
+                    "n": v.get("n"),
                 }
 
     return exp_b
