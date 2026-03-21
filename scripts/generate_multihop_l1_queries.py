@@ -3227,6 +3227,7 @@ def main() -> None:
                         "pseudo_multihop_parallel",
                         "formula_symbol_grounding_missing",
                         "architecture_intent_missing",
+                        "missing_reasoning_chain",  # L3 uses reasoning_steps[] not reasoning_chain text
                     }
                     l3_demoted = [i for i in issues if i in L3_SOFT_ISSUES]
                     if l3_demoted:
