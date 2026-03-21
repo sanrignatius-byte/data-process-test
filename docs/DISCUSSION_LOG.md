@@ -2529,3 +2529,66 @@ Phase0 v2 结论（2026-03-15）：graph 最好仅 +0.0039 Recall，hub_overlap=
 ### 五、一句话总结
 
 > 综合两份外部评审意见，完成 GRAPH_ARCHITECTURE.md v3→v4 的专利化改进（术语定义、技术问题界定、LaTeX 抽象、公式修正、PRF 对比、文献引证）和周报修正（零 LLM scope 限定、hub coverage query-level 标注、10/11 区分），同时纠正了评审中的 3 个错误判断。
+
+---
+
+## 日期：2026-03-20（M2 Experiment Pipeline 设计与实现）
+
+### 一、背景与目标
+
+为支撑论文 M2 实验章节，需要将已有数据重新组织为三难度梯度（Level 1/2/3），并设计三组实验（Exp A/B/C）验证图方法在不同维度的效果。
+
+### 二、M2 数据三层结构设计
+
+| Level | 名称 | 来源 | 数量 | 难度定义 |
+|-------|------|------|------|----------|
+| Level 1 | Single-element | L1 v3 (974 条单图文 query) | 974 | 单证据定位，无跨模态推理 |
+| Level 2 | Dual-evidence | v4.2 pass (152 条) + hub run1 pass (5 条) | 157 | 需两个不同模态元素协同回答 |
+| Level 3 | Reasoning chain | 待生成（130 候选已筛选） | 目标 50-100 | 3-step 串行推理链，删任一步则不可回答 |
+
+### 三、新增脚本
+
+| 脚本 | 功能 |
+|------|------|
+| `scripts/package_m2_levels.py` | 将 L1 v3 + dual-evidence pass 数据打包为 `data/m2/level1_single_element.jsonl`、`level2_dual_evidence.jsonl`、`all_levels_combined.jsonl`，统一 schema（`difficulty_level`、`difficulty_label`、`source_version`） |
+| `scripts/filter_l3_candidates.py` | 从 500 条 hub candidates 中筛选适合 3-step 推理链的候选：要求 hop_count≥3、bridge paragraph 存在且质量 OK、两端元素类型不同，输出 `data/m2/l3_candidates_filtered.json`（130 条） |
+| `scripts/run_exp_a_difficulty.py` | **Exp A: 难度梯度实验** — BM25 Recall@10 在 L1/L2/L3 上的表现对比，验证"随推理深度增加，纯文本检索退化" |
+| `scripts/run_exp_c_qa_triangle.py` | **Exp C: QA 三角实验** — BM25 vs Graph 的证据覆盖率 + LLM（公司 API）给定证据后的 QA 准确率对比，验证"Graph 检索到的证据更支持正确回答" |
+
+### 四、生成脚本改动（`generate_multihop_l1_queries.py`）
+
+1. **新增 `PROMPT_3STEP_REASONING_CHAIN`**：专为 Level 3 设计的 prompt
+   - 要求 LLM 输出 `reasoning_steps[]` + `depends_on_steps` + `evidence_type`，匹配 M4 Schema 1
+   - 内嵌 step-deletion self-check 指令（"如果删掉该步的证据，能否得出答案？"）
+   - 三步角色弧：premise → intermediate → conclusion
+   - 证据类型必须不同：observation / attribution / explanation / verification / prediction
+2. **`select_template()` 扩展**：当 candidate 带 `reasoning_chain_target=true` 标志时选择 L3 prompt
+3. **`build_prompt()` 扩展**：L3 候选有 bridge_paragraph，需将三个节点（elem_a + bridge + elem_b）分别填入 prompt
+4. **输出新增字段**：`difficulty_level`（1/2/3）、`difficulty_label`（single_element / dual_evidence / reasoning_chain）
+
+### 五、Exp B 处理
+
+Exp B（Graph 检索增强）直接复用已完成的 Phase0 Eval v3 结果（`data/phase0_eval_report_v3_tuned.json`），重新打包为 `data/m2/exp_b_retrieval_enhancement.json`，核心数据：
+
+- graph_full R@10=0.8736 (+0.0269 vs BM25), MRR=0.6045 (+0.0403 vs BM25)
+
+### 六、L3 候选筛选细节（130/500）
+
+筛选条件：
+- `hop_count ≥ 3`（排除 2-hop 的简单对）
+- 路径中存在 paragraph 类型节点作为 bridge
+- bridge paragraph 有实际文本内容（非空、非纯引用标记）
+- 两端元素类型不同（保证跨模态）
+- 每篇文档最多贡献 5 条候选（防单一文档主导）
+
+分布：figure+formula:67 / figure+table:42 / formula+table:21，覆盖 34 篇文档
+
+### 七、后续步骤（Step 4-6，待执行）
+
+4. **生成 L3 queries**：用公司 API 跑 `--candidates data/m2/l3_candidates_filtered.json`，目标 50-100 条 pass
+5. **跑 Exp A + Exp C**：依赖 L3 queries 落地后执行
+6. **整理实验结果**：写入论文 M2 章节
+
+### 八、一句话总结
+
+> M2 实验 pipeline 代码和数据全部就绪（3 层数据打包 + 130 条 L3 候选 + 3 组实验脚本），唯一缺口是 L3 queries 需要调公司 API 生成——后续 Step 4-6 不变。
