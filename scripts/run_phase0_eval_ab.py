@@ -205,23 +205,30 @@ def load_element_hub_prior(
 def load_element_adjacency(
     hub_candidates_json: Path,
     hubs_json: Path | None = None,
-) -> Dict[str, Set[str]]:
+) -> tuple[Dict[str, Set[str]], Dict[str, Dict[str, float]]]:
     """Build element→neighbor element adjacency from hub candidate pairs + adjacent bridges.
 
     Uses adjacent_bridge_adjacency (MinerU IDs) from enriched candidates for
     expanded neighbor propagation coverage.
 
-    Returns: element_id → set of neighbor element_ids
+    Returns:
+        adj: element_id → set of neighbor element_ids
+        adj_weights: element_id → {neighbor_id: weight} (higher = stronger connection)
     """
     obj = json.loads(hub_candidates_json.read_text(encoding="utf-8"))
     pairs = obj.get("pairs", []) or []
     adj: Dict[str, Set[str]] = defaultdict(set)
+    adj_weights: Dict[str, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
     for p in pairs:
         a = str(p.get("element_a_id", "") or "").strip()
         b = str(p.get("element_b_id", "") or "").strip()
         if a and b:
             adj[a].add(b)
             adj[b].add(a)
+            # Weight by quality_score: higher quality pairs = stronger edges
+            qs = float(p.get("quality_score", 1.0) or 1.0)
+            adj_weights[a][b] = max(adj_weights[a][b], qs)
+            adj_weights[b][a] = max(adj_weights[b][a], qs)
 
     # Expand adjacency with adjacent_bridge_adjacency (MinerU IDs)
     for ab in (obj.get("adjacent_bridge_adjacency") or []):
@@ -231,8 +238,18 @@ def load_element_adjacency(
             for ej in eids_j:
                 adj[ei].add(ej)
                 adj[ej].add(ei)
+                # Adjacent bridges get a moderate default weight
+                adj_weights[ei][ej] = max(adj_weights[ei][ej], 0.6)
+                adj_weights[ej][ei] = max(adj_weights[ej][ei], 0.6)
 
-    return dict(adj)
+    # Normalize weights to [0, 1] per element
+    for eid in adj_weights:
+        inner = adj_weights[eid]
+        mx = max(inner.values()) if inner else 1.0
+        if mx > 0:
+            adj_weights[eid] = {k: v / mx for k, v in inner.items()}
+
+    return dict(adj), {k: dict(v) for k, v in adj_weights.items()}
 
 
 def load_citation_adjacency(citation_graph_json: Path) -> Dict[str, Dict[str, Set[str]]]:
@@ -345,6 +362,8 @@ def evaluate_method(
     nprop_weight: float | None = None,
     cite_weight: float | None = None,
     neighbor_hops: int = 1,
+    # Edge weights for weighted propagation
+    element_adj_weights: Dict[str, Dict[str, float]] | None = None,
 ) -> Dict[str, Any]:
     r_at_10 = 0.0
     mrr = 0.0
@@ -429,32 +448,114 @@ def evaluate_method(
             rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
 
             # Propagate from top-N seeds to their neighbors (1-hop or 2-hop)
+            # Edge weights modulate propagation strength: strong refs propagate more
             neighbor_boost = [0.0] * n_chunks
             for seed_idx in ranked_bm25[:rerank_n]:
                 seed_id = chunks[seed_idx].chunk_id
                 seed_score = norm_bm25[seed_idx]
                 nbrs = element_adjacency.get(seed_id, set())
+                seed_weights = (element_adj_weights or {}).get(seed_id, {})
                 for nbr_id in nbrs:
+                    edge_w = seed_weights.get(nbr_id, 1.0)
                     nbr_idx = chunk_id_to_idx.get(nbr_id)
                     if nbr_idx is not None:
                         neighbor_boost[nbr_idx] = min(
-                            neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
+                            neighbor_boost[nbr_idx] + seed_score * neighbor_decay * edge_w,
                             neighbor_decay,
                         )
                     # 2-hop: propagate from neighbors to their neighbors (decay²)
                     if neighbor_hops >= 2:
                         nbrs2 = element_adjacency.get(nbr_id, set())
+                        nbr_weights = (element_adj_weights or {}).get(nbr_id, {})
                         for nbr2_id in nbrs2:
                             if nbr2_id == seed_id:
                                 continue  # skip backtrack
+                            edge_w2 = nbr_weights.get(nbr2_id, 1.0)
                             nbr2_idx = chunk_id_to_idx.get(nbr2_id)
                             if nbr2_idx is not None:
                                 neighbor_boost[nbr2_idx] = min(
-                                    neighbor_boost[nbr2_idx] + seed_score * neighbor_decay * neighbor_decay,
+                                    neighbor_boost[nbr2_idx] + seed_score * neighbor_decay * neighbor_decay * edge_w * edge_w2,
                                     neighbor_decay * neighbor_decay,
                                 )
 
             scored = [(i, norm_bm25[i] + neighbor_boost[i]) for i in range(n_chunks)]
+
+        # ------------------------------------------------------------------
+        # 4b. graph_ppr: BM25 + Personalized PageRank on element graph
+        #
+        #    Signal design:
+        #      Teleport set = BM25 top-N elements with their BM25 scores as
+        #      personalization weights. Run PPR iterations on element_adjacency
+        #      graph. Result: smooth relevance scores that propagate through
+        #      the graph structure rather than just 1-hop.
+        #
+        #    Advantages over simple neighbor_prop:
+        #      - Multi-hop propagation with damping (no fixed hop cutoff)
+        #      - Edge-type agnostic smoothing
+        #      - Naturally handles cycles and high-degree nodes
+        # ------------------------------------------------------------------
+        elif method == "graph_ppr":
+            q_toks = tokenize(qtxt)
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+            ranked_bm25 = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)
+            rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
+
+            # Build teleport distribution from BM25 top-N
+            teleport: Dict[str, float] = {}
+            for seed_idx in ranked_bm25[:rerank_n]:
+                seed_id = chunks[seed_idx].chunk_id
+                if seed_id in element_adjacency:
+                    teleport[seed_id] = norm_bm25[seed_idx]
+
+            # Normalize teleport
+            t_sum = sum(teleport.values())
+            if t_sum > 1e-9:
+                teleport = {k: v / t_sum for k, v in teleport.items()}
+
+            # Run PPR on element adjacency graph
+            # Collect all nodes reachable within 3 hops of teleport set
+            active_nodes: Set[str] = set(teleport.keys())
+            frontier = set(teleport.keys())
+            for _ in range(3):
+                next_frontier: Set[str] = set()
+                for nid in frontier:
+                    next_frontier.update(element_adjacency.get(nid, set()))
+                active_nodes.update(next_frontier)
+                frontier = next_frontier
+
+            if active_nodes and teleport:
+                damping = 0.85
+                ppr: Dict[str, float] = {nid: teleport.get(nid, 0.0) for nid in active_nodes}
+                for _ in range(20):  # 20 iterations sufficient for convergence
+                    new_ppr: Dict[str, float] = {}
+                    for nid in active_nodes:
+                        # Teleport component
+                        r = (1.0 - damping) * teleport.get(nid, 0.0)
+                        # Propagation from neighbors
+                        for nbr in element_adjacency.get(nid, set()):
+                            if nbr in active_nodes:
+                                out_deg = len(element_adjacency.get(nbr, set()))
+                                if out_deg > 0:
+                                    edge_w = (element_adj_weights or {}).get(nbr, {}).get(nid, 1.0)
+                                    r += damping * ppr.get(nbr, 0.0) * edge_w / out_deg
+                        new_ppr[nid] = r
+                    ppr = new_ppr
+
+                # Normalize PPR scores
+                max_ppr = max(ppr.values()) if ppr else 1.0
+                if max_ppr > 1e-9:
+                    ppr = {k: v / max_ppr for k, v in ppr.items()}
+
+                # Apply PPR boost
+                ppr_boost = [0.0] * n_chunks
+                for nid, score in ppr.items():
+                    idx = chunk_id_to_idx.get(nid)
+                    if idx is not None:
+                        ppr_boost[idx] = score * neighbor_decay
+
+                scored = [(i, norm_bm25[i] + ppr_boost[i]) for i in range(n_chunks)]
+            else:
+                scored = [(i, norm_bm25[i]) for i in range(n_chunks)]
 
         # ------------------------------------------------------------------
         # 5. graph_citation_walk: BM25 + cross-doc citation relevance propagation
@@ -561,28 +662,32 @@ def evaluate_method(
                         c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0)
                     )
 
-            # --- neighbor propagation (dynamic intra-element, 1 or 2-hop) ---
+            # --- neighbor propagation (dynamic intra-element, 1 or 2-hop, weighted) ---
             neighbor_boost = [0.0] * n_chunks
             if _nw > 1e-9:
                 for seed_idx in ranked_bm25[:rerank_n]:
                     seed_id = chunks[seed_idx].chunk_id
                     seed_score = norm_bm25[seed_idx]
+                    seed_weights = (element_adj_weights or {}).get(seed_id, {})
                     for nbr_id in element_adjacency.get(seed_id, set()):
+                        edge_w = seed_weights.get(nbr_id, 1.0)
                         nbr_idx = chunk_id_to_idx.get(nbr_id)
                         if nbr_idx is not None:
                             neighbor_boost[nbr_idx] = min(
-                                neighbor_boost[nbr_idx] + seed_score * neighbor_decay,
+                                neighbor_boost[nbr_idx] + seed_score * neighbor_decay * edge_w,
                                 neighbor_decay,
                             )
                         # 2-hop propagation
                         if neighbor_hops >= 2:
+                            nbr_weights = (element_adj_weights or {}).get(nbr_id, {})
                             for nbr2_id in element_adjacency.get(nbr_id, set()):
                                 if nbr2_id == seed_id:
                                     continue
+                                edge_w2 = nbr_weights.get(nbr2_id, 1.0)
                                 nbr2_idx = chunk_id_to_idx.get(nbr2_id)
                                 if nbr2_idx is not None:
                                     neighbor_boost[nbr2_idx] = min(
-                                        neighbor_boost[nbr2_idx] + seed_score * neighbor_decay * neighbor_decay,
+                                        neighbor_boost[nbr2_idx] + seed_score * neighbor_decay * neighbor_decay * edge_w * edge_w2,
                                         neighbor_decay * neighbor_decay,
                                     )
 
@@ -754,9 +859,9 @@ def main() -> None:
         load_element_hub_prior(args.hub_candidates)
         if args.hub_candidates.exists() else {}
     )
-    element_adjacency = (
+    element_adjacency, element_adj_weights = (
         load_element_adjacency(args.hub_candidates)
-        if args.hub_candidates.exists() else {}
+        if args.hub_candidates.exists() else ({}, {})
     )
     # Merge embedding-based edges if provided
     if args.embedding_edges and args.embedding_edges.exists():
@@ -836,6 +941,7 @@ def main() -> None:
         nprop_weight=args.nprop_weight,
         cite_weight=args.cite_weight,
         neighbor_hops=args.neighbor_hops,
+        element_adj_weights=element_adj_weights,
     )
 
     all_methods = [
@@ -843,6 +949,7 @@ def main() -> None:
         "dense",
         "graph_hub_rerank",
         "graph_neighbor_prop",
+        "graph_ppr",
         "graph_citation_walk",
         "graph_full",
     ]

@@ -86,17 +86,21 @@ class Edge:
     target_id: str
     doc_id: str
     edge_type: str  # paragraph_ref | element_ref | backbone | cross_doc_cite | section_contains_*
+    weight: float = 1.0  # edge strength: reference count, semantic relevance, etc.
 
     def key(self) -> Tuple[str, str, str]:
         return (self.source_id, self.target_id, self.edge_type)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d = {
             "source_id": self.source_id,
             "target_id": self.target_id,
             "doc_id": self.doc_id,
             "edge_type": self.edge_type,
         }
+        if self.weight != 1.0:
+            d["weight"] = round(self.weight, 4)
+        return d
 
 
 # ─── Utilities ────────────────────────────────────────────────────────────────
@@ -253,7 +257,8 @@ def build_multimodal_index(mm_data: Dict[str, Any], mineru_output_dir: str = "")
     """Build lookup structures from MinerU element data.
 
     Returns:
-        by_doc:             {doc_id: {"by_number": {type: {n: eid}}, "by_caption": {type: [(eid, tok)]}}}
+        by_doc:             {doc_id: {"by_number": {type: {n: eid}}, "by_caption": {type: [(eid, tok)]},
+                                      "by_order": {type: [eid, ...]}}}
         page_by_element:    {eid: page_idx}      — real page from content_list.json (94.8% coverage)
         position_by_element: {eid: position_idx} — reading-order sequential index
         elements_by_doc:    {doc_id: [eid, ...]} sorted by position_idx
@@ -306,7 +311,21 @@ def build_multimodal_index(mm_data: Dict[str, Any], mineru_output_dir: str = "")
             if caption_tokens:
                 idx_caption[etype].append((eid, caption_tokens))
 
-        by_doc[doc_id] = {"by_number": idx_num, "by_caption": idx_caption}
+        # by_order: elements sorted by position for sequential order matching
+        # (Nth label of type T → Nth element of type T in document order)
+        idx_order: Dict[str, List[str]] = defaultdict(list)
+        for eid, elem in elements.items():
+            etype = str(elem.get("element_type", "")).lower()
+            if etype in MINERU_ELEMENT_TYPES:
+                pos = elem.get("position_idx") or 0
+                num = elem.get("number")
+                sort_key = pos if pos > 0 else (int(num) if num is not None else 99999)
+                idx_order[etype].append((sort_key, eid))
+        for etype in idx_order:
+            idx_order[etype] = [eid for _, eid in sorted(idx_order[etype])]
+
+        by_doc[doc_id] = {"by_number": idx_num, "by_caption": idx_caption,
+                          "by_order": dict(idx_order)}
         elem_list.sort()
         elements_by_doc[doc_id] = [eid for _, eid in elem_list]
 
@@ -324,13 +343,17 @@ def map_label_to_element(
     label_key: str,
     label_info: Dict[str, Any],
     mm_index: Dict[str, Any],
+    label_ordinal: Optional[int] = None,
 ) -> Optional[str]:
     """Map a LaTeX label to a MinerU element_id.
 
     Strategy (in order):
     1. number extracted from label_key matched against type+number index
-    2. number from label_key suffix (e.g. "fig:arch" → try suffix parts)
-    3. caption Jaccard >= 0.25 (relaxed from 0.35)
+    2. number from label_key suffix parts
+    3. number ±1 offset (handles MinerU/LaTeX numbering mismatch)
+    4. sequential order matching (Nth label of type → Nth element of type)
+    5. caption Jaccard >= 0.20 (relaxed from 0.25)
+    6. context text matching (label environment text vs element caption)
     """
     doc_idx = mm_index["by_doc"].get(doc_id)
     if not doc_idx:
@@ -341,21 +364,46 @@ def map_label_to_element(
         return None
     mm_type = "formula" if ltype == "equation" else ltype
 
-    # 1. number from label key
+    by_number = doc_idx["by_number"].get(mm_type, {})
+
+    # 1. number from label key (exact match)
     number = parse_number(label_key)
     if number is not None:
-        eid = doc_idx["by_number"].get(mm_type, {}).get(number)
+        eid = by_number.get(number)
         if eid:
             return eid
         # Try each part of the label key
         for part in re.split(r"[_\-:]+", label_key):
             n = parse_number(part)
             if n is not None:
-                eid = doc_idx["by_number"].get(mm_type, {}).get(n)
+                eid = by_number.get(n)
                 if eid:
                     return eid
 
-    # 2. caption Jaccard (relaxed threshold)
+    # 2. number ±1 offset (MinerU often numbers from 0, LaTeX from 1, or vice versa)
+    if number is not None and by_number:
+        for offset in (1, -1, 2, -2):
+            eid = by_number.get(number + offset)
+            if eid:
+                # Verify with caption if available to avoid false positives
+                caption_tokens = tokenize(str(label_info.get("caption", "")))
+                if not caption_tokens:
+                    return eid  # no caption to verify, accept offset match
+                eid_cap_tokens = set()
+                for cand_eid, cap_tokens in doc_idx["by_caption"].get(mm_type, []):
+                    if cand_eid == eid:
+                        eid_cap_tokens = cap_tokens
+                        break
+                if not eid_cap_tokens or jaccard(caption_tokens, eid_cap_tokens) >= 0.15:
+                    return eid
+
+    # 3. sequential order matching (Nth label → Nth element in document order)
+    if label_ordinal is not None:
+        by_order = doc_idx.get("by_order", {}).get(mm_type, [])
+        if 0 <= label_ordinal < len(by_order):
+            return by_order[label_ordinal]
+
+    # 4. caption Jaccard (relaxed threshold from 0.25 to 0.20)
     caption_tokens = tokenize(str(label_info.get("caption", "")))
     if caption_tokens:
         best_id = None
@@ -365,7 +413,24 @@ def map_label_to_element(
             if s > best_score:
                 best_score = s
                 best_id = eid
-        if best_score >= 0.25:
+        if best_score >= 0.20:
+            return best_id
+
+    # 5. context text matching (use label's context/environment text)
+    context_text = " ".join(filter(None, [
+        str(label_info.get("context", "")),
+        str(label_info.get("environment", "")),
+    ]))
+    context_tokens = tokenize(context_text)
+    if context_tokens and len(context_tokens) >= 3:
+        best_id = None
+        best_score = 0.0
+        for eid, cap_tokens in doc_idx["by_caption"].get(mm_type, []):
+            s = jaccard(context_tokens, cap_tokens)
+            if s > best_score:
+                best_score = s
+                best_id = eid
+        if best_score >= 0.20:
             return best_id
 
     return None
@@ -437,13 +502,30 @@ def build_topology_graph(
             nodes[sec_node.node_id] = sec_node
             section_nodes.append(sec_node)
 
+        # ── Precompute label ordinals per type (for sequential order matching) ──
+        label_ordinals: Dict[str, int] = {}
+        type_counters: Dict[str, int] = defaultdict(int)
+        sorted_labels = sorted(
+            labels.items(),
+            key=lambda kv: (int(kv[1].get("line_no", 0)) if isinstance(kv[1].get("line_no"), int) else 0, kv[0]),
+        )
+        for lk, li in sorted_labels:
+            lmodal = normalize_label_type(str(li.get("label_type", "")))
+            if lmodal in ELEMENT_MODALITIES:
+                mm_t = "formula" if lmodal == "equation" else lmodal
+                label_ordinals[lk] = type_counters[mm_t]
+                type_counters[mm_t] += 1
+
         # ── Element nodes (figure / table / formula) ──────────────────────
         for label_key, info in labels.items():
             modal = normalize_label_type(str(info.get("label_type", "")))
             if modal not in ELEMENT_MODALITIES:
                 continue
             node_id = f"{doc_id}::el::{label_key}"
-            mapped_eid = map_label_to_element(doc_id, label_key, info, mm_index)
+            mapped_eid = map_label_to_element(
+                doc_id, label_key, info, mm_index,
+                label_ordinal=label_ordinals.get(label_key),
+            )
             raw_line = info.get("line_no")
             elem_line_no = int(raw_line) if isinstance(raw_line, int) else None
             pos_idx = position_by_element.get(mapped_eid) if mapped_eid else None
@@ -493,6 +575,8 @@ def build_topology_graph(
                     )
 
             # Assign each \ref{} call-site to its containing paragraph node
+            # Count references per (paragraph, element) pair for edge weighting
+            ref_counts: Dict[Tuple[str, str], int] = defaultdict(int)
             refs = doc.get("refs", []) or []
             for ref in refs:
                 tgt = str(ref.get("target_key", ""))
@@ -505,8 +589,6 @@ def build_topology_graph(
                 p_key = _find_para_for_line(file_path, line_no, para_meta)
                 if p_key and p_key in paragraph_node_map:
                     src = paragraph_node_map[p_key]
-                    add_edge(Edge(source_id=src, target_id=tgt_node,
-                                  doc_id=doc_id, edge_type="paragraph_ref"))
                 else:
                     # Ref site not covered by any paragraph block — create a
                     # minimal ad-hoc node so we don't silently drop the edge.
@@ -523,8 +605,14 @@ def build_topology_graph(
                             source_file=file_path,
                         )
                     src = paragraph_node_map[fallback_key]
-                    add_edge(Edge(source_id=src, target_id=tgt_node,
-                                  doc_id=doc_id, edge_type="paragraph_ref"))
+                ref_counts[(src, tgt_node)] += 1
+
+            # Create weighted paragraph_ref edges (weight = log2(1 + ref_count))
+            for (src, tgt_node), count in ref_counts.items():
+                weight = math.log2(1 + count)  # 1 ref → 1.0, 2 refs → 1.58, 4 refs → 2.32
+                add_edge(Edge(source_id=src, target_id=tgt_node,
+                              doc_id=doc_id, edge_type="paragraph_ref",
+                              weight=round(weight, 4)))
         else:
             # Legacy fallback: one paragraph node per (file, line_no) ref site
             refs = doc.get("refs", []) or []
@@ -746,6 +834,47 @@ def pagerank(
     return rank
 
 
+def _build_section_semantic_map(
+    nodes: Dict[str, Node],
+    in_adj: Dict[str, Set[str]],
+) -> Dict[str, float]:
+    """Build section semantic weight map: paragraph/element → parent section's semantic score.
+
+    Paragraphs and elements inherit their containing section's semantic importance.
+    This allows 'Experiments' section paragraphs to score higher than 'Related Work' paragraphs.
+    """
+    _SECTION_KEYWORDS = [
+        (r"\b(experiment|evaluation|result|ablation)\b", 1.0),
+        (r"\b(method|approach|framework|architecture|model|algorithm)\b", 0.9),
+        (r"\b(introduction|overview)\b", 0.8),
+        (r"\b(analysis|discussion)\b", 0.7),
+        (r"\b(conclusion|summary)\b", 0.5),
+        (r"\b(related\s+work|background|preliminary|prior\s+work)\b", 0.3),
+        (r"\b(appendix|supplement)\b", 0.2),
+    ]
+    section_score: Dict[str, float] = {}
+    for nid, node in nodes.items():
+        if node.node_type not in {"section", "subsection", "subsubsection"}:
+            continue
+        text = (node.section_title or "").lower()
+        best = 0.0
+        for pat, w in _SECTION_KEYWORDS:
+            if re.search(pat, text):
+                best = max(best, w)
+        section_score[nid] = best
+
+    # Propagate: for each section → contained paragraph/element, inherit score
+    child_score: Dict[str, float] = {}
+    for nid, node in nodes.items():
+        if node.node_type in {"section", "subsection", "subsubsection"}:
+            continue
+        # Find parent section via in_adj (section_contains_* edges)
+        for parent_id in in_adj.get(nid, ()):
+            if parent_id in section_score:
+                child_score[nid] = max(child_score.get(nid, 0.0), section_score[parent_id])
+    return child_score
+
+
 def compute_hubs(
     nodes: Dict[str, Node],
     out_adj: Dict[str, Set[str]],
@@ -761,6 +890,7 @@ def compute_hubs(
     """
     node_ids = sorted(nodes.keys())
     pr = pagerank(node_ids, out_adj, in_adj)
+    section_semantic = _build_section_semantic_map(nodes, in_adj)
     hubs: List[Dict[str, Any]] = []
     for nid in node_ids:
         out_deg = len(out_adj.get(nid, ()))
@@ -810,6 +940,13 @@ def compute_hubs(
                 core_score = max(core_score, 1.0)
             elif re.search(r"\b(result|performance|comparison|ablation)\b", core_text):
                 core_score = max(core_score, 0.8)
+
+        # Section semantic inheritance: paragraph/element nodes inherit
+        # their parent section's semantic weight (e.g., paragraphs in
+        # "Experiments" section get boosted vs "Related Work")
+        inherited_section_score = section_semantic.get(nid, 0.0)
+        if inherited_section_score > core_score:
+            core_score = 0.6 * inherited_section_score + 0.4 * core_score
 
         bridge_score = bridge_role * 100
         connectivity_score = edge_connectivity * 100
