@@ -238,9 +238,9 @@ def extract_bridge_from_markdown(
         if ctx_before or ctx_after:
             parts.append(f"### {tag} ({elem.get('element_id', '?')}) 上下文\n")
             if ctx_before:
-                parts.append(f"**[前文]**\n{ctx_before}\n")
+                parts.append(f"**[Context Before]**\n{ctx_before}\n")
             if ctx_after:
-                parts.append(f"**[后文]**\n{ctx_after}\n")
+                parts.append(f"**[Context After]**\n{ctx_after}\n")
 
     return "\n".join(parts) if parts else ""
 
@@ -422,7 +422,7 @@ def build_query_folder(
                 bridge_spans.append(span)
 
     if bridge_spans:
-        bridge_text += "\n\n---\n\n## Reasoning Steps 中的桥接 Evidence Span\n\n"
+        bridge_text += "\n\n---\n\n## Bridge Evidence Spans from Reasoning Steps\n\n"
         for i, span in enumerate(bridge_spans, 1):
             bridge_text += f"**Bridge {i}:** {span}\n\n"
 
