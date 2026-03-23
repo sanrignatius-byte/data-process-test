@@ -103,9 +103,10 @@ class DemoPDF(FPDF):
     def kv_line(self, key: str, value: str):
         self.set_font("Helvetica", "B", 9)
         self.set_text_color(0, 0, 0)
-        self.cell(35, 5, f"{key}:")
-        self.set_font("Helvetica", "", 9)
-        self.cell(0, 5, value, new_x="LMARGIN", new_y="NEXT")
+        # Truncate very long values to avoid overflow
+        if len(value) > 120:
+            value = value[:117] + "..."
+        self.multi_cell(0, 5, f"{key}: {value}")
 
     def add_image_safe(self, img_path: pathlib.Path, max_w: float = 170, max_h: float = 90):
         """Add image with auto-sizing. Page-break if needed."""
@@ -166,14 +167,13 @@ def render_query(pdf: DemoPDF, folder: pathlib.Path, idx: int):
 
             pdf.set_font("Helvetica", "B", 9)
             pdf.set_text_color(30, 30, 120)
-            pdf.cell(0, 5, f"Step {sid}  [{role}]  (evidence: {etype}, depends: {deps})",
-                     new_x="LMARGIN", new_y="NEXT")
+            pdf.multi_cell(0, 5, f"Step {sid}  [{role}]  (evidence: {etype}, depends: {deps})")
             pdf.set_font("Helvetica", "", 8)
             pdf.set_text_color(0, 0, 0)
             if span:
-                pdf.multi_cell(0, 4, f"  Evidence: {wrap_text(span, 95)}")
+                pdf.multi_cell(0, 4, wrap_text(f"Evidence: {span}", 95))
             if claim:
-                pdf.multi_cell(0, 4, f"  Claim: {wrap_text(claim, 95)}")
+                pdf.multi_cell(0, 4, wrap_text(f"Claim: {claim}", 95))
             pdf.ln(2)
 
     # ── element images & context ──
