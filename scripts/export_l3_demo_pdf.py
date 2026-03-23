@@ -82,28 +82,35 @@ class DemoPDF(FPDF):
 
     # ── convenience writers ──
 
+    def _reset_x(self):
+        """Reset cursor to left margin to prevent width exhaustion."""
+        self.set_x(self.l_margin)
+
     def section_title(self, title: str):
+        self._reset_x()
         self.set_font("Helvetica", "B", 12)
         self.set_text_color(30, 30, 120)
-        self.cell(0, 8, title, new_x="LMARGIN", new_y="NEXT")
+        self.multi_cell(0, 8, title)
         self.ln(1)
 
     def sub_title(self, title: str):
+        self._reset_x()
         self.set_font("Helvetica", "B", 10)
         self.set_text_color(60, 60, 60)
-        self.cell(0, 7, title, new_x="LMARGIN", new_y="NEXT")
+        self.multi_cell(0, 7, title)
         self.ln(1)
 
     def body_text(self, text: str, size: int = 9):
+        self._reset_x()
         self.set_font("Helvetica", "", size)
         self.set_text_color(0, 0, 0)
         self.multi_cell(0, 4.5, wrap_text(text, width=100))
         self.ln(2)
 
     def kv_line(self, key: str, value: str):
+        self._reset_x()
         self.set_font("Helvetica", "B", 9)
         self.set_text_color(0, 0, 0)
-        # Truncate very long values to avoid overflow
         if len(value) > 120:
             value = value[:117] + "..."
         self.multi_cell(0, 5, f"{key}: {value}")
@@ -165,14 +172,18 @@ def render_query(pdf: DemoPDF, folder: pathlib.Path, idx: int):
             span = step.get("evidence_span", "")
             deps = step.get("depends_on_steps", [])
 
+            pdf._reset_x()
             pdf.set_font("Helvetica", "B", 9)
             pdf.set_text_color(30, 30, 120)
             pdf.multi_cell(0, 5, f"Step {sid}  [{role}]  (evidence: {etype}, depends: {deps})")
+            pdf._reset_x()
             pdf.set_font("Helvetica", "", 8)
             pdf.set_text_color(0, 0, 0)
             if span:
+                pdf._reset_x()
                 pdf.multi_cell(0, 4, wrap_text(f"Evidence: {span}", 95))
             if claim:
+                pdf._reset_x()
                 pdf.multi_cell(0, 4, wrap_text(f"Claim: {claim}", 95))
             pdf.ln(2)
 
@@ -196,6 +207,7 @@ def render_query(pdf: DemoPDF, folder: pathlib.Path, idx: int):
         # show formula markdown
         for fm in formula_files:
             text = fm.read_text(encoding="utf-8", errors="ignore")
+            pdf._reset_x()
             pdf.set_font("Courier", "", 8)
             pdf.set_text_color(0, 0, 0)
             pdf.multi_cell(0, 4, wrap_text(text, 100))
@@ -204,9 +216,9 @@ def render_query(pdf: DemoPDF, folder: pathlib.Path, idx: int):
         # show context
         if ctx_file.exists():
             ctx = ctx_file.read_text(encoding="utf-8", errors="ignore")
-            # truncate very long context
             if len(ctx) > 2000:
                 ctx = ctx[:2000] + "\n... (truncated)"
+            pdf._reset_x()
             pdf.set_font("Helvetica", "I", 8)
             pdf.set_text_color(80, 80, 80)
             pdf.multi_cell(0, 4, wrap_text(ctx, 100))
@@ -227,6 +239,7 @@ def render_query(pdf: DemoPDF, folder: pathlib.Path, idx: int):
     if spans:
         pdf.sub_title("Required Evidence Spans")
         for i, span in enumerate(spans, 1):
+            pdf._reset_x()
             pdf.set_font("Helvetica", "", 8)
             pdf.set_text_color(0, 0, 0)
             pdf.multi_cell(0, 4, f"{i}. {wrap_text(str(span), 95)}")
