@@ -34,6 +34,26 @@ import shutil
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
+
+def extract_formula_variables(content: str) -> str:
+    """从 LaTeX 公式文本中提取变量/函数名（简化版）"""
+    if not content:
+        return "(none)"
+    # 提取 $...$ 或 $$...$$ 内的数学区域
+    regions = re.findall(r"\$\$?(.+?)\$\$?", content, flags=re.DOTALL)
+    math_text = " ".join(regions) if regions else content
+    # LaTeX 命令（函数名）
+    funcs = re.findall(r"\\([A-Za-z]{2,})", math_text)
+    funcs = [f for f in funcs if f not in {
+        "begin", "end", "left", "right", "frac", "cdot", "times",
+        "sum", "prod", "int", "mid", "tag", "qquad", "quad", "text",
+        "mathbf", "mathrm", "mathbb", "operatorname", "sim", "leq", "geq",
+    }]
+    # 下标变量 (e.g. x_i, P_C)
+    vars_sub = re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text)
+    all_vars = list(dict.fromkeys(funcs + vars_sub))  # 去重保序
+    return ", ".join(all_vars[:15]) if all_vars else "(no variables detected)"
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 DEMO_FILE  = ROOT / "data/m2/l3_demo_selection_10.json"
@@ -282,21 +302,47 @@ def build_query_folder(
         json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    # ── 2) element 截图 ──
+    # ── 2) element 截图 / formula LaTeX ──
     img_results = {}
     for tag, eid, elem in zip(tags, eids, elems):
         if not elem:
             img_results[tag] = False
             continue
+
+        etype = elem.get("element_type", "unknown")
+
+        # Formula 元素没有截图，只有 LaTeX 文本 —— 保存为 .md
+        if etype == "formula":
+            latex_content = (elem.get("content") or "").strip()
+            formula_vars = extract_formula_variables(latex_content)
+            formula_md = [
+                f"# Formula: {eid}",
+                f"- label: {elem.get('label', '')}",
+                f"- doc_id: {elem.get('doc_id', '')}",
+                "",
+                "## LaTeX",
+                "",
+                latex_content if latex_content else "(empty)",
+                "",
+                "## Key Variables",
+                "",
+                formula_vars,
+                "",
+            ]
+            (folder / f"element_{tag}_formula.md").write_text(
+                "\n".join(formula_md), encoding="utf-8"
+            )
+            img_results[tag] = True  # formula 算 "found"（只是形式不同）
+            continue
+
+        # Figure / Table —— 找截图
         src_img = resolve_element_image(elem, mineru_dir)
         if src_img and src_img.exists():
-            etype = elem.get("element_type", "unknown")
             dst = folder / f"element_{tag}_{etype}{src_img.suffix}"
             shutil.copy2(src_img, dst)
             img_results[tag] = True
         else:
             img_results[tag] = False
-            # 写一个 placeholder 说明原始路径
             (folder / f"element_{tag}_IMAGE_NOT_FOUND.txt").write_text(
                 f"element_id: {eid}\n"
                 f"image_path (from elements json): {elem.get('image_path', '?')}\n"
