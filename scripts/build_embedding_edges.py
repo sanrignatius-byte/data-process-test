@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
 """Build embedding-based semantic edges between document elements.
 
-Computes embeddings for all multimodal elements (using text: caption + context),
-then finds high-similarity pairs to create virtual edges that complement
-the existing LaTeX reference-based graph structure.
+Computes embeddings for all multimodal elements, then finds high-similarity
+pairs to create virtual edges that complement the existing LaTeX reference-based
+graph structure.
+
+Supports two embedding backends:
+  1. sentence-transformers (text-only, fast, any GPU/CPU)
+  2. Qwen3-VL-Embedding (multimodal: text + image, Ascend NPU / CUDA / CPU)
 
 Outputs a JSON file compatible with run_phase0_eval_ab.py --embedding-edges.
 
 Usage:
+    # sentence-transformers (default, text-only)
     python scripts/build_embedding_edges.py \
         --elements data111/multimodal_elements_enriched.json \
         --output data/embedding_edges.json \
         --model sentence-transformers/all-MiniLM-L6-v2 \
         --threshold 0.8
+
+    # Qwen3-VL-Embedding (multimodal, local weights)
+    python scripts/build_embedding_edges.py \
+        --elements data111/multimodal_elements_enriched.json \
+        --output data/embedding_edges_qwen_vl.json \
+        --model ~/models/Qwen3-VL-Embedding-2B \
+        --backend qwen-vl \
+        --image-dir data/mineru_output \
+        --threshold 0.75
 """
 
 from __future__ import annotations
@@ -93,16 +107,45 @@ def load_elements(elements_path: Path) -> Dict[str, Dict[str, Any]]:
 
 
 # ──────────────────────────────────────────────────────────────
-# Embedding computation
+# Device detection (supports CUDA, Ascend NPU, CPU)
 # ──────────────────────────────────────────────────────────────
 
-def compute_embeddings(
+def detect_device(preferred: Optional[str] = None) -> str:
+    """Auto-detect best available device.
+
+    Priority: user preference > NPU (Ascend) > CUDA > CPU
+    """
+    if preferred:
+        return preferred
+
+    import torch
+
+    # Check CUDA
+    if torch.cuda.is_available():
+        return "cuda"
+
+    # Check Ascend NPU (Huawei)
+    try:
+        import torch_npu  # noqa: F401
+        if torch.npu.is_available():
+            return "npu"
+    except ImportError:
+        pass
+
+    return "cpu"
+
+
+# ──────────────────────────────────────────────────────────────
+# Embedding computation — sentence-transformers backend
+# ──────────────────────────────────────────────────────────────
+
+def compute_embeddings_st(
     texts: List[str],
     model_name: str,
     batch_size: int = 64,
     device: Optional[str] = None,
 ) -> np.ndarray:
-    """Compute embeddings using sentence-transformers.
+    """Compute embeddings using sentence-transformers (text-only).
 
     Returns: (N, D) numpy array of L2-normalized embeddings.
     """
@@ -113,10 +156,7 @@ def compute_embeddings(
         print("  Install: pip install sentence-transformers torch")
         sys.exit(1)
 
-    if device is None:
-        import torch
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    device = detect_device(device)
     print(f"  Loading model: {model_name} (device={device})")
     model = SentenceTransformer(model_name, device=device)
 
@@ -126,11 +166,249 @@ def compute_embeddings(
         texts,
         batch_size=batch_size,
         show_progress_bar=True,
-        normalize_embeddings=True,  # L2 normalize for cosine similarity
+        normalize_embeddings=True,
     )
     elapsed = time.time() - t0
     print(f"  Done in {elapsed:.1f}s — shape: {embeddings.shape}")
     return embeddings
+
+
+# ──────────────────────────────────────────────────────────────
+# Embedding computation — Qwen3-VL backend (multimodal)
+# ──────────────────────────────────────────────────────────────
+
+def _resolve_image_path(
+    elem: Dict[str, Any],
+    image_dir: Optional[str],
+) -> Optional[str]:
+    """Find the image file for a figure element.
+
+    Searches common MinerU output locations.
+    """
+    if elem.get("element_type", "").lower() != "figure":
+        return None
+
+    image_path = elem.get("image_path") or elem.get("img_path") or ""
+    if not image_path:
+        return None
+
+    # Try as-is
+    p = Path(image_path)
+    if p.exists():
+        return str(p)
+
+    # Try relative to image_dir
+    if image_dir:
+        p2 = Path(image_dir) / image_path
+        if p2.exists():
+            return str(p2)
+        # Try with doc_id prefix
+        doc_id = elem.get("doc_id", "")
+        if doc_id:
+            p3 = Path(image_dir) / doc_id / image_path
+            if p3.exists():
+                return str(p3)
+            p4 = Path(image_dir) / doc_id / doc_id / "hybrid_auto" / image_path
+            if p4.exists():
+                return str(p4)
+
+    return None
+
+
+def compute_embeddings_qwen_vl(
+    element_ids: List[str],
+    elements: Dict[str, Dict[str, Any]],
+    texts: List[str],
+    model_path: str,
+    batch_size: int = 8,
+    device: Optional[str] = None,
+    image_dir: Optional[str] = None,
+    max_pixels: int = 256 * 256,
+) -> np.ndarray:
+    """Compute embeddings using Qwen3-VL-Embedding (multimodal).
+
+    For figure elements with images: uses vision encoder (image + caption).
+    For other elements: uses text encoder (caption + context).
+
+    Returns: (N, D) numpy array of L2-normalized embeddings.
+    """
+    import torch
+
+    device = detect_device(device)
+
+    # Import torch_npu if using NPU
+    if device == "npu":
+        try:
+            import torch_npu  # noqa: F401
+            print("  Ascend NPU detected via torch_npu")
+        except ImportError:
+            print("  WARNING: torch_npu not available, falling back to CPU")
+            device = "cpu"
+
+    try:
+        from transformers import AutoModel, AutoProcessor
+    except ImportError:
+        print("ERROR: transformers not installed.")
+        print("  Install: pip install transformers torch")
+        sys.exit(1)
+
+    print(f"  Loading Qwen3-VL model: {model_path} (device={device})")
+    t0 = time.time()
+    processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+    model = AutoModel.from_pretrained(
+        model_path,
+        trust_remote_code=True,
+        torch_dtype=torch.float16 if device != "cpu" else torch.float32,
+    ).to(device).eval()
+    print(f"  Model loaded in {time.time() - t0:.1f}s")
+
+    # Classify elements: text-only vs multimodal (figure with image)
+    n = len(element_ids)
+    all_embeddings = np.zeros((n, model.config.hidden_size), dtype=np.float32)
+    n_with_image = 0
+    n_text_only = 0
+
+    print(f"  Computing embeddings for {n} elements (batch_size={batch_size})...")
+    t0 = time.time()
+
+    for batch_start in range(0, n, batch_size):
+        batch_end = min(batch_start + batch_size, n)
+        batch_texts = []
+        batch_images = []
+        batch_has_image = []
+
+        for idx in range(batch_start, batch_end):
+            eid = element_ids[idx]
+            elem = elements[eid]
+            text = texts[idx]
+
+            img_path = _resolve_image_path(elem, image_dir)
+            if img_path:
+                batch_images.append(img_path)
+                batch_has_image.append(True)
+                n_with_image += 1
+            else:
+                batch_images.append(None)
+                batch_has_image.append(False)
+                n_text_only += 1
+
+            batch_texts.append(text)
+
+        # Process batch: separate text-only and multimodal inputs
+        with torch.no_grad():
+            for local_i, global_i in enumerate(range(batch_start, batch_end)):
+                try:
+                    if batch_has_image[local_i] and batch_images[local_i]:
+                        # Multimodal: image + text
+                        from PIL import Image
+                        img = Image.open(batch_images[local_i]).convert("RGB")
+                        # Resize to limit memory
+                        w, h = img.size
+                        total_pixels = w * h
+                        if total_pixels > max_pixels:
+                            scale = (max_pixels / total_pixels) ** 0.5
+                            img = img.resize((int(w * scale), int(h * scale)))
+
+                        messages = [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "image", "image": img},
+                                    {"type": "text", "text": batch_texts[local_i][:512]},
+                                ],
+                            }
+                        ]
+                    else:
+                        # Text-only
+                        messages = [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": batch_texts[local_i][:512]},
+                                ],
+                            }
+                        ]
+
+                    # Process through model
+                    text_input = processor.apply_chat_template(
+                        messages, tokenize=False, add_generation_prompt=True
+                    )
+                    inputs = processor(
+                        text=[text_input],
+                        images=[img] if (batch_has_image[local_i] and batch_images[local_i]) else None,
+                        return_tensors="pt",
+                        padding=True,
+                        truncation=True,
+                        max_length=512,
+                    ).to(device)
+
+                    outputs = model(**inputs, output_hidden_states=True)
+                    # Use last hidden state's mean pooling as embedding
+                    hidden = outputs.hidden_states[-1]
+                    # Mean pooling over non-padding tokens
+                    attention_mask = inputs.get("attention_mask")
+                    if attention_mask is not None:
+                        mask = attention_mask.unsqueeze(-1).float()
+                        emb = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
+                    else:
+                        emb = hidden.mean(dim=1)
+
+                    emb = emb.cpu().float().numpy().flatten()
+                    # L2 normalize
+                    norm = np.linalg.norm(emb)
+                    if norm > 1e-9:
+                        emb = emb / norm
+                    all_embeddings[global_i] = emb
+
+                except Exception as e:
+                    print(f"  WARNING: failed to embed {element_ids[global_i]}: {e}")
+                    # Leave as zeros, will have low similarity with everything
+
+        if (batch_end % (batch_size * 10) == 0) or batch_end == n:
+            elapsed = time.time() - t0
+            rate = batch_end / max(elapsed, 0.01)
+            print(f"    {batch_end}/{n} ({rate:.1f} elem/s)")
+
+    elapsed = time.time() - t0
+    print(f"  Done in {elapsed:.1f}s — {n_with_image} with image, {n_text_only} text-only")
+    print(f"  Embedding shape: ({n}, {all_embeddings.shape[1]})")
+    return all_embeddings
+
+
+def compute_embeddings(
+    texts: List[str],
+    model_name: str,
+    batch_size: int = 64,
+    device: Optional[str] = None,
+    backend: str = "sentence-transformers",
+    element_ids: Optional[List[str]] = None,
+    elements: Optional[Dict[str, Dict[str, Any]]] = None,
+    image_dir: Optional[str] = None,
+) -> np.ndarray:
+    """Compute embeddings using the specified backend.
+
+    Args:
+        backend: "sentence-transformers" (text-only) or "qwen-vl" (multimodal)
+    """
+    if backend == "qwen-vl":
+        if element_ids is None or elements is None:
+            raise ValueError("qwen-vl backend requires element_ids and elements")
+        return compute_embeddings_qwen_vl(
+            element_ids=element_ids,
+            elements=elements,
+            texts=texts,
+            model_path=model_name,
+            batch_size=batch_size,
+            device=device,
+            image_dir=image_dir,
+        )
+    else:
+        return compute_embeddings_st(
+            texts=texts,
+            model_name=model_name,
+            batch_size=batch_size,
+            device=device,
+        )
 
 
 # ──────────────────────────────────────────────────────────────
@@ -347,7 +625,12 @@ def main() -> None:
     ap.add_argument(
         "--model", type=str,
         default="sentence-transformers/all-MiniLM-L6-v2",
-        help="Sentence-transformers model name",
+        help="Model name/path (sentence-transformers ID or local Qwen-VL path)",
+    )
+    ap.add_argument(
+        "--backend", type=str, default="sentence-transformers",
+        choices=["sentence-transformers", "qwen-vl"],
+        help="Embedding backend: sentence-transformers (text-only) or qwen-vl (multimodal)",
     )
     ap.add_argument(
         "--threshold", type=float, default=0.80,
@@ -359,11 +642,15 @@ def main() -> None:
     )
     ap.add_argument(
         "--batch-size", type=int, default=64,
-        help="Encoding batch size",
+        help="Encoding batch size (use smaller for qwen-vl, e.g. 4-8)",
     )
     ap.add_argument(
         "--device", type=str, default=None,
-        help="Device: cuda / cpu / mps (auto-detect if omitted)",
+        help="Device: cuda / npu / cpu (auto-detect if omitted)",
+    )
+    ap.add_argument(
+        "--image-dir", type=str, default=None,
+        help="Base directory for element images (for qwen-vl backend)",
     )
     ap.add_argument(
         "--hub-candidates", type=Path, default=None,
@@ -425,11 +712,16 @@ def main() -> None:
             f"Embedding count mismatch: {embeddings.shape[0]} vs {len(element_ids)} elements"
         )
     else:
-        print(f"\n[2/4] Computing embeddings with {args.model}")
+        print(f"\n[2/4] Computing embeddings with {args.model} (backend={args.backend})")
         embeddings = compute_embeddings(
-            texts, args.model,
+            texts=texts,
+            model_name=args.model,
             batch_size=args.batch_size,
             device=args.device,
+            backend=args.backend,
+            element_ids=element_ids,
+            elements=elements,
+            image_dir=args.image_dir,
         )
 
     if args.save_embeddings:
@@ -467,6 +759,7 @@ def main() -> None:
     output_data = {
         "metadata": {
             "model": args.model,
+            "backend": args.backend,
             "threshold": args.threshold,
             "max_edges_per_element": args.max_edges_per_element,
             "n_elements": len(element_ids),
@@ -476,6 +769,7 @@ def main() -> None:
             "same_doc_only": args.same_doc_only,
             "cross_doc_only": args.cross_doc_only,
             "existing_edges_excluded": len(existing_edges),
+            "image_dir": args.image_dir,
         },
         "edges": edges,
     }
