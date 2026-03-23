@@ -1,0 +1,552 @@
+[
+  {
+    "query_id": "l3_de_1703.06856_0021",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Which debiasing approach best mirrors Fair K and Fair Add by sacrificing less biased behavior for some performance cost, and what outcome appears as generated analogies increase?",
+    "answer": "Full and Unaware achieve the highest logistic-regression accuracy, while Fair K and Fair Add accept a small accuracy drop to ensure counterfactual fairness. The bridge links this trade-off to debiasing under the shared themes of logistic regression, counterfactual fairness, and accuracy. In the embedding setting, hard debiasing best matches that fairness-first strategy, because as generated analogies increase it keeps stereotypic analogies far lower than before or soft debiasing, remaining below about 10 even near 150.",
+    "pair_type": "figure+table",
+    "element_ids": [
+      "1703.06856_table_1",
+      "1607.06520_figure_5"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1703.06856_table_1",
+      "1703.06856::p::00009",
+      "1703.06856::p::00001",
+      "1607.06520_figure_5"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1703.06856_table_1",
+        "evidence_type": "observation",
+        "evidence_span": "we must sacrifice a small amount of accuracy to ensuring counterfactually fair prediction (Fair K , Fair Add), versus the models that use unfair features: GPA, LSAT, race, sex (Full, Unaware)",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The fair logistic-regression variants prioritize reduced bias over maximum accuracy, unlike Full and Unaware."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "Logistic regression performance trade-off between accuracy and counterfactual fairness",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "This frames the relevant mechanism as a general debiasing trade-off, letting the fairness-first pattern from logistic regression guide the choice of analogous embedding method."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1607.06520_figure_5",
+        "evidence_type": "explanation",
+        "evidence_span": "Hard-debiased embeddings suppress stereotypic analogies much more strongly, staying near 0 until roughly ~60 analogies and remaining below ~10 even at ~150 generated analogies",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "Hard debiasing is the embedding approach that most closely matches the fairness-first sacrifice identified earlier, yielding the lowest stereotypic-analogy counts as generation increases."
+      }
+    ],
+    "is_cross_doc": true
+  },
+  {
+    "query_id": "l3_de_1706.02409_0081",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Which protected attribute and minority count match the dataset whose COMPAS score disparity is bounded under the MinMax policy and illustrated by the Black–White decile histograms?",
+    "answer": "The decile histograms depict COMPAS score disparity between Black and White defendants, and the surrounding discussion states a sharp bound on Δ under the MinMax policy using score distributions by race. That identifies the relevant dataset as COMPAS. In the dataset summary, COMPAS has protected attribute race and Minority n of 1455.",
+    "pair_type": "figure+table",
+    "element_ids": [
+      "1610.07524_figure_2",
+      "1706.02409_table_1"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1610.07524_figure_2",
+      "1706.02409::p::00008",
+      "1706.02409::p::00003",
+      "1706.02409_table_1"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1610.07524_figure_2",
+        "evidence_type": "observation",
+        "evidence_span": "COMPAS decile score histograms for Black and White defendants",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The evidence concerns racial disparity in COMPAS decile scores, so the relevant dataset is the COMPAS dataset."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "Letting f_{r,y}(s) denote the score distribution for race r and recidivism outcome y, one can establish the following sharp bound on Δ. Proposition 3.2 (Percent overlap bound). Under the MinMax policy",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "The observed COMPAS racial score disparity is explicitly tied to the MinMax policy bound on Δ, confirming that the same COMPAS setting should be traced into the dataset summary."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1706.02409_table_1",
+        "evidence_type": "explanation",
+        "evidence_span": "COMPAS | logit | 3373 | 19 | 1455 | race",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "For the COMPAS dataset referenced by the disparity and MinMax bound, the protected attribute is race and the minority count is 1455."
+      }
+    ],
+    "is_cross_doc": true
+  },
+  {
+    "query_id": "l3_de_1306.5204_0105",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Given the significant median Jensen-Shannon divergence bias, which centrality measure is preferred for longer observation periods, and what aggregated accuracy supports that choice?",
+    "answer": "The median Jensen-Shannon divergence is significantly elevated because S = 0.018 exceeds the null mean \\hat{\\mu} = 0.013 by z = 5.000. The bridge explains that with this single-day limitation, accuracy improves with longer observation periods and that Potential Reach is quite stable in aggregated data. Consistent with that, Potential Reach is the preferred measure, supported by an aggregated All value of 80.",
+    "pair_type": "figure+table",
+    "element_ids": [
+      "1306.5204_figure_14",
+      "1306.5204_table_2"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1306.5204_figure_14",
+      "1306.5204::p::00007",
+      "1306.5204::p::00008",
+      "1306.5204_table_2"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1306.5204_figure_14",
+        "evidence_type": "observation",
+        "evidence_span": "Median. S = 0.018 \\hat{\\mu} = 0.013, \\hat{\\sigma} = 0.001, z = 5.000",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The observed median Jensen-Shannon divergence is significantly above the null distribution, indicating a meaningful single-day discrepancy."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "identifying ~50% key-players correctly for a single day is reasonable, and accuracy can be increased by using longer observation periods. Even more, the Potential Reach metrics are quite stable for some days in the aggregated data.",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "The single-day discrepancy is attributed to limited daily accuracy, so longer observation periods favor stable measures such as Potential Reach."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1306.5204_table_2",
+        "evidence_type": "verification",
+        "evidence_span": "Potential Reach 100 59.2 (32–83) 80",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "Among the centrality measures, Potential Reach is validated as the best choice for longer observation periods because its aggregated accuracy reaches 80."
+      }
+    ],
+    "is_cross_doc": false
+  },
+  {
+    "query_id": "l3_de_1409.0575_0025",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Starting from the steel drum example, which ILSVRC task does it illustrate, and what object-detection evaluation principle later governs mistakes on object categories?",
+    "answer": "The image shows the ground-truth label \"Steel drum,\" identifying an object category example. The bridge ties that example to ILSVRC image classification and object category terminology. From there, the later ILSVRC 2010 object detection context states that evaluation adopts PASCAL VOC criteria penalizing missed instances, duplicate detections, and false positives.",
+    "pair_type": "figure+table",
+    "element_ids": [
+      "1409.0575_figure_7",
+      "1409.0575_table_6"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1409.0575_figure_7",
+      "1409.0575::p::00049",
+      "1409.0575::p::00004",
+      "1409.0575_table_6"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1409.0575_figure_7",
+        "evidence_type": "observation",
+        "evidence_span": "class label “Steel drum” printed at the top in green",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The example instance is explicitly labeled as the object category Steel drum."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "ILSVRC, image classification, ground truth label, object category, steel drum",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "The Steel drum example is identified as an ILSVRC image classification ground-truth object category example."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1409.0575_table_6",
+        "evidence_type": "explanation",
+        "evidence_span": "adopting PASCAL VOC object-detection criteria (penalizing missed instances, duplicate detections, and false positives)",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "Once the example is placed within ILSVRC object-category evaluation, the later object-detection task is governed by PASCAL VOC penalties for misses, duplicates, and false positives."
+      }
+    ],
+    "is_cross_doc": false
+  },
+  {
+    "query_id": "l3_de_1610.02413_0033",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "How does Scenario II’s X3-based R* connect to PAD(ε), and what happens to privacy protection as ε increases when leakage is tied to protected-attribute information?",
+    "answer": "Scenario II places R* on the X3 pathway rather than directly on A, separating it from the protected attribute’s direct influence seen in R~. The bridge links this causal DAG to PAD(ε) as a metric for privacy or attribute leakage. Since PAD(ε)=2(1−2ε), increasing ε lowers PAD(ε), meaning privacy protection worsens as leakage increases.",
+    "pair_type": "figure+formula",
+    "element_ids": [
+      "1610.02413_figure_5",
+      "1511.00830_formula_2"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1610.02413_figure_5",
+      "1610.02413::p::00012",
+      "1610.02413::p::00001",
+      "1511.00830_formula_2"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1610.02413_figure_5",
+        "evidence_type": "observation",
+        "evidence_span": "X3 points to an optimal score R*, indicating R* is generated from the predictive feature rather than directly from A",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "Scenario II establishes that R* is based on predictive feature X3 rather than a direct path from protected attribute A."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "Linear privacy-accuracy degradation as a function of epsilon: The equation defines a simple metric PAD(ε) that quantifies how privacy/attribute leakage",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "This connects the X3-versus-A score-generation distinction to PAD(ε) by identifying PAD(ε) as the metric governing privacy or attribute leakage."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1511.00830_formula_2",
+        "evidence_type": "explanation",
+        "evidence_span": "It is linear in ε... the term (1 − 2ε) decreases the score as ε increases, reflecting worse privacy",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "Given PAD(ε) is the relevant leakage metric, increasing ε necessarily decreases PAD(ε) and therefore weakens privacy protection."
+      }
+    ],
+    "is_cross_doc": true
+  },
+  {
+    "query_id": "l3_de_1805.05859_0007",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Which debiasing method best minimizes the analogue of the disturbance term’s unwanted contribution to Y, when treating stereotypic analogies as the outcome affected by embedding changes?",
+    "answer": "Y is modeled as a linear combination of inputs plus an exogenous disturbance term, so unwanted variation can be viewed as contribution from unmodeled factors. The bridge links that structural-equation view of an outcome to the debiasing setting where stereotypic analogies are the measured outcome under embedding changes. In that setting, hard-debiased embeddings keep stereotypic analogies near 0 until about 60 generated analogies and below 10 even near 150, so hard debiasing most effectively minimizes the unwanted contribution.",
+    "pair_type": "figure+formula",
+    "element_ids": [
+      "1805.05859_formula_2",
+      "1607.06520_figure_5"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1805.05859_formula_2",
+      "1805.05859::p::00010",
+      "1805.05859::p::00011",
+      "1607.06520_figure_5"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1805.05859_formula_2",
+        "evidence_type": "observation",
+        "evidence_span": "Y as a linear combination of two inputs, A and Z, plus an exogenous disturbance term",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The outcome Y includes both modeled inputs and an unwanted exogenous component that can be interpreted as residual noise affecting the outcome."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "structural equation, linear model, outcome, coefficients, latent noise",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "This connects the residual-noise interpretation from the structural equation to the debiasing scenario by framing stereotypic analogies as an outcome influenced by controllable inputs and latent noise."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1607.06520_figure_5",
+        "evidence_type": "explanation",
+        "evidence_span": "Hard-debiased embeddings suppress stereotypic analogies much more strongly, staying near 0 until roughly ~60 analogies and remaining below ~10 even at ~150 generated analogies",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "Given the outcome-plus-noise framing, hard debiasing is the method that most strongly reduces the unwanted stereotypic outcome relative to baseline and soft debiasing."
+      }
+    ],
+    "is_cross_doc": true
+  },
+  {
+    "query_id": "l3_de_1511.00830_0028",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "How does conditioning VFAE generation on s lead to the identity neighborhoods seen in z1 for Extended Yale B?",
+    "answer": "The generative process samples z from p(z) and then draws x from pθ(x|z,s), so x depends jointly on latent factors and the attribute s. The bridge identifies this as latent-variable generation with a conditional likelihood involving a nuisance/sensitive attribute, linking the formula to how VFAE structures its latent space. In the Extended Yale B z1 embedding, examples with the same person ID cluster in local neighborhoods, indicating that this representation preserves identity structure despite conditioning on s.",
+    "pair_type": "figure+formula",
+    "element_ids": [
+      "1511.00830_formula_1",
+      "1511.00830_figure_5"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1511.00830_formula_1",
+      "1511.00830::p::00001",
+      "1511.00830::p::00003",
+      "1511.00830_figure_5"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1511.00830_formula_1",
+        "evidence_type": "observation",
+        "evidence_span": "draw a latent representation z from a chosen prior, then generate an observed sample x from a model distribution conditioned on both z and an additional variable s",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The model generates x from z while explicitly conditioning on s, establishing the relevant generative dependency."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "latent variable, prior, conditional likelihood, generator, nuisance/sensitive attribute",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "This frames the dependency from step 1 as VFAE's generator using conditional likelihood with s as a nuisance/sensitive attribute, connecting the formula to the representation mechanism."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1511.00830_figure_5",
+        "evidence_type": "explanation",
+        "evidence_span": "Examples with the same ID tend to appear in local neighborhoods, forming loose clusters that reflect identity structure in the latent representation",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "Given the conditional generative mechanism in VFAE, the z1 map shows the resulting latent space preserves person identity through local clustering."
+      }
+    ],
+    "is_cross_doc": false
+  },
+  {
+    "query_id": "l3_de_1602.05352_0113",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Which ratings make conventional held-out evaluation disastrously biased, through what observation mechanism, and which user and movie variables formalize that setup?",
+    "answer": "The toy setup has horror lovers rating horror 5 and romance 1, romance lovers doing the opposite, and both groups rating dramas 3. The bridge explains that observation depends on propensity, so ratings are not missing uniformly but are selected by user–item exposure. That selection mechanism is why held-out evaluation becomes disastrously biased, and the setup is formalized with users indexed by u in {1,...,U} and movies by i in {1,...,I}.",
+    "pair_type": "figure+formula",
+    "element_ids": [
+      "1602.05352_figure_1",
+      "1602.05352_formula_1"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1602.05352_figure_1",
+      "1602.05352::p::00003",
+      "1602.05352::p::00004",
+      "1602.05352_formula_1"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1602.05352_figure_1",
+        "evidence_type": "observation",
+        "evidence_span": "horror lovers” who rate all horror movies 5 and all romance movies 1... “romance lovers” ... opposite way... both groups rate dramas as 3",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The ratings are systematically structured by user preference group and movie genre rather than being homogeneous across entries."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "the observation indicator depends on propensity, creating selection bias in which ratings are observed",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "Because observation is governed by propensity over the structured ratings from step 1, the held-out set becomes selectively sampled instead of representative."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1602.05352_formula_1",
+        "evidence_type": "explanation",
+        "evidence_span": "Denote with u ∈ {1, . . . , U} the users and with i ∈ {1, . . . , I} the movies",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "The biased evaluation setup induced by selective observation is formalized over user index u and movie index i, completing the toy-example mechanism."
+      }
+    ],
+    "is_cross_doc": false
+  },
+  {
+    "query_id": "l3_de_1703.06856_0093",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Which fairness mechanism explains why Fair K sacrifices RMSE yet still prevents leakage when outputs are binary but latent probabilities remain continuous?",
+    "answer": "Full has lower RMSE than Fair K, so counterfactually fair prediction sacrifices a small amount of accuracy. The bridge attributes this tradeoff to enforcing fairness through a representation or prediction mechanism that blocks sensitive information. Formula 2’s context explains why preventing leakage must address both binary outputs and continuous latent probabilities, so Fair K’s sacrifice supports a leakage-resistant fair representation.",
+    "pair_type": "formula+table",
+    "element_ids": [
+      "1703.06856_table_1",
+      "1511.00830_formula_2"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1703.06856_table_1",
+      "1703.06856::p::00009",
+      "1703.06856::p::00001",
+      "1511.00830_formula_2"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1703.06856_table_1",
+        "evidence_type": "observation",
+        "evidence_span": "we must sacrifice a small amount of accuracy to ensuring counterfactually fair prediction (Fair K, Fair Add)",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "Fair K achieves counterfactual fairness at the cost of slightly worse RMSE than unfair models."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "Domain adaptation can also be cast as learning representations",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "The observed accuracy cost is attributed to learning a fair representation rather than using unfair predictive features directly."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1511.00830_formula_2",
+        "evidence_type": "explanation",
+        "evidence_span": "returns 1 or 0, while p(z_k = 1 | x_i, s = 1) returns values between values 0 and 1, then the penalty could still be satisfied, but information could still leak through",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "A fair representation must stop leakage in both binary decisions and continuous latent probabilities, explaining why Fair K accepts some RMSE loss."
+      }
+    ],
+    "is_cross_doc": true
+  },
+  {
+    "query_id": "l3_de_1607.06520_0117",
+    "difficulty_level": 3,
+    "difficulty_label": "reasoning_chain",
+    "query": "Which evaluation setup links Direct Bias to stereotype analogies and culminates in the extreme he occupation guidance counselor?",
+    "answer": "The Direct Bias section first uses the same analogy generation task, automatically generating pairs analogous to she-he for evaluation by crowd-workers. The bridge explains that this task is used to surface gender stereotypes in occupation analogies derived from the embedding bias mechanism. That setup culminates in the listed stereotype outcome where guidance counselor appears under extreme he occupations.",
+    "pair_type": "formula+table",
+    "element_ids": [
+      "1607.06520_formula_5",
+      "1607.06520_table_1"
+    ],
+    "hop_distance": 3,
+    "path": [
+      "1607.06520_formula_5",
+      "1607.06520::p::00018",
+      "1607.06520::p::00019",
+      "1607.06520_table_1"
+    ],
+    "reasoning_depth": 3,
+    "reasoning_steps": [
+      {
+        "step_id": 1,
+        "evidence_element_id": "1607.06520_formula_5",
+        "evidence_type": "observation",
+        "evidence_span": "used the same analogy generation task as before",
+        "reasoning_role": "premise",
+        "depends_on_steps": [],
+        "produces_claim": "The Direct Bias evaluation is grounded in an analogy generation task tied to she-he."
+      },
+      {
+        "step_id": 2,
+        "evidence_element_id": "bridge_paragraph",
+        "evidence_type": "attribution",
+        "evidence_span": "reflect gender stereotypes",
+        "reasoning_role": "intermediate",
+        "depends_on_steps": [
+          1
+        ],
+        "produces_claim": "This analogy task is specifically intended to attribute observed outputs to gender-stereotype effects in the embeddings."
+      },
+      {
+        "step_id": 3,
+        "evidence_element_id": "1607.06520_table_1",
+        "evidence_type": "verification",
+        "evidence_span": "12. guidance counselor",
+        "reasoning_role": "conclusion",
+        "depends_on_steps": [
+          1,
+          2
+        ],
+        "produces_claim": "A concrete verified outcome of that stereotype-oriented analogy setup is guidance counselor appearing among extreme he occupations."
+      }
+    ],
+    "is_cross_doc": false
+  }
+]
