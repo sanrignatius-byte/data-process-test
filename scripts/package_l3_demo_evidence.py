@@ -474,10 +474,24 @@ def main():
     print(f"Output dir:      {out_dir}")
     print()
 
-    # 清理旧输出
+    # 清理旧输出（Windows 下文件可能被占用，先 rename 再删）
     if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+        tmp_name = out_dir.with_name(out_dir.name + "_old_tmp")
+        if tmp_name.exists():
+            shutil.rmtree(tmp_name, ignore_errors=True)
+        try:
+            out_dir.rename(tmp_name)
+            shutil.rmtree(tmp_name, ignore_errors=True)
+        except (PermissionError, OSError):
+            # 如果 rename 也失败，逐文件清理
+            for child in out_dir.rglob("*"):
+                if child.is_file():
+                    try:
+                        child.unlink()
+                    except PermissionError:
+                        pass
+            shutil.rmtree(out_dir, ignore_errors=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     total_imgs = 0
     found_imgs = 0
