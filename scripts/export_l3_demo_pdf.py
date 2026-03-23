@@ -99,7 +99,7 @@ def _register_fonts(pdf: "FPDF") -> Tuple[str, str]:
     sans_path, mono_path = _find_ttf()
 
     if sans_path:
-        pdf.add_font(FONT_SANS, "", str(sans_path), uni=True)
+        pdf.add_font(FONT_SANS, "", str(sans_path))
         # Try bold variant (arial bold = arialbd.ttf on Windows)
         bold_path = sans_path.with_name(
             sans_path.stem + "bd" + sans_path.suffix  # arialbd.ttf
@@ -109,9 +109,9 @@ def _register_fonts(pdf: "FPDF") -> Tuple[str, str]:
                 sans_path.stem + "-Bold" + sans_path.suffix
             )
         if bold_path.exists():
-            pdf.add_font(FONT_SANS, "B", str(bold_path), uni=True)
+            pdf.add_font(FONT_SANS, "B", str(bold_path), )
         else:
-            pdf.add_font(FONT_SANS, "B", str(sans_path), uni=True)
+            pdf.add_font(FONT_SANS, "B", str(sans_path), )
 
         # Italic variant
         italic_path = sans_path.with_name(
@@ -122,14 +122,14 @@ def _register_fonts(pdf: "FPDF") -> Tuple[str, str]:
                 sans_path.stem + "-Italic" + sans_path.suffix
             )
         if italic_path.exists():
-            pdf.add_font(FONT_SANS, "I", str(italic_path), uni=True)
+            pdf.add_font(FONT_SANS, "I", str(italic_path), )
         else:
-            pdf.add_font(FONT_SANS, "I", str(sans_path), uni=True)
+            pdf.add_font(FONT_SANS, "I", str(sans_path), )
     else:
         FONT_SANS = "Helvetica"
 
     if mono_path:
-        pdf.add_font(FONT_MONO, "", str(mono_path), uni=True)
+        pdf.add_font(FONT_MONO, "", str(mono_path), )
     else:
         FONT_MONO = "Courier"
 
@@ -154,11 +154,44 @@ def sanitize_latin1(text: str) -> str:
     return text.encode("latin-1", errors="replace").decode("latin-1")
 
 
+def _strip_unsupported(text: str) -> str:
+    """Remove/replace characters outside typical Western TTF coverage (CJK, math symbols)."""
+    replacements = {
+        "\u2013": "-", "\u2014": "--", "\u2018": "'", "\u2019": "'",
+        "\u201c": '"', "\u201d": '"', "\u2026": "...", "\u00a0": " ",
+        "\u2192": "->", "\u2190": "<-", "\u2264": "<=", "\u2265": ">=",
+        "\u00d7": "x", "\u2022": "*", "\u00b1": "+/-",
+        "\u2208": " in ", "\u2209": " not in ", "\u2282": " subset ",
+        "\u2286": " subseteq ", "\u221e": "inf", "\u2248": "~=",
+        "\u2260": "!=", "\u2227": " and ", "\u2228": " or ",
+        "\u03b1": "alpha", "\u03b2": "beta", "\u03b3": "gamma",
+        "\u03b4": "delta", "\u0394": "Delta", "\u03c3": "sigma",
+        "\u03bc": "mu", "\u03bb": "lambda", "\u03c0": "pi",
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+    # Strip any remaining non-BMP or CJK characters
+    cleaned = []
+    for ch in text:
+        cp = ord(ch)
+        # Keep ASCII, Latin Extended, common punctuation
+        if cp < 0x2000 or (0x2000 <= cp <= 0x206F):  # general punctuation ok
+            cleaned.append(ch)
+        elif 0x2100 <= cp <= 0x214F:  # letterlike symbols
+            cleaned.append(ch)
+        elif cp > 0x024F and cp < 0xFB00:
+            # CJK, Arabic, Devanagari, etc. — replace with ?
+            cleaned.append("?")
+        else:
+            cleaned.append(ch)
+    return "".join(cleaned)
+
+
 def safe_text(text: str) -> str:
-    """If using built-in fonts (no TTF), sanitize text for latin-1."""
+    """Sanitize text for PDF rendering, handling both TTF and built-in fonts."""
     if FONT_SANS == "Helvetica":
         return sanitize_latin1(text)
-    return text
+    return _strip_unsupported(text)
 
 
 def wrap_text(text: str, width: int = 90) -> str:
