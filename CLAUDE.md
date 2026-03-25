@@ -52,66 +52,54 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
-## 当前状态（2026-03-21 更新｜M2 三实验全部完成 + Enrichment 消融 + Exp C Enriched 复验）
+## 当前状态（2026-03-24 更新｜P0-P4 Bridge Grounding 增强 + L3 质量验证）
 
-### 本轮完成（相对 2026-03-20）
+### 本轮完成（相对 2026-03-21）
 
-- **三个工程 Bug 修复**
-  - ID 归一化（`fig_→figure_`）：L1 ID 匹配 0/974 → 836/974
-  - Exp B 字段映射（`metrics` not `methods`）：从空报告变完整
-  - 梯度指标（Evidence Coverage 替代 Recall@10）：梯度确认
-- **L3 QC 放宽（方向 B）**：pseudo_multihop_parallel / formula_symbol_grounding_missing / architecture_intent_missing / missing_reasoning_chain 降级为 advisory → L3 pass 39→**89 条 (68.5%)**；新批次 26/39 pass (66.7%)
-- **M2 数据扩充**：L2 新增 53 条（82 候选 → 53 pass），L3 新增 26 条（39 候选 → 26 pass）
-- **三实验全量运行完成（enriched elements, L2=210, L3=115）**
-  - Exp A: 难度梯度 — Coverage L1=0.971 > L2=0.610 > L3=0.617（L1→L2 陡降，L2≈L3）
-  - Exp B: 图增强 ✅ graph_full R@10=0.8736(+0.0269), MRR=0.6045(+0.0403)
-  - Exp C: QA 三角 — 图检索覆盖 +1.9%(L2)/+6.1%(L3)，QA mention -0.5%(L2)/-1.7%(L3)
-- **Enrichment 消融实验完成**：Graph 零成本 MRR +0.018 ≈ Enrichment $3 MRR +0.013
+- **L3 Query 质量诊断**：发现旧 L3 115 条全部 bridge_paragraph content 为空、reasoning_structure 100% parallel；根因是 `hub_candidates_enriched` 的 `edge_contexts` 全空，bridge 文本从未传入 prompt
+- **P0-P4 五项增强实施**
+  - **P0 Bridge 文本注入**：从 `latex_reference_graph.json` 提取边 context，通过 element_id→LaTeX label 映射（1317 个映射），实现 **209/230 pair (90.9%)** bridge 文本覆盖（之前 0%）
+  - **P1 图路径编码**：重写 `PROMPT_3STEP_REASONING_CHAIN`，注入图路径描述 + bridge 原文 + 质量标签 + serial chain 强制示例 + bridge grounding rule
+  - **P2 Bridge 质量评分**：`score_bridge_quality()` 基于动词密度/长度/公式比/引用标记评 0-1；HIGH 77, MEDIUM 97, LOW 35 pairs
+  - **P3 Hub-aware QC**：bridge span 长度检查 + bridge claim 非空 + parallel L3 hard-fail + `pseudo_multihop_parallel` 从 L3 soft issues 中移除
+  - **P4 Anchor 特异性**：visual_anchors 必须含具体位置标记（row/col/axis/marker），全 generic 则 fail
+- **新增参数**：`--reference-graph data/latex_reference_graph.json`（默认自动加载）
+- **测试批次运行**：40 pair 生成，13 pass (37%)；所有 40 条 reasoning_steps 都有正确依赖链
+- **检索评测验证**：新 bridge-grounded L3 vs 旧空 bridge L3 全面提升
 
-### Exp C 核心发现：检索提升 ≠ QA 提升
+### Bridge Grounding 检索评测对比（n=40 each）
 
-| | L2 检索Δ | L2 QA Δ | L3 检索Δ | L3 QA Δ |
-|---|---|---|---|---|
-| raw elements (n=157/89) | +0.96% | +1.91% | **+9.0%** | +2.25% |
-| enriched elements (n=210/115) | +1.9% | **-0.48%** | **+6.1%** | **-1.74%** |
+| Method | Old L3 R@10 | New L3 R@10 | Δ | Old L3 MRR | New L3 MRR | Δ |
+|--------|-------------|-------------|---|------------|------------|---|
+| bm25 | 0.925 | **0.975** | +0.050 | 0.597 | **0.733** | **+0.135** |
+| graph_hub_rerank | 0.950 | **0.975** | +0.025 | 0.624 | **0.776** | **+0.152** |
+| graph_neighbor_prop | 0.950 | **1.000** | **+0.050** | 0.708 | **0.861** | **+0.154** |
+| graph_full | 0.950 | **0.975** | +0.025 | 0.682 | **0.803** | **+0.121** |
 
-- **图一致地提升检索覆盖**（L3 +6.1%），但 enriched 环境下 LLM 并不更多引用图检索到的 evidence
-- **解读**：enrichment 已让 BM25 提供"足够好"的 evidence，图的边际 QA 价值有限
-- **论文叙事修正**：Graph 核心价值是检索层（尤其 raw/规模化场景），非 QA 层；QA mention 不是好的评估指标（受 LLM 引用偏好影响）
+- **BM25 基线大幅提升**（MRR +0.135）：bridge grounding 让 query 使用论文实际术语，BM25 词面匹配更准
+- **neighbor_prop 达到完美 R@10=1.000, MRR=0.861**：bridge-grounded 证据完全落在图的 1-hop 邻域内
+- **Graph 增益绝对值依然显著**：graph_full MRR 0.803 >> 旧 0.682；相对增益略降是因为 BM25 基线本身变强
+- **核心结论**：图结构信息（bridge 段落）注入 query 生成 prompt 后，query 与 evidence 之间的词面和结构对齐同时提升
 
-### 关键发现：Enrichment 依赖 ⚠️
+### 之前的实验结果（保留参考）
 
-| 实验 | Elements 文件 | Enrichment 覆盖 |
-|------|--------------|----------------|
-| Exp B (Phase0) | `data111/multimodal_elements_enriched.json` | 1285/1316 (97.6%) |
-| Exp A, C (raw) | `data/multimodal_elements.json` | 0/1316 (0%) |
-| Exp A, C (enriched) | enriched elements | 1285/1316 (97.6%) |
+**M2 三实验（2026-03-21）**
+- Exp A: 难度梯度 — Coverage L1=0.971 > L2=0.610 > L3=0.617
+- Exp B: graph_full R@10=0.8736(+0.0269), MRR=0.6045(+0.0403)
+- Exp C: 图检索覆盖 +1.9%(L2)/+6.1%(L3)，QA mention -0.5%(L2)/-1.7%(L3)
+- Enrichment 消融：Graph 零成本 MRR +0.018 ≈ Enrichment $3 MRR +0.013，合用 ×1.73 超线性
 
-### Enrichment 消融实验 ✅
+### 下一步
 
-| 方法 | R@10 | MRR | 成本 |
-|------|------|-----|------|
-| BM25 (raw) | 0.8314 | 0.5508 | $0 |
-| BM25+Graph (raw) | 0.8314 | **0.5685** (+0.0177) | $0 |
-| BM25 (enriched) | 0.8467 | 0.5642 | ~$3 LLM |
-| BM25+Graph (enriched) | **0.8736** | **0.6045** (+0.0537) | ~$3 LLM |
-
-- **Graph 零成本 MRR +0.018 ≈ Enrichment $3 MRR +0.013**
-- **两者合用超线性**：+0.054 > 0.018+0.013（×1.73 倍）
-- **规模化路径**：万篇级用图为主（$0），局部高价值元素加 enrichment
-
-### 下一步（两条支线并行，2026-03-22 启动）
-
-**支线 A（学校集群）：量产 query**
-- 目标：L2+L3 从 325 扩到 550+，总计 1500+ queries
-- 脚本：`scripts/run_production_batch.py`（自动过滤已用 pair_id → 生成 → 合并）
-- 资源：151 已 enriched 未用 + 270 待 enrich → 预计新增 ~228 pass
-- 成本：~$12-15（enrichment + generation + Exp C 重跑）
+**支线 A（学校集群）：量产 query + L3 重跑**
+- 目标：用 P0-P4 增强 pipeline 重跑全量 L3（121 个 good bridge pairs），替换旧 115 条
+- 同时量产 L2：L2+L3 从 325 扩到 550+，总计 1500+ queries
+- 脚本：`scripts/run_production_batch.py` + `--reference-graph`
+- 成本：~$12-15
 
 **支线 B（公司集群）：Embedding 语义边**
-- 目标：验证 embedding 相似度能否补充图的边（mentor 建议方向）
-- 脚本：`scripts/build_embedding_edges.py`（新）+ `run_phase0_eval_ab.py --embedding-edges`
-- 步骤：元素 embedding → pairwise 相似度 → 阈值过滤 → 融合到图中重跑检索
+- 目标：验证 embedding 相似度能否补充图的边
+- 脚本：`scripts/build_embedding_edges.py` + `run_phase0_eval_ab.py --embedding-edges`
 - 不需要 LLM API，只需 sentence-transformers + GPU
 
 ### M4 路线图（更新）
@@ -120,7 +108,8 @@ log_run(
 | Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
 | Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | 已完成 |
 | Phase 1.5 ✅ | Enrichment 消融实验 + Exp C enriched 复验 | 已完成 |
-| **Phase 2A ⏳** | **量产 1500+ queries** → 初代 benchmark 数据集 | 本周 |
+| **Phase 1.7 ✅** | **P0-P4 Bridge Grounding 增强 + L3 质量验证** | **2026-03-24 完成** |
+| **Phase 2A ⏳** | **L3 全量重跑 + 量产 1500+ queries** → 初代 benchmark | 本周 |
 | **Phase 2B ⏳** | **Embedding 语义边** → 图增强 v2 | 本周 |
 | Phase 3 | 合并 2A+2B → 增强图 + 大数据集 → 最终实验 | 下周 |
 | Phase 4 | Multi-turn session + M4 联合验证 | 1-2 周 |

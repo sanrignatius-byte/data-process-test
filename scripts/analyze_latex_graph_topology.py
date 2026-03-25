@@ -42,6 +42,19 @@ MINERU_ELEMENT_TYPES = {"figure", "table", "formula"}
 
 ARCHIVE_TIME = datetime.now(timezone.utc).isoformat()
 
+SECTION_NODE_TYPES = {"section", "subsection", "subsubsection"}
+
+# Lightweight "global overview" keyword boost. Keep this intentionally narrow:
+# only terms the user called out (and very close variants) so we strengthen
+# globally summarising sections/paragraphs without turning it into a broad
+# semantic classifier.
+GLOBAL_KEYWORD_RULES: List[Tuple[str, float, str]] = [
+    (r"\bintroduction\b", 1.0, "introduction"),
+    (r"\b(summary|overview)\b", 0.95, "summary"),
+    (r"\b(architecture|framework|pipeline)\b", 0.95, "architecture"),
+    (r"\b(structure|model\s+structure|system\s+structure)\b", 0.9, "structure"),
+]
+
 # ─── Data structures ─────────────────────────────────────────────────────────
 
 @dataclass
@@ -834,6 +847,82 @@ def pagerank(
     return rank
 
 
+def _match_global_keyword_boost(text: str) -> Tuple[float, Optional[str]]:
+    """Return a narrow keyword boost for globally summarising structure nodes."""
+    norm = (text or "").lower()
+    best_score = 0.0
+    best_label: Optional[str] = None
+    for pat, score, label in GLOBAL_KEYWORD_RULES:
+        if re.search(pat, norm) and score > best_score:
+            best_score = score
+            best_label = label
+    return best_score, best_label
+
+
+def _build_global_keyword_boost_map(
+    nodes: Dict[str, Node],
+    in_adj: Dict[str, Set[str]],
+) -> Tuple[Dict[str, float], Dict[str, str]]:
+    """Build keyword boosts for section/subsection nodes and their paragraphs.
+
+    Sections get direct boosts from their titles. Paragraphs can either match
+    directly in their text snippet or inherit a slightly discounted boost from
+    the section that contains them.
+    """
+    section_direct: Dict[str, float] = {}
+    section_source: Dict[str, str] = {}
+    direct_boost: Dict[str, float] = {}
+    direct_source: Dict[str, str] = {}
+
+    for nid, node in nodes.items():
+        if node.node_type not in SECTION_NODE_TYPES and node.node_type != "paragraph":
+            continue
+        text = " ".join([
+            node.section_title or "",
+            node.label or "",
+            node.text_snippet or "",
+        ])
+        score, label = _match_global_keyword_boost(text)
+        if node.node_type in SECTION_NODE_TYPES:
+            section_direct[nid] = score
+            if label:
+                section_source[nid] = label
+        if score > 0 and label:
+            direct_boost[nid] = score
+            direct_source[nid] = f"direct:{label}"
+
+    final_boost: Dict[str, float] = {}
+    final_source: Dict[str, str] = {}
+    for nid, node in nodes.items():
+        if node.node_type in SECTION_NODE_TYPES:
+            score = direct_boost.get(nid, 0.0)
+            if score > 0:
+                final_boost[nid] = score
+                final_source[nid] = direct_source[nid]
+            continue
+        if node.node_type != "paragraph":
+            continue
+
+        best_inherited = 0.0
+        best_inherited_source = ""
+        for parent_id in in_adj.get(nid, ()):
+            parent_score = section_direct.get(parent_id, 0.0)
+            if parent_score > best_inherited:
+                best_inherited = 0.9 * parent_score
+                parent_label = section_source.get(parent_id, "section")
+                best_inherited_source = f"inherited:{parent_label}"
+
+        direct_score = direct_boost.get(nid, 0.0)
+        if direct_score >= best_inherited and direct_score > 0:
+            final_boost[nid] = direct_score
+            final_source[nid] = direct_source[nid]
+        elif best_inherited > 0:
+            final_boost[nid] = best_inherited
+            final_source[nid] = best_inherited_source
+
+    return final_boost, final_source
+
+
 def _build_section_semantic_map(
     nodes: Dict[str, Node],
     in_adj: Dict[str, Set[str]],
@@ -854,7 +943,7 @@ def _build_section_semantic_map(
     ]
     section_score: Dict[str, float] = {}
     for nid, node in nodes.items():
-        if node.node_type not in {"section", "subsection", "subsubsection"}:
+        if node.node_type not in SECTION_NODE_TYPES:
             continue
         text = (node.section_title or "").lower()
         best = 0.0
@@ -866,7 +955,7 @@ def _build_section_semantic_map(
     # Propagate: for each section → contained paragraph/element, inherit score
     child_score: Dict[str, float] = {}
     for nid, node in nodes.items():
-        if node.node_type in {"section", "subsection", "subsubsection"}:
+        if node.node_type in SECTION_NODE_TYPES:
             continue
         # Find parent section via in_adj (section_contains_* edges)
         for parent_id in in_adj.get(nid, ()):
@@ -881,6 +970,8 @@ def compute_hubs(
     in_adj: Dict[str, Set[str]],
     top_k: int,
     degree_norm: float = 12.0,
+    keyword_boost_map: Optional[Dict[str, float]] = None,
+    keyword_source_map: Optional[Dict[str, str]] = None,
 ) -> List[Dict[str, Any]]:
     """Compute hub scores with bridge/connectivity/core-module signals.
 
@@ -891,6 +982,8 @@ def compute_hubs(
     node_ids = sorted(nodes.keys())
     pr = pagerank(node_ids, out_adj, in_adj)
     section_semantic = _build_section_semantic_map(nodes, in_adj)
+    if keyword_boost_map is None or keyword_source_map is None:
+        keyword_boost_map, keyword_source_map = _build_global_keyword_boost_map(nodes, in_adj)
     hubs: List[Dict[str, Any]] = []
     for nid in node_ids:
         out_deg = len(out_adj.get(nid, ()))
@@ -948,12 +1041,14 @@ def compute_hubs(
         if inherited_section_score > core_score:
             core_score = 0.6 * inherited_section_score + 0.4 * core_score
 
+        keyword_boost_score = keyword_boost_map.get(nid, 0.0) * 100.0
         bridge_score = bridge_role * 100
         connectivity_score = edge_connectivity * 100
         core_module_score = core_score * 100
         penalty = 20.0 if (in_deg > out_deg * 2 and len(out_modalities) <= 1) else 0.0
         hub_score = (0.40 * bridge_score + 0.35 * connectivity_score +
-                     0.25 * core_module_score + 20.0 * pr.get(nid, 0.0) - penalty)
+                     0.25 * core_module_score + 0.10 * keyword_boost_score +
+                     20.0 * pr.get(nid, 0.0) - penalty)
 
         # Hub category
         # A node is a "bridge" when it structurally connects ≥2 distinct element
@@ -989,6 +1084,8 @@ def compute_hubs(
             "bridge_score": round(bridge_score, 2),
             "connectivity_score": round(connectivity_score, 2),
             "core_module_score": round(core_module_score, 2),
+            "keyword_boost": round(keyword_boost_score, 2),
+            "keyword_boost_source": keyword_source_map.get(nid),
             "penalty": round(penalty, 2),
             "hub_score": round(hub_score, 6),
         })
@@ -1007,7 +1104,10 @@ def compute_hubs(
 def compute_bridge_hubs(
     nodes: Dict[str, Node],
     out_adj: Dict[str, Set[str]],
+    in_adj: Dict[str, Set[str]],
     top_k: int,
+    keyword_boost_map: Optional[Dict[str, float]] = None,
+    keyword_source_map: Optional[Dict[str, str]] = None,
 ) -> List[Dict[str, Any]]:
     """Nodes co-referencing ≥2 distinct element modalities (true bridge hubs).
 
@@ -1017,9 +1117,11 @@ def compute_bridge_hubs(
     which paragraphs may miss when elements are spread across sub-sections.
 
     Scored by:
-      bridge_score = modality_count * 10 + out_degree
+      bridge_score = modality_count * 10 + out_degree + keyword_boost_bonus
     """
     _BRIDGE_NODE_TYPES = {"paragraph", "section", "subsection", "subsubsection"}
+    if keyword_boost_map is None or keyword_source_map is None:
+        keyword_boost_map, keyword_source_map = _build_global_keyword_boost_map(nodes, in_adj)
     bridges: List[Dict[str, Any]] = []
     for nid, node in nodes.items():
         if node.node_type not in _BRIDGE_NODE_TYPES:
@@ -1028,6 +1130,8 @@ def compute_bridge_hubs(
         modalities = {nodes[nb].node_type for nb in neighbors if nodes[nb].node_type in ELEMENT_MODALITIES}
         if len(modalities) < 2:
             continue
+        keyword_boost = keyword_boost_map.get(nid, 0.0)
+        bridge_score = len(modalities) * 10 + len(neighbors) + 5.0 * keyword_boost
         bridges.append({
             "node_id": nid,
             "doc_id": node.doc_id,
@@ -1039,9 +1143,14 @@ def compute_bridge_hubs(
             "out_degree": len(neighbors),
             "unique_modalities_referred": len(modalities),
             "modalities": sorted(modalities),
-            "bridge_score": len(modalities) * 10 + len(neighbors),
+            "keyword_boost": round(keyword_boost * 100, 2),
+            "keyword_boost_source": keyword_source_map.get(nid),
+            "bridge_score": round(bridge_score, 2),
         })
-    bridges.sort(key=lambda x: (x["unique_modalities_referred"], x["out_degree"]), reverse=True)
+    bridges.sort(
+        key=lambda x: (x["unique_modalities_referred"], x["bridge_score"], x["out_degree"]),
+        reverse=True,
+    )
     return bridges[:top_k]
 
 
@@ -1280,14 +1389,26 @@ def enumerate_candidates_from_bridge_hubs(
         line_no_span = (max(line_nos) - min(line_nos)) if len(line_nos) >= 2 else None
 
         short_seed, long_seed = build_query_seeds(nodes, path)
+        # P0: Extract bridge paragraph text from intermediate hub node
+        hub_text_snippet = nodes[hub_nid].text_snippet or ""
+        bridge_contexts = []
+        for mid_nid in path[1:-1]:
+            if mid_nid in nodes and nodes[mid_nid].text_snippet:
+                bridge_contexts.append({
+                    "node_id": mid_nid,
+                    "text": nodes[mid_nid].text_snippet,
+                })
+
         candidates.append({
             "doc_id": primary_doc,
             "hub_node_id": hub_nid,
             "hub_label": nodes[hub_nid].label,
             "hub_type": nodes[hub_nid].node_type,
+            "hub_text_snippet": hub_text_snippet,
             "hop_distance": len(path) - 1,
             "path_node_ids": path,
             "path_node_types": types,
+            "bridge_contexts": bridge_contexts,
             "modalities_in_path": modal_types,
             "is_cross_doc": is_cross_doc,
             "page_span": page_span,
@@ -1784,14 +1905,30 @@ def main() -> None:
     else:
         degree_norm = 12.0
 
-    all_hubs = compute_hubs(nodes, out_adj, in_adj, top_k=0, degree_norm=degree_norm)
+    keyword_boost_map, keyword_source_map = _build_global_keyword_boost_map(nodes, in_adj)
+    all_hubs = compute_hubs(
+        nodes,
+        out_adj,
+        in_adj,
+        top_k=0,
+        degree_norm=degree_norm,
+        keyword_boost_map=keyword_boost_map,
+        keyword_source_map=keyword_source_map,
+    )
     hubs = all_hubs[:args.top_k_hubs]
     traffic_hubs = sorted(
         [h for h in all_hubs if h["in_degree"] > 0 and h["out_degree"] > 0],
         key=lambda x: (min(x["in_degree"], x["out_degree"]), x["degree_total"], x["hub_score"]),
         reverse=True,
     )[:args.top_k_hubs]
-    bridge_hubs = compute_bridge_hubs(nodes, out_adj, top_k=args.top_k_hubs)
+    bridge_hubs = compute_bridge_hubs(
+        nodes,
+        out_adj,
+        in_adj,
+        top_k=args.top_k_hubs,
+        keyword_boost_map=keyword_boost_map,
+        keyword_source_map=keyword_source_map,
+    )
 
     # ── Phase 5: Adjacent backbone bridges ────────────────────────────────
     adj_bridges = compute_adjacent_backbone_bridges(nodes, out_adj)
@@ -1864,6 +2001,10 @@ def main() -> None:
 
     # ── Hub category breakdown ─────────────────────────────────────────────
     hub_cats = Counter(h.get("hub_category", "unknown") for h in hubs)
+    keyword_boosted_hubs = sum(1 for h in hubs if float(h.get("keyword_boost", 0.0) or 0.0) > 0)
+    keyword_boosted_bridge_hubs = sum(
+        1 for h in bridge_hubs if float(h.get("keyword_boost", 0.0) or 0.0) > 0
+    )
 
     # ── Assemble outputs ──────────────────────────────────────────────────
     report = {
@@ -1896,12 +2037,16 @@ def main() -> None:
         "hubs_summary": {
             "count": len(hubs),
             "hub_category_breakdown": dict(hub_cats),
+            "keyword_boosted_hubs_count": keyword_boosted_hubs,
+            "keyword_boosted_bridge_hubs_count": keyword_boosted_bridge_hubs,
             "note_scoring": (
                 "hub_score = 0.40*bridge_score + 0.35*connectivity_score + "
-                "0.25*core_module_score + 20*pagerank - penalty. "
+                "0.25*core_module_score + 0.10*keyword_boost + 20*pagerank - penalty. "
                 "bridge_score rewards multi-modality bridge behavior; "
                 "connectivity_score captures degree + cross-type neighbors; "
                 "core_module_score uses regex keywords from section/title labels. "
+                "keyword_boost strengthens introduction/summary/architecture/structure "
+                "sections and their paragraphs. "
                 "Penalty suppresses authority sinks (high in-degree with weak bridging)."
             ),
             "top10": hubs[:10],

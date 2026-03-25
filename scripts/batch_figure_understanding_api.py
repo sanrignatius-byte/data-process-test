@@ -105,7 +105,6 @@ def process_pair(client: anthropic.Anthropic, pair: Dict, model: str) -> Dict:
         temperature=0.7,
         max_tokens=2048,
     )
-
     raw = response.content[0].text.strip()
     parsed = None
     try:

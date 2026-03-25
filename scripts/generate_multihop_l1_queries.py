@@ -32,6 +32,244 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.utils.token_logger import log_run
 
 # ──────────────────────────────────────────────────────────────
+# P0: Bridge paragraph text resolver — loads raw paragraph
+# context from latex_reference_graph.json so L3 prompts can
+# inject real bridge text instead of empty placeholders.
+# ──────────────────────────────────────────────────────────────
+
+_BRIDGE_TEXT_CACHE: Dict[str, Dict[str, str]] = {}  # {doc_id: {label: text}}
+_ELEMENT_TO_LABELS: Dict[str, List[str]] = {}  # {element_id: [latex_labels]}
+_SECTION_ENRICH_CACHE: Dict[str, Dict[str, Any]] = {}  # {section_id: enrichment row}
+
+
+def load_reference_graph_bridge_texts(
+    ref_graph_path: str,
+    topology_candidates_path: str = "",
+) -> None:
+    """Pre-load paragraph contexts from latex_reference_graph.json.
+
+    Also loads topology candidates to build element_id → LaTeX label mapping,
+    so we can resolve MinerU element IDs to the LaTeX labels used in edge contexts.
+
+    Bridge text is found by: element_id → LaTeX label → edges referencing that label
+    → edge context = the bridge paragraph text.
+    """
+    if not ref_graph_path or not Path(ref_graph_path).exists():
+        return
+    data = json.loads(Path(ref_graph_path).read_text(encoding="utf-8"))
+    docs = data.get("documents", {})
+    for doc_id, doc in docs.items():
+        ctx_by_label: Dict[str, List[str]] = defaultdict(list)
+
+        # Index edge contexts by target label (the element being referenced)
+        for edge in doc.get("edges", []):
+            ctx = (edge.get("context", "") or "").strip()
+            if len(ctx) < 20:
+                continue
+            # Skip containment edges ("fig:X is within sec:Y")
+            if " is within " in ctx:
+                continue
+            ctx_clean = _clean_latex_bridge(ctx)
+            if len(ctx_clean) < 20:
+                continue
+            tgt = edge.get("target_label", "")
+            if tgt:
+                ctx_by_label[tgt].append(ctx_clean)
+
+        _BRIDGE_TEXT_CACHE[doc_id] = {
+            k: " | ".join(dict.fromkeys(vs[:3]))  # dedup while preserving order
+            for k, vs in ctx_by_label.items()
+        }
+
+    # Build element_id → LaTeX label mapping from topology candidates
+    # The topology uses node_ids like "1904.03310::el::tab:lm_cor" which
+    # contain the LaTeX label, while enriched candidates use MinerU IDs
+    # like "1904.03310_table_1". The enrichment step mapped between them.
+    _build_element_label_map_from_topology(topology_candidates_path)
+    _build_element_label_map_from_ref_graph(data)
+
+
+def load_section_enrichments(section_enrich_path: str) -> None:
+    """Load section/subsection enrichment JSON keyed by section_id."""
+    _SECTION_ENRICH_CACHE.clear()
+    if not section_enrich_path or not Path(section_enrich_path).exists():
+        return
+    data = json.loads(Path(section_enrich_path).read_text(encoding="utf-8"))
+    rows = data.get("sections", []) if isinstance(data, dict) else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        sid = str(row.get("section_id", "") or "").strip()
+        if sid:
+            _SECTION_ENRICH_CACHE[sid] = row
+
+
+def _build_element_label_map_from_topology(topo_path: str) -> None:
+    """Build element_id → label mapping from topology candidates."""
+    if not topo_path or not Path(topo_path).exists():
+        return
+    topo = json.loads(Path(topo_path).read_text(encoding="utf-8"))
+    for cand in topo.get("candidates", []):
+        path_ids = cand.get("path_node_ids", [])
+        path_types = cand.get("path_node_types", [])
+        for nid, ntype in zip(path_ids, path_types):
+            if ntype in ("figure", "table", "formula", "equation"):
+                # Extract LaTeX label from node_id: "doc::el::fig:cooking" → "fig:cooking"
+                if "::el::" in nid:
+                    latex_label = nid.split("::el::")[-1]
+                    doc_id = nid.split("::")[0]
+                    # We'll match this to element_ids later
+                    _ELEMENT_TO_LABELS.setdefault(f"{doc_id}::{ntype}", []).append(latex_label)
+
+
+def _build_element_label_map_from_ref_graph(data: Dict) -> None:
+    """Build element_id → label mapping from reference graph labels.
+
+    Uses caption matching: MinerU element captions ↔ LaTeX label captions.
+    Since we don't have MinerU elements here, we build a label_type:ordinal → label
+    index that resolve_bridge_texts_for_path can use.
+    """
+    for doc_id, doc in data.get("documents", {}).items():
+        labels = doc.get("labels", {}) or {}
+        # Group labels by type, sorted by line_no
+        by_type: Dict[str, List[Tuple[int, str]]] = defaultdict(list)
+        for label_key, info in labels.items():
+            lt = (info.get("label_type", "") or "").lower()
+            # Normalize type
+            if "fig" in lt:
+                etype = "figure"
+            elif "tab" in lt:
+                etype = "table"
+            elif "eq" in lt or "formula" in lt:
+                etype = "formula"
+            else:
+                continue
+            line_no = int(info.get("line_no", 0)) if isinstance(info.get("line_no"), int) else 0
+            by_type[etype].append((line_no, label_key))
+
+        # Sort by line_no and assign ordinal (1-based to match MinerU numbering)
+        for etype, items in by_type.items():
+            items.sort()
+            for ordinal, (_, label_key) in enumerate(items, start=1):
+                element_id = f"{doc_id}_{etype}_{ordinal}"
+                if element_id not in _ELEMENT_TO_LABELS:
+                    _ELEMENT_TO_LABELS[element_id] = []
+                _ELEMENT_TO_LABELS[element_id].append(label_key)
+
+
+def _clean_latex_bridge(text: str) -> str:
+    """Strip LaTeX commands from bridge text while preserving semantic content."""
+    text = re.sub(r'\\includegraphics[^}]*\}', '', text)
+    text = re.sub(r'\\(?:ref|eqref|autoref|cref|Cref)\{([^}]*)\}', r'[\1]', text)
+    text = re.sub(r'\\cite\{([^}]*)\}', r'[cite:\1]', text)
+    text = re.sub(r'\\[a-zA-Z]+\*?\s*(?:\[[^\]]*\])?\{([^}]{0,120})\}', r'\1', text)
+    text = re.sub(r'\\[a-zA-Z]+\*?', ' ', text)
+    text = re.sub(r'[${}]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+
+def resolve_bridge_texts_for_path(pair: Dict) -> List[str]:
+    """Given a candidate pair with path, resolve actual bridge paragraph texts.
+
+    Strategy: map MinerU element_ids → LaTeX labels (via ordinal mapping),
+    then look up edge contexts referencing those labels in the reference graph.
+    The edge context IS the bridge paragraph text — the sentence where the
+    author connects two elements via \\ref{}.
+
+    Returns a list of bridge paragraph texts (cleaned, max 3).
+    """
+    elem_a_id = pair.get("element_a_id", "")
+    elem_b_id = pair.get("element_b_id", "")
+
+    bridge_texts: List[str] = []
+    seen: Set[str] = set()
+
+    for eid in [elem_a_id, elem_b_id]:
+        # Extract doc_id from element_id: "1709.02012_figure_4" → "1709.02012"
+        parts = eid.rsplit("_", 2)
+        if len(parts) < 3:
+            continue
+        eid_doc = parts[0]
+
+        cache = _BRIDGE_TEXT_CACHE.get(eid_doc, {})
+        if not cache:
+            continue
+
+        # Get LaTeX labels for this element_id from the mapping
+        latex_labels = _ELEMENT_TO_LABELS.get(eid, [])
+        for label in latex_labels:
+            if label in cache:
+                text = cache[label]
+                if text not in seen:
+                    seen.add(text)
+                    bridge_texts.append(text)
+
+    # Fallback: use bridge_contexts from topology (if stored by P0 enhancement)
+    if not bridge_texts:
+        for bc in pair.get("bridge_contexts", []):
+            text = (bc.get("text", "") or "").strip()
+            if text and text not in seen:
+                seen.add(text)
+                bridge_texts.append(text)
+
+    return bridge_texts[:3]  # Cap at 3 bridge segments
+
+
+# ──────────────────────────────────────────────────────────────
+# P2: Bridge quality scoring — filter out unreadable bridges
+# ──────────────────────────────────────────────────────────────
+
+_BRIDGE_QUALITY_VERBS = re.compile(
+    r'\b(show|demonstrate|indicate|present|report|achieve|compare|'
+    r'observe|suggest|confirm|reveal|illustrate|summarize|highlight|'
+    r'describe|measure|evaluate|compute|define|propose|introduce|'
+    r'increase|decrease|improve|reduce|degrade|outperform)\w*\b',
+    re.IGNORECASE,
+)
+
+_BRIDGE_BOILERPLATE = re.compile(
+    r'\b(see also|cf\.|e\.g\.|i\.e\.|op\.?\s*cit\.|ibid|et al)\b',
+    re.IGNORECASE,
+)
+
+
+def score_bridge_quality(bridge_text: str) -> float:
+    """Score bridge paragraph quality for reasoning chain suitability.
+
+    Returns 0.0–1.0 where:
+      ≥ 0.5 = usable bridge (descriptive, has verbs, connects ideas)
+      < 0.5 = unusable (too short, pure formula, boilerplate, citation-only)
+    """
+    if not bridge_text or len(bridge_text.strip()) < 30:
+        return 0.0
+
+    text = bridge_text.strip()
+    score = 0.0
+
+    # Length bonus (longer = more descriptive, capped at 200 chars)
+    score += min(len(text) / 200, 0.3)
+
+    # Semantic verb count (indicates explanatory prose)
+    verb_matches = _BRIDGE_QUALITY_VERBS.findall(text)
+    score += min(len(verb_matches) * 0.15, 0.35)
+
+    # Penalty for boilerplate-heavy text
+    boilerplate_hits = len(_BRIDGE_BOILERPLATE.findall(text))
+    score -= boilerplate_hits * 0.1
+
+    # Penalty for formula-dominated text (high ratio of special chars)
+    alpha_ratio = sum(1 for c in text if c.isalpha()) / max(len(text), 1)
+    if alpha_ratio < 0.4:
+        score -= 0.2  # too much math notation, not readable
+
+    # Bonus for cross-reference markers (indicates bridge function)
+    ref_markers = len(re.findall(r'\[(?:fig|tab|eq|sec|cite)[:\w]*\]', text, re.I))
+    score += min(ref_markers * 0.1, 0.2)
+
+    return max(0.0, min(1.0, score))
+
+# ──────────────────────────────────────────────────────────────
 # Prompt templates per modality combination
 # ──────────────────────────────────────────────────────────────
 
@@ -467,33 +705,49 @@ CRITICAL: Generate EXACTLY 2 queries. queries[0] MUST be SHORT (8-14 words). que
 
 PROMPT_3STEP_REASONING_CHAIN = """You are building a benchmark that tests whether a system can follow a multi-step reasoning chain across different evidence sources. The chain MUST have exactly 3 steps, each grounded in a different piece of evidence.
 
-## Evidence Path (3 nodes)
+## Graph-Grounded Evidence Path
 
-### Node 1: {elem_a_type} ({elem_a_id})
+The document graph connects these 3 nodes via explicit \\ref{{}} links in the LaTeX source. The bridge paragraph is the ACTUAL text the authors wrote to connect the two endpoint elements.
+
+### Node 1 (Premise): {elem_a_type} ({elem_a_id})
 Caption: {elem_a_caption}
 Context: {elem_a_context}
 {elem_a_image_note}
 
-### Node 2 (Bridge): paragraph
+### Node 2 (Bridge): paragraph — author's own connecting text
 {bridge_text}
+Bridge quality: {bridge_quality_label}
 
-### Node 3: {elem_b_type} ({elem_b_id})
+### Node 3 (Conclusion): {elem_b_type} ({elem_b_id})
 Caption: {elem_b_caption}
 Context: {elem_b_context}
 {elem_b_image_note}
 
+### Graph path: {graph_path_description}
+
 ## YOUR TASK
 
-Generate 1 query that REQUIRES all 3 evidence nodes in sequence to answer. The reasoning must be SERIAL (step 2 depends on step 1, step 3 depends on step 2), NOT parallel evidence gathering.
+Generate 1 query that REQUIRES all 3 evidence nodes IN SEQUENCE. The bridge paragraph is the key — it explains WHY Node 1's observation leads to Node 3's conclusion.
 
-### SERIAL vs PARALLEL — critical distinction
-SERIAL (REQUIRED): "Node 1 shows X → Node 2 explains why X happens via mechanism M → Node 3 confirms M produces outcome Y"
-PARALLEL (FORBIDDEN): "Node 1 says A, Node 3 says B, therefore A+B" — this is just two independent lookups
+### SERIAL CHAIN PATTERN (REQUIRED)
+Node 1 observation → Bridge paragraph mechanism/explanation → Node 3 confirmation/outcome
+
+Example of VALID serial chain:
+  "Node 1 shows accuracy drops for minority groups"
+  → Bridge: "As shown in [fig:3], the accuracy drops significantly for minority groups. The exact numbers are in [tab:2]."
+  → "Node 3 provides per-group accuracy values confirming the 12% gap"
+  Query: "What numerical precision confirms the minority group accuracy drop visible in the performance trend?"
+
+### PARALLEL IS FORBIDDEN
+"Node 1 says A, Node 3 says B, therefore A+B" — this is just two independent lookups. The bridge MUST provide a causal/explanatory link, not just co-occurrence.
 
 ### STEP-DELETION TEST (self-check before outputting)
 For each step, ask: "If I remove THIS step's evidence, can I still derive the answer?"
 - If YES for any step → your chain is too weak, rewrite it
 - If NO for all 3 steps → your chain is valid
+
+### BRIDGE GROUNDING RULE
+Your answer MUST quote or paraphrase specific content from the bridge paragraph text above. If the bridge text says "X leads to Y", your answer must use that causal link. Do NOT invent connections not present in the bridge.
 
 ## STRICT RULES
 1. Query MUST require ALL 3 evidence nodes. Removing ANY node makes the answer underivable.
@@ -503,13 +757,14 @@ For each step, ask: "If I remove THIS step's evidence, can I still derive the an
 5. ENTITY AMNESTY: use exact paper terminology (method names, metrics, variables).
 6. Each reasoning_step MUST have a DIFFERENT evidence_type from: observation, attribution, explanation, verification, prediction.
 7. The role arc MUST follow: premise → intermediate → conclusion.
+8. Visual anchors MUST specify physical location: row/column for tables, axis region/color/marker for figures, specific variable/term for formulas. Generic anchors like "the table" or "the figure" will be rejected.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
       "query": "A question requiring serial 3-step reasoning (max 30 words)",
-      "answer": "Answer citing specific evidence from all 3 nodes, max 4 sentences",
+      "answer": "Answer citing specific evidence from all 3 nodes, referencing bridge text explicitly, max 4 sentences",
       "query_type": "causal_chain|mechanism_trace|conditional_prediction",
       "reasoning_steps": [
         {{
@@ -525,10 +780,10 @@ For each step, ask: "If I remove THIS step's evidence, can I still derive the an
           "step_id": 2,
           "evidence_element_id": "bridge_paragraph",
           "evidence_type": "attribution",
-          "evidence_span": "extractive phrase from Node 2 (bridge)",
+          "evidence_span": "extractive phrase copied from the bridge paragraph text above",
           "reasoning_role": "intermediate",
           "depends_on_steps": [1],
-          "produces_claim": "How this step connects step 1's observation to a mechanism (1 sentence)"
+          "produces_claim": "How the bridge connects step 1's observation to a mechanism (1 sentence)"
         }},
         {{
           "step_id": 3,
@@ -542,12 +797,12 @@ For each step, ask: "If I remove THIS step's evidence, can I still derive the an
       ],
       "required_evidence_spans": [
         {{"element_id": "{elem_a_id}", "span": "extractive phrase from Node 1", "evidence_type": "observation"}},
-        {{"element_id": "bridge_paragraph", "span": "extractive phrase from bridge", "evidence_type": "attribution"}},
+        {{"element_id": "bridge_paragraph", "span": "extractive phrase from bridge paragraph", "evidence_type": "attribution", "content": "verbatim or close-paraphrase from bridge text above, min 40 chars"}},
         {{"element_id": "{elem_b_id}", "span": "extractive phrase from Node 3", "evidence_type": "explanation"}}
       ],
       "visual_anchors": [
-        {{"element_id": "{elem_a_id}", "anchor": "physical location in Node 1 (evaluation only)"}},
-        {{"element_id": "{elem_b_id}", "anchor": "physical location in Node 3 (evaluation only)"}}
+        {{"element_id": "{elem_a_id}", "anchor": "specific physical location: row X col Y / axis region / marker color / variable name"}},
+        {{"element_id": "{elem_b_id}", "anchor": "specific physical location: row X col Y / axis region / marker color / variable name"}}
       ],
       "text_evidence": "direct quote from bridge paragraph context, min 40 chars"
     }}
@@ -2280,6 +2535,74 @@ def qc_reasoning_depth(
     metrics["step_deletion_proxy"] = len(causal_links) >= (min_depth - 1)
     # A true 3-step chain needs at least 2 causal links: A→B and B→C
 
+    # ── P3: Hub-aware QC — bridge grounding check ──────────────
+    # For L3 queries with explicit reasoning_steps, verify bridge step
+    # actually references content from the bridge paragraph
+    if reasoning_steps and len(reasoning_steps) >= 3:
+        bridge_step = next(
+            (s for s in reasoning_steps if s.get("reasoning_role") == "intermediate"),
+            None,
+        )
+        if bridge_step:
+            bridge_span = (bridge_step.get("evidence_span", "") or "").strip()
+            bridge_claim = (bridge_step.get("produces_claim", "") or "").strip()
+            # Check bridge step has substantive content (not generic filler)
+            if len(bridge_span) < 15:
+                issues.append("bridge_span_too_short")
+            if not bridge_claim or len(bridge_claim) < 10:
+                issues.append("bridge_claim_empty")
+            metrics["bridge_span_length"] = len(bridge_span)
+            metrics["bridge_claim_length"] = len(bridge_claim)
+
+    # P3: For L3, hard-fail if structure is parallel (not serial)
+    # This is activated only when the pair has reasoning_chain_target flag
+    if pair.get("reasoning_chain_target") and metrics.get("reasoning_structure") == "parallel":
+        if metrics.get("has_explicit_reasoning_steps"):
+            # Check if reasoning_steps actually form a dependency chain
+            if not metrics.get("has_dependency_chain", False):
+                issues.append("l3_parallel_not_serial")
+
+    # ── P4: Anchor specificity check ──────────────────────────
+    # Verify visual_anchors have specific location info, not generic descriptions
+    visual_anchors = obj.get("visual_anchors", []) or []
+    _GENERIC_ANCHOR_PATTERNS = re.compile(
+        r'^(?:the (?:table|figure|formula|chart|graph|plot|image|equation)|'
+        r'(?:table|figure|formula) (?:content|data|information)|'
+        r'overall (?:structure|layout|content))$',
+        re.IGNORECASE,
+    )
+    _SPECIFIC_ANCHOR_MARKERS = re.compile(
+        r'(?:row|column|col|cell|axis|line|bar|marker|label|legend|'
+        r'panel|subplot|left|right|top|bottom|color|dashed|solid|'
+        r'\d+(?:st|nd|rd|th)|x-axis|y-axis|variable|term|coefficient|'
+        r'numerator|denominator|subscript|superscript)',
+        re.IGNORECASE,
+    )
+    generic_anchor_count = 0
+    specific_anchor_count = 0
+    for va in visual_anchors:
+        anchor_text = (va.get("anchor", "") or "").strip()
+        if not anchor_text or len(anchor_text) < 5:
+            generic_anchor_count += 1
+        elif _GENERIC_ANCHOR_PATTERNS.search(anchor_text):
+            generic_anchor_count += 1
+        elif _SPECIFIC_ANCHOR_MARKERS.search(anchor_text):
+            specific_anchor_count += 1
+        else:
+            # Heuristic: anchors with 3+ words that mention specific content are OK
+            if len(anchor_text.split()) >= 3:
+                specific_anchor_count += 1
+            else:
+                generic_anchor_count += 1
+
+    metrics["anchor_specificity"] = {
+        "generic": generic_anchor_count,
+        "specific": specific_anchor_count,
+        "total": len(visual_anchors),
+    }
+    if visual_anchors and generic_anchor_count == len(visual_anchors):
+        issues.append("all_anchors_generic")
+
     return issues, metrics
 
 
@@ -2456,6 +2779,45 @@ def build_enriched_context_section(pair: Dict) -> str:
     return "## Enriched element descriptions\n" + "\n".join(parts)
 
 
+def build_section_context_section(pair: Dict) -> str:
+    """Attach section/subsection summaries for section-aware paths when available."""
+    if not _SECTION_ENRICH_CACHE:
+        return ""
+
+    section_ids: List[str] = []
+    for nid in pair.get("path", []) or []:
+        nid_str = str(nid)
+        if "::sec::" in nid_str and nid_str not in section_ids:
+            section_ids.append(nid_str)
+
+    hub_meta = pair.get("hub_metadata", {}) or {}
+    hub_id = str(hub_meta.get("node_id", "") or "").strip()
+    if "::sec::" in hub_id and hub_id not in section_ids:
+        section_ids.append(hub_id)
+
+    parts: List[str] = []
+    for sid in section_ids[:3]:
+        row = _SECTION_ENRICH_CACHE.get(sid)
+        if not row:
+            continue
+        title = (row.get("enriched_title") or row.get("section_title") or sid).strip()
+        content = (row.get("enriched_content") or "").strip()
+        metadata = row.get("enriched_metadata") or {}
+        keywords = metadata.get("keywords") or []
+        section_type = metadata.get("section_type") or row.get("node_type") or "section"
+
+        block = f"[{section_type}] {title}"
+        if keywords:
+            block += f"\nKeywords: {', '.join(str(k) for k in keywords[:8])}"
+        if content:
+            block += f"\n{content[:500]}"
+        parts.append(block)
+
+    if not parts:
+        return ""
+    return "## Section-level semantic context\n" + "\n\n".join(parts)
+
+
 def build_architecture_guidance(pair: Dict) -> str:
     """Inject a failure-case block for architecture diagrams."""
     if not is_architecture_pair(pair):
@@ -2469,15 +2831,44 @@ This figure is likely a model architecture/system diagram. Use a real scholar pe
 
 
 def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> str:
-    """Describe intermediate elements in a multi-hop path."""
+    """Describe intermediate elements in a multi-hop path.
+
+    Enhanced (P0): resolves actual bridge paragraph text from the reference
+    graph cache when available, instead of returning opaque node IDs.
+    """
     path = pair.get("path", [])
     if len(path) <= 2:
         return "(direct connection)"
+
+    # Try to resolve bridge texts from reference graph
+    bridge_texts = resolve_bridge_texts_for_path(pair)
+    if bridge_texts:
+        return " → ".join(bridge_texts)
+
+    # Fallback: return node IDs (backward-compatible)
     intermediate_ids = path[1:-1]
     parts = []
     for mid_id in intermediate_ids:
         parts.append(mid_id)
     return ", ".join(parts)
+
+
+def build_graph_path_description(pair: Dict) -> str:
+    """Build a human-readable graph path description for prompt injection.
+
+    Example: "figure_4 →[ref]→ paragraph_12 →[backbone]→ paragraph_13 →[ref]→ table_2"
+    """
+    path = pair.get("path", [])
+    if not path:
+        return "(no path)"
+    parts = []
+    for i, node_id in enumerate(path):
+        # Shorten node IDs for readability
+        short = node_id.split("::")[-1] if "::" in node_id else node_id
+        parts.append(short)
+        if i < len(path) - 1:
+            parts.append("→")
+    return " ".join(parts)
 
 
 def resolve_query_style(query_style: str, pair_id: str) -> str:
@@ -2582,6 +2973,7 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
 
     latex_bridge_section = build_latex_bridge_section(pair)
     enriched_section = build_enriched_context_section(pair)
+    section_context_section = build_section_context_section(pair)
 
     # Helper: append enriched section if non-empty, then optionally inject persona
     _persona_text = resolve_persona(str(pair.get("pair_id", ""))) if use_persona else ""
@@ -2589,22 +2981,48 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
     def _with_enriched(prompt_text: str) -> str:
         if enriched_section:
             prompt_text = prompt_text + "\n\n" + enriched_section
+        if section_context_section:
+            prompt_text = prompt_text + "\n\n" + section_context_section
         if use_persona and _persona_text:
             prompt_text = inject_persona_prefix(prompt_text, _persona_text)
         return prompt_text
 
     if template_name == "3step_reasoning_chain":
         # Level 3: 3-step reasoning chain prompt
-        # Build bridge text from edge contexts and intermediate path nodes
+        # P0: Resolve REAL bridge paragraph text from reference graph
         bridge_parts: List[str] = []
-        for ec in pair.get("edge_contexts", []):
-            t = (ec.get("text", "") or "").strip()
-            if t:
-                bridge_parts.append(t)
-        hub_summary = (pair.get("hub_semantic_summary") or "").strip()
-        if hub_summary and hub_summary not in " | ".join(bridge_parts):
-            bridge_parts.append(hub_summary)
+
+        # Priority 1: reference graph bridge texts (actual LaTeX paragraph context)
+        resolved_bridges = resolve_bridge_texts_for_path(pair)
+        if resolved_bridges:
+            bridge_parts.extend(resolved_bridges)
+
+        # Priority 2: edge_contexts from candidate enrichment
+        if not bridge_parts:
+            for ec in pair.get("edge_contexts", []):
+                t = (ec.get("text", "") or "").strip()
+                if t:
+                    bridge_parts.append(t)
+
+        # Priority 3: hub_semantic_summary (caption-level fallback)
+        if not bridge_parts:
+            hub_summary = (pair.get("hub_semantic_summary") or "").strip()
+            if hub_summary:
+                bridge_parts.append(hub_summary)
+
         bridge_text = "\n".join(bridge_parts) if bridge_parts else "(bridge paragraph context not available)"
+
+        # P2: Score bridge quality and label it
+        bridge_quality = score_bridge_quality(bridge_text)
+        if bridge_quality >= 0.6:
+            bridge_quality_label = f"HIGH ({bridge_quality:.2f}) — rich descriptive text, suitable for serial reasoning"
+        elif bridge_quality >= 0.4:
+            bridge_quality_label = f"MEDIUM ({bridge_quality:.2f}) — some descriptive content, ensure causal link is grounded"
+        else:
+            bridge_quality_label = f"LOW ({bridge_quality:.2f}) — sparse text, you MUST work harder to find a genuine causal link or output empty queries"
+
+        # P1: Build graph path description
+        graph_path_desc = build_graph_path_description(pair)
 
         return _with_enriched(PROMPT_3STEP_REASONING_CHAIN.format(
             elem_a_type=elem_a.get("element_type", "element"),
@@ -2612,12 +3030,14 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
             elem_a_caption=(elem_a.get("caption", "") or "")[:400],
             elem_a_context=_context(elem_a),
             elem_a_image_note="[Image provided above]" if elem_a.get("image_path") else "",
-            bridge_text=bridge_text[:800],
+            bridge_text=bridge_text[:1000],
+            bridge_quality_label=bridge_quality_label,
             elem_b_type=elem_b.get("element_type", "element"),
             elem_b_id=elem_b["element_id"],
             elem_b_caption=(elem_b.get("caption", "") or "")[:400],
             elem_b_context=_context(elem_b),
             elem_b_image_note="[Image provided above]" if elem_b.get("image_path") else "",
+            graph_path_description=graph_path_desc,
         ))
 
     if template_name == "figure_table_1hop":
@@ -3027,6 +3447,33 @@ def main() -> None:
             "Compatible with all --query-style values."
         ),
     )
+    ap.add_argument(
+        "--reference-graph",
+        default="data/latex_reference_graph.json",
+        help=(
+            "Path to latex_reference_graph.json for bridge paragraph text "
+            "resolution (P0 enhancement). Provides actual LaTeX paragraph "
+            "context for L3 reasoning chain queries instead of empty placeholders."
+        ),
+    )
+    ap.add_argument(
+        "--topology-candidates",
+        default="data/latex_hub_multihop_candidates.json",
+        help=(
+            "Path to topology candidates JSON used for element→label mapping. "
+            "Set this to the same section-aware topology family as --reference-graph "
+            "to avoid mixing old and new graph materials."
+        ),
+    )
+    ap.add_argument(
+        "--section-enrich",
+        default="",
+        help=(
+            "Optional section/subsection enrichment JSON. When provided, any "
+            "section nodes present in the candidate path will be summarized into "
+            "the prompt as additional section-level semantic context."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -3051,7 +3498,36 @@ def main() -> None:
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
-    print(f"Dual-Evidence L1 Query Generation (v4.5)")
+    # P0: Load reference graph for bridge paragraph text resolution
+    ref_graph_path = Path(args.reference_graph)
+    if not ref_graph_path.is_absolute():
+        ref_graph_path = PROJECT_ROOT / ref_graph_path
+    topo_cand_path = Path(args.topology_candidates)
+    if not topo_cand_path.is_absolute():
+        topo_cand_path = PROJECT_ROOT / topo_cand_path
+    if ref_graph_path.exists():
+        print(f"Loading reference graph for bridge text resolution: {ref_graph_path}")
+        load_reference_graph_bridge_texts(
+            str(ref_graph_path),
+            topology_candidates_path=str(topo_cand_path) if topo_cand_path.exists() else "",
+        )
+        print(f"  Loaded bridge texts for {len(_BRIDGE_TEXT_CACHE)} documents")
+        print(f"  Element→label mappings: {len(_ELEMENT_TO_LABELS)} elements")
+    else:
+        print(f"WARNING: Reference graph not found at {ref_graph_path}")
+        print(f"  L3 bridge texts will fall back to hub_semantic_summary")
+
+    section_enrich_path = Path(args.section_enrich) if args.section_enrich else None
+    if section_enrich_path:
+        if not section_enrich_path.is_absolute():
+            section_enrich_path = PROJECT_ROOT / section_enrich_path
+        if section_enrich_path.exists():
+            load_section_enrichments(str(section_enrich_path))
+            print(f"  Loaded section enrichments: {len(_SECTION_ENRICH_CACHE)} sections")
+        else:
+            print(f"WARNING: section enrich file not found at {section_enrich_path}")
+
+    print(f"\nDual-Evidence L1 Query Generation (v4.5+bridge)")
     print(f"  Candidates: {len(pairs)}")
     print(f"  Provider: {args.provider}")
     print(f"  Model: {args.model}")
@@ -3224,10 +3700,11 @@ def main() -> None:
                 # Level 3 relaxation (Direction B): demote certain issues to advisory warnings
                 if is_l3:
                     L3_SOFT_ISSUES = {
-                        "pseudo_multihop_parallel",
                         "formula_symbol_grounding_missing",
                         "architecture_intent_missing",
                         "missing_reasoning_chain",  # L3 uses reasoning_steps[] not reasoning_chain text
+                        # NOTE: pseudo_multihop_parallel REMOVED from soft issues (P3)
+                        # L3 queries MUST be serial, not parallel
                     }
                     l3_demoted = [i for i in issues if i in L3_SOFT_ISSUES]
                     if l3_demoted:
@@ -3286,6 +3763,10 @@ def main() -> None:
                     "required_evidence_spans": q_obj.get("required_evidence_spans", []),
                     "visual_anchors": q_obj.get("visual_anchors", []),
                     "text_evidence": q_obj.get("text_evidence", ""),
+                    "bridge_quality": score_bridge_quality(
+                        "\n".join(resolve_bridge_texts_for_path(pair))
+                    ) if is_l3 else None,
+                    "graph_path": build_graph_path_description(pair) if is_l3 else None,
                     "qc_issues": issues,
                     "qc_pass": len(issues) == 0,
                     "qc_metrics": metrics,
