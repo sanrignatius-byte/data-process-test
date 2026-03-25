@@ -42,8 +42,8 @@ _ELEMENT_TO_LABELS: Dict[str, List[str]] = {}  # {element_id: [latex_labels]}
 _SECTION_ENRICH_CACHE: Dict[str, Dict[str, Any]] = {}  # {section_id: enrichment row}
 
 
-# P0 核心：从 LaTeX 引用图提取边 context → bridge 段落文本
-# 亮点：element_id→LaTeX label 映射链打通后，90.9% 的 pair 有了真实 bridge
+# P0 核心：从 LaTeX 引用图提取边 context 作为 bridge 段落文本
+# 链路：element_id → LaTeX label → ref graph edge → context
 def load_reference_graph_bridge_texts(
     ref_graph_path: str,
     topology_candidates_path: str = "",
@@ -1481,7 +1481,7 @@ def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
     return len(covered & elem_ids) >= 2
 
 
-# 亮点：先检 wh-word 全局否决，再检 aux-verb 开头和介词前缀嵌套
+# 先检 wh-word 全局否决，再检 aux-verb 开头和介词前缀嵌套
 # 解决了 "Given X are Y, why…" 被首词 are 误判的问题
 def is_yes_no_question(query: str) -> bool:
     q = query.strip().lower()
@@ -1890,8 +1890,7 @@ def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]
     return q_tokens & all_anchor_tokens
 
 
-# 亮点：20+ 项 QC 门禁的主入口——从 meta_language 到 anchor_leakage
-# 到 single_element_answer，每一项都是迭代中踩过的坑凝练而成
+# QC 主入口：meta_language / anchor_leakage / single_element_answer 等全套检查
 def qc_multihop_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
@@ -2373,8 +2372,8 @@ _EVIDENCE_TYPE_PATTERNS = {
 }
 
 
-# 亮点：用连接词模式 (because→serial, both→parallel) 区分推理结构
-# 注意局限：写作风格可欺骗，仅适合 auto-tagging 不适合严格门禁
+# 用连接词模式 (because→serial, both→parallel) 区分推理结构
+# 局限：写作风格可欺骗，仅适合 auto-tagging 不适合严格门禁
 def classify_reasoning_structure(
     reasoning_chain: str,
     answer: str,
@@ -2721,7 +2720,7 @@ def build_edge_context_text(edge_contexts: List[Dict]) -> str:
     return "\n".join(parts) if parts else "(no context snippets)"
 
 
-# 亮点：注入作者原话——LaTeX \ref{} 处的桥接句，给模型语义 grounding
+# 注入作者原话——LaTeX \ref{} 处的桥接句，给模型语义 grounding
 # 而非暴露原始 content（避免 anchor leakage）
 def build_latex_bridge_section(pair: Dict) -> str:
     """Extract full latex_bridge.bridge_text as an 'author's own words' section.
@@ -2981,8 +2980,8 @@ def select_template(pair: Dict, query_style: str = "academic") -> str:
         return "figure_table_1hop"  # fallback
 
 
-# 亮点：prompt 组装的总指挥——模板 + bridge + enriched + section + persona
-# 每一层都是可选注入，缺失时自动降级，向后兼容
+# prompt 组装总入口——模板 + bridge + enriched + section + persona
+# 每层可选注入，缺失时自动降级
 def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = False) -> str:
     """Build the prompt text for a candidate pair.
 

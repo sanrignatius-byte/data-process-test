@@ -169,8 +169,8 @@ def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
     return {k: v / mx for k, v in by_doc.items()}
 
 
-# 亮点：元素级 hub prior，加入 adjacent_bridge_elements 扩大覆盖
-# 从 9.53% 提升到 90.42%——这是 graph_hub_rerank 从无效变有效的关键
+# 元素级 hub prior：除 candidate pairs 外还纳入 adjacent_bridge_elements
+# 扩大覆盖面，否则大部分 query 的 evidence 落不到 hub 邻域里
 def load_element_hub_prior(
     hub_candidates_json: Path,
     hubs_json: Path | None = None,
@@ -346,9 +346,9 @@ def _bm25_norm_scores(
 # evaluate_method — all six methods in one function
 # ---------------------------------------------------------------------------
 
-# 亮点：六种检索方法统一评估入口——BM25 / dense / hub_rerank /
-# neighbor_prop / citation_walk / graph_full，每种方法的 graph 信号
-# 设计思路源自搜广推：静态 prior → 动态标签传播 → 跨文档 authority walk
+# 六种检索方法统一评估：BM25 / dense / hub_rerank /
+# neighbor_prop / citation_walk / graph_full
+# graph 信号设计：静态 prior → 标签传播 → authority walk
 def evaluate_method(
     method: str,
     queries: List[Dict[str, Any]],

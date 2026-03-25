@@ -327,8 +327,8 @@ def _first_n_words(text: str, n: int) -> str:
     return excerpt
 
 
-# 亮点：零 LLM 调用的规则压缩摘要——将两端 enriched 描述 + bridge 片段
-# 压缩到 50-80 词，借鉴 MoDora bottom-up cascade 但不额外花钱
+# 规则压缩摘要：两端 enriched 描述 + bridge 片段 → 50-80 词
+# 不调 LLM，借鉴 MoDora bottom-up cascade 的思路做纯规则拼接
 def build_hub_semantic_summary(
     el_a: Dict[str, Any],
     el_b: Dict[str, Any],
@@ -394,8 +394,8 @@ def build_hub_semantic_summary(
     return summary
 
 
-# 亮点：用 bridge_score×0.5 + pagerank×0.25 + out_to_elements×0.25 替代
-# 原来的常量 0.8，使 quality_score 具有真实区分度 [0.13, 0.88]
+# 用拓扑特征加权替代原来所有 hub 统一 0.8 的常量
+# bridge_score 权重最高，因为它反映了多模态覆盖度
 def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     """Build per-hub quality scores from topology features.
 
