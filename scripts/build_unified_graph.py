@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.linkers.unified_graph import UnifiedGraph, NodeType
 
 
+# 中文注释：加载 JSON 文件，不存在时返回空字典。
 def load_json(path: str) -> Dict[str, Any]:
     """Load a JSON file, return empty dict if not found."""
     p = Path(path)
@@ -48,6 +49,7 @@ def load_json(path: str) -> Dict[str, Any]:
         return json.load(f)
 
 
+# 中文注释：主流程入口，负责解析参数并串联整体执行。
 def main():
     parser = argparse.ArgumentParser(
         description="Build unified two-layer graph from citation + LaTeX + MinerU data"

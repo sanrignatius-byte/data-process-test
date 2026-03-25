@@ -50,20 +50,24 @@ ELEMENT_MODALITIES = {"figure", "table", "equation"}
 MINERU_MODAL_MAP = {"figure": "figure", "table": "table", "equation": "formula"}
 
 
+# 中文注释：normalize_label_type：进行标准化处理，便于统一比较。
 def normalize_label_type(raw: str) -> str:
     return _LABEL_TYPE_MAP.get(raw.lower().strip(), raw.lower().strip())
 
 
+# 中文注释：tokenize：将输入文本切分为 token 列表。
 def tokenize(text: str) -> Set[str]:
     return set(re.findall(r"\w+", text.lower()))
 
 
+# 中文注释：jaccard：核心函数，处理对应子任务逻辑。
 def jaccard(a: Set[str], b: Set[str]) -> float:
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
 
 
+# 中文注释：parse_number：核心函数，处理对应子任务逻辑。
 def parse_number(s: str) -> Optional[int]:
     m = re.search(r"(\d+)", s)
     return int(m.group(1)) if m else None
@@ -71,6 +75,7 @@ def parse_number(s: str) -> Optional[int]:
 
 # ─── Build MinerU index ──────────────────────────────────────────────────────
 
+# 中文注释：构建多模态元素索引，便于后续匹配。
 def build_mm_index(mm_data: Dict[str, Any]) -> Dict[str, Any]:
     """Build lookup indices from multimodal_elements.json."""
     by_doc: Dict[str, Dict] = {}
@@ -111,6 +116,7 @@ def build_mm_index(mm_data: Dict[str, Any]) -> Dict[str, Any]:
     return {"by_doc": by_doc, "all_elements": all_elements}
 
 
+# 中文注释：map_label_to_element：核心函数，处理对应子任务逻辑。
 def map_label_to_element(
     doc_id: str,
     label_key: str,
@@ -158,6 +164,7 @@ def map_label_to_element(
 
 # ─── Build node→element mapping ─────────────────────────────────────────────
 
+# 中文注释：_safe_int：内部辅助函数，服务当前模块主流程。
 def _safe_int(val: Any) -> int:
     """Convert a value to int for sorting; non-numeric strings get 99999."""
     if val is None:
@@ -168,6 +175,7 @@ def _safe_int(val: Any) -> int:
         return 99999
 
 
+# 中文注释：build_sequential_mapping：构建并返回中间结构或文本片段。
 def build_sequential_mapping(
     doc_id: str,
     labels: Dict[str, Any],
@@ -224,6 +232,7 @@ def build_sequential_mapping(
     return result
 
 
+# 中文注释：构建 LaTeX 节点到 MinerU 元素的映射。
 def build_node_element_map(
     latex_data: Dict[str, Any],
     mm_index: Dict[str, Any],
@@ -276,6 +285,7 @@ def build_node_element_map(
 
 # ─── Extract edge contexts from LaTeX graph ──────────────────────────────────
 
+# 中文注释：build_edge_context_index：构建并返回中间结构或文本片段。
 def build_edge_context_index(
     latex_data: Dict[str, Any],
 ) -> Dict[Tuple[str, str], List[Dict[str, str]]]:
@@ -305,6 +315,7 @@ def build_edge_context_index(
 
 # ─── Main enrichment ────────────────────────────────────────────────────────
 
+# 中文注释：_first_n_words：内部辅助函数，服务当前模块主流程。
 def _first_n_words(text: str, n: int) -> str:
     """Return the first n words of text, preserving a trailing sentence boundary if close."""
     words = text.split()
@@ -319,6 +330,7 @@ def _first_n_words(text: str, n: int) -> str:
     return excerpt
 
 
+# 中文注释：build_hub_semantic_summary：构建并返回中间结构或文本片段。
 def build_hub_semantic_summary(
     el_a: Dict[str, Any],
     el_b: Dict[str, Any],
@@ -339,6 +351,7 @@ def build_hub_semantic_summary(
     """
     parts: List[str] = []
 
+    # 中文注释：element_excerpt：核心函数，处理对应子任务逻辑。
     def element_excerpt(el: Dict[str, Any], label: str) -> str:
         title = (el.get("enriched_title") or "").strip()
         content = (el.get("enriched_content") or "").strip()
@@ -384,6 +397,7 @@ def build_hub_semantic_summary(
     return summary
 
 
+# 中文注释：_build_hub_quality_scores：内部辅助函数，服务当前模块主流程。
 def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     """Build per-hub quality scores from topology features.
 
@@ -404,6 +418,7 @@ def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     pageranks = [float(h.get("pagerank", 0)) for h in hubs]
     out_to_elems = [float(h.get("out_to_elements", 0)) for h in hubs]
 
+    # 中文注释：_norm：内部辅助函数，服务当前模块主流程。
     def _norm(vals):
         lo, hi = min(vals), max(vals)
         rng = hi - lo
@@ -429,6 +444,7 @@ def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     return hub_scores
 
 
+# 中文注释：对 hub 候选对齐并补全多模态语义字段。
 def enrich_candidates(
     hub_data: Dict[str, Any],
     mm_index: Dict[str, Any],
@@ -497,6 +513,7 @@ def enrich_candidates(
         pair_id = f"{doc_id}_hub_pair_{pair_counter[doc_id]}"
 
         # Build element dicts (same format as multihop_l1_candidates)
+        # 中文注释：make_element_dict：核心函数，处理对应子任务逻辑。
         def make_element_dict(el: Dict) -> Dict[str, Any]:
             d = {
                 "element_id": el["element_id"],
@@ -667,6 +684,7 @@ def enrich_candidates(
     return result
 
 
+# 中文注释：主流程入口，负责解析参数并串联整体执行。
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
