@@ -40,14 +40,12 @@ from typing import Any, Dict, List, Set, Tuple
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
 
 
-# 中文注释：tokenize：将输入文本切分为 token 列表。
 def tokenize(text: str) -> List[str]:
     return [t.lower() for t in TOKEN_RE.findall(text or "")]
 
 
-# 中文注释：轻量 BM25 检索器，负责基于词频进行相关性打分。
+# 轻量 BM25：不依赖外部库，直接 tf+idf 打分，够用且零依赖
 class BM25Lite:
-    # 中文注释：__init__：内部辅助函数，服务当前模块主流程。
     def __init__(self, docs: List[List[str]], k1: float = 1.5, b: float = 0.75):
         self.k1 = k1
         self.b = b
@@ -63,12 +61,10 @@ class BM25Lite:
             for t in tf.keys():
                 self.df[t] += 1
 
-    # 中文注释：idf：核心函数，处理对应子任务逻辑。
     def idf(self, term: str) -> float:
         df = self.df.get(term, 0)
         return math.log(1.0 + (self.N - df + 0.5) / (df + 0.5))
 
-    # 中文注释：score：核心函数，处理对应子任务逻辑。
     def score(self, query_tokens: List[str], doc_idx: int) -> float:
         tf = self.tf_docs[doc_idx]
         dl = self.doc_lens[doc_idx]
@@ -84,14 +80,12 @@ class BM25Lite:
 
 
 @dataclass
-# 中文注释：检索切片数据结构，保存 chunk/doc/text 三元信息。
 class Chunk:
     chunk_id: str
     doc_id: str
     text: str
 
 
-# 中文注释：load_jsonl：加载并整理所需输入数据。
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -102,7 +96,7 @@ def load_jsonl(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
-# 中文注释：dedupe_queries：核心函数，处理对应子任务逻辑。
+# 按 query_id 去重，合并多文件来源的 query pool
 def dedupe_queries(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     seen = set()
     out = []
@@ -117,7 +111,6 @@ def dedupe_queries(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-# 中文注释：_to_text：内部辅助函数，服务当前模块主流程。
 def _to_text(v: Any) -> str:
     if v is None:
         return ""
@@ -128,7 +121,7 @@ def _to_text(v: Any) -> str:
     return ""
 
 
-# 中文注释：将元素文本拼接为可检索 chunk。
+# 每个元素 = 一个 chunk：拼接 caption+content+context+enriched，限 1800 字符
 def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
     data = json.loads(elements_json.read_text(encoding="utf-8"))
     docs = data.get("documents", {}) or {}
@@ -157,7 +150,7 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
 # Prior / adjacency loaders
 # ---------------------------------------------------------------------------
 
-# 中文注释：load_doc_hub_prior：加载并整理所需输入数据。
+# 文档级 hub prior：取该文档下最高 hub_score，归一化到 [0,1]
 def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
     obj = json.loads(hubs_json.read_text(encoding="utf-8"))
     hubs = obj.get("hubs", []) or []
@@ -176,7 +169,8 @@ def load_doc_hub_prior(hubs_json: Path) -> Dict[str, float]:
     return {k: v / mx for k, v in by_doc.items()}
 
 
-# 中文注释：load_element_hub_prior：加载并整理所需输入数据。
+# 亮点：元素级 hub prior，加入 adjacent_bridge_elements 扩大覆盖
+# 从 9.53% 提升到 90.42%——这是 graph_hub_rerank 从无效变有效的关键
 def load_element_hub_prior(
     hub_candidates_json: Path,
     hubs_json: Path | None = None,
@@ -214,7 +208,7 @@ def load_element_hub_prior(
     return {k: v / mx for k, v in by_element.items()}
 
 
-# 中文注释：load_element_adjacency：加载并整理所需输入数据。
+# 元素邻接图 + 边权重：hub candidate pairs + adjacent_bridge 双源合并
 def load_element_adjacency(
     hub_candidates_json: Path,
     hubs_json: Path | None = None,
@@ -265,7 +259,7 @@ def load_element_adjacency(
     return dict(adj), {k: dict(v) for k, v in adj_weights.items()}
 
 
-# 中文注释：load_citation_adjacency：加载并整理所需输入数据。
+# 文档间引用邻接：doc→{cites, cited_by}，供 citation_walk 1-hop 传播
 def load_citation_adjacency(citation_graph_json: Path) -> Dict[str, Dict[str, Set[str]]]:
     """Build doc→{cites, cited_by} adjacency from citation_graph.json.
 
@@ -289,7 +283,7 @@ def load_citation_adjacency(citation_graph_json: Path) -> Dict[str, Dict[str, Se
 # Hit evaluation helpers
 # ---------------------------------------------------------------------------
 
-# 中文注释：span_overlap：核心函数，处理对应子任务逻辑。
+# 证据定位命中判定：精确子串匹配得 1.0，否则用最长公共子串比例
 def span_overlap(span: str, text: str) -> float:
     span = (span or "").strip()
     text = (text or "").strip()
@@ -301,7 +295,6 @@ def span_overlap(span: str, text: str) -> float:
     return m.size / max(1, len(span))
 
 
-# 中文注释：query_spans：生成或计算查询相关特征。
 def query_spans(q: Dict[str, Any]) -> List[str]:
     spans = []
     for s in (q.get("required_evidence_spans") or []):
@@ -312,7 +305,6 @@ def query_spans(q: Dict[str, Any]) -> List[str]:
     return spans
 
 
-# 中文注释：query_element_ids：生成或计算查询相关特征。
 def query_element_ids(q: Dict[str, Any]) -> List[str]:
     """Extract ground-truth element_ids from required_evidence_spans."""
     ids = []
@@ -324,7 +316,6 @@ def query_element_ids(q: Dict[str, Any]) -> List[str]:
     return ids
 
 
-# 中文注释：reciprocal_rank_binary：核心函数，处理对应子任务逻辑。
 def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
     if not hit_ranks:
         return 0.0
@@ -335,7 +326,7 @@ def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
 # Core scoring: BM25 → normalized scores
 # ---------------------------------------------------------------------------
 
-# 中文注释：_bm25_norm_scores：内部辅助函数，服务当前模块主流程。
+# min-max 归一化到 [0,1]，graph 信号与 BM25 在同一尺度上混合
 def _bm25_norm_scores(
     bm25: BM25Lite,
     q_toks: List[str],
@@ -355,7 +346,9 @@ def _bm25_norm_scores(
 # evaluate_method — all six methods in one function
 # ---------------------------------------------------------------------------
 
-# 中文注释：按指定方法执行检索重排并统计评估指标。
+# 亮点：六种检索方法统一评估入口——BM25 / dense / hub_rerank /
+# neighbor_prop / citation_walk / graph_full，每种方法的 graph 信号
+# 设计思路源自搜广推：静态 prior → 动态标签传播 → 跨文档 authority walk
 def evaluate_method(
     method: str,
     queries: List[Dict[str, Any]],
@@ -809,7 +802,7 @@ def evaluate_method(
     return result
 
 
-# 中文注释：根据阈值规则给出实验 go/no-go 结论。
+# go/no-go 门禁：Recall@10≥BM25+0.05 OR MRR≥BM25+0.03 则 continue_expand
 def decision(graph_full_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -> Dict[str, Any]:
     g_r10 = graph_full_metrics["recall_at_10"]
     g_mrr = graph_full_metrics["mrr"]
@@ -828,7 +821,6 @@ def decision(graph_full_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -
     }
 
 
-# 中文注释：主流程入口，负责解析参数并串联整体执行。
 def main() -> None:
     ap = argparse.ArgumentParser(description="Run Phase-0 locked A/B retrieval evaluation")
     ap.add_argument("--q1", type=Path, default=Path("data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
