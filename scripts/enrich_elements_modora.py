@@ -162,6 +162,7 @@ _KNOWN_PREFIXES = [
 ]
 
 
+# 中文注释：resolve_image_path：解析并归一化目标信息。
 def resolve_image_path(raw_path: str) -> Optional[Path]:
     """Try to resolve an image path across different environments.
 
@@ -209,6 +210,7 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
     return None
 
 
+# 中文注释：load_image_b64：加载并整理所需输入数据。
 def load_image_b64(image_path: str) -> Optional[Tuple[str, str]]:
     """Load image as base64 string. Returns (b64_data, mime_type) or None."""
     resolved = resolve_image_path(image_path)
@@ -237,6 +239,7 @@ _COMPANY_API_URL: str = ""
 _COMPANY_API_KEY: str = ""
 
 
+# 中文注释：_collect_company_stream：内部辅助函数，服务当前模块主流程。
 def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
     """Collect content and token usage from company API SSE stream."""
     content_parts: List[str] = []
@@ -269,6 +272,7 @@ def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
     return "".join(content_parts), in_tok, out_tok
 
 
+# 中文注释：统一封装不同 provider 的 API 调用。
 def call_api(
     client: Any,
     model: str,
@@ -369,6 +373,7 @@ def call_api(
 # JSON extraction
 # ──────────────────────────────────────────────────────────────
 
+# 中文注释：extract_json：从文本或对象中提取结构化字段。
 def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
     """Extract first valid JSON object from text."""
     if not text:
@@ -411,6 +416,7 @@ def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
 # Prompt building
 # ──────────────────────────────────────────────────────────────
 
+# 中文注释：build_element_prompt：构建并返回中间结构或文本片段。
 def build_element_prompt(element: Dict[str, Any]) -> str:
     """Build the enrichment prompt for a single element."""
     etype = element["element_type"]
@@ -442,6 +448,7 @@ def build_element_prompt(element: Dict[str, Any]) -> str:
 # Validation
 # ──────────────────────────────────────────────────────────────
 
+# 中文注释：validate_enrichment：核心函数，处理对应子任务逻辑。
 def validate_enrichment(result: Dict[str, Any], etype: str) -> List[str]:
     """Validate enrichment result structure. Returns list of issues."""
     issues = []
@@ -468,6 +475,7 @@ def validate_enrichment(result: Dict[str, Any], etype: str) -> List[str]:
 # Main processing
 # ──────────────────────────────────────────────────────────────
 
+# 中文注释：批量调用模型生成元素富化结果。
 def process_elements(
     mm_data: Dict[str, Any],
     client: Any,
@@ -586,6 +594,7 @@ def process_elements(
     return results, total_in_tok, total_out_tok, processed, failed
 
 
+# 中文注释：merge_enrichments：核心函数，处理对应子任务逻辑。
 def merge_enrichments(
     mm_data: Dict[str, Any],
     enrichments: Dict[str, Dict[str, Any]],
@@ -623,6 +632,7 @@ def merge_enrichments(
     return enriched_data
 
 
+# 中文注释：主流程入口，负责解析参数并串联整体执行。
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
