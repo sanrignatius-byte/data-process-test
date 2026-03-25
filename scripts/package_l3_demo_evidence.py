@@ -171,7 +171,6 @@ def resolve_element_image(elem: dict, mineru_dir: pathlib.Path) -> Optional[path
 
     # 3) 按命名规则猜测: doc_id_pageX_figN.jpg / doc_id_pageX_tblN.jpg
     etype = elem.get("element_type", "")
-    page = elem.get("page_idx", 0)
     number = elem.get("number")
     type_prefix_map = {"figure": "fig", "table": "tbl", "formula": "eq"}
     prefix = type_prefix_map.get(etype, etype)
@@ -180,6 +179,31 @@ def resolve_element_image(elem: dict, mineru_dir: pathlib.Path) -> Optional[path
         matches = list(img_dir.glob(pattern))
         if matches:
             return matches[0]
+
+    # 4) content_list_v2 按 type+number 顺序匹配 img_path（兜底，覆盖 html_in_text 表格等）
+    cl_type_map = {"figure": "image", "table": "table", "formula": "equation"}
+    cl_type = cl_type_map.get(etype, etype)
+    if number is not None:
+        base = mineru_dir / doc_id / doc_id / "hybrid_auto"
+        for cl_name in (f"{doc_id}_content_list_v2.json", f"{doc_id}_content_list.json", "content_list.json"):
+            cl_path = base / cl_name
+            if not cl_path.exists():
+                continue
+            try:
+                items = json.load(cl_path.open(encoding="utf-8"))
+                if isinstance(items, dict):
+                    items = items.get("content_list", items.get("items", []))
+                # 按 type 过滤，取第 number 个（1-indexed）
+                typed = [x for x in items if x.get("type") == cl_type]
+                if 1 <= number <= len(typed):
+                    img_path = typed[number - 1].get("img_path", "")
+                    if img_path:
+                        fname3 = pathlib.PurePosixPath(img_path).name
+                        p = img_dir / fname3
+                        if p.exists():
+                            return p
+            except Exception:
+                pass
 
     return None
 
