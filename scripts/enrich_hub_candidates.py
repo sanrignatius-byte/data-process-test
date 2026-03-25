@@ -50,24 +50,22 @@ ELEMENT_MODALITIES = {"figure", "table", "equation"}
 MINERU_MODAL_MAP = {"figure": "figure", "table": "table", "equation": "formula"}
 
 
-# 中文注释：normalize_label_type：进行标准化处理，便于统一比较。
+# fig/subfigure/tab/eq/align 等 LaTeX 别名归一到三大类
 def normalize_label_type(raw: str) -> str:
     return _LABEL_TYPE_MAP.get(raw.lower().strip(), raw.lower().strip())
 
 
-# 中文注释：tokenize：将输入文本切分为 token 列表。
+# 小写 word-level tokenize，用于 Jaccard 相似度计算
 def tokenize(text: str) -> Set[str]:
     return set(re.findall(r"\w+", text.lower()))
 
 
-# 中文注释：jaccard：核心函数，处理对应子任务逻辑。
 def jaccard(a: Set[str], b: Set[str]) -> float:
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
 
 
-# 中文注释：parse_number：核心函数，处理对应子任务逻辑。
 def parse_number(s: str) -> Optional[int]:
     m = re.search(r"(\d+)", s)
     return int(m.group(1)) if m else None
@@ -75,7 +73,7 @@ def parse_number(s: str) -> Optional[int]:
 
 # ─── Build MinerU index ──────────────────────────────────────────────────────
 
-# 中文注释：构建多模态元素索引，便于后续匹配。
+# 建立 MinerU 元素双索引：按编号 + 按 caption Jaccard，供 label 映射查找
 def build_mm_index(mm_data: Dict[str, Any]) -> Dict[str, Any]:
     """Build lookup indices from multimodal_elements.json."""
     by_doc: Dict[str, Dict] = {}
@@ -116,7 +114,7 @@ def build_mm_index(mm_data: Dict[str, Any]) -> Dict[str, Any]:
     return {"by_doc": by_doc, "all_elements": all_elements}
 
 
-# 中文注释：map_label_to_element：核心函数，处理对应子任务逻辑。
+# LaTeX label → MinerU element：先试编号精确匹配，再试 caption Jaccard≥0.25
 def map_label_to_element(
     doc_id: str,
     label_key: str,
@@ -164,7 +162,6 @@ def map_label_to_element(
 
 # ─── Build node→element mapping ─────────────────────────────────────────────
 
-# 中文注释：_safe_int：内部辅助函数，服务当前模块主流程。
 def _safe_int(val: Any) -> int:
     """Convert a value to int for sorting; non-numeric strings get 99999."""
     if val is None:
@@ -175,7 +172,7 @@ def _safe_int(val: Any) -> int:
         return 99999
 
 
-# 中文注释：build_sequential_mapping：构建并返回中间结构或文本片段。
+# Phase 3 兜底：编号/caption 都匹配不上时，按出现顺序 1:1 zip 对齐
 def build_sequential_mapping(
     doc_id: str,
     labels: Dict[str, Any],
@@ -232,7 +229,7 @@ def build_sequential_mapping(
     return result
 
 
-# 中文注释：构建 LaTeX 节点到 MinerU 元素的映射。
+# 三阶段映射：① 编号匹配 → ② caption Jaccard → ③ 顺序对齐兜底
 def build_node_element_map(
     latex_data: Dict[str, Any],
     mm_index: Dict[str, Any],
@@ -285,7 +282,7 @@ def build_node_element_map(
 
 # ─── Extract edge contexts from LaTeX graph ──────────────────────────────────
 
-# 中文注释：build_edge_context_index：构建并返回中间结构或文本片段。
+# 索引 LaTeX \ref{} 边的上下文：双向映射 (src,tgt) → context snippets
 def build_edge_context_index(
     latex_data: Dict[str, Any],
 ) -> Dict[Tuple[str, str], List[Dict[str, str]]]:
@@ -315,7 +312,7 @@ def build_edge_context_index(
 
 # ─── Main enrichment ────────────────────────────────────────────────────────
 
-# 中文注释：_first_n_words：内部辅助函数，服务当前模块主流程。
+# 截取前 n 词，尽量在句号处断开以保语义完整
 def _first_n_words(text: str, n: int) -> str:
     """Return the first n words of text, preserving a trailing sentence boundary if close."""
     words = text.split()
@@ -330,7 +327,8 @@ def _first_n_words(text: str, n: int) -> str:
     return excerpt
 
 
-# 中文注释：build_hub_semantic_summary：构建并返回中间结构或文本片段。
+# 规则压缩摘要：两端 enriched 描述 + bridge 片段 → 50-80 词
+# 不调 LLM，借鉴 MoDora bottom-up cascade 的思路做纯规则拼接
 def build_hub_semantic_summary(
     el_a: Dict[str, Any],
     el_b: Dict[str, Any],
@@ -351,7 +349,6 @@ def build_hub_semantic_summary(
     """
     parts: List[str] = []
 
-    # 中文注释：element_excerpt：核心函数，处理对应子任务逻辑。
     def element_excerpt(el: Dict[str, Any], label: str) -> str:
         title = (el.get("enriched_title") or "").strip()
         content = (el.get("enriched_content") or "").strip()
@@ -397,7 +394,8 @@ def build_hub_semantic_summary(
     return summary
 
 
-# 中文注释：_build_hub_quality_scores：内部辅助函数，服务当前模块主流程。
+# 用拓扑特征加权替代原来所有 hub 统一 0.8 的常量
+# bridge_score 权重最高，因为它反映了多模态覆盖度
 def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     """Build per-hub quality scores from topology features.
 
@@ -418,7 +416,6 @@ def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     pageranks = [float(h.get("pagerank", 0)) for h in hubs]
     out_to_elems = [float(h.get("out_to_elements", 0)) for h in hubs]
 
-    # 中文注释：_norm：内部辅助函数，服务当前模块主流程。
     def _norm(vals):
         lo, hi = min(vals), max(vals)
         rng = hi - lo
@@ -444,7 +441,8 @@ def _build_hub_quality_scores(hub_data: Dict[str, Any]) -> Dict[str, float]:
     return hub_scores
 
 
-# 中文注释：对 hub 候选对齐并补全多模态语义字段。
+# 核心转换：topology 候选 → query 生成可用格式
+# 包括 node→element 映射、edge_context 收集、node_group 构建、hub 语义摘要
 def enrich_candidates(
     hub_data: Dict[str, Any],
     mm_index: Dict[str, Any],
@@ -513,7 +511,6 @@ def enrich_candidates(
         pair_id = f"{doc_id}_hub_pair_{pair_counter[doc_id]}"
 
         # Build element dicts (same format as multihop_l1_candidates)
-        # 中文注释：make_element_dict：核心函数，处理对应子任务逻辑。
         def make_element_dict(el: Dict) -> Dict[str, Any]:
             d = {
                 "element_id": el["element_id"],
@@ -684,7 +681,6 @@ def enrich_candidates(
     return result
 
 
-# 中文注释：主流程入口，负责解析参数并串联整体执行。
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(

@@ -42,7 +42,8 @@ _ELEMENT_TO_LABELS: Dict[str, List[str]] = {}  # {element_id: [latex_labels]}
 _SECTION_ENRICH_CACHE: Dict[str, Dict[str, Any]] = {}  # {section_id: enrichment row}
 
 
-# 中文注释：load_reference_graph_bridge_texts：加载并整理所需输入数据。
+# P0 核心：从 LaTeX 引用图提取边 context 作为 bridge 段落文本
+# 链路：element_id → LaTeX label → ref graph edge → context
 def load_reference_graph_bridge_texts(
     ref_graph_path: str,
     topology_candidates_path: str = "",
@@ -90,7 +91,7 @@ def load_reference_graph_bridge_texts(
     _build_element_label_map_from_ref_graph(data)
 
 
-# 中文注释：load_section_enrichments：加载并整理所需输入数据。
+# 加载 section-level 语义摘要，供 section-aware 路径注入 prompt
 def load_section_enrichments(section_enrich_path: str) -> None:
     """Load section/subsection enrichment JSON keyed by section_id."""
     _SECTION_ENRICH_CACHE.clear()
@@ -106,7 +107,7 @@ def load_section_enrichments(section_enrich_path: str) -> None:
             _SECTION_ENRICH_CACHE[sid] = row
 
 
-# 中文注释：_build_element_label_map_from_topology：内部辅助函数，服务当前模块主流程。
+# 从 topology 候选的 node_id 拆出 LaTeX label（"doc::el::fig:X" → "fig:X"）
 def _build_element_label_map_from_topology(topo_path: str) -> None:
     """Build element_id → label mapping from topology candidates."""
     if not topo_path or not Path(topo_path).exists():
@@ -125,7 +126,7 @@ def _build_element_label_map_from_topology(topo_path: str) -> None:
                     _ELEMENT_TO_LABELS.setdefault(f"{doc_id}::{ntype}", []).append(latex_label)
 
 
-# 中文注释：_build_element_label_map_from_ref_graph：内部辅助函数，服务当前模块主流程。
+# 按 type+line_no 排序分配序号，建立 MinerU 风格 element_id → label 映射
 def _build_element_label_map_from_ref_graph(data: Dict) -> None:
     """Build element_id → label mapping from reference graph labels.
 
@@ -161,7 +162,7 @@ def _build_element_label_map_from_ref_graph(data: Dict) -> None:
                 _ELEMENT_TO_LABELS[element_id].append(label_key)
 
 
-# 中文注释：_clean_latex_bridge：内部辅助函数，服务当前模块主流程。
+# 清洗 LaTeX 命令但保留语义：\ref{X}→[X], \cite{Y}→[cite:Y]
 def _clean_latex_bridge(text: str) -> str:
     """Strip LaTeX commands from bridge text while preserving semantic content."""
     text = re.sub(r'\\includegraphics[^}]*\}', '', text)
@@ -174,7 +175,7 @@ def _clean_latex_bridge(text: str) -> str:
     return text
 
 
-# 中文注释：为候选路径解析桥接段落文本。
+# element_id → LaTeX label → edge context：沿映射链取回作者写的桥接原文
 def resolve_bridge_texts_for_path(pair: Dict) -> List[str]:
     """Given a candidate pair with path, resolve actual bridge paragraph texts.
 
@@ -240,7 +241,7 @@ _BRIDGE_BOILERPLATE = re.compile(
 )
 
 
-# 中文注释：给桥接文本打质量分，过滤噪声桥接。
+# P2：基于动词密度/长度/公式比/引用标记给 bridge 打 0-1 分
 def score_bridge_quality(bridge_text: str) -> float:
     """Score bridge paragraph quality for reasoning chain suitability.
 
@@ -1162,7 +1163,7 @@ _REAL_USER_STYLE_CYCLE = list(_REAL_USER_TEMPLATES.keys())
 _PERSONAHUB_PERSONAS: Optional[List[Dict[str, str]]] = None  # lazy-loaded cache
 
 
-# 中文注释：_load_personahub_personas：内部辅助函数，服务当前模块主流程。
+# 懒加载 PersonaHub 人设库（50 类学术读者），缺文件时退回 5 条内置人设
 def _load_personahub_personas(path: Optional[str] = None) -> List[Dict[str, str]]:
     """Load PersonaHub-format personas from JSON file.
 
@@ -1198,7 +1199,7 @@ def _load_personahub_personas(path: Optional[str] = None) -> List[Dict[str, str]
     return _PERSONAHUB_PERSONAS
 
 
-# 中文注释：resolve_persona：解析并归一化目标信息。
+# 按 pair_id 的 md5 稳定哈希分配人设，保证跨机器可复现
 def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
     """Deterministically assign a PersonaHub persona to a pair via stable hash.
 
@@ -1213,7 +1214,7 @@ def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
     return personas[idx]["persona"]
 
 
-# 中文注释：resolve_persona_id：解析并归一化目标信息。
+# 同上，返回短标签用于日志 / 切片分析
 def resolve_persona_id(pair_id: str, persona_file: Optional[str] = None) -> str:
     """Return the persona id (short label) for logging/slicing."""
     personas = _load_personahub_personas(persona_file)
@@ -1224,7 +1225,7 @@ def resolve_persona_id(pair_id: str, persona_file: Optional[str] = None) -> str:
     return personas[idx]["id"]
 
 
-# 中文注释：inject_persona_prefix：核心函数，处理对应子任务逻辑。
+# 用人设描述替换 prompt 首句 "You are a …"，避免双重角色定义
 def inject_persona_prefix(prompt: str, persona: str) -> str:
     """Prepend a PersonaHub persona description to an existing prompt template.
 
@@ -1427,7 +1428,7 @@ CROSS_MODAL_OPERATOR_PATTERNS = (
 )
 
 
-# 中文注释：has_numeric_leakage：执行规则判断并返回布尔结果。
+# 检测 query 泄露具体数值（排除 0/1 常数和年份）
 def has_numeric_leakage(query: str) -> bool:
     """Flag queries that leak specific numeric values (v4: threshold 1, not 2)."""
     nums = re.findall(r"\b\d+(?:[.,]\d+)?%?\b", query)
@@ -1448,7 +1449,7 @@ def has_numeric_leakage(query: str) -> bool:
     return len(suspicious) >= 1
 
 
-# 中文注释：has_no_cross_modal_operator：执行规则判断并返回布尔结果。
+# query 缺乏跨模态动词（affect/differ/produce 等），词级+短语级双检
 def has_no_cross_modal_operator(query: str) -> bool:
     """Return True when no explicit cross-modal operator cue is found."""
     q = query.lower()
@@ -1462,7 +1463,7 @@ def has_no_cross_modal_operator(query: str) -> bool:
     return not phrase_hit
 
 
-# 中文注释：check_evidence_spans：核心函数，处理对应子任务逻辑。
+# evidence_spans 必须覆盖双端元素且每条 span ≥ 8 字符
 def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
     """Return True if required_evidence_spans covers both elements with non-trivial spans.
     Also checks answer_figure_evidence / answer_formula_evidence for figure+formula (v4.1).
@@ -1480,7 +1481,8 @@ def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
     return len(covered & elem_ids) >= 2
 
 
-# 中文注释：is_yes_no_question：执行规则判断并返回布尔结果。
+# 先检 wh-word 全局否决，再检 aux-verb 开头和介词前缀嵌套
+# 解决了 "Given X are Y, why…" 被首词 are 误判的问题
 def is_yes_no_question(query: str) -> bool:
     q = query.strip().lower()
     if any(q.startswith(s) for s in YES_NO_STARTERS):
@@ -1505,42 +1507,37 @@ def is_yes_no_question(query: str) -> bool:
     return False
 
 
-# 中文注释：is_yes_no_answer：执行规则判断并返回布尔结果。
 def is_yes_no_answer(answer: str) -> bool:
     a = answer.strip().lower()
     return a.startswith("yes") or a.startswith("no")
 
 
-# 中文注释：has_shortcut_template：执行规则判断并返回布尔结果。
 def has_shortcut_template(query: str) -> bool:
     q = query.strip().lower()
     return any(re.search(p, q) for p in QUERY_SHORTCUT_PATTERNS)
 
 
-# 中文注释：has_templated_opening：执行规则判断并返回布尔结果。
 def has_templated_opening(query: str) -> bool:
     q = query.strip().lower()
     return any(q.startswith(prefix) for prefix in TEMPLATED_QUERY_OPENINGS)
 
 
-# 中文注释：has_template_collapse：执行规则判断并返回布尔结果。
 def has_template_collapse(query: str) -> bool:
     q = query.strip().lower()
     return any(re.search(p, q) for p in TEMPLATE_COLLAPSE_PATTERNS)
 
 
-# 中文注释：query_opening_signature：生成或计算查询相关特征。
+# 取前 2 词作为开头指纹，用于 template collapse 去重
 def query_opening_signature(query: str, n_words: int = 2) -> str:
     toks = re.findall(r"[a-zA-Z]+", query.lower())
     return " ".join(toks[:n_words]) if toks else ""
 
 
-# 中文注释：query_word_count：生成或计算查询相关特征。
 def query_word_count(query: str) -> int:
     return len(re.findall(r"[A-Za-z0-9][A-Za-z0-9_-]*", query or ""))
 
 
-# 中文注释：query_length_bucket：生成或计算查询相关特征。
+# 分桶：too_short / short / medium / long / too_long
 def query_length_bucket(query: str) -> str:
     wc = query_word_count(query)
     if wc < SHORT_QUERY_MIN_WORDS:
@@ -1554,7 +1551,7 @@ def query_length_bucket(query: str) -> str:
     return "too_long"
 
 
-# 中文注释：has_length_mix：执行规则判断并返回布尔结果。
+# 检查同一 pair 的两条 query 是否覆盖 short+long 两种长度
 def has_length_mix(queries: List[Dict[str, Any]]) -> Tuple[bool, bool]:
     has_short = False
     has_long = False
@@ -1567,13 +1564,12 @@ def has_length_mix(queries: List[Dict[str, Any]]) -> Tuple[bool, bool]:
     return has_short, has_long
 
 
-# 中文注释：_is_architecture_text：内部辅助函数，服务当前模块主流程。
 def _is_architecture_text(text: str) -> bool:
     t = (text or "").lower()
     return any(re.search(rf"\b{re.escape(k)}\b", t) for k in ARCHITECTURE_KEYWORDS)
 
 
-# 中文注释：is_architecture_pair：执行规则判断并返回布尔结果。
+# 架构图检测：figure 的 caption+context 命中 encoder/decoder/module 等关键词
 def is_architecture_pair(pair: Dict[str, Any]) -> bool:
     elem_a = pair.get("element_a", {}) or {}
     elem_b = pair.get("element_b", {}) or {}
@@ -1591,13 +1587,12 @@ def is_architecture_pair(pair: Dict[str, Any]) -> bool:
     return _is_architecture_text(fig_text)
 
 
-# 中文注释：has_architecture_intent：执行规则判断并返回布尔结果。
 def has_architecture_intent(query: str, answer: str) -> bool:
     qa = f"{query or ''} {answer or ''}".lower()
     return any(re.search(rf"\b{re.escape(k)}\b", qa) for k in ARCHITECTURE_INTENT_TERMS)
 
 
-# 中文注释：has_parallel_dual_ask：执行规则判断并返回布尔结果。
+# 检测 ", and which/what" 式伪多跳——两个独立子问题拼接而非串行推理
 def has_parallel_dual_ask(query: str) -> bool:
     q = query.strip().lower()
     return bool(
@@ -1607,7 +1602,7 @@ def has_parallel_dual_ask(query: str) -> bool:
     )
 
 
-# 中文注释：has_semantic_category_mismatch：执行规则判断并返回布尔结果。
+# 高精度检测："A different from B" 中一边是 structural 另一边是 metric
 def has_semantic_category_mismatch(query: str) -> bool:
     """High-precision check for 'A different from B' cross-category stitching."""
     q = query.strip().lower()
@@ -1620,7 +1615,6 @@ def has_semantic_category_mismatch(query: str) -> bool:
         return False
     left, right = q.split(marker, 1)
 
-    # 中文注释：_has_term：内部辅助函数，服务当前模块主流程。
     def _has_term(text: str, terms: Set[str]) -> bool:
         return any(re.search(rf"\b{re.escape(t)}\b", text) for t in terms)
 
@@ -1637,7 +1631,7 @@ def has_semantic_category_mismatch(query: str) -> bool:
     return False
 
 
-# 中文注释：has_min_reasoning_chain：执行规则判断并返回布尔结果。
+# reasoning_chain 须 ≥40 字且含 ≥2 个句子片段，确保有因果分解
 def has_min_reasoning_chain(obj: Dict[str, Any]) -> bool:
     rc = str(obj.get("reasoning_chain", "")).strip()
     if len(rc) < 40:
@@ -1647,13 +1641,12 @@ def has_min_reasoning_chain(obj: Dict[str, Any]) -> bool:
     return len(chunks) >= 2
 
 
-# 中文注释：has_relationship_connector：执行规则判断并返回布尔结果。
 def has_relationship_connector(answer: str) -> bool:
     a = answer.lower()
     return any(conn in a for conn in RELATION_CONNECTORS)
 
 
-# 中文注释：has_premise_answer_contradiction：执行规则判断并返回布尔结果。
+# 高精度：捕获 "drop below" vs "not drop below" 等 LLM 生成的前提-答案矛盾
 def has_premise_answer_contradiction(query: str, answer: str) -> bool:
     """High-precision contradiction checks to catch premise reversal artifacts."""
     q = query.lower()
@@ -1684,7 +1677,7 @@ def has_premise_answer_contradiction(query: str, answer: str) -> bool:
     return False
 
 
-# 中文注释：extract_formula_variables：从文本或对象中提取结构化字段。
+# 从 LaTeX 公式中提取变量/函数符号供 QC grounding 检查
 def extract_formula_variables(content: str) -> str:
     """Extract lightweight variable/function hints from formula text."""
     if not content:
@@ -1729,7 +1722,7 @@ def extract_formula_variables(content: str) -> str:
     return "; ".join(parts) if parts else "(no clear variables found)"
 
 
-# 中文注释：extract_table_headers：从文本或对象中提取结构化字段。
+# 从 HTML/markdown 表格提取列头，避免泄露密集数值
 def extract_table_headers(content: str, max_chars: int = 150) -> str:
     """Extract table headers/labels and avoid leaking dense numeric values."""
     if not content:
@@ -1785,13 +1778,12 @@ def extract_table_headers(content: str, max_chars: int = 150) -> str:
     return out[:max_chars] if out else "(headers unavailable)"
 
 
-# 中文注释：_content_tokens：内部辅助函数，服务当前模块主流程。
+# ≥3 字母的词集合，去停用词——用于 anchor leak 和 answer overlap 计算
 def _content_tokens(text: str) -> Set[str]:
     words = set(re.findall(r"\b[a-zA-Z]{3,}\b", text.lower()))
     return words - LEAK_STOPWORDS
 
 
-# 中文注释：_number_tokens：内部辅助函数，服务当前模块主流程。
 def _number_tokens(text: str) -> Set[str]:
     """Extract normalized numeric tokens used for evidence overlap."""
     nums = set()
@@ -1802,7 +1794,7 @@ def _number_tokens(text: str) -> Set[str]:
     return nums
 
 
-# 中文注释：_extract_formula_symbol_terms：内部辅助函数，服务当前模块主流程。
+# 提取希腊字母 / 下标变量 / LaTeX 命令等公式专有符号
 def _extract_formula_symbol_terms(content: str) -> Set[str]:
     """Extract formula-specific symbolic terms used for grounding checks."""
     if not content:
@@ -1829,7 +1821,7 @@ def _extract_formula_symbol_terms(content: str) -> Set[str]:
     return {t for t in terms if t and len(t) >= 2}
 
 
-# 中文注释：_formula_symbol_hit：内部辅助函数，服务当前模块主流程。
+# answer 是否提及了至少一个公式符号（grounding 验证）
 def _formula_symbol_hit(answer: str, terms: Set[str]) -> bool:
     """Return True if answer explicitly mentions at least one formula symbol/term."""
     if not terms:
@@ -1846,7 +1838,7 @@ def _formula_symbol_hit(answer: str, terms: Set[str]) -> bool:
     return False
 
 
-# 中文注释：_answer_text_evidence_overlap：内部辅助函数，服务当前模块主流程。
+# answer 与 text_evidence 的词重合率——过高说明 answer 只是在复述
 def _answer_text_evidence_overlap(answer: str, evidence: str) -> float:
     """Token overlap ratio between answer and text_evidence (answer-normalized)."""
     a_tokens = _content_tokens(answer)
@@ -1858,7 +1850,7 @@ def _answer_text_evidence_overlap(answer: str, evidence: str) -> float:
     return len(a_tokens & e_tokens) / len(a_tokens)
 
 
-# 中文注释：anchor_leak_jaccard：核心函数，处理对应子任务逻辑。
+# query 与 visual_anchors 的最大 Jaccard——超 0.20 则判定 anchor 泄露
 def anchor_leak_jaccard(query: str, anchors: List[Dict[str, Any]]) -> float:
     q_tokens = _content_tokens(query)
     if not q_tokens:
@@ -1876,7 +1868,6 @@ def anchor_leak_jaccard(query: str, anchors: List[Dict[str, Any]]) -> float:
     return max_jacc
 
 
-# 中文注释：anchor_token_copy_count：核心函数，处理对应子任务逻辑。
 def anchor_token_copy_count(query: str, anchors: List[Dict[str, Any]]) -> int:
     """Count copied content tokens between query and all anchor texts."""
     q_tokens = _content_tokens(query)
@@ -1889,7 +1880,6 @@ def anchor_token_copy_count(query: str, anchors: List[Dict[str, Any]]) -> int:
     return len(q_tokens & all_anchor_tokens)
 
 
-# 中文注释：anchor_overlap_tokens：核心函数，处理对应子任务逻辑。
 def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]:
     """Return overlapping content tokens between query and all anchors."""
     q_tokens = _content_tokens(query)
@@ -1900,7 +1890,7 @@ def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]
     return q_tokens & all_anchor_tokens
 
 
-# 中文注释：qc_multihop_query：执行质量控制检查与筛选。
+# QC 主入口：meta_language / anchor_leakage / single_element_answer 等全套检查
 def qc_multihop_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
@@ -2025,12 +2015,12 @@ def qc_multihop_query(
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
     if a_tokens or a_num_tokens:
-        # 中文注释：_min_overlap_for_elem：内部辅助函数，服务当前模块主流程。
+        # 按元素类型返回最低 overlap 阈值：figure=1, table/formula=2
         def _min_overlap_for_elem(elem: Dict) -> int:
             etype = str(elem.get("element_type", "")).lower()
             return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
 
-        # 中文注释：_elem_text：内部辅助函数，服务当前模块主流程。
+        # 拼接 caption + content + evidence_spans 的合并文本
         def _elem_text(elem: Dict) -> str:
             caption = elem.get("caption", "") or ""
             # Use caption + raw content for all modalities (including formula)
@@ -2046,7 +2036,7 @@ def qc_multihop_query(
             if eid and span:
                 span_text_by_eid[eid] += " " + span
 
-        # 中文注释：_elem_overlap：内部辅助函数，服务当前模块主流程。
+        # 计算 answer 与单个元素的词+数字重合度
         def _elem_overlap(elem: Dict, elem_id: str) -> int:
             # Merge raw element text with its required evidence span to reduce
             # false negatives from OCR/style variation in table/formula content.
@@ -2153,7 +2143,8 @@ _OBJECTIVE_QUERY_PATTERNS: List[re.Pattern] = [
 ]
 
 
-# 中文注释：classify_query_intent：核心函数，处理对应子任务逻辑。
+# 启发式判断 objective（有确定答案）vs subjective（开放性）
+# 不确定时偏 objective，使 QC 门禁保持严格
 def classify_query_intent(query: str) -> str:
     """Classify query as 'objective' or 'subjective'.
 
@@ -2172,7 +2163,8 @@ def classify_query_intent(query: str) -> str:
     return "objective"
 
 
-# 中文注释：qc_real_user_query：执行质量控制检查与筛选。
+# real-user 风格的宽松 QC：去掉 template/reasoning_chain 硬门禁，
+# 新增 retrievability_score 和 query_intent 分轨
 def qc_real_user_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
@@ -2246,12 +2238,10 @@ def qc_real_user_query(
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
     if (a_tokens or a_num_tokens) and query_intent == "objective":
-        # 中文注释：_min_overlap_ru：内部辅助函数，服务当前模块主流程。
         def _min_overlap_ru(elem: Dict) -> int:
             etype = str(elem.get("element_type", "")).lower()
             return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
 
-        # 中文注释：_elem_text_ru：内部辅助函数，服务当前模块主流程。
         def _elem_text_ru(elem: Dict) -> str:
             return (elem.get("caption", "") or "") + " " + (elem.get("content", "") or "")
 
@@ -2269,7 +2259,6 @@ def qc_real_user_query(
         elem_a_id = pair.get("element_a_id", "")
         elem_b_id = pair.get("element_b_id", "")
 
-        # 中文注释：_overlap_ru：内部辅助函数，服务当前模块主流程。
         def _overlap_ru(elem: Dict, elem_id: str) -> int:
             merged = (_elem_text_ru(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
             word_ov = len(a_tokens & _content_tokens(merged))
@@ -2383,7 +2372,8 @@ _EVIDENCE_TYPE_PATTERNS = {
 }
 
 
-# 中文注释：classify_reasoning_structure：核心函数，处理对应子任务逻辑。
+# 用连接词模式 (because→serial, both→parallel) 区分推理结构
+# 局限：写作风格可欺骗，仅适合 auto-tagging 不适合严格门禁
 def classify_reasoning_structure(
     reasoning_chain: str,
     answer: str,
@@ -2463,7 +2453,8 @@ def classify_reasoning_structure(
     }
 
 
-# 中文注释：qc_reasoning_depth：执行质量控制检查与筛选。
+# M4 Schema 1 支持：有 reasoning_steps[] 则结构验证（hard fail），
+# 否则用启发式连接词分析（advisory only，不做硬门禁）
 def qc_reasoning_depth(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
@@ -2663,7 +2654,7 @@ def qc_reasoning_depth(
 # Image encoding
 # ──────────────────────────────────────────────────────────────
 
-# 中文注释：_fallback_image_path：内部辅助函数，服务当前模块主流程。
+# 集群路径 → 本地 MinerU 输出目录的 fallback 解析
 def _fallback_image_path(original: str) -> Optional[Path]:
     """Try to resolve an image path from a different environment.
 
@@ -2689,7 +2680,7 @@ def _fallback_image_path(original: str) -> Optional[Path]:
     return None
 
 
-# 中文注释：encode_image：核心函数，处理对应子任务逻辑。
+# 图片 → (base64, mime)，含跨环境路径 fallback
 def encode_image(path: Optional[str]) -> Optional[Tuple[str, str]]:
     """Return (base64_data, mime_type) or None if file missing."""
     if not path:
@@ -2716,7 +2707,7 @@ def encode_image(path: Optional[str]) -> Optional[Tuple[str, str]]:
 # Prompt building
 # ──────────────────────────────────────────────────────────────
 
-# 中文注释：build_edge_context_text：构建并返回中间结构或文本片段。
+# 将 edge_context 列表格式化为 prompt 可用的文本块
 def build_edge_context_text(edge_contexts: List[Dict]) -> str:
     """Format edge context snippets into readable text."""
     if not edge_contexts:
@@ -2729,7 +2720,8 @@ def build_edge_context_text(edge_contexts: List[Dict]) -> str:
     return "\n".join(parts) if parts else "(no context snippets)"
 
 
-# 中文注释：build_latex_bridge_section：构建并返回中间结构或文本片段。
+# 注入作者原话——LaTeX \ref{} 处的桥接句，给模型语义 grounding
+# 而非暴露原始 content（避免 anchor leakage）
 def build_latex_bridge_section(pair: Dict) -> str:
     """Extract full latex_bridge.bridge_text as an 'author's own words' section.
 
@@ -2786,7 +2778,7 @@ _ENRICHMENT_NOISE_RE = re.compile(
 )
 
 
-# 中文注释：_is_noisy_enrichment：内部辅助函数，服务当前模块主流程。
+# C1 噪声过滤：glyph/icon/OCR artefact 等低质量 enrichment 直接丢弃
 def _is_noisy_enrichment(text: str) -> bool:
     """Return True if the enriched field should be discarded as noise.
 
@@ -2802,7 +2794,7 @@ def _is_noisy_enrichment(text: str) -> bool:
     return bool(_ENRICHMENT_NOISE_RE.search(stripped))
 
 
-# 中文注释：build_enriched_context_section：构建并返回中间结构或文本片段。
+# MoDora [T]/[M]/[C] 富化描述 → prompt section（自动跳过噪声字段）
 def build_enriched_context_section(pair: Dict) -> str:
     """Build enriched context section from MoDora-style [T]/[M]/[C] fields.
 
@@ -2838,7 +2830,7 @@ def build_enriched_context_section(pair: Dict) -> str:
     return "## Enriched element descriptions\n" + "\n".join(parts)
 
 
-# 中文注释：build_section_context_section：构建并返回中间结构或文本片段。
+# 将路径中经过的 section 节点的语义摘要注入 prompt
 def build_section_context_section(pair: Dict) -> str:
     """Attach section/subsection summaries for section-aware paths when available."""
     if not _SECTION_ENRICH_CACHE:
@@ -2878,7 +2870,7 @@ def build_section_context_section(pair: Dict) -> str:
     return "## Section-level semantic context\n" + "\n\n".join(parts)
 
 
-# 中文注释：build_architecture_guidance：构建并返回中间结构或文本片段。
+# 架构图专项指导：强制问结构组件而非趋势，降低 intent_missing 率
 def build_architecture_guidance(pair: Dict) -> str:
     """Inject a failure-case block for architecture diagrams."""
     if not is_architecture_pair(pair):
@@ -2891,7 +2883,7 @@ This figure is likely a model architecture/system diagram. Use a real scholar pe
 - Prefer concrete wording: encoder/decoder branch, fusion module, loss path, regularization term, ablation effect."""
 
 
-# 中文注释：build_intermediate_info：构建并返回中间结构或文本片段。
+# 多跳路径的中间节点说明：优先用 bridge 原文，fallback 到 node ID
 def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> str:
     """Describe intermediate elements in a multi-hop path.
 
@@ -2915,7 +2907,7 @@ def build_intermediate_info(pair: Dict, all_elements: Optional[Dict] = None) -> 
     return ", ".join(parts)
 
 
-# 中文注释：build_graph_path_description：构建并返回中间结构或文本片段。
+# 图路径可视化：figure_4 →[ref]→ paragraph_12 →[backbone]→ table_2
 def build_graph_path_description(pair: Dict) -> str:
     """Build a human-readable graph path description for prompt injection.
 
@@ -2934,7 +2926,7 @@ def build_graph_path_description(pair: Dict) -> str:
     return " ".join(parts)
 
 
-# 中文注释：resolve_query_style：解析并归一化目标信息。
+# mixed 模式：按 pair_id md5 稳定 50/50 分配 academic / real_user
 def resolve_query_style(query_style: str, pair_id: str) -> str:
     """Resolve effective style per pair.
 
@@ -2947,7 +2939,7 @@ def resolve_query_style(query_style: str, pair_id: str) -> str:
     return "academic" if (stable_hash % 2 == 0) else "real_user"
 
 
-# 中文注释：select_template：核心函数，处理对应子任务逻辑。
+# 模板路由：先按 style 分轨（academic/real_user），再按模态组合选 prompt
 def select_template(pair: Dict, query_style: str = "academic") -> str:
     """Choose the right prompt template based on modality combo, hop distance, and style.
 
@@ -2988,7 +2980,8 @@ def select_template(pair: Dict, query_style: str = "academic") -> str:
         return "figure_table_1hop"  # fallback
 
 
-# 中文注释：根据元素类型与上下文组装 query 生成提示词。
+# prompt 组装总入口——模板 + bridge + enriched + section + persona
+# 每层可选注入，缺失时自动降级
 def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = False) -> str:
     """Build the prompt text for a candidate pair.
 
@@ -3020,7 +3013,7 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
             formula_elem = elem
             formula_key = key
 
-    # 中文注释：_context：内部辅助函数，服务当前模块主流程。
+    # 优先用 enriched_content，fallback 到原始 caption+context
     def _context(elem: Dict) -> str:
         # Prefer enriched content when available (MoDora-style).
         # C1: discard noisy enriched fields before using them.
@@ -3045,7 +3038,7 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
     # Helper: append enriched section if non-empty, then optionally inject persona
     _persona_text = resolve_persona(str(pair.get("pair_id", ""))) if use_persona else ""
 
-    # 中文注释：_with_enriched：内部辅助函数，服务当前模块主流程。
+    # 尾部追加所有可选 section（enriched/bridge/architecture/section）
     def _with_enriched(prompt_text: str) -> str:
         if enriched_section:
             prompt_text = prompt_text + "\n\n" + enriched_section
@@ -3207,7 +3200,7 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
 # API call
 # ──────────────────────────────────────────────────────────────
 
-# 中文注释：_collect_company_stream：内部辅助函数，服务当前模块主流程。
+# SSE 流式收集：逐行拼 content delta，从末尾 chunk 取 token usage
 def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
     """Collect content and token usage from company API SSE stream.
 
@@ -3266,7 +3259,7 @@ _COMPANY_API_URL: str = ""
 _COMPANY_API_KEY: str = ""
 
 
-# 中文注释：统一封装不同 provider 的 API 调用。
+# 三路分发：anthropic(原生) / openai(SDK) / company(yunwu.ai SSE)
 def call_api(
     client: Any,
     model: str,
@@ -3372,9 +3365,8 @@ def call_api(
     )
 
 
-# 中文注释：parse_json：核心函数，处理对应子任务逻辑。
+# 从 LLM 输出提取 JSON：先尝试整体 loads，再用括号配对找首个 {} 对象
 def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
-    # 中文注释：_extract_first_json_object：内部辅助函数，服务当前模块主流程。
     def _extract_first_json_object(text: str) -> Optional[str]:
         """Extract first balanced JSON object from mixed text."""
         for start_idx, ch in enumerate(text):
@@ -3432,7 +3424,7 @@ REPO_ROOTS = [
 ]
 
 
-# 中文注释：normalize_path：进行标准化处理，便于统一比较。
+# 将集群绝对路径统一为 data/ 开头的相对路径，写入 JSONL 可移植
 def normalize_path(img_path: str) -> str:
     normed = img_path.replace("\\", "/")
     for root in REPO_ROOTS:
@@ -3449,7 +3441,6 @@ def normalize_path(img_path: str) -> str:
 # Main
 # ──────────────────────────────────────────────────────────────
 
-# 中文注释：主流程入口，负责解析参数并串联整体执行。
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="Generate multi-hop L1 queries from DAG candidates"
