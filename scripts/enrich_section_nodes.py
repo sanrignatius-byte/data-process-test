@@ -292,6 +292,10 @@ def main() -> None:
     ap.add_argument("--delay", type=float, default=0.5)
     ap.add_argument("--max-chars", type=int, default=4000)
     ap.add_argument("--levels", default="section,subsection,subsubsection")
+    ap.add_argument("--incremental", action="store_true",
+                     help="Skip sections already present in the output file and append new results")
+    ap.add_argument("--flush-every", type=int, default=10,
+                     help="Flush partial results to disk every N sections (default: 10)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -334,13 +338,58 @@ def main() -> None:
 
     print(f"Loaded section nodes: {len(rows)}")
 
+    out_path = Path(args.output)
+    if not out_path.is_absolute():
+        out_path = PROJECT_ROOT / out_path
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # --- incremental: load existing results and skip already-processed sections ---
     total_in_tok = 0
     total_out_tok = 0
     processed = 0
     failed = 0
     results: List[Dict[str, Any]] = []
+    done_ids: set = set()
 
+    if args.incremental and out_path.exists():
+        try:
+            existing = json.loads(out_path.read_text(encoding="utf-8"))
+            prev_sections = existing.get("sections", [])
+            results.extend(prev_sections)
+            done_ids = {s["section_id"] for s in prev_sections if "section_id" in s}
+            prev_meta = existing.get("metadata", {})
+            total_in_tok = int(prev_meta.get("input_tokens", 0))
+            total_out_tok = int(prev_meta.get("output_tokens", 0))
+            processed = len(prev_sections)
+            print(f"Incremental: loaded {len(done_ids)} already-enriched sections, resuming...")
+        except Exception as exc:
+            print(f"WARNING: could not load existing output for incremental mode: {exc}")
+
+    def _flush(reason: str = "") -> None:
+        """Write partial results to disk so progress is never lost."""
+        snapshot = {
+            "metadata": {
+                "source_reference_graph": str(ref_graph_path),
+                "levels": levels,
+                "model": f"{args.provider}:{args.model}",
+                "total_requested": len(rows),
+                "processed": processed,
+                "failed": failed,
+                "input_tokens": total_in_tok,
+                "output_tokens": total_out_tok,
+                "partial": True,
+            },
+            "sections": results,
+        }
+        out_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
+        if reason:
+            print(f"  [flush] {reason} — {len(results)} sections saved")
+
+    new_count = 0
     for idx, row in enumerate(rows, start=1):
+        if row["section_id"] in done_ids:
+            continue
+
         prompt = build_prompt(row)
 
         if args.dry_run:
@@ -357,6 +406,7 @@ def main() -> None:
                 }
             )
             processed += 1
+            new_count += 1
             continue
 
         try:
@@ -367,6 +417,9 @@ def main() -> None:
             if parsed is None:
                 print(f"[{idx}/{len(rows)}] {row['section_id']} — PARSE FAIL")
                 failed += 1
+                new_count += 1
+                if args.flush_every > 0 and new_count % args.flush_every == 0:
+                    _flush(f"after {new_count} new items")
                 continue
 
             issues = validate_enrichment(parsed)
@@ -380,6 +433,7 @@ def main() -> None:
                 }
             )
             processed += 1
+            new_count += 1
             if issues:
                 print(f"[{idx}/{len(rows)}] {row['section_id']} — OK with issues: {issues}")
             else:
@@ -387,10 +441,16 @@ def main() -> None:
         except Exception as exc:
             print(f"[{idx}/{len(rows)}] {row['section_id']} — ERROR: {exc}")
             failed += 1
+            new_count += 1
+
+        # periodic flush to disk
+        if args.flush_every > 0 and new_count % args.flush_every == 0:
+            _flush(f"after {new_count} new items")
 
         if args.delay > 0 and idx < len(rows):
             time.sleep(args.delay)
 
+    # --- final write (mark partial=False) ---
     output = {
         "metadata": {
             "source_reference_graph": str(ref_graph_path),
@@ -405,12 +465,8 @@ def main() -> None:
         "sections": results,
     }
 
-    out_path = Path(args.output)
-    if not out_path.is_absolute():
-        out_path = PROJECT_ROOT / out_path
-    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"Wrote section enrichments: {out_path}")
+    print(f"Wrote section enrichments: {out_path} ({new_count} new this run)")
 
     if not args.dry_run:
         log_run(

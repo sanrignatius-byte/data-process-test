@@ -178,6 +178,7 @@ Step 4 — 输出 reranked top-k
 | 参数 | 最优值 | 为什么 |
 |------|--------|--------|
 | \(w_{hub}\) | **0.15** | hub prior 是轻微加分，不能喧宾夺主；>0.20 开始反噬 BM25 本身正确的排名 |
+| \(w_{nprop}\) | **1.00** | neighbor propagation 是核心信号，2026-03-26 grid search 证明：nw=0.20→1.00 时 graph\_full MRR 从 0.6225 → 0.7234（+16.2%） |
 | \(\lambda_{decay}\) | **0.20** | 传播保留 80% 的原始分数；过低（保留太多）→ 噪声扩散；过高（保留太少）→ 传播无效 |
 | cite\_weight | **0**（关闭） | citation walk 实验为负贡献（doc-level 粒度 vs element-level 需求错位） |
 | neighbor\_hops | **1** | 1-hop 严格优于 2-hop；当前图密度下 2-hop 扩散太多弱关联节点 |
@@ -290,6 +291,34 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 2. **两者合用超线性**：各自之和 0.031，合用 0.054（×1.73 倍）
 3. **规模化路径**：万篇级用图为主（$0），局部高价值元素加 enrichment
 
+### 7.3 Section Enrichment 对比（2026-03-26）
+
+Section-level enrichment（1417 section 节点 LLM 语义总结）注入 query 生成 prompt：
+
+| 方法 | Baseline MRR (n=284) | Section-Enriched MRR (n=329) |
+|------|---------------------|------------------------------|
+| bm25 | 0.486 | 0.531 |
+| neighbor_prop | 0.670 | **0.715** |
+| graph_full (hw=0.15,nw=0.20) | 0.575 | 0.623 |
+
+- Section enrichment 提升 BM25 baseline（+0.045 MRR）——更好的词面锚点
+- Graph lift 基本持平（ΔMRR ~+0.184），但绝对值随 baseline 上升
+- L3 pass 率从 48% → 66%（37 → 80 条），是最大收益
+
+### 7.4 graph\_full 权重调优（2026-03-26）
+
+Grid search on section-enriched queries（329 条），cite\_weight=0 固定：
+
+| hw | nw | R@10 | MRR | ΔMRR vs current |
+|----|------|--------|--------|-----------------|
+| 0.15 | 0.20 | 0.8602 | 0.6225 | — (旧配置) |
+| 0.05 | 1.00 | 0.9058 | 0.7200 | +0.0975 |
+| 0.10 | 1.00 | 0.9027 | 0.7211 | +0.0986 |
+| **0.15** | **1.00** | **0.9027** | **0.7234** | **+0.1009** |
+| 0.00 | 1.00 | 0.9058 | 0.7145 | +0.0920 |
+
+**结论**：nprop\_weight 从 0.20 → 1.00 是最大单一改进（MRR +16.2%）。hub\_weight 保留 0.15 有正贡献（+0.009 vs hw=0）。最优配置 **hw=0.15, nw=1.00, cw=0**。
+
 ### 迭代过程
 
 | 版本 | MRR | Δ vs BM25 | 关键变化 |
@@ -297,7 +326,8 @@ Graph full 拯救 **11 条** BM25 miss 的 queries → **全部是跨模态 dual
 | v1 | 0.5315 | -0.009 | 初始 |
 | v2 | 0.5552 | -0.009 | alpha 修复 |
 | v3-fix | 0.5939 | +0.030 | quality_score 重建 + hub coverage ×9.5 |
-| **v3-tuned** | **0.6045** | **+0.040** | cite_weight=0 |
+| v3-tuned | 0.6045 | +0.040 | cite_weight=0 |
+| **v4-section-tuned** | **0.7234** | **+0.192** | section enrichment + nw=1.00 |
 
 ---
 
