@@ -2800,3 +2800,86 @@ Exp C: 图增强在 L3 检索覆盖最显著（+6.1%），但 QA mention 中性
 ### 十二、一句话总结
 
 > M2 三实验全量完成 + enrichment 消融。核心发现：(1) Graph 零成本 MRR +0.018 ≈ $3 LLM enrichment +0.013，合用超线性 ×1.73；(2) 图一致提升检索覆盖（L3 +6.1%），但 enriched 环境下 QA mention 中性 → Graph 核心价值在检索层，规模化场景下是唯一零成本方案。
+
+---
+
+## 日期：2026-03-26
+
+## Section Enrichment + graph_full 权重调优
+
+### 一、Section-level Enrichment
+
+**动机**：section/subsection 节点在图中作为上层结构，但 query 生成 prompt 中缺少 section 语义信息。通过 LLM 为每个 section 生成结构化摘要（title / metadata / content），注入 query 生成 prompt 提升 query 质量。
+
+**实施**：
+- 修复 `enrich_section_nodes.py`：新增 `--incremental`（跳过已处理）+ `--flush-every N`（每 N 条写盘，防中断丢失）
+- 1417 个 section 节点全部 enriched（82 篇文档，gpt-5.4，$8.29）
+- 输出：`data/m2/section_nodes_enriched_2026-03-26.json`
+
+**教训**：3-24 首次跑完但未加 flush，输出全丢（$4.77 浪费）；3-26 初次 `head -5` 管道截断导致 SIGPIPE 杀进程（额外 $4.73 浪费）。incremental + flush 机制杜绝此类问题。
+
+### 二、Section-Enriched Query 生成
+
+通过 `--section-enrich` 参数注入 section enrichment 到 query 生成 prompt：
+
+| Level | Baseline pass/total (rate) | Section-Enriched pass/total (rate) |
+|-------|---------------------------|-----------------------------------|
+| L2 | 247/432 (57.2%) | 249/428 (58.2%) |
+| L3 | **37/77 (48.1%)** | **80/122 (65.6%)** |
+
+**关键发现**：Section enrichment 对 L3（推理链）帮助最大——pass 率从 48% → 66%，绝对数量翻倍（37 → 80）。L2 提升有限。
+
+### 三、检索评测对比
+
+Section enrichment 影响的是 query 质量（generation prompt enrichment），不改变检索候选池。两组 eval 用同一 corpus。
+
+| 方法 | Baseline MRR (n=284) | Section-Enriched MRR (n=329) |
+|------|---------------------|------------------------------|
+| bm25 | 0.486 | 0.531 |
+| neighbor_prop | 0.670 | 0.715 |
+| graph_full (hw=0.15,nw=0.20) | 0.575 | 0.623 |
+
+- BM25 baseline 本身提升了 +0.045 MRR → section enrichment 让 query 有更好的词面锚点
+- Graph lift 基本持平（ΔMRR ~+0.184），绝对值随 baseline 上升
+
+### 四、graph_full 权重调优
+
+**问题**：neighbor_prop 单独 MRR=0.715，但 graph_full 只有 0.623。原因是 nprop_weight=0.20 严重压缩了 neighbor propagation 的贡献。
+
+**Grid search 结果**（section-enriched, 329 queries, cite_weight=0 固定）：
+
+| hw | nw | R@10 | MRR | ΔMRR vs current |
+|----|------|--------|--------|-----------------|
+| 0.15 | 0.20 | 0.8602 | 0.6225 | — (旧) |
+| 0.05 | 1.00 | 0.9058 | 0.7200 | +0.0975 |
+| 0.10 | 1.00 | 0.9027 | 0.7211 | +0.0986 |
+| **0.15** | **1.00** | **0.9027** | **0.7234** | **+0.1009** |
+| 0.00 | 1.00 | 0.9058 | 0.7145 | +0.0920 |
+
+**结论**：
+1. nprop_weight 0.20 → 1.00 是 graph_full 最大单一改进（MRR +16.2%）
+2. hub_weight 保留 0.15 有正贡献（+0.009 MRR vs hw=0）
+3. 最优配置：**hw=0.15, nw=1.00, cw=0**
+4. graph_full（0.7234）略超 neighbor_prop 独立（0.7145），因为 hub prior 补充了少量额外信号
+
+### 五、迭代总结
+
+| 版本 | MRR | Δ vs BM25 | 关键变化 |
+|------|-----|-----------|---------|
+| v1 | 0.5315 | -0.009 | 初始 |
+| v2 | 0.5552 | -0.009 | alpha 修复 |
+| v3-fix | 0.5939 | +0.030 | quality_score + hub coverage ×9.5 |
+| v3-tuned | 0.6045 | +0.040 | cite_weight=0 |
+| **v4-section-tuned** | **0.7234** | **+0.192** | section enrichment + nw=1.00 |
+
+### 六、当前数据集
+
+- L1: 974, L2: 593（344+249）, L3: 223（143+80）, **总计 ~1790 条**
+- 图：11298 nodes / 19429 edges，82 docs，hub overlap 100%
+
+### 七、下一步
+
+1. **P0：Embedding 语义边实验**（`build_embedding_edges.py`，需 GPU，$0 LLM）
+2. **P1：用 tuned weights 重跑全量 eval 并更新文档**
+3. **P1：正则引用模式扩展**（"Figure X"/"Table Y"），适配纯 PDF
+4. **P2：QA evaluation 改进**（answer correctness 替代 evidence mention）

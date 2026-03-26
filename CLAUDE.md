@@ -187,6 +187,50 @@ log_run(
 
 ---
 
+## 当前状态（2026-03-26 更新｜Section Enrichment + graph_full 权重调优）
+
+### 本轮完成（相对 2026-03-24）
+
+- **Section-level Enrichment 完成**
+  - `enrich_section_nodes.py` 新增 `--incremental` + `--flush-every`（断点续跑）
+  - 1417 个 section/subsection/subsubsection 节点全部 enriched（82 篇文档）
+  - 输出：`data/m2/section_nodes_enriched_2026-03-26.json`
+  - 费用：$8.29（gpt-5.4）
+
+- **Section-Enriched Query 生成完成**
+  - L2: 249 pass / 428 total（58.2%，vs baseline 57.2%）
+  - L3: **80 pass / 122 total（65.6%，vs baseline 48.1%）** — 数量翻倍
+  - 输出：`data/m2/l{2,3}_production_2026-03-26_section_enriched{,_pass}.jsonl`
+
+- **graph_full 权重调优完成**
+  - Grid search: nprop_weight 0.20 → 1.00 是最大改进
+  - graph_full MRR: 0.6225 → **0.7234（+16.2%）**
+  - 最优配置：`hw=0.15, nw=1.00, cw=0`
+  - neighbor_prop 仍为绝对主力（MRR 0.7145），但 graph_full 加 hub prior 后略超（0.7234）
+
+- **检索评测对比完成**（section-enriched, n=329）
+
+  | 方法 | R@10 | MRR | ΔMRR vs BM25 |
+  |------|------|-----|--------------|
+  | bm25 | 0.796 | 0.531 | — |
+  | neighbor_prop | 0.906 | 0.715 | +0.184 |
+  | graph_full (hw=0.15,nw=1.00) | 0.903 | **0.723** | **+0.192** |
+
+### 当前数据集规模
+- L1: 974, L2: 344+249=593, L3: 143+80=223, **总计 ~1790 条**
+- 图：11298 nodes / 19429 edges（section-aware keyword_boost 版），82 篇文档
+- Hub overlap: **100%**
+
+### 下一步
+| 优先级 | 任务 |
+|--------|------|
+| P0 | Embedding 语义边实验（`build_embedding_edges.py`，需 GPU） |
+| P1 | 用 tuned weights (nw=1.00) 重跑 baseline eval 并更新文档 |
+| P1 | 正则引用模式扩展（"Figure X" / "Table Y"），适配纯 PDF |
+| P2 | QA evaluation 改进（answer correctness 替代 evidence mention） |
+
+---
+
 ## 当前状态（2026-03-10 更新｜MoDora 深度整合 + Real-user Query 风格 + Enrichment 质量闸门）
 
 ### 本轮完成（相对 2026-03-09）
