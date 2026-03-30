@@ -187,6 +187,60 @@ log_run(
 
 ---
 
+## 当前状态（2026-03-30 更新｜Enrichment 消融实验完成 + 多轮系统完善）
+
+### 本轮完成（相对 2026-03-26）
+
+- **2×2 Enrichment 消融实验完成**
+  - 脚本：`scripts/run_ablation_enrich.py`
+  - 6 个条件：1A（raw query + raw corpus）/ 2A（enrich query + raw corpus）/ 1B（raw query + enrich corpus）/ 2B（enrich query + enrich corpus）/ 1A_matched / 2A_matched
+  - Matched-pair 子集：L2=127对 / L3=28对（消除 candidate-set 混淆）
+
+- **消融核心结论（BM25/HITS 均验证）**
+
+  | 条件 | L2 R@10 | L2 MRR | L3 R@10 | L3 MRR |
+  |------|---------|--------|---------|--------|
+  | 1A 基线 | 0.530 | 0.471 | 0.333 | 0.501 |
+  | 2A 仅 query 富化 | 0.536 | 0.456 | 0.471 | 0.476 |
+  | 1B 仅语料富化 | 0.727 | 0.664 | 0.469 | 0.721 |
+  | **2B 双端富化** | **0.705** | **0.647** | **0.690** | **0.753** |
+
+  - **语料库 enrichment 是最大杠杆**：L2 R@10 +0.197，L3 MRR +0.220
+  - **仅做 query enrichment 有害**：词汇不对称（section-rich query vs raw corpus），L3 MRR −0.025 ~ −0.075
+  - **双端富化触发非线性增益**：L3 R@10 翻倍（0.333→0.690），MRR +0.252；词汇循环闭合假说得到验证
+  - **L1 对 query 侧 enrichment 完全免疫**：query 结构而非词汇是 L1 的瓶颈
+
+- **L1 评测 bug 已修复**：`run_m2_classic_eval.py` 新增 `_norm_eid()` 将 `_fig_` / `_tbl_` / `_eq_` 规范化为 corpus 格式；之前 L1 全零是 ID 不匹配
+- **多轮 session 生成器升级**（`scripts/generate_multiturn_sessions.py` v2）
+  - 加入 `context_isolation_score()` Jaccard 代理指标（阈值 0.35）
+  - 新增 intent_shift 类型（L3: drill_down/bridging/contrastive；L2: drill_down/bridging）
+  - Researcher 角色扮演 system prompt
+- **Persona 库扩充**：50→76 人设（新增 26 个非学术人设：学生/医疗/金融法律/政府/教育媒体等）
+- **Semantic Scholar 批量下载脚本**：`scripts/download_papers_semantic_scholar.py`，BFS 引用网络爬取，API key 下延迟 0.2s
+
+### 消融实验关键发现（用于论文写作）
+
+1. **单独的 query enrichment 无效**：即使 section-level LLM 生成的丰富上下文，没有匹配的 corpus enrichment 时词汇不对称反而降低 MRR
+2. **MoDora element enrichment 是必须的**：为 corpus 侧提供方法论词汇，让 BM25 基线直接从 0.53 跳到 0.73（L2）
+3. **两侧 enrichment 相互增强**：2B 不是 1B+2A 的加和，而是超加性（L3 表现最突出）
+4. **HITS 在 2B 条件下仍有稳定增益**：L3 MRR 0.753（BM25）→ 0.791（HITS），+0.038
+
+### 当前数据集规模（2026-03-30）
+- L1: 974, L2: 344+249=593, L3: 143+80=223，**总计 ~1790 条**
+- 图：11298 nodes / 19429 edges，82 篇文档
+- 最优检索配置：**2B + HITS**（双端 enrichment + 图增强）
+
+### 下一步
+| 优先级 | 任务 |
+|--------|------|
+| P0 | 用 SS API 扩充语料到 500+ 篇，multi-turn 量产 |
+| P0 | M3 之前调 graph 参数：L1 hw≈0，L2/L3 hw=0.15 |
+| P1 | 正式跑 2B 条件 HITS 完整评测（确认作为最终 baseline） |
+| P1 | 验证 2A_matched L3 MRR 反常下降（词汇不对称 or 小样本噪声） |
+| P2 | QA evaluation 改进（answer correctness 替代 evidence mention） |
+
+---
+
 ## 当前状态（2026-03-26 更新｜Section Enrichment + graph_full 权重调优）
 
 ### 本轮完成（相对 2026-03-24）
