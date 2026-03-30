@@ -690,3 +690,13 @@ python scripts/run_phase0_eval_ab.py \
    - `run_exp_c_qa_triangle.py` ✅
 4. **不调用 LLM 的脚本**（无需 logger）：
    - `build_embedding_edges.py`、`run_production_batch.py`（包装脚本）、`run_phase0_eval_ab.py`、`package_m2_levels.py`、`enrich_hub_candidates.py`、所有 `build_*` / `analyze_*` 脚本
+
+## M2 一键式经典检索评测（stdlib 扩展版）
+
+```bash
+bash scripts/run_m2_classic_eval_oneclick.sh data/multimodal_elements.json
+```
+
+- Query 输入固定为 M2：L1/L2/L3 pass 集合。
+- 输出：`data/m2/phase0_classic_eval_m2_oneclick.json`。
+- 如元素库不在默认路径，传入第一个参数覆盖。
