@@ -188,16 +188,20 @@ def score_lm(ix: Index, q: List[str]) -> List[float]:
     return out
 
 
-def score_prf(ix: Index, q: List[str]) -> List[float]:
+
+def score_prf(ix: Index, q: List[str], fb_docs: int, exp_terms: int) -> List[float]:
     base = score_bm25(ix, q)
-    seeds = sorted(range(ix.N), key=lambda i: base[i], reverse=True)[:5]
+    seeds = sorted(range(ix.N), key=lambda i: base[i], reverse=True)[:fb_docs]
+
     agg = defaultdict(float)
     qs = set(q)
     for i in seeds:
         for t, c in ix.tf[i].items():
             if t not in qs:
                 agg[t] += c * ix.idf(t)
-    exp = [t for t, _ in sorted(agg.items(), key=lambda kv: kv[1], reverse=True)[:8]]
+
+    exp = [t for t, _ in sorted(agg.items(), key=lambda kv: kv[1], reverse=True)[:exp_terms]]
+
     return score_bm25(ix, q + exp)
 
 
@@ -231,9 +235,18 @@ def minmax(x: Sequence[float]) -> List[float]:
     return [(v - lo) / (hi - lo) for v in x]
 
 
-def score_hits(ix: Index, q: List[str], g: Dict[str, Set[str]], eid2i: Dict[str, int]) -> List[float]:
+
+def score_hits(
+    ix: Index,
+    q: List[str],
+    g: Dict[str, Set[str]],
+    eid2i: Dict[str, int],
+    seeds_n: int,
+    alpha: float,
+) -> List[float]:
     bm = minmax(score_bm25(ix, q))
-    seeds = sorted(range(ix.N), key=lambda i: bm[i], reverse=True)[:100]
+    seeds = sorted(range(ix.N), key=lambda i: bm[i], reverse=True)[:seeds_n]
+
     active = set(ix.elems[i].eid for i in seeds)
     for n in list(active):
         active.update(g.get(n, set()))
@@ -253,7 +266,9 @@ def score_hits(ix: Index, q: List[str], g: Dict[str, Set[str]], eid2i: Dict[str,
     for eid, v in auth.items():
         i = eid2i.get(eid)
         if i is not None:
-            out[i] += 0.4 * v
+
+            out[i] += alpha * v
+
     return out
 
 
@@ -286,7 +301,22 @@ def ndcg10(retr: List[str], gains: Dict[str, float]) -> float:
     return dcg(retr) / z if z > 1e-12 else 0.0
 
 
-def run_method(method: str, qs: List[Dict[str, Any]], ix: Index, graph: Dict[str, Set[str]], top_k: int) -> Dict[str, Any]:
+
+def run_method(
+    method: str,
+    qs: List[Dict[str, Any]],
+    ix: Index,
+    graph: Dict[str, Set[str]],
+    top_k: int,
+    prf_fb_docs: int,
+    prf_exp_terms: int,
+    title_match_threshold: float,
+    title_boost: float,
+    hits_seeds: int,
+    hits_alpha: float,
+    rrf_k: int,
+) -> Dict[str, Any]:
+
     eid2i = {e.eid: i for i, e in enumerate(ix.elems)}
     sums = {1: 0.0, 3: 0.0, 5: 0.0, 10: 0.0, 20: 0.0}
     mrr = cov10 = n10 = 0.0
@@ -305,13 +335,19 @@ def run_method(method: str, qs: List[Dict[str, Any]], ix: Index, graph: Dict[str
         elif method == "lm_dirichlet":
             s = score_lm(ix, qt)
         elif method == "prf":
-            s = score_prf(ix, qt)
+
+            s = score_prf(ix, qt, fb_docs=prf_fb_docs, exp_terms=prf_exp_terms)
         elif method == "bm25_title_boost":
-            qn = " ".join(qt)
+            qset = set(qt)
             s = bm[:]
             for i, e in enumerate(ix.elems):
-                if qn and (qn in " ".join(tok(e.fields["caption"])) or qn in " ".join(tok(e.fields["enriched_title"]))):
-                    s[i] += 1.5
+                tset = set(tok(e.fields["caption"]) + tok(e.fields["enriched_title"]))
+                if not qset:
+                    continue
+                hit_ratio = len(qset & tset) / len(qset)
+                if hit_ratio >= title_match_threshold:
+                    s[i] += title_boost
+
         elif method == "proximity":
             docs = {ix.elems[eid2i[e]].doc_id for e in gt if e in eid2i}
             s = bm[:]
@@ -319,14 +355,18 @@ def run_method(method: str, qs: List[Dict[str, Any]], ix: Index, graph: Dict[str
                 if e.doc_id in docs:
                     s[i] += 0.35
         elif method == "hits":
-            s = score_hits(ix, qt, graph, eid2i)
+
+            s = score_hits(ix, qt, graph, eid2i, seeds_n=hits_seeds, alpha=hits_alpha)
         elif method == "rrf":
-            hits = score_hits(ix, qt, graph, eid2i)
+            hits = score_hits(ix, qt, graph, eid2i, seeds_n=hits_seeds, alpha=hits_alpha)
+
             br = sorted(range(ix.N), key=lambda i: bm[i], reverse=True)
             hr = sorted(range(ix.N), key=lambda i: hits[i], reverse=True)
             bp = {i: r for r, i in enumerate(br, 1)}
             hp = {i: r for r, i in enumerate(hr, 1)}
-            s = [1 / (60 + bp[i]) + 1 / (60 + hp[i]) for i in range(ix.N)]
+
+            s = [1 / (rrf_k + bp[i]) + 1 / (rrf_k + hp[i]) for i in range(ix.N)]
+
         else:
             raise ValueError(method)
 
@@ -362,10 +402,23 @@ def main() -> None:
     ap.add_argument("--hub-candidates", type=Path, default=Path("data/m2/hub_candidates_enriched_keyword_boost_full_2026-03-24.json"))
     ap.add_argument("--methods", nargs="+", default=METHODS)
     ap.add_argument("--top-k", type=int, default=20)
+
+    ap.add_argument("--prf-fb-docs", type=int, default=5)
+    ap.add_argument("--prf-exp-terms", type=int, default=8)
+    ap.add_argument("--title-match-threshold", type=float, default=0.6)
+    ap.add_argument("--title-boost", type=float, default=1.5)
+    ap.add_argument("--hits-seeds", type=int, default=100)
+    ap.add_argument("--hits-alpha", type=float, default=0.4)
+    ap.add_argument("--rrf-k", type=int, default=60)
+    ap.add_argument("--split-levels", action="store_true", help="Also evaluate q1/q2/q3 separately")
     ap.add_argument("--output", type=Path, default=Path("data/m2/classic_eval_m2.json"))
     args = ap.parse_args()
 
-    queries = dedupe(load_jsonl(args.q1) + load_jsonl(args.q2) + load_jsonl(args.q3))
+    q1_rows = load_jsonl(args.q1)
+    q2_rows = load_jsonl(args.q2)
+    q3_rows = load_jsonl(args.q3)
+    queries = dedupe(q1_rows + q2_rows + q3_rows)
+
     elems = load_elements(args.elements)
     ix = Index(elems)
     graph = build_graph(args.hub_candidates)
@@ -373,7 +426,42 @@ def main() -> None:
     metrics = {}
     for m in args.methods:
         print(f"[m2-eval] {m}")
-        metrics[m] = run_method(m, queries, ix, graph, args.top_k)
+
+        metrics[m] = run_method(
+            m,
+            queries,
+            ix,
+            graph,
+            args.top_k,
+            prf_fb_docs=args.prf_fb_docs,
+            prf_exp_terms=args.prf_exp_terms,
+            title_match_threshold=args.title_match_threshold,
+            title_boost=args.title_boost,
+            hits_seeds=args.hits_seeds,
+            hits_alpha=args.hits_alpha,
+            rrf_k=args.rrf_k,
+        )
+
+    level_metrics: Dict[str, Dict[str, Any]] = {}
+    if args.split_levels:
+        for level, rows in [("l2", q1_rows), ("l3", q2_rows), ("l1", q3_rows)]:
+            level_metrics[level] = {}
+            for m in args.methods:
+                level_metrics[level][m] = run_method(
+                    m,
+                    dedupe(rows),
+                    ix,
+                    graph,
+                    args.top_k,
+                    prf_fb_docs=args.prf_fb_docs,
+                    prf_exp_terms=args.prf_exp_terms,
+                    title_match_threshold=args.title_match_threshold,
+                    title_boost=args.title_boost,
+                    hits_seeds=args.hits_seeds,
+                    hits_alpha=args.hits_alpha,
+                    rrf_k=args.rrf_k,
+                )
+
 
     report = {
         "config": {
@@ -381,8 +469,19 @@ def main() -> None:
             "elements": str(args.elements), "hub_candidates": str(args.hub_candidates),
             "top_k": args.top_k, "methods": args.methods,
             "n_queries": len(queries), "n_elements": len(elems),
+
+            "prf_fb_docs": args.prf_fb_docs,
+            "prf_exp_terms": args.prf_exp_terms,
+            "title_match_threshold": args.title_match_threshold,
+            "title_boost": args.title_boost,
+            "hits_seeds": args.hits_seeds,
+            "hits_alpha": args.hits_alpha,
+            "rrf_k": args.rrf_k,
+            "split_levels": args.split_levels,
         },
         "metrics": metrics,
+        "level_metrics": level_metrics,
+
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
