@@ -84,6 +84,11 @@ class Chunk:
     chunk_id: str
     doc_id: str
     text: str
+    caption: str = ""
+    content: str = ""
+    context: str = ""
+    enriched_title: str = ""
+    enriched_content: str = ""
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -129,20 +134,31 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
     for doc_id, d in docs.items():
         elements = d.get("elements", {}) or {}
         for element_id, e in elements.items():
-            fields = [
-                _to_text(e.get("caption")),
-                _to_text(e.get("content")),
-                _to_text(e.get("context_before")),
-                _to_text(e.get("context_after")),
-                _to_text(e.get("enriched_title")),
-                _to_text(e.get("enriched_content")),
-            ]
+            caption = _to_text(e.get("caption"))
+            content = _to_text(e.get("content"))
+            context_before = _to_text(e.get("context_before"))
+            context_after = _to_text(e.get("context_after"))
+            context = " ".join([x for x in [context_before, context_after] if x]).strip()
+            enriched_title = _to_text(e.get("enriched_title"))
+            enriched_content = _to_text(e.get("enriched_content"))
+            fields = [caption, content, context, enriched_title, enriched_content]
             text = "\n".join([x for x in fields if x]).strip()
             if not text:
                 continue
             if len(text) > max_chars:
                 text = text[:max_chars]
-            chunks.append(Chunk(chunk_id=element_id, doc_id=str(doc_id), text=text))
+            chunks.append(
+                Chunk(
+                    chunk_id=element_id,
+                    doc_id=str(doc_id),
+                    text=text,
+                    caption=caption,
+                    content=content,
+                    context=context,
+                    enriched_title=enriched_title,
+                    enriched_content=enriched_content,
+                )
+            )
     return chunks
 
 
@@ -316,10 +332,48 @@ def query_element_ids(q: Dict[str, Any]) -> List[str]:
     return ids
 
 
+def query_element_gains(q: Dict[str, Any]) -> Dict[str, float]:
+    gains: Dict[str, float] = {}
+    for s in (q.get("required_evidence_spans") or []):
+        if not isinstance(s, dict):
+            continue
+        eid = str(s.get("element_id") or "").strip()
+        if not eid:
+            continue
+        et = str(s.get("evidence_type") or "").strip().lower()
+        g = 2.0 if et in {"observation", "result"} else 1.0
+        gains[eid] = max(gains.get(eid, 0.0), g)
+    return gains
+
+
 def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
     if not hit_ranks:
         return 0.0
     return 1.0 / min(hit_ranks)
+
+
+def coverage_at_k(retrieved_ids: List[str], gt_ids: Set[str], k: int) -> float:
+    if not gt_ids:
+        return 0.0
+    return len(set(retrieved_ids[:k]) & gt_ids) / len(gt_ids)
+
+
+def ndcg_at_k(retrieved_ids: List[str], gt_gains: Dict[str, float], k: int) -> float:
+    def _dcg(ids: List[str]) -> float:
+        s = 0.0
+        for rank, eid in enumerate(ids[:k], start=1):
+            g = gt_gains.get(eid, 0.0)
+            if g > 0:
+                s += g / math.log2(rank + 1)
+        return s
+
+    if not gt_gains:
+        return 0.0
+    ideal = [eid for eid, _ in sorted(gt_gains.items(), key=lambda kv: kv[1], reverse=True)]
+    idcg = _dcg(ideal)
+    if idcg <= 1e-9:
+        return 0.0
+    return _dcg(retrieved_ids) / idcg
 
 
 # ---------------------------------------------------------------------------
@@ -364,6 +418,10 @@ def evaluate_method(
     doc_to_chunk_idxs: Dict[str, List[int]],
     dense_matrix,
     vectorizer,
+    chunk_tokens: List[List[str]],
+    field_tokens: Dict[str, List[List[str]]],
+    collection_tf: Dict[str, int],
+    total_collection_terms: int,
     top_k: int,
     overlap_threshold: float,
     graph_alpha: float,
@@ -378,8 +436,10 @@ def evaluate_method(
     # Edge weights for weighted propagation
     element_adj_weights: Dict[str, Dict[str, float]] | None = None,
 ) -> Dict[str, Any]:
-    r_at_10 = 0.0
+    recall_sums = {1: 0.0, 3: 0.0, 5: 0.0, 10: 0.0, 20: 0.0}
     mrr = 0.0
+    coverage10 = 0.0
+    ndcg10 = 0.0
     per_query = []
     hub_bm25_overlap_rates: List[float] = []
 
@@ -402,11 +462,129 @@ def evaluate_method(
         # 2. Dense (TF-IDF cosine) baseline
         # ------------------------------------------------------------------
         elif method == "dense":
-            import numpy as np
-            from sklearn.preprocessing import normalize as _normalize
-            qv = _normalize(vectorizer.transform([qtxt]))
-            scores = (dense_matrix @ qv.T).toarray().reshape(-1)
-            scored = list(enumerate(scores.tolist()))
+            q_toks = tokenize(qtxt)
+            q_tf = Counter(q_toks)
+            q_weights: Dict[str, float] = {}
+            for t, tf in q_tf.items():
+                if t in bm25.df:
+                    q_weights[t] = (1.0 + math.log(tf)) * bm25.idf(t)
+            q_norm = math.sqrt(sum(v * v for v in q_weights.values())) or 1.0
+
+            scored = []
+            for i in range(n_chunks):
+                tf = Counter(chunk_tokens[i])
+                d_weights: Dict[str, float] = {}
+                for t, f in tf.items():
+                    d_weights[t] = (1.0 + math.log(f)) * bm25.idf(t)
+                d_norm = math.sqrt(sum(v * v for v in d_weights.values())) or 1.0
+                dot = 0.0
+                for t, qv in q_weights.items():
+                    dot += qv * d_weights.get(t, 0.0)
+                scored.append((i, dot / (q_norm * d_norm)))
+
+        # ------------------------------------------------------------------
+        # 2b. BM25F: field-weighted BM25
+        # ------------------------------------------------------------------
+        elif method == "bm25f":
+            q_toks = tokenize(qtxt)
+            qset = set(q_toks)
+            fweights = {
+                "caption": 3.0,
+                "enriched_content": 2.0,
+                "context": 0.5,
+                "content": 1.0,
+                "enriched_title": 2.0,
+            }
+            field_avgdl = {
+                k: sum(len(v) for v in vals) / max(1, len(vals))
+                for k, vals in field_tokens.items()
+            }
+            scored = []
+            for i in range(n_chunks):
+                s = 0.0
+                for fname, toks_by_chunk in field_tokens.items():
+                    tf = Counter(toks_by_chunk[i])
+                    dl = len(toks_by_chunk[i])
+                    avgdl = field_avgdl.get(fname, 1.0)
+                    fs = 0.0
+                    for t in qset:
+                        f = tf.get(t, 0)
+                        if f <= 0:
+                            continue
+                        idf = bm25.idf(t)
+                        denom = f + 1.2 * (1 - 0.75 + 0.75 * dl / max(avgdl, 1e-6))
+                        fs += idf * (f * 2.2) / max(denom, 1e-6)
+                    s += fweights.get(fname, 1.0) * fs
+                scored.append((i, s))
+
+        # ------------------------------------------------------------------
+        # 2c. LM Dirichlet smoothing
+        # ------------------------------------------------------------------
+        elif method == "lm_dirichlet":
+            q_toks = tokenize(qtxt)
+            mu = 2000.0
+            scored = []
+            for i in range(n_chunks):
+                tf = Counter(chunk_tokens[i])
+                dl = len(chunk_tokens[i])
+                s = 0.0
+                for t in q_toks:
+                    p_bg = collection_tf.get(t, 0) / max(1, total_collection_terms)
+                    p_bg = max(p_bg, 1e-12)
+                    s += math.log((tf.get(t, 0) + mu * p_bg) / (dl + mu))
+                scored.append((i, s))
+
+        # ------------------------------------------------------------------
+        # 2d. PRF Rocchio-like expansion
+        # ------------------------------------------------------------------
+        elif method == "prf":
+            q_toks = tokenize(qtxt)
+            base = [(i, bm25.score(q_toks, i)) for i in range(n_chunks)]
+            top_fb = [i for i, _ in sorted(base, key=lambda x: x[1], reverse=True)[:5]]
+            term_w: Dict[str, float] = defaultdict(float)
+            qset = set(q_toks)
+            for i in top_fb:
+                tf = Counter(chunk_tokens[i])
+                for t, f in tf.items():
+                    if t in qset:
+                        continue
+                    term_w[t] += f * bm25.idf(t)
+            expand = [t for t, _ in sorted(term_w.items(), key=lambda kv: kv[1], reverse=True)[:8]]
+            expanded_q = list(q_toks) + expand
+            scored = [(i, bm25.score(expanded_q, i)) for i in range(n_chunks)]
+
+        # ------------------------------------------------------------------
+        # 2e. BM25 + title exact-match boost
+        # ------------------------------------------------------------------
+        elif method == "bm25_title_boost":
+            q_toks = tokenize(qtxt)
+            qnorm = " ".join(q_toks)
+            scored = []
+            for i, c in enumerate(chunks):
+                s = bm25.score(q_toks, i)
+                cap = " ".join(tokenize(c.caption))
+                title = " ".join(tokenize(c.enriched_title))
+                if qnorm and (qnorm in cap or qnorm in title):
+                    s += 1.5
+                scored.append((i, s))
+
+        # ------------------------------------------------------------------
+        # 2f. BM25 + same-doc proximity boost (GT doc oracle analysis)
+        # ------------------------------------------------------------------
+        elif method == "proximity":
+            q_toks = tokenize(qtxt)
+            gt_eids = set(query_element_ids(q))
+            gt_docs = {
+                chunks[chunk_id_to_idx[eid]].doc_id
+                for eid in gt_eids
+                if eid in chunk_id_to_idx
+            }
+            scored = []
+            for i, c in enumerate(chunks):
+                s = bm25.score(q_toks, i)
+                if c.doc_id in gt_docs:
+                    s += 0.35
+                scored.append((i, s))
 
         # ------------------------------------------------------------------
         # 3. graph_hub_rerank: BM25 + static hub prior
@@ -569,6 +747,46 @@ def evaluate_method(
                 scored = [(i, norm_bm25[i] + ppr_boost[i]) for i in range(n_chunks)]
             else:
                 scored = [(i, norm_bm25[i]) for i in range(n_chunks)]
+
+        # ------------------------------------------------------------------
+        # 4c. HITS: authority score on active element graph
+        # ------------------------------------------------------------------
+        elif method == "hits":
+            q_toks = tokenize(qtxt)
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+            seeds = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)[:100]
+            active = set(chunks[i].chunk_id for i in seeds)
+            for nid in list(active):
+                active.update(element_adjacency.get(nid, set()))
+
+            if not active:
+                scored = [(i, norm_bm25[i]) for i in range(n_chunks)]
+            else:
+                hubs = {nid: 1.0 for nid in active}
+                auth = {nid: 1.0 for nid in active}
+                for _ in range(20):
+                    new_auth = {}
+                    for nid in active:
+                        new_auth[nid] = sum(
+                            hubs.get(nb, 0.0) for nb in element_adjacency.get(nid, set()) if nb in active
+                        )
+                    na = math.sqrt(sum(v * v for v in new_auth.values())) or 1.0
+                    for nid in new_auth:
+                        new_auth[nid] /= na
+
+                    new_hubs = {}
+                    for nid in active:
+                        new_hubs[nid] = sum(
+                            new_auth.get(nb, 0.0) for nb in element_adjacency.get(nid, set()) if nb in active
+                        )
+                    nh = math.sqrt(sum(v * v for v in new_hubs.values())) or 1.0
+                    for nid in new_hubs:
+                        new_hubs[nid] /= nh
+                    auth, hubs = new_auth, new_hubs
+
+                scored = []
+                for i, c in enumerate(chunks):
+                    scored.append((i, norm_bm25[i] + 0.4 * auth.get(c.chunk_id, 0.0)))
 
         # ------------------------------------------------------------------
         # 5. graph_citation_walk: BM25 + cross-doc citation relevance propagation
@@ -747,6 +965,71 @@ def evaluate_method(
                 )
                 scored.append((i, s))
 
+        # ------------------------------------------------------------------
+        # 7. rrf: Reciprocal Rank Fusion of bm25 and graph_full
+        # ------------------------------------------------------------------
+        elif method == "rrf":
+            q_toks = tokenize(qtxt)
+            bm25_raw = [bm25.score(q_toks, i) for i in range(n_chunks)]
+            bm_rank = sorted(range(n_chunks), key=lambda i: bm25_raw[i], reverse=True)
+
+            norm_bm25 = _bm25_norm_scores(bm25, q_toks, n_chunks)
+            ranked_bm25 = sorted(range(n_chunks), key=lambda i: norm_bm25[i], reverse=True)
+            rerank_n = max(top_k, min(graph_rerank_topn, n_chunks))
+            candidate_set = set(ranked_bm25[:rerank_n])
+            _hw = hub_weight if hub_weight is not None else graph_alpha
+            _nw = nprop_weight if nprop_weight is not None else 1.0
+            _cw = cite_weight if cite_weight is not None else citation_decay
+
+            hub_boost_arr = [0.0] * n_chunks
+            for i in candidate_set:
+                c = chunks[i]
+                hub_boost_arr[i] = element_hub_prior.get(c.chunk_id, doc_hub_prior.get(c.doc_id, 0.0))
+
+            neighbor_boost = [0.0] * n_chunks
+            for seed_idx in ranked_bm25[:rerank_n]:
+                seed_id = chunks[seed_idx].chunk_id
+                seed_score = norm_bm25[seed_idx]
+                seed_weights = (element_adj_weights or {}).get(seed_id, {})
+                for nbr_id in element_adjacency.get(seed_id, set()):
+                    edge_w = seed_weights.get(nbr_id, 1.0)
+                    nbr_idx = chunk_id_to_idx.get(nbr_id)
+                    if nbr_idx is not None:
+                        neighbor_boost[nbr_idx] += seed_score * neighbor_decay * edge_w
+
+            citation_boost_map: Dict[str, float] = defaultdict(float)
+            doc_score: Dict[str, float] = defaultdict(float)
+            for i, c in enumerate(chunks):
+                doc_score[c.doc_id] = max(doc_score[c.doc_id], norm_bm25[i])
+            for doc_id, dscore in doc_score.items():
+                if dscore < 0.3:
+                    continue
+                adj = citation_adjacency.get(doc_id, {})
+                for nbr_doc in adj.get("cites", set()):
+                    citation_boost_map[nbr_doc] += dscore * citation_decay
+                for nbr_doc in adj.get("cited_by", set()):
+                    citation_boost_map[nbr_doc] += dscore * citation_decay * 0.5
+            if citation_boost_map:
+                max_cb = max(citation_boost_map.values())
+                if max_cb > 1e-9:
+                    citation_boost_map = {k: v / max_cb for k, v in citation_boost_map.items()}
+
+            g_scores = []
+            for i, c in enumerate(chunks):
+                g_scores.append(
+                    norm_bm25[i]
+                    + _hw * hub_boost_arr[i]
+                    + _nw * neighbor_boost[i]
+                    + _cw * citation_boost_map.get(c.doc_id, 0.0)
+                )
+            g_rank = sorted(range(n_chunks), key=lambda i: g_scores[i], reverse=True)
+            bm_pos = {idx: r for r, idx in enumerate(bm_rank, start=1)}
+            g_pos = {idx: r for r, idx in enumerate(g_rank, start=1)}
+            scored = []
+            for i in range(n_chunks):
+                s = 1.0 / (60 + bm_pos[i]) + 1.0 / (60 + g_pos[i])
+                scored.append((i, s))
+
         else:
             raise ValueError(f"Unknown method: {method!r}")
 
@@ -773,10 +1056,14 @@ def evaluate_method(
 
         hit_ranks = eid_hit_ranks if gt_eids else hit_ranks_overlap
 
+        retrieved_ids = [chunks[ci].chunk_id for ci, _ in ranked]
         hit10 = 1.0 if hit_ranks else 0.0
         rr = reciprocal_rank_binary(hit_ranks)
-        r_at_10 += hit10
+        for k in (1, 3, 5, 10, 20):
+            recall_sums[k] += coverage_at_k(retrieved_ids, gt_eids, k)
         mrr += rr
+        coverage10 += coverage_at_k(retrieved_ids, gt_eids, 10)
+        ndcg10 += ndcg_at_k(retrieved_ids, query_element_gains(q), 10)
         per_query.append(
             {
                 "query_id": q.get("query_id"),
@@ -790,8 +1077,14 @@ def evaluate_method(
     n = max(1, len(per_query))
     result: Dict[str, Any] = {
         "n": len(per_query),
-        "recall_at_10": round(r_at_10 / n, 4),
+        "recall_at_1": round(recall_sums[1] / n, 4),
+        "recall_at_3": round(recall_sums[3] / n, 4),
+        "recall_at_5": round(recall_sums[5] / n, 4),
+        "recall_at_10": round(recall_sums[10] / n, 4),
+        "recall_at_20": round(recall_sums[20] / n, 4),
         "mrr": round(mrr / n, 4),
+        "coverage_at_10": round(coverage10 / n, 4),
+        "ndcg_at_10": round(ndcg10 / n, 4),
         "per_query": per_query,
     }
     if hub_bm25_overlap_rates:
@@ -917,14 +1210,18 @@ def main() -> None:
 
     chunk_tokens = [tokenize(c.text) for c in chunks]
     bm25 = BM25Lite(chunk_tokens)
-
-    # Dense baseline via TF-IDF cosine (deterministic, no remote dependency)
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.preprocessing import normalize
-
-    vectorizer = TfidfVectorizer(lowercase=True, token_pattern=r"(?u)\b\w+\b", min_df=1)
-    dense_matrix = vectorizer.fit_transform([c.text for c in chunks])
-    dense_matrix = normalize(dense_matrix)
+    field_tokens = {
+        "caption": [tokenize(c.caption) for c in chunks],
+        "content": [tokenize(c.content) for c in chunks],
+        "context": [tokenize(c.context) for c in chunks],
+        "enriched_title": [tokenize(c.enriched_title) for c in chunks],
+        "enriched_content": [tokenize(c.enriched_content) for c in chunks],
+    }
+    collection_tf: Dict[str, int] = defaultdict(int)
+    for toks in chunk_tokens:
+        for t in toks:
+            collection_tf[t] += 1
+    total_collection_terms = sum(collection_tf.values())
 
     # Diagnostic summary
     n_elem_adj = sum(len(v) for v in element_adjacency.values())
@@ -943,8 +1240,12 @@ def main() -> None:
         citation_adjacency=citation_adjacency,
         chunk_id_to_idx=chunk_id_to_idx,
         doc_to_chunk_idxs=doc_to_chunk_idxs,
-        dense_matrix=dense_matrix,
-        vectorizer=vectorizer,
+        dense_matrix=None,
+        vectorizer=None,
+        chunk_tokens=chunk_tokens,
+        field_tokens=field_tokens,
+        collection_tf=collection_tf,
+        total_collection_terms=total_collection_terms,
         top_k=args.top_k,
         overlap_threshold=args.overlap_threshold,
         graph_alpha=args.graph_alpha,
@@ -960,12 +1261,19 @@ def main() -> None:
 
     all_methods = [
         "bm25",
+        "bm25f",
+        "lm_dirichlet",
+        "prf",
+        "bm25_title_boost",
+        "proximity",
         "dense",
         "graph_hub_rerank",
         "graph_neighbor_prop",
         "graph_ppr",
+        "hits",
         "graph_citation_walk",
         "graph_full",
+        "rrf",
     ]
 
     metrics: Dict[str, Any] = {}
