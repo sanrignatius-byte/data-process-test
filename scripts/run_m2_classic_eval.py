@@ -110,17 +110,23 @@ class Index:
         return math.log(1.0 + (self.N - d + 0.5) / (d + 0.5))
 
 
+def _norm_eid(eid: str) -> str:
+    """Normalize element ID format differences (e.g. fig→figure, tbl→table)."""
+    eid = eid.replace("_fig_", "_figure_").replace("_tbl_", "_table_").replace("_eq_", "_formula_")
+    return eid
+
+
 def gt_ids(q: Dict[str, Any]) -> Set[str]:
     out = set()
     for s in (q.get("required_evidence_spans") or []):
         if isinstance(s, dict):
             eid = str(s.get("element_id") or "").strip()
             if eid:
-                out.add(eid)
+                out.add(_norm_eid(eid))
     for eid in (q.get("element_ids") or []):
         eid = str(eid).strip()
         if eid:
-            out.add(eid)
+            out.add(_norm_eid(eid))
     return out
 
 
@@ -129,7 +135,7 @@ def gt_gains(q: Dict[str, Any]) -> Dict[str, float]:
     for s in (q.get("required_evidence_spans") or []):
         if not isinstance(s, dict):
             continue
-        eid = str(s.get("element_id") or "").strip()
+        eid = _norm_eid(str(s.get("element_id") or "").strip())
         et = str(s.get("evidence_type") or "").lower().strip()
         if not eid:
             continue
