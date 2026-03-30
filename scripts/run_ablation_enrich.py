@@ -71,8 +71,24 @@ def save_jsonl(rows: List[dict], path: Path) -> None:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 
-def build_matched_subsets() -> tuple[Path, Path, Path, Path]:
-    """生成 raw/enriched 的 matched-pair 子集（只保留两者都有的 pair_id）。"""
+def build_matched_subsets(rebuild: bool = False) -> tuple[Path, Path, Path, Path]:
+    """生成 raw/enriched 的 matched-pair 子集（只保留两者都有的 pair_id）。
+
+    如果输出文件已存在且 rebuild=False，直接复用（避免 Windows 只读文件写入错误）。
+    用 --rebuild-matched 强制重新生成。
+    """
+    m_l2r = OUT_DIR / "l2_matched_raw.jsonl"
+    m_l2e = OUT_DIR / "l2_matched_enriched.jsonl"
+    m_l3r = OUT_DIR / "l3_matched_raw.jsonl"
+    m_l3e = OUT_DIR / "l3_matched_enriched.jsonl"
+
+    all_exist = all(p.exists() for p in [m_l2r, m_l2e, m_l3r, m_l3e])
+    if all_exist and not rebuild:
+        print(f"  Matched 子集已存在，直接复用（用 --rebuild-matched 强制重建）")
+        print(f"  L2 raw={_count(m_l2r)} enrich={_count(m_l2e)}  "
+              f"L3 raw={_count(m_l3r)} enrich={_count(m_l3e)}")
+        return m_l2r, m_l2e, m_l3r, m_l3e
+
     l2r = load_jsonl(RAW_L2)
     l2e = load_jsonl(ENRICH_L2)
     l3r = load_jsonl(RAW_L3)
@@ -83,11 +99,6 @@ def build_matched_subsets() -> tuple[Path, Path, Path, Path]:
 
     print(f"  Matched L2 pairs: {len(shared_l2)} / raw={len(l2r)} enrich={len(l2e)}")
     print(f"  Matched L3 pairs: {len(shared_l3)} / raw={len(l3r)} enrich={len(l3e)}")
-
-    m_l2r = OUT_DIR / "l2_matched_raw.jsonl"
-    m_l2e = OUT_DIR / "l2_matched_enriched.jsonl"
-    m_l3r = OUT_DIR / "l3_matched_raw.jsonl"
-    m_l3e = OUT_DIR / "l3_matched_enriched.jsonl"
 
     save_jsonl([r for r in l2r if r["pair_id"] in shared_l2], m_l2r)
     save_jsonl([r for r in l2e if r["pair_id"] in shared_l2], m_l2e)
@@ -227,6 +238,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="只打印命令不执行")
     parser.add_argument("--skip-existing", action="store_true",
                         help="如果输出文件已存在则跳过该条件")
+    parser.add_argument("--rebuild-matched", action="store_true",
+                        help="强制重新生成 matched-pair 子集（默认复用已有文件）")
     args = parser.parse_args()
 
     # --- 前置检查 ---
@@ -254,7 +267,7 @@ def main():
     need_matched = any(c in args.conditions for c in ["1A_matched", "2A_matched"])
     if need_matched:
         print("\n生成 matched-pair 子集...")
-        m_l2r, m_l2e, m_l3r, m_l3e = build_matched_subsets()
+        m_l2r, m_l2e, m_l3r, m_l3e = build_matched_subsets(rebuild=args.rebuild_matched)
     else:
         m_l2r = m_l2e = m_l3r = m_l3e = None
 
