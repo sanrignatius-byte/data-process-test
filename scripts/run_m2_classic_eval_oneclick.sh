@@ -15,22 +15,16 @@ if [[ ! -f "$ELEMENTS_PATH" ]]; then
   exit 1
 fi
 
-OUT="data/m2/phase0_classic_eval_m2_oneclick.json"
+OUT="data/m2/classic_eval_m2_oneclick.json"
 
-python scripts/run_phase0_eval_ab.py \
+python scripts/evaluate_evidence_localization_stdlib.py \
   --q1 data/m2/l2_production_2026-03-26_section_enriched_pass.jsonl \
   --q2 data/m2/l3_production_2026-03-26_section_enriched_pass.jsonl \
   --q3 data/m2/level1_single_element.jsonl \
   --elements "$ELEMENTS_PATH" \
-  --hubs data/latex_graph_hubs.json \
   --hub-candidates data/m2/hub_candidates_enriched_keyword_boost_full_2026-03-24.json \
   --citation-graph data/citation_graph.json \
   --top-k 20 \
-  --hub-weight 0.15 \
-  --nprop-weight 1.0 \
-  --cite-weight 0 \
-  --neighbor-decay 0.5 \
-  --graph-rerank-topn 100 \
   --output "$OUT"
 
 echo "[done] report written to: $OUT"
