@@ -46,35 +46,46 @@ _COMPANY_API_KEY: Optional[str] = None
 _COMPANY_API_URL: Optional[str] = None
 
 SYSTEM_PROMPT = (
-    "You are a research assistant helping to create multi-turn reading comprehension "
-    "conversations about academic papers. You generate natural, coherent dialogue turns "
-    "that build toward a complex reasoning question step by step."
+    "You are simulating a researcher reading an academic paper with a specific analytical goal. "
+    "You generate natural multi-turn conversations that build toward a complex inference step by step, "
+    "using pronouns and demonstratives to reference prior turns so each question is only answerable "
+    "in context."
 )
 
 # ---------------------------------------------------------------------------
-# Prompt templates
+# Prompt templates — Role-play Prompting (LLM-as-Simulator)
+# Improvement 1: user persona with a stated goal; forces state-tracking dependency
 # ---------------------------------------------------------------------------
 
-PROMPT_DECOMPOSE_L3 = """You are given a complex multi-hop question about academic papers, its answer, and a 3-step reasoning chain with evidence elements.
+PROMPT_DECOMPOSE_L3 = """You are simulating a PhD researcher who is reading a paper and progressively building toward a complex conclusion. The researcher's FINAL GOAL is to answer the question below, but they reach it by asking step-by-step questions — each turn depends on the previous turn's answer.
 
-Your task: Generate turns 1 and 2 of a 3-turn conversation session where turn 3 is the original question.
-
-ORIGINAL QUESTION (Turn 3 / Final):
+FINAL GOAL (Turn 3 — do NOT modify):
 {final_query}
 
-ORIGINAL ANSWER:
+FINAL ANSWER (oracle, for your reference only — do not reveal it early):
 {final_answer}
 
-REASONING STEPS:
+REASONING PATH (the logical steps the researcher will traverse):
 {steps_text}
 
-REQUIREMENTS:
-1. Turn 1 asks ONLY about the evidence in step 1. It must be answerable independently without any context.
-2. Turn 2 uses natural coreference to reference turn 1's answer (use "this pattern", "that finding", "this imbalance", etc.), then asks about the evidence in step 2 and how it relates.
-3. Turn 3 is EXACTLY the original question above (do not modify it).
-4. Each turn's answer must be a complete, self-contained sentence or short paragraph.
-5. Turns 1-2 answers must be fully supported by the cited evidence span only.
-6. Turn 2 query must reference the prior turn naturally (ellipsis or pronoun).
+YOUR TASK: Generate Turn 1 and Turn 2 for this researcher.
+
+STRICT RULES:
+1. Turn 1: A focused question about Step 1's evidence. It must be answerable WITHOUT any prior context.
+   — Do NOT mention the final goal or Step 2/3 evidence.
+   — The answer should be a single factual observation from that evidence.
+
+2. Turn 2: The researcher has now seen Turn 1's answer. They use it as a stepping stone.
+   — MUST use a coreference expression (e.g. "this imbalance", "that pattern", "given what you found", "does this extend to...") to reference Turn 1's answer.
+   — Asks about Step 2's evidence in light of Turn 1's finding.
+   — If isolated from Turn 1's answer, Turn 2 must be UNANSWERABLE or ambiguous.
+
+3. Turn 3 = EXACTLY the original final goal above.
+
+INTENT SHIFT TYPE for this session: {intent_shift}
+— "drill_down": Turn 2 zooms deeper into a specific detail from Turn 1's answer.
+— "bridging": Turn 2 connects Turn 1's local finding to a broader mechanism.
+— "contrastive": Turn 2 asks whether Turn 1's pattern holds or inverts in different evidence.
 
 OUTPUT FORMAT (JSON only, no extra text):
 {{
@@ -85,37 +96,48 @@ OUTPUT FORMAT (JSON only, no extra text):
   "turn2_query": "...",
   "turn2_answer": "...",
   "turn2_evidence_element_id": "{step2_eid}",
-  "turn2_coreference_type": "pronoun_reference|demonstrative_reference|ellipsis"
+  "turn2_coreference_type": "pronoun_reference|demonstrative_reference|ellipsis",
+  "turn2_context_dependency": "high|medium"
 }}"""
 
-PROMPT_DECOMPOSE_L2 = """You are given a dual-evidence question about academic papers, its answer, and two evidence spans.
+PROMPT_DECOMPOSE_L2 = """You are simulating a PhD researcher who is reading a paper with a specific analytical goal. They ask a preliminary question first, then — using what they learned — ask the full synthesis question.
 
-Your task: Generate turn 1 of a 2-turn conversation session where turn 2 is the original question.
-
-ORIGINAL QUESTION (Turn 2 / Final):
+FINAL GOAL (Turn 2 — do NOT modify):
 {final_query}
 
-ORIGINAL ANSWER:
+FINAL ANSWER (oracle, for your reference only):
 {final_answer}
 
-EVIDENCE SPAN 1 ({eid1}):
+EVIDENCE SPAN 1 [{eid1}]:
 {span1}
 
-EVIDENCE SPAN 2 ({eid2}):
+EVIDENCE SPAN 2 [{eid2}]:
 {span2}
 
-REQUIREMENTS:
-1. Turn 1 asks ONLY about evidence span 1. It must be a specific, focused question answerable from that span alone.
-2. Turn 2 is EXACTLY the original question above (do not modify it).
-3. Turn 1 answer must be a complete, self-contained sentence fully supported by span 1.
-4. Turn 1 query must NOT leak the answer to turn 2.
+YOUR TASK: Generate Turn 1 for this researcher.
+
+STRICT RULES:
+1. Turn 1: A focused question about Evidence Span 1 only.
+   — Must be answerable from Span 1 alone, without knowing the final goal.
+   — Must NOT reveal or anticipate the answer to Turn 2.
+   — Keep it to a single factual or observational question.
+
+2. Turn 2 = EXACTLY the original final goal above (do not modify).
+
+3. If Turn 1's query is extracted and given to a search engine alone, it should retrieve Span 1,
+   but NOT directly answer the final goal.
+
+INTENT SHIFT TYPE: {intent_shift}
+— "drill_down": Turn 1 zooms into a specific detail of Span 1 that becomes a premise for Turn 2.
+— "bridging": Turn 1 establishes a local fact; Turn 2 applies it to a larger cross-document claim.
 
 OUTPUT FORMAT (JSON only, no extra text):
 {{
   "turn1_query": "...",
   "turn1_answer": "...",
   "turn1_evidence_element_id": "{eid1}",
-  "turn1_coreference_type": "none"
+  "turn1_coreference_type": "none",
+  "turn1_context_dependency": "none"
 }}"""
 
 
@@ -238,6 +260,50 @@ def extract_json(text: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Context-Isolation score (Improvement 2)
+# Proxy for the "Evaluation Pitfall" test: an intermediate turn q_t should be
+# UNANSWERABLE if isolated from session history.
+# We use Jaccard overlap between q_t tokens and the *final* query tokens as
+# a proxy: high overlap → q_t is independently solvable (bad); low → context-dependent (good).
+# Threshold: if Jaccard(q_t, q_final) > 0.35, the turn is likely independently solvable.
+# ---------------------------------------------------------------------------
+
+def _tokenize(text: str) -> set:
+    return set(re.findall(r"[a-z][a-z0-9_-]{1,}", (text or "").lower()))
+
+
+def context_isolation_score(turn_query: str, final_query: str, evidence_span: str) -> float:
+    """Return a context-dependency score in [0, 1].
+    Score close to 1 = turn is context-dependent (good).
+    Score close to 0 = turn is independently solvable from evidence alone (bad).
+
+    Logic:
+    - High Jaccard with the final query → turn leaks final intent → low dependency score
+    - High Jaccard with the evidence span → turn is directly grounded → low dependency score
+    - Low overlap with both → turn requires prior context → high dependency score
+    """
+    turn_toks = _tokenize(turn_query)
+    if not turn_toks:
+        return 0.0
+
+    final_toks = _tokenize(final_query)
+    evidence_toks = _tokenize(evidence_span)
+
+    def jaccard(a: set, b: set) -> float:
+        if not a or not b:
+            return 0.0
+        return len(a & b) / len(a | b)
+
+    leak_to_final = jaccard(turn_toks, final_toks)
+    grounded_in_evidence = jaccard(turn_toks, evidence_toks)
+
+    # Dependency score: penalise if the turn by itself could answer the final query,
+    # or if the turn's tokens match the evidence so closely it's independently retrievable
+    dependency = 1.0 - max(leak_to_final * 0.6, grounded_in_evidence * 0.4)
+    return round(max(0.0, min(1.0, dependency)), 3)
+
+
+# ---------------------------------------------------------------------------
 # QC
 # ---------------------------------------------------------------------------
 
@@ -248,6 +314,11 @@ def qc_session(session: dict) -> Tuple[bool, List[str]]:
         issues.append("no_turns")
         return False, issues
 
+    final_query = turns[-1].get("query", "") if turns else ""
+    final_evidence_span = " ".join(
+        str(s.get("span", "")) for s in (session.get("source_evidence_spans") or [])
+    )
+
     for t in turns[:-1]:  # all but final turn
         q = t.get("query", "")
         a = t.get("answer", "")
@@ -255,8 +326,15 @@ def qc_session(session: dict) -> Tuple[bool, List[str]]:
             issues.append(f"turn{t['turn_id']}_query_too_short")
         if len(a.split()) < 5:
             issues.append(f"turn{t['turn_id']}_answer_too_short")
-        if not t.get("evidence_element_id"):
+        if not t.get("evidence_element_ids"):
             issues.append(f"turn{t['turn_id']}_missing_evidence_id")
+
+        # Context-Isolation check (Improvement 2)
+        cis = context_isolation_score(q, final_query, final_evidence_span)
+        t["context_isolation_score"] = cis
+        if cis < 0.35:
+            # Turn is too close to the final query — independently solvable
+            issues.append(f"turn{t['turn_id']}_context_isolation_fail(score={cis})")
 
     final = turns[-1]
     if not final.get("query"):
@@ -267,7 +345,7 @@ def qc_session(session: dict) -> Tuple[bool, List[str]]:
         q_low = (t.get("query") or "").lower()
         coreference_words = ["this", "that", "these", "those", "such", "the above",
                              "the finding", "the pattern", "the result", "the imbalance",
-                             "it ", "they ", "its "]
+                             "it ", "they ", "its ", "given ", "building on", "based on"]
         if not any(w in q_low for w in coreference_words):
             issues.append(f"turn{t['turn_id']}_missing_coreference")
 
@@ -288,12 +366,22 @@ def build_steps_text(steps: List[dict]) -> str:
     return "\n".join(lines)
 
 
+# Improvement 3: intent shift cycling — rotate across session types for diversity
+_INTENT_SHIFTS_L3 = ["drill_down", "bridging", "contrastive"]
+_INTENT_SHIFTS_L2 = ["drill_down", "bridging"]
+
+
+def _pick_intent_shift(shifts: List[str], idx: int) -> str:
+    return shifts[idx % len(shifts)]
+
+
 def generate_l3_session(
     q: dict,
     client: Any,
     model: str,
     provider: str,
     delay: float,
+    session_idx: int = 0,
 ) -> Tuple[Optional[dict], int, int]:
     steps = q.get("reasoning_steps") or []
     if len(steps) < 3:
@@ -301,12 +389,15 @@ def generate_l3_session(
 
     step1 = steps[0]
     step2 = steps[1]
+    intent_shift = _pick_intent_shift(_INTENT_SHIFTS_L3, session_idx)
+
     prompt = PROMPT_DECOMPOSE_L3.format(
         final_query=q["query"],
         final_answer=q["answer"],
         steps_text=build_steps_text(steps),
         step1_eid=step1.get("evidence_element_id", ""),
         step2_eid=step2.get("evidence_element_id", ""),
+        intent_shift=intent_shift,
     )
 
     text, in_tok, out_tok = call_api(client, model, prompt, provider)
@@ -331,6 +422,7 @@ def generate_l3_session(
             "answer": parsed.get("turn2_answer", ""),
             "evidence_element_ids": [parsed.get("turn2_evidence_element_id", step2.get("evidence_element_id", ""))],
             "coreference_type": parsed.get("turn2_coreference_type", "pronoun_reference"),
+            "context_dependency": parsed.get("turn2_context_dependency", "high"),
             "depends_on_turns": [1],
         },
         {
@@ -343,16 +435,23 @@ def generate_l3_session(
         },
     ]
 
+    # Provide source evidence spans so QC can compute context_isolation_score
+    source_spans = q.get("required_evidence_spans") or []
+
     session = {
         "session_id": f"mt_{q.get('query_id', q.get('pair_id', ''))}",
         "source_query_id": q.get("query_id", ""),
         "source_pair_id": q.get("pair_id", ""),
         "source_level": "l3",
+        "intent_shift_type": intent_shift,
         "total_turns": 3,
         "turns": turns,
+        "source_evidence_spans": source_spans,
     }
     qc_pass, qc_issues = qc_session(session)
     session["qc"] = {"pass": qc_pass, "issues": qc_issues}
+    # Remove internal field from final output
+    session.pop("source_evidence_spans", None)
     return session, in_tok, out_tok
 
 
@@ -362,12 +461,15 @@ def generate_l2_session(
     model: str,
     provider: str,
     delay: float,
+    session_idx: int = 0,
 ) -> Tuple[Optional[dict], int, int]:
     spans = q.get("required_evidence_spans") or []
     if len(spans) < 2:
         return None, 0, 0
 
     s1, s2 = spans[0], spans[1]
+    intent_shift = _pick_intent_shift(_INTENT_SHIFTS_L2, session_idx)
+
     prompt = PROMPT_DECOMPOSE_L2.format(
         final_query=q["query"],
         final_answer=q["answer"],
@@ -375,6 +477,7 @@ def generate_l2_session(
         span1=s1.get("span", s1.get("content", "")),
         eid2=s2.get("element_id", ""),
         span2=s2.get("span", s2.get("content", "")),
+        intent_shift=intent_shift,
     )
 
     text, in_tok, out_tok = call_api(client, model, prompt, provider)
@@ -408,11 +511,14 @@ def generate_l2_session(
         "source_query_id": q.get("query_id", ""),
         "source_pair_id": q.get("pair_id", ""),
         "source_level": "l2",
+        "intent_shift_type": intent_shift,
         "total_turns": 2,
         "turns": turns,
+        "source_evidence_spans": spans,
     }
     qc_pass, qc_issues = qc_session(session)
     session["qc"] = {"pass": qc_pass, "issues": qc_issues}
+    session.pop("source_evidence_spans", None)
     return session, in_tok, out_tok
 
 
@@ -523,12 +629,13 @@ def main():
                     steps_text=build_steps_text(steps),
                     step1_eid=steps[0].get("evidence_element_id", ""),
                     step2_eid=steps[1].get("evidence_element_id", ""),
+                    intent_shift=_pick_intent_shift(_INTENT_SHIFTS_L3, i),
                 )
-                print(f"\n--- L3 [{i}] {q.get('query_id', '')} ---")
+                print(f"\n--- L3 [{i}] {q.get('query_id', '')} ({_pick_intent_shift(_INTENT_SHIFTS_L3, i)}) ---")
                 print(prompt[:500], "...")
             continue
 
-        session, in_tok, out_tok = generate_l3_session(q, client, args.model, args.provider, args.delay)
+        session, in_tok, out_tok = generate_l3_session(q, client, args.model, args.provider, args.delay, session_idx=i)
         total_in_tok += in_tok
         total_out_tok += out_tok
 
@@ -559,12 +666,13 @@ def main():
                     span1=s1.get("span", ""),
                     eid2=s2.get("element_id", ""),
                     span2=s2.get("span", ""),
+                    intent_shift=_pick_intent_shift(_INTENT_SHIFTS_L2, i),
                 )
-                print(f"\n--- L2 [{i}] {q.get('query_id', '')} ---")
+                print(f"\n--- L2 [{i}] {q.get('query_id', '')} ({_pick_intent_shift(_INTENT_SHIFTS_L2, i)}) ---")
                 print(prompt[:400], "...")
             continue
 
-        session, in_tok, out_tok = generate_l2_session(q, client, args.model, args.provider, args.delay)
+        session, in_tok, out_tok = generate_l2_session(q, client, args.model, args.provider, args.delay, session_idx=i)
         total_in_tok += in_tok
         total_out_tok += out_tok
 
