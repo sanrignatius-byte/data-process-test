@@ -297,16 +297,7 @@ def main() -> None:
     ap.add_argument("--flush-every", type=int, default=10,
                      help="Flush partial results to disk every N sections (default: 10)")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument(
-        "--api-log-dir",
-        default="",
-        help="Directory for local_api_logger call logs (default: LOCAL_API_LOG_DIR env var or 'api_logs')",
-    )
     args = ap.parse_args()
-
-    if args.api_log_dir:
-        from local_api_logger import set_log_dir
-        set_log_dir(args.api_log_dir)
 
     if args.model is None:
         if args.provider == "anthropic":

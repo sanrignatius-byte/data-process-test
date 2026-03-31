@@ -3488,16 +3488,6 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
     ap.add_argument(
-        "--api-log-dir",
-        default="",
-        help=(
-            "Directory for local_api_logger call logs (default: value of "
-            "LOCAL_API_LOG_DIR env var, or 'api_logs'). "
-            "Set this to an absolute path to centralise logs on the cluster, e.g. "
-            "/projects/myyyx1/data-process-test/api_log"
-        ),
-    )
-    ap.add_argument(
         "--query-style",
         choices=["academic", "real_user", "mixed"],
         default="academic",
@@ -3550,10 +3540,6 @@ def main() -> None:
         ),
     )
     args = ap.parse_args()
-
-    if args.api_log_dir:
-        from local_api_logger import set_log_dir
-        set_log_dir(args.api_log_dir)
 
     # Resolve model default per provider
     if args.model is None:

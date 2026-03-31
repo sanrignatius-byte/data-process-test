@@ -657,17 +657,8 @@ def main():
     # Provider-specific args
     ap.add_argument("--company-api-key", default=None)
     ap.add_argument("--company-api-url", default=None)
-    ap.add_argument(
-        "--api-log-dir",
-        default="",
-        help="Directory for local_api_logger call logs (default: LOCAL_API_LOG_DIR env var or 'api_logs')",
-    )
 
     args = ap.parse_args()
-
-    if args.api_log_dir:
-        from local_api_logger import set_log_dir
-        set_log_dir(args.api_log_dir)
 
     # Resolve model
     if args.model is None:
