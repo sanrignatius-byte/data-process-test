@@ -4,8 +4,6 @@
 """
 
 import json
-import re
-import argparse
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -34,9 +32,10 @@ class LogViewer:
         - {name}_YYYYMM
         - 其他格式则返回原 stem
         """
-        m = re.match(r"^(?P<name>.+)_(?:\d{4}-\d{2}|\d{6})$", stem)
+        import re
+        m = re.search(r"_(?:\d{4}-\d{2}|\d{6})$", stem)
         if m:
-            return m.group("name")
+            return stem[:m.start()]
         return stem
 
     def get_stats_summary(self, model: Optional[str] = None, month: Optional[str] = None) -> Dict[str, Any]:
@@ -402,7 +401,8 @@ def export_to_csv(output_file: str, model: Optional[str] = None, month: Optional
     _default_viewer.export_to_csv(output_file, model, month)
 
 
-def _build_cli_parser() -> argparse.ArgumentParser:
+def _build_cli_parser():
+    import argparse
     parser = argparse.ArgumentParser(description="Local API Logger 统计查看工具")
     parser.add_argument("--log-dir", default="api_logs", help="日志根目录，默认 api_logs")
     parser.add_argument("--month", default=None, help="按月份过滤，例如 2026-03")
@@ -419,7 +419,7 @@ def main():
     viewer = LogViewer(log_dir=args.log_dir)
     viewer.print_stats_summary(model=args.model, month=args.month)
 
-    if args.recent and args.recent > 0:
+    if args.recent > 0:
         viewer.print_recent_calls(model=args.model, limit=args.recent)
 
     if args.export_csv:
