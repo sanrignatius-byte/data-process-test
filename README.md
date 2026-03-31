@@ -61,6 +61,34 @@ export OPENAI_API_KEY="your-api-key"
 
 ## 使用方法
 
+### 本地查看 `local_api_logger` 月度用量（2026-03 示例）
+
+如果你已经有本地日志目录（例如 Windows 路径 `D:\Code_store\data-process-test\api_logs`），可以直接用 `viewer.py` 统计某个月的 token 用量：
+
+```bash
+python local_api_logger/viewer.py \
+  --log-dir "D:\Code_store\data-process-test\api_logs" \
+  --month 2026-03
+```
+
+按模型过滤（例如 `stats/claude-sonnet-4-20250514/*.jsonl`）：
+
+```bash
+python local_api_logger/viewer.py \
+  --log-dir "D:\Code_store\data-process-test\api_logs" \
+  --month 2026-03 \
+  --model "claude-sonnet-4-20250514"
+```
+
+导出 2026-03 明细为 CSV：
+
+```bash
+python local_api_logger/viewer.py \
+  --log-dir "D:\Code_store\data-process-test\api_logs" \
+  --month 2026-03 \
+  --export-csv "D:\Code_store\data-process-test\api_logs\usage_2026-03.csv"
+```
+
 ### 方式1：M4跨文档Query生成（推荐）
 
 ```bash
