@@ -66,6 +66,21 @@ def collect_stats(log_dir: str, model: Optional[str] = None, month: Optional[str
 
     stats_path = Path(log_dir) / "stats"
     if not stats_path.exists():
+        # Give the user an actionable hint instead of silently returning 0s
+        print(f"[警告] 统计目录不存在: {stats_path}", flush=True)
+        # Suggest common alternative spellings (api_log <-> api_logs)
+        alt: Optional[Path] = None
+        base = Path(log_dir)
+        if base.name == "api_log":
+            alt = base.parent / "api_logs"
+        elif base.name == "api_logs":
+            alt = base.parent / "api_log"
+        if alt is not None and (alt / "stats").exists():
+            print(f"[提示] 找到替代目录: {alt / 'stats'}  请改用 --log-dir \"{alt}\"", flush=True)
+        else:
+            print(f"[提示] local_api_logger 默认把日志写到 <脚本运行时的工作目录>/api_logs/stats/", flush=True)
+            print(f"       请用绝对路径指定 --log-dir，例如：", flush=True)
+            print(f"       --log-dir \"/projects/myyyx1/data-process-test/api_logs\"", flush=True)
         return stats
 
     for model_dir in stats_path.iterdir():
@@ -254,6 +269,7 @@ def main() -> None:
             print_summary(stats=stats, model=args.model, month=args.month)
         text = buffer.getvalue()
         print(text, end="")
+        Path(args.output_txt).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output_txt, "w", encoding="utf-8") as f:
             f.write(text)
         print(f"\n摘要已保存到: {args.output_txt}")

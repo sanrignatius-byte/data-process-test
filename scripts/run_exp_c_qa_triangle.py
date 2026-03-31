@@ -381,7 +381,16 @@ def main() -> None:
     ap.add_argument("--delay", type=float, default=0.5)
     ap.add_argument("--dry-run", action="store_true", help="Skip LLM calls, just measure retrieval coverage")
     ap.add_argument("--output", default=str(M2_DIR / "exp_c_qa_triangle.json"))
+    ap.add_argument(
+        "--api-log-dir",
+        default="",
+        help="Directory for local_api_logger call logs (default: LOCAL_API_LOG_DIR env var or 'api_logs')",
+    )
     args = ap.parse_args()
+
+    if args.api_log_dir:
+        from local_api_logger import set_log_dir
+        set_log_dir(args.api_log_dir)
 
     if args.model is None:
         args.model = "gpt-5.4" if args.provider == "company" else "gpt-4o"

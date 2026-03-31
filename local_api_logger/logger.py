@@ -14,13 +14,16 @@ import threading
 class APILogger:
     """轻量级 API 调用日志记录器"""
 
-    def __init__(self, log_dir: str = "api_logs"):
+    def __init__(self, log_dir: str = None):
         """
         初始化日志记录器
 
         Args:
-            log_dir: 日志存储目录，默认为当前目录下的 api_logs
+            log_dir: 日志存储目录。若为 None，优先读取环境变量
+                     LOCAL_API_LOG_DIR，否则默认为当前目录下的 api_logs。
         """
+        if log_dir is None:
+            log_dir = os.environ.get("LOCAL_API_LOG_DIR", "api_logs")
         self.log_dir = Path(log_dir)
         self._lock = threading.Lock()  # 线程安全
 
