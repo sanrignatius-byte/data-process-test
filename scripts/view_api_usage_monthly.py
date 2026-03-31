@@ -10,7 +10,9 @@ import argparse
 import csv
 import json
 import re
+import io
 from collections import defaultdict
+from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -84,7 +86,7 @@ def collect_stats(log_dir: str, model: Optional[str] = None, month: Optional[str
                 for line in f:
                     try:
                         entry = json.loads(line.strip())
-                    except Exception:
+                    except json.JSONDecodeError:
                         continue
 
                     prompt_tokens = entry.get("prompt_tokens", 0)
@@ -129,7 +131,7 @@ def collect_stats(log_dir: str, model: Optional[str] = None, month: Optional[str
 
 def print_summary(stats: Dict[str, Any], model: Optional[str], month: Optional[str]) -> None:
     print("=" * 80)
-    print("API 调用统计摘要（monthly script）")
+    print("API 调用统计摘要")
     if model:
         print(f"模型: {model}")
     if month:
@@ -166,7 +168,7 @@ def print_summary(stats: Dict[str, Any], model: Optional[str], month: Optional[s
             print(f"  总 Tokens: {model_stats['total_tokens']:,}")
 
     if stats["by_name"]:
-        print("\n按任务/用户统计:")
+        print("\n按用户统计:")
         print("-" * 80)
         for name, name_stats in stats["by_name"].items():
             name_calls = name_stats["calls"]
@@ -215,7 +217,7 @@ def export_csv(log_dir: str, output_file: str, model: Optional[str], month: Opti
                     for line in f:
                         try:
                             entry = json.loads(line.strip())
-                        except Exception:
+                        except json.JSONDecodeError:
                             continue
                         writer.writerow(
                             [
@@ -239,17 +241,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--month", default=None, help="按月份过滤，例如 2026-03")
     parser.add_argument("--model", default=None, help="按模型过滤，例如 claude-sonnet-4-20250514")
     parser.add_argument("--export-csv", default=None, help="导出筛选结果到 CSV 文件路径")
+    parser.add_argument("--output-txt", default=None, help="将摘要输出保存到 txt 文件")
     return parser
 
 
 def main() -> None:
     args = build_parser().parse_args()
     stats = collect_stats(log_dir=args.log_dir, model=args.model, month=args.month)
-    print_summary(stats=stats, model=args.model, month=args.month)
+    if args.output_txt:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            print_summary(stats=stats, model=args.model, month=args.month)
+        text = buffer.getvalue()
+        print(text, end="")
+        with open(args.output_txt, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"\n摘要已保存到: {args.output_txt}")
+    else:
+        print_summary(stats=stats, model=args.model, month=args.month)
     if args.export_csv:
         export_csv(log_dir=args.log_dir, output_file=args.export_csv, model=args.model, month=args.month)
 
 
 if __name__ == "__main__":
     main()
-

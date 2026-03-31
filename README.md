@@ -89,6 +89,15 @@ python scripts/view_api_usage_monthly.py \
   --export-csv "D:\Code_store\data-process-test\api_logs\usage_2026-03.csv"
 ```
 
+按你给的 `LogViewer` 风格输出并保存为 TXT：
+
+```bash
+python scripts/view_api_usage_monthly.py \
+  --log-dir "D:\Code_store\data-process-test\api_logs" \
+  --month 2026-03 \
+  --output-txt "D:\Code_store\data-process-test\api_logs\usage_2026-03.txt"
+```
+
 ### 方式1：M4跨文档Query生成（推荐）
 
 ```bash
