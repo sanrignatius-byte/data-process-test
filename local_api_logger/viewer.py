@@ -4,6 +4,8 @@
 """
 
 import json
+import re
+import argparse
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -21,6 +23,21 @@ class LogViewer:
             log_dir: 日志目录
         """
         self.log_dir = Path(log_dir)
+
+    @staticmethod
+    def _extract_user_from_stem(stem: str) -> str:
+        """
+        从统计文件名提取 user/task 名称。
+
+        期望格式：
+        - {name}_YYYY-MM
+        - {name}_YYYYMM
+        - 其他格式则返回原 stem
+        """
+        m = re.match(r"^(?P<name>.+)_(?:\d{4}-\d{2}|\d{6})$", stem)
+        if m:
+            return m.group("name")
+        return stem
 
     def get_stats_summary(self, model: Optional[str] = None, month: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -82,7 +99,7 @@ class LogViewer:
                     continue
 
                 # 从文件名提取用户名
-                user = stats_file.stem.rsplit('_', 2)[0]
+                user = self._extract_user_from_stem(stats_file.stem)
 
                 # 读取统计数据
                 with open(stats_file, 'r', encoding='utf-8') as f:
@@ -339,7 +356,7 @@ class LogViewer:
                     if month and month not in stats_file.stem:
                         continue
 
-                    user = stats_file.stem.rsplit('_', 2)[0]
+                    user = self._extract_user_from_stem(stats_file.stem)
 
                     with open(stats_file, 'r', encoding='utf-8') as f:
                         for line in f:
@@ -383,3 +400,31 @@ def print_recent_calls(model: Optional[str] = None, limit: int = 5):
 def export_to_csv(output_file: str, model: Optional[str] = None, month: Optional[str] = None):
     """使用默认查看器导出数据"""
     _default_viewer.export_to_csv(output_file, model, month)
+
+
+def _build_cli_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Local API Logger 统计查看工具")
+    parser.add_argument("--log-dir", default="api_logs", help="日志根目录，默认 api_logs")
+    parser.add_argument("--month", default=None, help="按月份过滤，例如 2026-03")
+    parser.add_argument("--model", default=None, help="按模型过滤，例如 claude-sonnet-4-20250514")
+    parser.add_argument("--recent", type=int, default=0, help="显示最近 N 次调用（可选）")
+    parser.add_argument("--export-csv", default=None, help="导出筛选结果到 CSV 文件路径")
+    return parser
+
+
+def main():
+    parser = _build_cli_parser()
+    args = parser.parse_args()
+
+    viewer = LogViewer(log_dir=args.log_dir)
+    viewer.print_stats_summary(model=args.model, month=args.month)
+
+    if args.recent and args.recent > 0:
+        viewer.print_recent_calls(model=args.model, limit=args.recent)
+
+    if args.export_csv:
+        viewer.export_to_csv(output_file=args.export_csv, model=args.model, month=args.month)
+
+
+if __name__ == "__main__":
+    main()
