@@ -516,7 +516,7 @@ def main() -> None:
     cat_header = f"{'Method':<35} " + " ".join(f"{c:>22}" for c in cats)
     print(cat_header)
     for name, r in results.items():
-        cat_metrics: Dict[str, Tuple[float, float, int]] = {}
+        cat_metrics: Dict[str, List[float]] = {}
         for pq in r["per_query"]:
             cat = pq.get("category", "")
             if cat not in cat_metrics:
