@@ -41,12 +41,6 @@ from src.utils.text_utils import (
 from src.models import Node, Edge
 
 
-LABEL_TO_MODALITY = {
-    "figure": "figure",
-    "table": "table",
-    "equation": "equation",
-    "formula": "equation",
-}
 ELEMENT_MODALITIES = {"figure", "table", "equation"}
 MINERU_ELEMENT_TYPES = {"figure", "table", "formula"}
 
