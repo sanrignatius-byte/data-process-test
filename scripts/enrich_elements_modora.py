@@ -568,6 +568,7 @@ def process_elements(
 
             parsed = extract_json(text)
             if parsed is None:
+                # Show first 200 chars of LLM output for debugging prompt/format issues
                 snippet = (text or "")[:200].replace("\n", " ")
                 print(f"  [{idx+1}/{total}] {eid} — PARSE FAIL | raw: {snippet!r}")
                 failed += 1

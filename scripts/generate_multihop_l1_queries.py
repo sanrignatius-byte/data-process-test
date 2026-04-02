@@ -1675,6 +1675,8 @@ def has_premise_answer_contradiction(query: str, answer: str) -> bool:
 
 
 # ── Shared math-region extraction (used by both prompt builder and QC) ──
+# Structural/formatting commands that don't represent mathematical concepts
+# — excluded when extracting formula variables for prompt or QC.
 _LATEX_IGNORE_CMDS = frozenset({
     "begin", "end", "left", "right", "frac", "cdot", "times",
     "sum", "prod", "int", "mid", "tag",
