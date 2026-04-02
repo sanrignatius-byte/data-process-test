@@ -416,8 +416,6 @@ def evaluate_method(
     chunk_id_to_idx: Dict[str, int],
     # index: doc_id → list of chunk indices
     doc_to_chunk_idxs: Dict[str, List[int]],
-    dense_matrix,
-    vectorizer,
     chunk_tokens: List[List[str]],
     field_tokens: Dict[str, List[List[str]]],
     collection_tf: Dict[str, int],
@@ -1240,8 +1238,6 @@ def main() -> None:
         citation_adjacency=citation_adjacency,
         chunk_id_to_idx=chunk_id_to_idx,
         doc_to_chunk_idxs=doc_to_chunk_idxs,
-        dense_matrix=None,
-        vectorizer=None,
         chunk_tokens=chunk_tokens,
         field_tokens=field_tokens,
         collection_tf=collection_tf,

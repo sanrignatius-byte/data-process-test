@@ -1292,6 +1292,13 @@ def build_undirected_adj(out_adj: Dict[str, Set[str]], in_adj: Dict[str, Set[str
     return ud
 
 
+def path_signature(path: List[str]) -> Tuple[str, ...]:
+    """Canonical (direction-independent) signature for a node path."""
+    fwd = tuple(path)
+    rev = tuple(reversed(path))
+    return fwd if fwd <= rev else rev
+
+
 def enumerate_candidates_from_bridge_hubs(
     nodes: Dict[str, Node],
     bridge_hubs: List[Dict[str, Any]],
@@ -1315,10 +1322,7 @@ def enumerate_candidates_from_bridge_hubs(
     per_combo_count: Dict[Tuple[str, ...], int] = defaultdict(int)
     MAX_PER_COMBO = 5
 
-    def path_signature(path: List[str]) -> Tuple[str, ...]:
-        fwd = tuple(path)
-        rev = tuple(reversed(path))
-        return fwd if fwd <= rev else rev
+    # path_signature is now a module-level function (see above)
 
     def sort_by_position(elem_ids: List[str]) -> List[str]:
         """Sort element IDs: real page_idx first, then position_idx, then others.
@@ -1623,9 +1627,7 @@ def convert_adj_bridges_to_candidates(
                 if mod_ei == mod_ej:
                     continue
                 path = [ei, para_i, para_j, ej]
-                sig_fwd = tuple(path)
-                sig_rev = tuple(reversed(path))
-                sig = sig_fwd if sig_fwd <= sig_rev else sig_rev
+                sig = path_signature(path)
                 if sig in seen_signatures:
                     continue
                 seen_signatures.add(sig)
@@ -1848,8 +1850,10 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--output-hubs", default="data/latex_graph_hubs.json")
     ap.add_argument("--output-candidates", default="data/latex_hub_multihop_candidates.json")
     ap.add_argument("--top-k-hubs", type=int, default=60)
-    ap.add_argument("--min-hops", type=int, default=2)
-    ap.add_argument("--max-hops", type=int, default=5)
+    ap.add_argument("--min-hops", type=int, default=2,
+                    help="Recorded in output metadata only; does NOT filter enumeration (paths are 2-4 hops by design).")
+    ap.add_argument("--max-hops", type=int, default=5,
+                    help="Recorded in output metadata only; does NOT filter enumeration (paths are 2-4 hops by design).")
     ap.add_argument("--max-candidates", type=int, default=500)
     ap.add_argument(
         "--single-doc-only",
@@ -1953,10 +1957,7 @@ def main() -> None:
     if args.single_doc_only:
         all_merged = [c for c in all_merged if not c.get("is_cross_doc", False)]
     for c in all_merged:
-        path = c["path_node_ids"]
-        fwd = tuple(path)
-        rev = tuple(reversed(path))
-        sig = fwd if fwd <= rev else rev
+        sig = path_signature(c["path_node_ids"])
         if sig not in seen_sigs:
             seen_sigs.add(sig)
             candidates.append(c)

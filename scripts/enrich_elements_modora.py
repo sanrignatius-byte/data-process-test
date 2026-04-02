@@ -40,6 +40,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 from src.utils.token_logger import log_run
 
+# ── Truncation limits for prompt context (chars) ──
+MAX_CAPTION_CHARS = 400
+MAX_CONTENT_CHARS = 1200
+MAX_CONTEXT_CHARS = 300
+MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+
 # ──────────────────────────────────────────────────────────────
 # Enrichment prompts per modality (inspired by MoDora [T]/[M]/[C])
 # ──────────────────────────────────────────────────────────────
@@ -207,6 +213,8 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
         if candidate.exists():
             return candidate
 
+    # All strategies exhausted — log for debugging cross-environment issues
+    print(f"  [resolve_image_path] MISS: {raw_path!r}", file=sys.stderr)
     return None
 
 
@@ -224,7 +232,7 @@ def load_image_b64(image_path: str) -> Optional[Tuple[str, str]]:
     try:
         with open(resolved, "rb") as f:
             data = f.read()
-        if len(data) > 5 * 1024 * 1024:  # Skip >5MB images
+        if len(data) > MAX_IMAGE_BYTES:
             return None
         return base64.b64encode(data).decode("ascii"), mime
     except (IOError, OSError):
@@ -420,10 +428,10 @@ def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
 def build_element_prompt(element: Dict[str, Any]) -> str:
     """Build the enrichment prompt for a single element."""
     etype = element["element_type"]
-    caption = (element.get("caption", "") or "")[:400]
-    raw_content = (element.get("content", "") or "")[:1200]
-    ctx_before = (element.get("context_before", "") or "")[:300]
-    ctx_after = (element.get("context_after", "") or "")[:300]
+    caption = (element.get("caption", "") or "")[:MAX_CAPTION_CHARS]
+    raw_content = (element.get("content", "") or "")[:MAX_CONTENT_CHARS]
+    ctx_before = (element.get("context_before", "") or "")[:MAX_CONTEXT_CHARS]
+    ctx_after = (element.get("context_after", "") or "")[:MAX_CONTEXT_CHARS]
     context = f"{ctx_before} ... {ctx_after}".strip() if (ctx_before or ctx_after) else "(no context)"
 
     if etype == "figure":
@@ -560,7 +568,8 @@ def process_elements(
 
             parsed = extract_json(text)
             if parsed is None:
-                print(f"  [{idx+1}/{total}] {eid} — PARSE FAIL")
+                snippet = (text or "")[:200].replace("\n", " ")
+                print(f"  [{idx+1}/{total}] {eid} — PARSE FAIL | raw: {snippet!r}")
                 failed += 1
                 continue
 

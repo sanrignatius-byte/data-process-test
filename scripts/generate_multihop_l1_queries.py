@@ -1200,29 +1200,26 @@ def _load_personahub_personas(path: Optional[str] = None) -> List[Dict[str, str]
 
 
 # 按 pair_id 的 md5 稳定哈希分配人设，保证跨机器可复现
-def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
-    """Deterministically assign a PersonaHub persona to a pair via stable hash.
-
-    Uses the PersonaHub-format persona list (loaded from JSON file).
-    Returns the persona description text (not the id).
-    """
+def _resolve_persona_entry(pair_id: str, persona_file: Optional[str] = None) -> Dict[str, str]:
+    """Shared lookup: deterministically pick a persona entry by pair_id hash."""
     personas = _load_personahub_personas(persona_file)
     if not pair_id or not personas:
-        return personas[0]["persona"] if personas else ""
+        return personas[0] if personas else {"id": "unknown", "persona": ""}
     stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
-    idx = stable % len(personas)
-    return personas[idx]["persona"]
+    return personas[stable % len(personas)]
+
+
+def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
+    """Deterministically assign a PersonaHub persona to a pair via stable hash.
+    Returns the persona description text (not the id).
+    """
+    return _resolve_persona_entry(pair_id, persona_file)["persona"]
 
 
 # 同上，返回短标签用于日志 / 切片分析
 def resolve_persona_id(pair_id: str, persona_file: Optional[str] = None) -> str:
     """Return the persona id (short label) for logging/slicing."""
-    personas = _load_personahub_personas(persona_file)
-    if not pair_id or not personas:
-        return personas[0]["id"] if personas else "unknown"
-    stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
-    idx = stable % len(personas)
-    return personas[idx]["id"]
+    return _resolve_persona_entry(pair_id, persona_file)["id"]
 
 
 # 用人设描述替换 prompt 首句 "You are a …"，避免双重角色定义
@@ -1677,27 +1674,43 @@ def has_premise_answer_contradiction(query: str, answer: str) -> bool:
     return False
 
 
+# ── Shared math-region extraction (used by both prompt builder and QC) ──
+_LATEX_IGNORE_CMDS = frozenset({
+    "begin", "end", "left", "right", "frac", "cdot", "times",
+    "sum", "prod", "int", "mid", "tag",
+})
+
+_RE_GREEK = re.compile(
+    r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)"
+)
+
+
+def _extract_math_regions(text: str) -> str:
+    """Extract inline/display math content from LaTeX text.
+
+    Returns concatenated math regions, or the original text if none found.
+    This is the single source of truth for math-region extraction — used by
+    both extract_formula_variables() (prompt builder) and
+    _extract_formula_symbol_terms() (QC grounding check).
+    """
+    regions: List[str] = []
+    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
+    return " ".join(regions) if regions else text
+
+
 # 从 LaTeX 公式中提取变量/函数符号供 QC grounding 检查
 def extract_formula_variables(content: str) -> str:
     """Extract lightweight variable/function hints from formula text."""
     if not content:
         return "(none)"
 
-    text = content
-
-    # Prefer explicit math regions to avoid pulling narrative words.
-    regions: List[str] = []
-    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
-    math_text = " ".join(regions) if regions else text
+    math_text = _extract_math_regions(content)
 
     # capture latex commands likely representing functions/terms
     funcs = re.findall(r"\\([A-Za-z]{2,})", math_text)
-    funcs = [f for f in funcs if f not in {
-        "begin", "end", "left", "right", "frac", "cdot", "times",
-        "sum", "prod", "int", "mid", "tag",
-    }]
+    funcs = [f for f in funcs if f not in _LATEX_IGNORE_CMDS]
 
     # capture symbolic variable names (prefer math-like tokens)
     vars_sub = re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text)
@@ -1705,10 +1718,7 @@ def extract_formula_variables(content: str) -> str:
         r"(?:^|[=+\-*/(,\s{])([A-Za-z])(?:$|[=+\-*/),\s}_^])",
         math_text,
     )
-    greek = re.findall(
-        r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)",
-        math_text,
-    )
+    greek = _RE_GREEK.findall(math_text)
     tokens = list(dict.fromkeys(vars_sub + vars_single + greek))
 
     # keep compact
@@ -1799,24 +1809,18 @@ def _extract_formula_symbol_terms(content: str) -> Set[str]:
     """Extract formula-specific symbolic terms used for grounding checks."""
     if not content:
         return set()
-    text = content
-    regions: List[str] = []
-    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
-    math_text = " ".join(regions) if regions else text
+    math_text = _extract_math_regions(content)
 
     terms: Set[str] = set()
-    for g in re.findall(r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)", math_text):
+    for g in _RE_GREEK.findall(math_text):
         terms.add(g.lower())
     for t in re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text):
         terms.add(t.lower())
     for t in re.findall(r"\b([A-Za-z]+\([A-Za-z0-9,\s]+\))", math_text):
         terms.add(re.sub(r"\s+", "", t.lower()))
-    ignore_cmds = {"begin", "end", "left", "right", "frac", "cdot", "times", "sum", "prod", "int", "mid", "tag"}
     for cmd in re.findall(r"\\([A-Za-z]{2,})", math_text):
         c = cmd.lower()
-        if c not in ignore_cmds:
+        if c not in _LATEX_IGNORE_CMDS:
             terms.add(c)
     return {t for t in terms if t and len(t) >= 2}
 

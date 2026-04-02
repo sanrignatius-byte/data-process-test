@@ -522,10 +522,6 @@ class M4QueryGenerator:
                 print(f"Query generated:")
                 print(f"  Turns: {query.turns}")
                 print(f"  Answer: {query.answer[:200]}...")
-                # WARNING: Evidence verification is intentionally skipped here.
-                # verify_evidence() exists but was disabled because the verification
-                # logic needs fixing before it can be trusted (see issue audit).
-                # TODO: Fix verify_evidence() logic and re-enable before production use.
                 # 暂时跳过验证，直接添加
                 queries.append(query)
 

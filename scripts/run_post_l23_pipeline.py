@@ -30,11 +30,10 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 DATA111 = ROOT / "data111"
 M2 = DATA / "m2"
-DATE_TAG = os.environ.get("DATE_TAG", "2026-03-24")
+DATE_TAG = "2026-03-24"
 
-_EXTERNAL_BASE = Path(os.environ.get("EXTERNAL_REPORT_DIR", "/projects/_hdd/myyyx1"))
-WEEKLY_REPORT = _EXTERNAL_BASE / f"weekly_report_{DATE_TAG}.md"
-CODE_WALKTHROUGH = _EXTERNAL_BASE / f"code_walkthrough_{DATE_TAG}.md"
+WEEKLY_REPORT = Path("/projects/_hdd/myyyx1/weekly_report_2026-03-24.md")
+CODE_WALKTHROUGH = Path("/projects/_hdd/myyyx1/code_walkthrough_2026-03-24.md")
 
 
 def log(msg: str) -> None:
