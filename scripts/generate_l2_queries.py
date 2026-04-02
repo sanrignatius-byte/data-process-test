@@ -8,7 +8,6 @@ generate queries that reference actual visual elements from both docs.
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import os
 import re
@@ -17,9 +16,13 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-
-from src.utils.token_usage_logger import TokenUsageLogger
-from src.utils.token_logger import log_run
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.utils.token_usage_logger import TokenUsageLogger  # noqa: E402
+from src.utils.token_logger import log_run  # noqa: E402
+from src.utils.text_utils import content_tokens as _content_tokens  # noqa: E402
+from src.utils.image_utils import encode_image  # noqa: E402
+from src.qc.checks import anchor_leak_jaccard  # noqa: E402
+from src.api import parse_json  # noqa: E402
 
 
 SYSTEM_PROMPT = (
@@ -68,28 +71,8 @@ METRIC_TERMS = {
     "false positive", "false negative", "balanced accuracy",
 }
 
-
-def _content_tokens(text: str) -> Set[str]:
-    """Extract content tokens (lowercase, 3+ chars, no stopwords/numbers)."""
-    words = set(re.findall(r"\b[a-zA-Z]{3,}\b", text.lower()))
-    return words - LEAK_STOPWORDS
-
-
-def anchor_leak_jaccard(query: str, evidence_refs: List[Dict[str, Any]]) -> float:
-    """Compute max Jaccard overlap between query tokens and any anchor tokens."""
-    q_tokens = _content_tokens(query)
-    if not q_tokens:
-        return 0.0
-    max_jacc = 0.0
-    for ref in evidence_refs:
-        a_tokens = _content_tokens(ref.get("anchor", ""))
-        if not a_tokens:
-            continue
-        intersection = q_tokens & a_tokens
-        union = q_tokens | a_tokens
-        jacc = len(intersection) / len(union) if union else 0.0
-        max_jacc = max(max_jacc, jacc)
-    return max_jacc
+# _content_tokens → moved to src.utils.text_utils.content_tokens
+# anchor_leak_jaccard → moved to src.qc.checks
 
 
 def evidence_closure_score(answer: str, evidence_refs: List[Dict[str, Any]]) -> float:
@@ -272,20 +255,7 @@ Think about what REASONING OPERATION connects these two documents:
 }}"""
 
 
-def encode_image(path: str) -> Optional[Tuple[str, str]]:
-    """Return (base64_data, mime_type) or None if file missing."""
-    # Try both absolute and project-root-relative
-    p = Path(path)
-    if not p.is_absolute():
-        p = PROJECT_ROOT / path
-    if not p.exists() or p.stat().st_size < 500:
-        return None
-    ext = p.suffix.lower().lstrip(".")
-    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png"}.get(
-        ext, "image/jpeg"
-    )
-    with open(p, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8"), mime
+# encode_image → moved to src.utils.image_utils
 
 
 def call_llm_anthropic(
@@ -321,51 +291,7 @@ def call_llm_anthropic(
     )
 
 
-def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
-    def _extract_first_json_object(text: str) -> Optional[str]:
-        """Extract first balanced JSON object from mixed text."""
-        for start_idx, ch in enumerate(text):
-            if ch != "{":
-                continue
-            depth = 0
-            in_string = False
-            escape = False
-            for i in range(start_idx, len(text)):
-                c = text[i]
-                if in_string:
-                    if escape:
-                        escape = False
-                    elif c == "\\":
-                        escape = True
-                    elif c == '"':
-                        in_string = False
-                    continue
-                if c == '"':
-                    in_string = True
-                elif c == "{":
-                    depth += 1
-                elif c == "}":
-                    depth -= 1
-                    if depth == 0:
-                        return text[start_idx:i + 1]
-        return None
-
-    if not txt:
-        return None
-    t = txt.strip()
-    if t.startswith("```"):
-        t = re.sub(r"^```(?:json)?\s*", "", t).strip()
-        t = re.sub(r"\s*```$", "", t).strip()
-    try:
-        return json.loads(t)
-    except Exception:
-        obj_text = _extract_first_json_object(t)
-        if obj_text:
-            try:
-                return json.loads(obj_text)
-            except Exception:
-                pass
-    return None
+# parse_json → moved to src.api
 
 
 def main() -> None:

@@ -24,9 +24,4 @@ setup(
         "anthropic": ["anthropic>=0.18.0"],
         "dev": ["pytest>=7.0.0", "black>=23.0.0", "isort>=5.12.0"],
     },
-    entry_points={
-        "console_scripts": [
-            "run-pipeline=scripts.run_pipeline:main",
-        ],
-    },
 )

@@ -28,50 +28,13 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 from src.utils.token_logger import log_run
+from src.utils.text_utils import tokenize_for_retrieval as tokenize
+from src.retrieval import BM25Lite
 
 DATA_DIR = PROJECT_ROOT / "data"
 M2_DIR = DATA_DIR / "m2"
 
-TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
-
-
-def tokenize(text: str) -> List[str]:
-    return [t.lower() for t in TOKEN_RE.findall(text or "")]
-
-
-# ─── BM25 (same as run_exp_a_difficulty.py) ───
-
-class BM25Lite:
-    def __init__(self, docs: List[List[str]], k1: float = 1.5, b: float = 0.75):
-        self.k1 = k1
-        self.b = b
-        self.N = len(docs)
-        self.doc_lens = [len(d) for d in docs]
-        self.avgdl = sum(self.doc_lens) / max(1, self.N)
-        self.df: Dict[str, int] = defaultdict(int)
-        self.tf_docs: List[Counter] = []
-        for d in docs:
-            tf = Counter(d)
-            self.tf_docs.append(tf)
-            for t in tf.keys():
-                self.df[t] += 1
-
-    def idf(self, term: str) -> float:
-        df = self.df.get(term, 0)
-        return math.log(1.0 + (self.N - df + 0.5) / (df + 0.5))
-
-    def score(self, query_tokens: List[str], doc_idx: int) -> float:
-        tf = self.tf_docs[doc_idx]
-        dl = self.doc_lens[doc_idx]
-        s = 0.0
-        for t in set(query_tokens):
-            f = tf.get(t, 0)
-            if f <= 0:
-                continue
-            idf_val = self.idf(t)
-            denom = f + self.k1 * (1 - self.b + self.b * dl / max(self.avgdl, 1e-6))
-            s += idf_val * (f * (self.k1 + 1)) / max(denom, 1e-6)
-        return s
+# tokenize(), BM25Lite moved to src.utils.text_utils / src.retrieval
 
 
 # ─── Chunk building ───

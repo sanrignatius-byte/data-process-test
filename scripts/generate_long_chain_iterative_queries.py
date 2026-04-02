@@ -29,8 +29,13 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-# Reuse existing QC + helpers to keep consistency with current L1 pipeline.
-from generate_multihop_l1_queries import encode_image, normalize_path, qc_multihop_query
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.utils.image_utils import encode_image  # noqa: E402
+from src.qc.pipelines import qc_multihop_query  # noqa: E402
+from src.api import call_llm, parse_json  # noqa: E402
+
+# normalize_path is still local to generate_multihop_l1_queries
+from generate_multihop_l1_queries import normalize_path  # noqa: E402
 
 
 SYSTEM_STEP_PROMPT = (
@@ -291,53 +296,8 @@ Output JSON:
 """.strip()
 
 
-def parse_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
-    if not text:
-        return None
-    t = text.strip()
-    if t.startswith("```"):
-        t = re.sub(r"^```(?:json)?\s*", "", t).strip()
-        t = re.sub(r"\s*```$", "", t).strip()
-    try:
-        return json.loads(t)
-    except Exception:
-        m = re.search(r"\{.*\}", t, re.DOTALL)
-        if not m:
-            return None
-        try:
-            return json.loads(m.group(0))
-        except Exception:
-            return None
-
-
-def call_api(
-    client: Any,
-    model: str,
-    system_prompt: str,
-    user_prompt: str,
-    images: Optional[List[Optional[Tuple[str, str]]]] = None,
-    max_tokens: int = 1024,
-    temperature: float = 0.2,
-) -> Tuple[Optional[str], int, int]:
-    content: List[Dict[str, Any]] = []
-    for img in images or []:
-        if img is None:
-            continue
-        b64, mime = img
-        content.append({
-            "type": "image",
-            "source": {"type": "base64", "media_type": mime, "data": b64},
-        })
-    content.append({"type": "text", "text": user_prompt})
-
-    r = client.messages.create(
-        model=model,
-        system=system_prompt,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        messages=[{"role": "user", "content": content}],
-    )
-    return r.content[0].text, r.usage.input_tokens, r.usage.output_tokens
+# parse_json, call_api → moved to src.api (parse_json imported above;
+# call sites updated to use call_llm directly)
 
 
 def short_text(text: str, limit: int = 420) -> str:
@@ -548,12 +508,12 @@ def judge_can_answer(
         evidence_nodes=evidence_nodes,
         scenario_name=scenario_name,
     )
-    raw, in_tok, out_tok = call_api(
-        client=client,
-        model=model,
-        system_prompt=SYSTEM_JUDGE_PROMPT,
-        user_prompt=prompt,
+    raw, in_tok, out_tok = call_llm(
+        client,
+        model,
+        prompt,
         images=[],
+        system_prompt=SYSTEM_JUDGE_PROMPT,
         max_tokens=256,
         temperature=0.0,
     )
@@ -687,12 +647,12 @@ def maybe_repair_candidate(
     imgs: List[Optional[Tuple[str, str]]] = []
     if not no_images:
         imgs = [encode_image(start_elem.get("image_path")), encode_image(end_elem.get("image_path"))]
-    raw, in_tok, out_tok = call_api(
-        client=client,
-        model=model,
-        system_prompt=SYSTEM_FINAL_PROMPT,
-        user_prompt=prompt,
+    raw, in_tok, out_tok = call_llm(
+        client,
+        model,
+        prompt,
         images=imgs,
+        system_prompt=SYSTEM_FINAL_PROMPT,
         max_tokens=1024,
         temperature=0.15,
     )
@@ -745,12 +705,12 @@ def run_iterative_generation_for_pair(
             if not no_images:
                 imgs.append(encode_image(current_source.get("image_path")))
                 imgs.append(encode_image(target.get("image_path")))
-            raw, in_tok, out_tok = call_api(
-                client=client,
-                model=model,
-                system_prompt=SYSTEM_STEP_PROMPT,
-                user_prompt=prompt,
+            raw, in_tok, out_tok = call_llm(
+                client,
+                model,
+                prompt,
                 images=imgs,
+                system_prompt=SYSTEM_STEP_PROMPT,
                 max_tokens=512,
                 temperature=0.2,
             )
@@ -797,12 +757,12 @@ def run_iterative_generation_for_pair(
         imgs = []
         if not no_images:
             imgs = [encode_image(start.get("image_path")), encode_image(end.get("image_path"))]
-        raw, in_tok, out_tok = call_api(
-            client=client,
-            model=model,
-            system_prompt=SYSTEM_FINAL_PROMPT,
-            user_prompt=final_prompt,
+        raw, in_tok, out_tok = call_llm(
+            client,
+            model,
+            final_prompt,
             images=imgs,
+            system_prompt=SYSTEM_FINAL_PROMPT,
             max_tokens=1024,
             temperature=0.25,
         )

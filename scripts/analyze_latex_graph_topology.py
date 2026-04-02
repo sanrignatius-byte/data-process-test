@@ -30,6 +30,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 
+# ── Shared modules (Phase 1-2 refactor) ──────────────────────────────────────
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.utils.text_utils import (
+    tokenize, jaccard, variance, summarize_distribution,
+    normalize_label_type, parse_number,
+    LABEL_TO_MODALITY,
+)
+from src.models import Node, Edge
+
 
 LABEL_TO_MODALITY = {
     "figure": "figure",
@@ -56,119 +66,12 @@ GLOBAL_KEYWORD_RULES: List[Tuple[str, float, str]] = [
 ]
 
 # ─── Data structures ─────────────────────────────────────────────────────────
-
-@dataclass
-class Node:
-    node_id: str
-    doc_id: str
-    node_type: str          # section | subsection | subsubsection | paragraph | figure | table | equation
-    label: str
-    mapped_element_id: Optional[str] = None
-    page_idx: Optional[int] = None
-    position_idx: Optional[int] = None   # MinerU reading-order index (better proxy)
-    line_no: Optional[int] = None        # LaTeX source line (backbone ordering)
-    line_no_end: Optional[int] = None    # range end (sections)
-    section_level: Optional[int] = None
-    section_title: Optional[str] = None
-    source_file: Optional[str] = None
-    paragraph_order: Optional[int] = None  # sequential index within doc backbone
-    text_snippet: Optional[str] = None     # first 200 chars of paragraph text (for hub scoring)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "node_id": self.node_id,
-            "doc_id": self.doc_id,
-            "node_type": self.node_type,
-            "label": self.label,
-            "mapped_element_id": self.mapped_element_id,
-            "page_idx": self.page_idx,
-            "position_idx": self.position_idx,
-            "line_no": self.line_no,
-            "line_no_end": self.line_no_end,
-            "section_level": self.section_level,
-            "section_title": self.section_title,
-            "source_file": self.source_file,
-            "paragraph_order": self.paragraph_order,
-            "text_snippet": self.text_snippet,
-        }
-
-
-@dataclass
-class Edge:
-    source_id: str
-    target_id: str
-    doc_id: str
-    edge_type: str  # paragraph_ref | element_ref | backbone | cross_doc_cite | section_contains_*
-    weight: float = 1.0  # edge strength: reference count, semantic relevance, etc.
-
-    def key(self) -> Tuple[str, str, str]:
-        return (self.source_id, self.target_id, self.edge_type)
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = {
-            "source_id": self.source_id,
-            "target_id": self.target_id,
-            "doc_id": self.doc_id,
-            "edge_type": self.edge_type,
-        }
-        if self.weight != 1.0:
-            d["weight"] = round(self.weight, 4)
-        return d
+# Now imported from src.models (Node, Edge)
 
 
 # ─── Utilities ────────────────────────────────────────────────────────────────
-
-def normalize_label_type(label_type: str) -> Optional[str]:
-    if not label_type:
-        return None
-    return LABEL_TO_MODALITY.get(str(label_type).lower())
-
-
-def parse_number(text: str) -> Optional[int]:
-    """Extract trailing or first numeric value from a string."""
-    if not text:
-        return None
-    m = re.search(r"(\d+)\s*$", text)
-    if not m:
-        m = re.search(r"(\d+)", text)
-    if not m:
-        return None
-    return int(m.group(1))
-
-
-def tokenize(text: str) -> Set[str]:
-    return {t for t in re.findall(r"[a-zA-Z]{3,}", (text or "").lower())}
-
-
-def jaccard(a: Set[str], b: Set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    return len(a & b) / len(a | b)
-
-
-def variance(values: List[float]) -> float:
-    if not values:
-        return 0.0
-    mean = sum(values) / len(values)
-    return sum((x - mean) ** 2 for x in values) / len(values)
-
-
-def summarize_distribution(values: List[float]) -> Dict[str, float]:
-    if not values:
-        return {"count": 0, "mean": 0.0, "variance": 0.0,
-                "min": 0.0, "max": 0.0, "p50": 0.0, "p90": 0.0}
-    arr = sorted(values)
-    p50 = arr[int(round(0.50 * (len(arr) - 1)))]
-    p90 = arr[int(round(0.90 * (len(arr) - 1)))]
-    return {
-        "count": len(values),
-        "mean": round(sum(values) / len(values), 4),
-        "variance": round(variance(values), 4),
-        "min": round(arr[0], 4),
-        "max": round(arr[-1], 4),
-        "p50": round(p50, 4),
-        "p90": round(p90, 4),
-    }
+# normalize_label_type, parse_number, tokenize, jaccard, variance,
+# summarize_distribution — now imported from src.utils.text_utils
 
 
 def _find_para_for_line(

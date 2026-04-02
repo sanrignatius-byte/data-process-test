@@ -31,44 +31,20 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-# ─── Label type normalization (from analyze_latex_graph_topology.py) ──────────
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.utils.text_utils import (  # noqa: E402
+    LABEL_TYPE_MAP as _LABEL_TYPE_MAP,
+    normalize_label_type,
+    tokenize_words as tokenize,
+    jaccard,
+    parse_number,
+)
 
-_LABEL_TYPE_MAP = {
-    "figure": "figure",
-    "fig": "figure",
-    "subfigure": "figure",
-    "table": "table",
-    "tab": "table",
-    "equation": "equation",
-    "eq": "equation",
-    "align": "equation",
-    "eqnarray": "equation",
-    "formula": "equation",
-}
+# _LABEL_TYPE_MAP, normalize_label_type, tokenize, jaccard, parse_number
+# → moved to src.utils.text_utils
 
 ELEMENT_MODALITIES = {"figure", "table", "equation"}
 MINERU_MODAL_MAP = {"figure": "figure", "table": "table", "equation": "formula"}
-
-
-# fig/subfigure/tab/eq/align 等 LaTeX 别名归一到三大类
-def normalize_label_type(raw: str) -> str:
-    return _LABEL_TYPE_MAP.get(raw.lower().strip(), raw.lower().strip())
-
-
-# 小写 word-level tokenize，用于 Jaccard 相似度计算
-def tokenize(text: str) -> Set[str]:
-    return set(re.findall(r"\w+", text.lower()))
-
-
-def jaccard(a: Set[str], b: Set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    return len(a & b) / len(a | b)
-
-
-def parse_number(s: str) -> Optional[int]:
-    m = re.search(r"(\d+)", s)
-    return int(m.group(1)) if m else None
 
 
 # ─── Build MinerU index ──────────────────────────────────────────────────────

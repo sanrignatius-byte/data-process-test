@@ -48,6 +48,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.utils.text_utils import tokenize_for_retrieval as tokenize
+
 
 def load_json(path: Path) -> Dict[str, Any]:
     """Load JSON with explicit UTF-8 decoding.
@@ -62,25 +64,7 @@ def load_json(path: Path) -> Dict[str, Any]:
 # Text utilities
 # ─────────────────────────────────────────────────────────────────────────────
 
-_STOPWORDS = {
-    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had", "do", "does", "did", "will", "would", "could",
-    "should", "may", "might", "shall", "can", "need", "dare", "ought",
-    "used", "to", "of", "in", "on", "at", "by", "for", "with", "from",
-    "into", "through", "during", "before", "after", "above", "below",
-    "up", "down", "out", "off", "over", "under", "between", "and", "or",
-    "but", "if", "because", "as", "until", "while", "although", "since",
-    "so", "yet", "both", "either", "neither", "not", "no", "nor",
-    "it", "its", "this", "that", "these", "those", "i", "we", "you",
-    "he", "she", "they", "what", "which", "who", "how", "when", "where",
-    "why", "all", "any", "both", "each", "few", "more", "most", "other",
-    "some", "such", "than", "then", "too", "very", "just", "only",
-}
-
-
-def tokenize(text: str) -> List[str]:
-    return [t.lower() for t in re.findall(r"[a-z0-9]+", text.lower())
-            if t.lower() not in _STOPWORDS and len(t) > 1]
+# _STOPWORDS and tokenize() moved to src.utils.text_utils.tokenize_for_retrieval
 
 
 def tf_idf_score(query_tokens: List[str], doc_tokens: List[str],
