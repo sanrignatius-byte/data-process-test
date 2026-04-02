@@ -25,9 +25,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import base64
 import json
-import mimetypes
 import os
 import re
 import sys
@@ -38,13 +36,15 @@ from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-from src.utils.token_logger import log_run
+from src.utils.token_logger import log_run  # noqa: E402
+from src.utils.image_utils import resolve_image_path, load_image_b64  # noqa: E402
+from src.api import call_llm, extract_json, set_company_credentials  # noqa: E402
 
 # ── Truncation limits for prompt context (chars) ──
 MAX_CAPTION_CHARS = 400
 MAX_CONTENT_CHARS = 1200
 MAX_CONTEXT_CHARS = 300
-MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+# MAX_IMAGE_BYTES → now in src.utils.image_utils
 
 # ──────────────────────────────────────────────────────────────
 # Enrichment prompts per modality (inspired by MoDora [T]/[M]/[C])
@@ -155,132 +155,19 @@ Produce a structured description with exactly three fields:
 }}"""
 
 
-# ──────────────────────────────────────────────────────────────
-# Image utilities
-# ──────────────────────────────────────────────────────────────
-
-# Known path prefixes from different environments that should be
-# re-rooted to PROJECT_ROOT when running elsewhere.
-_KNOWN_PREFIXES = [
-    "/home/d00855555/query_myx/data-process-test/",
-    "/projects/_hdd/myyyx1/data-process-test/",
-    "/projects/myyyx1/data-process-test/",
-]
-
-
-# 跨环境路径适配：集群绝对路径 → 本地相对路径，四级 fallback 策略
-def resolve_image_path(raw_path: str) -> Optional[Path]:
-    """Try to resolve an image path across different environments.
-
-    Handles four cases:
-    1. Path exists as-is (original environment) → use directly.
-    2. Path starts with a known cluster prefix → strip prefix, re-root to
-       PROJECT_ROOT.
-    3. Path contains '/data/mineru_output/' → extract the suffix after this
-       marker and resolve relative to PROJECT_ROOT/data/mineru_output/.
-    4. Generic fallback: find 'data/' in the path and re-root to PROJECT_ROOT.
-    """
-    if not raw_path:
-        return None
-
-    p = Path(raw_path)
-    if p.exists():
-        return p
-
-    # Normalise backslashes (Windows paths stored in JSON)
-    normed = raw_path.replace("\\", "/")
-
-    # Strategy 1: strip known cluster prefix → re-root to PROJECT_ROOT
-    for prefix in _KNOWN_PREFIXES:
-        if normed.startswith(prefix):
-            relative = normed[len(prefix):]
-            candidate = PROJECT_ROOT / relative
-            if candidate.exists():
-                return candidate
-
-    # Strategy 2: extract suffix after '/data/mineru_output/'
-    parts = normed.split("/data/mineru_output/")
-    if len(parts) == 2:
-        candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
-        if candidate.exists():
-            return candidate
-
-    # Strategy 3: generic – find '/data/' and re-root everything after it
-    idx = normed.find("/data/")
-    if idx >= 0:
-        relative = normed[idx + 1:]  # keep 'data/...'
-        candidate = PROJECT_ROOT / relative
-        if candidate.exists():
-            return candidate
-
-    # All strategies exhausted — log for debugging cross-environment issues
-    print(f"  [resolve_image_path] MISS: {raw_path!r}", file=sys.stderr)
-    return None
-
-
-# 图片 → base64，跳过 >5MB 的超大图
-def load_image_b64(image_path: str) -> Optional[Tuple[str, str]]:
-    """Load image as base64 string. Returns (b64_data, mime_type) or None."""
-    resolved = resolve_image_path(image_path)
-    if resolved is None:
-        return None
-
-    mime, _ = mimetypes.guess_type(str(resolved))
-    if not mime:
-        mime = "image/jpeg"
-
-    try:
-        with open(resolved, "rb") as f:
-            data = f.read()
-        if len(data) > MAX_IMAGE_BYTES:
-            return None
-        return base64.b64encode(data).decode("ascii"), mime
-    except (IOError, OSError):
-        return None
-
+# _KNOWN_PREFIXES, resolve_image_path, load_image_b64 → moved to src.utils.image_utils
 
 # ──────────────────────────────────────────────────────────────
-# API call (reuses patterns from generate_multihop_l1_queries.py)
+# API call (thin wrapper around src.api.call_llm)
 # ──────────────────────────────────────────────────────────────
 
 _COMPANY_API_URL: str = ""
 _COMPANY_API_KEY: str = ""
 
-
-# 逐行解析 SSE 流，累计 content 片段 + 末尾 usage token 统计
-def _collect_company_stream(stream_generator) -> Tuple[str, int, int]:
-    """Collect content and token usage from company API SSE stream."""
-    content_parts: List[str] = []
-    in_tok, out_tok = 0, 0
-
-    for line in stream_generator:
-        if isinstance(line, bytes):
-            line = line.decode("utf-8", errors="replace")
-        line = line.strip() if isinstance(line, str) else str(line).strip()
-
-        if not line or not line.startswith("data: "):
-            continue
-        data = line[6:].strip()
-        if data == "[DONE]":
-            continue
-        try:
-            parsed = json.loads(data)
-            if "usage" in parsed and parsed["usage"]:
-                in_tok = parsed["usage"].get("prompt_tokens", 0)
-                out_tok = parsed["usage"].get("completion_tokens", 0)
-            choices = parsed.get("choices") or []
-            if not choices:
-                continue
-            delta = choices[0].get("delta", {})
-            if c := delta.get("content"):
-                content_parts.append(c)
-        except (json.JSONDecodeError, KeyError, IndexError):
-            continue
-
-    return "".join(content_parts), in_tok, out_tok
+# _collect_company_stream → moved to src.api.collect_company_stream
 
 
-# 三路分发：anthropic / openai / company(yunwu.ai SSE)
+# Thin wrapper: delegates to src.api.call_llm with enrichment-specific defaults
 def call_api(
     client: Any,
     model: str,
@@ -289,135 +176,19 @@ def call_api(
     provider: str = "anthropic",
 ) -> Tuple[Optional[str], int, int]:
     """Call provider API. Returns (text, input_tokens, output_tokens)."""
-    if provider == "openai":
-        content: List[Dict[str, Any]] = []
-        if image is not None:
-            b64, mime = image
-            content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime};base64,{b64}"},
-            })
-        content.append({"type": "text", "text": prompt})
-
-        r = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": content},
-            ],
-            max_tokens=512,
-            temperature=0.2,
-        )
-        msg = r.choices[0].message.content if r.choices else ""
-        text = str(msg or "")
-        in_tok = int(getattr(getattr(r, "usage", None), "prompt_tokens", 0) or 0)
-        out_tok = int(getattr(getattr(r, "usage", None), "completion_tokens", 0) or 0)
-        return text, in_tok, out_tok
-
-    if provider == "company":
-        from local_api_logger import wrap_requests_call
-
-        user_content: List[Dict[str, Any]] = []
-        if image is not None:
-            b64, mime = image
-            user_content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime};base64,{b64}"},
-            })
-        user_content.append({"type": "text", "text": prompt})
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {_COMPANY_API_KEY}",
-        }
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_content},
-            ],
-            "max_tokens": 512,
-            "temperature": 0.2,
-            "stream": True,
-            "stream_options": {"include_usage": True},
-        }
-
-        stream = wrap_requests_call(
-            model=model,
-            url=_COMPANY_API_URL,
-            headers=headers,
-            payload=payload,
-            user="element_enrichment",
-            verify=False,
-        )
-        text, in_tok, out_tok = _collect_company_stream(stream)
-        return text, in_tok, out_tok
-
-    # Default: anthropic
-    content_aa: List[Dict[str, Any]] = []
-    if image is not None:
-        b64, mime = image
-        content_aa.append({
-            "type": "image",
-            "source": {"type": "base64", "media_type": mime, "data": b64},
-        })
-    content_aa.append({"type": "text", "text": prompt})
-
-    r = client.messages.create(
-        model=model,
-        system=SYSTEM_PROMPT,
+    images = [image] if image is not None else None
+    return call_llm(
+        client, model, prompt,
+        images=images,
+        provider=provider,
+        system_prompt=SYSTEM_PROMPT,
         max_tokens=512,
         temperature=0.2,
-        messages=[{"role": "user", "content": content_aa}],
-    )
-    return (
-        r.content[0].text,
-        r.usage.input_tokens,
-        r.usage.output_tokens,
+        user_tag="element_enrichment",
     )
 
 
-# ──────────────────────────────────────────────────────────────
-# JSON extraction
-# ──────────────────────────────────────────────────────────────
-
-# 从 LLM 返回的混杂文本中提取首个合法 JSON 对象（括号配对法）
-def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
-    """Extract first valid JSON object from text."""
-    if not text:
-        return None
-    # Strip markdown fences
-    text = re.sub(r"```(?:json)?\s*", "", text)
-    text = re.sub(r"```\s*$", "", text)
-    # Find first { ... }
-    for start_idx, ch in enumerate(text):
-        if ch != "{":
-            continue
-        depth = 0
-        in_string = False
-        escape = False
-        for i in range(start_idx, len(text)):
-            c = text[i]
-            if in_string:
-                if escape:
-                    escape = False
-                elif c == "\\":
-                    escape = True
-                elif c == '"':
-                    in_string = False
-                continue
-            if c == '"':
-                in_string = True
-            elif c == "{":
-                depth += 1
-            elif c == "}":
-                depth -= 1
-                if depth == 0:
-                    try:
-                        return json.loads(text[start_idx:i + 1])
-                    except json.JSONDecodeError:
-                        break
-    return None
+# extract_json → moved to src.api
 
 
 # ──────────────────────────────────────────────────────────────
@@ -732,6 +503,7 @@ def main():
             if not _COMPANY_API_KEY:
                 print("ERROR: COMPANY_API_KEY not set", file=sys.stderr)
                 sys.exit(1)
+            set_company_credentials(_COMPANY_API_URL, _COMPANY_API_KEY)
 
     # Process
     enrichments, total_in_tok, total_out_tok, processed, failed = process_elements(

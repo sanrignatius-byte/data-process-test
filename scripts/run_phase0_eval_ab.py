@@ -30,65 +30,16 @@ import argparse
 import json
 import math
 import re
+import sys
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
-
-TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
-
-
-def tokenize(text: str) -> List[str]:
-    return [t.lower() for t in TOKEN_RE.findall(text or "")]
-
-
-# 轻量 BM25：不依赖外部库，直接 tf+idf 打分，够用且零依赖
-class BM25Lite:
-    def __init__(self, docs: List[List[str]], k1: float = 1.5, b: float = 0.75):
-        self.k1 = k1
-        self.b = b
-        self.docs = docs
-        self.N = len(docs)
-        self.doc_lens = [len(d) for d in docs]
-        self.avgdl = sum(self.doc_lens) / max(1, self.N)
-        self.df: Dict[str, int] = defaultdict(int)
-        self.tf_docs: List[Counter] = []
-        for d in docs:
-            tf = Counter(d)
-            self.tf_docs.append(tf)
-            for t in tf.keys():
-                self.df[t] += 1
-
-    def idf(self, term: str) -> float:
-        df = self.df.get(term, 0)
-        return math.log(1.0 + (self.N - df + 0.5) / (df + 0.5))
-
-    def score(self, query_tokens: List[str], doc_idx: int) -> float:
-        tf = self.tf_docs[doc_idx]
-        dl = self.doc_lens[doc_idx]
-        s = 0.0
-        for t in set(query_tokens):
-            f = tf.get(t, 0)
-            if f <= 0:
-                continue
-            idf = self.idf(t)
-            denom = f + self.k1 * (1 - self.b + self.b * dl / max(self.avgdl, 1e-6))
-            s += idf * (f * (self.k1 + 1)) / max(denom, 1e-6)
-        return s
-
-
-@dataclass
-class Chunk:
-    chunk_id: str
-    doc_id: str
-    text: str
-    caption: str = ""
-    content: str = ""
-    context: str = ""
-    enriched_title: str = ""
-    enriched_content: str = ""
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.utils.text_utils import tokenize_for_retrieval as tokenize  # noqa: E402
+from src.retrieval import BM25Lite, reciprocal_rank_binary, coverage_at_k, ndcg_at_k  # noqa: E402
+from src.models import Chunk  # noqa: E402
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -346,34 +297,7 @@ def query_element_gains(q: Dict[str, Any]) -> Dict[str, float]:
     return gains
 
 
-def reciprocal_rank_binary(hit_ranks: List[int]) -> float:
-    if not hit_ranks:
-        return 0.0
-    return 1.0 / min(hit_ranks)
-
-
-def coverage_at_k(retrieved_ids: List[str], gt_ids: Set[str], k: int) -> float:
-    if not gt_ids:
-        return 0.0
-    return len(set(retrieved_ids[:k]) & gt_ids) / len(gt_ids)
-
-
-def ndcg_at_k(retrieved_ids: List[str], gt_gains: Dict[str, float], k: int) -> float:
-    def _dcg(ids: List[str]) -> float:
-        s = 0.0
-        for rank, eid in enumerate(ids[:k], start=1):
-            g = gt_gains.get(eid, 0.0)
-            if g > 0:
-                s += g / math.log2(rank + 1)
-        return s
-
-    if not gt_gains:
-        return 0.0
-    ideal = [eid for eid, _ in sorted(gt_gains.items(), key=lambda kv: kv[1], reverse=True)]
-    idcg = _dcg(ideal)
-    if idcg <= 1e-9:
-        return 0.0
-    return _dcg(retrieved_ids) / idcg
+# reciprocal_rank_binary, coverage_at_k, ndcg_at_k → moved to src.retrieval
 
 
 # ---------------------------------------------------------------------------
@@ -1056,12 +980,17 @@ def evaluate_method(
 
         retrieved_ids = [chunks[ci].chunk_id for ci, _ in ranked]
         hit10 = 1.0 if hit_ranks else 0.0
-        rr = reciprocal_rank_binary(hit_ranks)
+        # reciprocal_rank_binary: shared version takes (ranked_ids, relevant);
+        # for overlap-only fallback (gt_eids empty), compute inline.
+        if gt_eids:
+            rr = reciprocal_rank_binary(retrieved_ids, gt_eids)
+        else:
+            rr = (1.0 / min(hit_ranks_overlap)) if hit_ranks_overlap else 0.0
         for k in (1, 3, 5, 10, 20):
             recall_sums[k] += coverage_at_k(retrieved_ids, gt_eids, k)
         mrr += rr
         coverage10 += coverage_at_k(retrieved_ids, gt_eids, 10)
-        ndcg10 += ndcg_at_k(retrieved_ids, query_element_gains(q), 10)
+        ndcg10 += ndcg_at_k(retrieved_ids, set(query_element_gains(q)), 10)
         per_query.append(
             {
                 "query_id": q.get("query_id"),
