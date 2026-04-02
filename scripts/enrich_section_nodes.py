@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 from src.utils.token_logger import log_run
+from src.api import call_llm, parse_json, set_company_credentials
 
 
 SYSTEM_PROMPT = (
@@ -70,123 +71,21 @@ Produce a structured description with exactly three fields:
 }}"""
 
 
-_COMPANY_API_URL: str = ""
-_COMPANY_API_KEY: str = ""
-
-
-def _collect_company_stream(stream_generator: Any) -> Tuple[str, int, int]:
-    content_parts: List[str] = []
-    in_tok, out_tok = 0, 0
-
-    for line in stream_generator:
-        if isinstance(line, bytes):
-            line = line.decode("utf-8", errors="replace")
-        line = line.strip() if isinstance(line, str) else str(line).strip()
-        if not line or not line.startswith("data: "):
-            continue
-        data = line[6:].strip()
-        if data == "[DONE]":
-            continue
-        try:
-            parsed = json.loads(data)
-            if parsed.get("usage"):
-                in_tok = int(parsed["usage"].get("prompt_tokens", 0) or 0)
-                out_tok = int(parsed["usage"].get("completion_tokens", 0) or 0)
-            choices = parsed.get("choices") or []
-            if not choices:
-                continue
-            delta = choices[0].get("delta", {}) or {}
-            chunk = delta.get("content")
-            if isinstance(chunk, str):
-                content_parts.append(chunk)
-            elif isinstance(chunk, list):
-                for part in chunk:
-                    if isinstance(part, dict) and part.get("type") == "text":
-                        content_parts.append(str(part.get("text", "")))
-        except (json.JSONDecodeError, KeyError, IndexError):
-            continue
-
-    return "".join(content_parts), in_tok, out_tok
-
-
 def call_api(client: Any, model: str, prompt: str, provider: str) -> Tuple[Optional[str], int, int]:
-    if provider == "openai":
-        r = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=768,
-            temperature=0.2,
-        )
-        msg = r.choices[0].message.content if r.choices else ""
-        text = str(msg or "")
-        in_tok = int(getattr(getattr(r, "usage", None), "prompt_tokens", 0) or 0)
-        out_tok = int(getattr(getattr(r, "usage", None), "completion_tokens", 0) or 0)
-        return text, in_tok, out_tok
-
-    if provider == "company":
-        from local_api_logger import wrap_requests_call
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {_COMPANY_API_KEY}",
-        }
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            "max_tokens": 768,
-            "temperature": 0.2,
-            "stream": True,
-            "stream_options": {"include_usage": True},
-        }
-        stream = wrap_requests_call(
-            model=model,
-            url=_COMPANY_API_URL,
-            headers=headers,
-            payload=payload,
-            user="section_enrichment",
-            verify=False,
-        )
-        return _collect_company_stream(stream)
-
-    # anthropic
-    r = client.messages.create(
-        model=model,
-        system=SYSTEM_PROMPT,
+    """Thin wrapper around src.api.call_llm for section enrichment."""
+    return call_llm(
+        client, model, prompt,
+        provider=provider,
+        system_prompt=SYSTEM_PROMPT,
         max_tokens=768,
         temperature=0.2,
-        messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+        user_tag="section_enrichment",
     )
-    text = r.content[0].text.strip() if r.content else ""
-    in_tok = int(getattr(getattr(r, "usage", None), "input_tokens", 0) or 0)
-    out_tok = int(getattr(getattr(r, "usage", None), "output_tokens", 0) or 0)
-    return text, in_tok, out_tok
 
 
-def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
-    if not text:
-        return None
-    text = text.strip()
-    try:
-        obj = json.loads(text)
-        return obj if isinstance(obj, dict) else None
-    except json.JSONDecodeError:
-        pass
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start >= 0 and end > start:
-        try:
-            obj = json.loads(text[start:end + 1])
-            return obj if isinstance(obj, dict) else None
-        except json.JSONDecodeError:
-            return None
-    return None
+def extract_json_result(text: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Extract JSON from LLM output using shared parser."""
+    return parse_json(text)
 
 
 def validate_enrichment(result: Dict[str, Any]) -> List[str]:
@@ -307,7 +206,6 @@ def main() -> None:
         else:
             args.model = "gpt-5.4"
 
-    global _COMPANY_API_URL, _COMPANY_API_KEY
     client: Any = None
     if not args.dry_run:
         if args.provider == "anthropic":
@@ -323,10 +221,11 @@ def main() -> None:
                 raise SystemExit("OPENAI_API_KEY not set")
             client = OpenAI(api_key=api_key)
         else:
-            _COMPANY_API_URL = args.company_api_url
-            _COMPANY_API_KEY = args.company_api_key
-            if not _COMPANY_API_URL or not _COMPANY_API_KEY:
+            url = args.company_api_url
+            key = args.company_api_key
+            if not url or not key:
                 raise SystemExit("COMPANY_API_URL / COMPANY_API_KEY not set")
+            set_company_credentials(url, key)
 
     levels = [x.strip() for x in args.levels.split(",") if x.strip()]
     ref_graph_path = Path(args.reference_graph)
@@ -413,7 +312,7 @@ def main() -> None:
             text, in_tok, out_tok = call_api(client, args.model, prompt, args.provider)
             total_in_tok += in_tok
             total_out_tok += out_tok
-            parsed = extract_json(text)
+            parsed = extract_json_result(text)
             if parsed is None:
                 print(f"[{idx}/{len(rows)}] {row['section_id']} — PARSE FAIL")
                 failed += 1
