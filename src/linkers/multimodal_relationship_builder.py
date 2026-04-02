@@ -443,14 +443,14 @@ class MultimodalRelationshipBuilder:
         md_files = [f for f in doc_dir.rglob("*.md") if f.name != "formulas.md"]
         return md_files[0] if md_files else None
 
-    def _extract_rich_text(self, content: Any) -> str:
+    def _extract_rich_text(self, content: Any, _depth: int = 0) -> str:
         """Recursively extract text from nested MinerU JSON."""
-        if content is None:
+        if _depth > 20 or content is None:
             return ""
         if isinstance(content, str):
             return re.sub(r"\s+", " ", content).strip()
         if isinstance(content, list):
-            return " ".join(self._extract_rich_text(i) for i in content).strip()
+            return " ".join(self._extract_rich_text(i, _depth + 1) for i in content).strip()
         if isinstance(content, dict):
             keys = [
                 "text", "content", "paragraph_content", "title_content",
@@ -460,13 +460,13 @@ class MultimodalRelationshipBuilder:
             parts = []
             for k in keys:
                 if k in content:
-                    t = self._extract_rich_text(content[k])
+                    t = self._extract_rich_text(content[k], _depth + 1)
                     if t:
                         parts.append(t)
             if not parts:
                 for v in content.values():
                     if isinstance(v, (str, list, dict)):
-                        t = self._extract_rich_text(v)
+                        t = self._extract_rich_text(v, _depth + 1)
                         if t:
                             parts.append(t)
             return " ".join(parts).strip()

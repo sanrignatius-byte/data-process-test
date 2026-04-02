@@ -1200,29 +1200,26 @@ def _load_personahub_personas(path: Optional[str] = None) -> List[Dict[str, str]
 
 
 # 按 pair_id 的 md5 稳定哈希分配人设，保证跨机器可复现
-def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
-    """Deterministically assign a PersonaHub persona to a pair via stable hash.
-
-    Uses the PersonaHub-format persona list (loaded from JSON file).
-    Returns the persona description text (not the id).
-    """
+def _resolve_persona_entry(pair_id: str, persona_file: Optional[str] = None) -> Dict[str, str]:
+    """Shared lookup: deterministically pick a persona entry by pair_id hash."""
     personas = _load_personahub_personas(persona_file)
     if not pair_id or not personas:
-        return personas[0]["persona"] if personas else ""
+        return personas[0] if personas else {"id": "unknown", "persona": ""}
     stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
-    idx = stable % len(personas)
-    return personas[idx]["persona"]
+    return personas[stable % len(personas)]
+
+
+def resolve_persona(pair_id: str, persona_file: Optional[str] = None) -> str:
+    """Deterministically assign a PersonaHub persona to a pair via stable hash.
+    Returns the persona description text (not the id).
+    """
+    return _resolve_persona_entry(pair_id, persona_file)["persona"]
 
 
 # 同上，返回短标签用于日志 / 切片分析
 def resolve_persona_id(pair_id: str, persona_file: Optional[str] = None) -> str:
     """Return the persona id (short label) for logging/slicing."""
-    personas = _load_personahub_personas(persona_file)
-    if not pair_id or not personas:
-        return personas[0]["id"] if personas else "unknown"
-    stable = int(hashlib.md5(pair_id.encode("utf-8")).hexdigest()[:8], 16)
-    idx = stable % len(personas)
-    return personas[idx]["id"]
+    return _resolve_persona_entry(pair_id, persona_file)["id"]
 
 
 # 用人设描述替换 prompt 首句 "You are a …"，避免双重角色定义
@@ -1677,27 +1674,45 @@ def has_premise_answer_contradiction(query: str, answer: str) -> bool:
     return False
 
 
+# ── Shared math-region extraction (used by both prompt builder and QC) ──
+# Structural/formatting commands that don't represent mathematical concepts
+# — excluded when extracting formula variables for prompt or QC.
+_LATEX_IGNORE_CMDS = frozenset({
+    "begin", "end", "left", "right", "frac", "cdot", "times",
+    "sum", "prod", "int", "mid", "tag",
+})
+
+_RE_GREEK = re.compile(
+    r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)"
+)
+
+
+def _extract_math_regions(text: str) -> str:
+    """Extract inline/display math content from LaTeX text.
+
+    Returns concatenated math regions, or the original text if none found.
+    This is the single source of truth for math-region extraction — used by
+    both extract_formula_variables() (prompt builder) and
+    _extract_formula_symbol_terms() (QC grounding check).
+    """
+    regions: List[str] = []
+    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
+    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
+    return " ".join(regions) if regions else text
+
+
 # 从 LaTeX 公式中提取变量/函数符号供 QC grounding 检查
 def extract_formula_variables(content: str) -> str:
     """Extract lightweight variable/function hints from formula text."""
     if not content:
         return "(none)"
 
-    text = content
-
-    # Prefer explicit math regions to avoid pulling narrative words.
-    regions: List[str] = []
-    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
-    math_text = " ".join(regions) if regions else text
+    math_text = _extract_math_regions(content)
 
     # capture latex commands likely representing functions/terms
     funcs = re.findall(r"\\([A-Za-z]{2,})", math_text)
-    funcs = [f for f in funcs if f not in {
-        "begin", "end", "left", "right", "frac", "cdot", "times",
-        "sum", "prod", "int", "mid", "tag",
-    }]
+    funcs = [f for f in funcs if f not in _LATEX_IGNORE_CMDS]
 
     # capture symbolic variable names (prefer math-like tokens)
     vars_sub = re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text)
@@ -1705,10 +1720,7 @@ def extract_formula_variables(content: str) -> str:
         r"(?:^|[=+\-*/(,\s{])([A-Za-z])(?:$|[=+\-*/),\s}_^])",
         math_text,
     )
-    greek = re.findall(
-        r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)",
-        math_text,
-    )
+    greek = _RE_GREEK.findall(math_text)
     tokens = list(dict.fromkeys(vars_sub + vars_single + greek))
 
     # keep compact
@@ -1799,24 +1811,18 @@ def _extract_formula_symbol_terms(content: str) -> Set[str]:
     """Extract formula-specific symbolic terms used for grounding checks."""
     if not content:
         return set()
-    text = content
-    regions: List[str] = []
-    regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
-    regions += re.findall(r"\\\[(.+?)\\\]", text, flags=re.DOTALL)
-    math_text = " ".join(regions) if regions else text
+    math_text = _extract_math_regions(content)
 
     terms: Set[str] = set()
-    for g in re.findall(r"\\(alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|tau|theta|phi|psi|omega)", math_text):
+    for g in _RE_GREEK.findall(math_text):
         terms.add(g.lower())
     for t in re.findall(r"\b([A-Za-z]+_[A-Za-z0-9]+)\b", math_text):
         terms.add(t.lower())
     for t in re.findall(r"\b([A-Za-z]+\([A-Za-z0-9,\s]+\))", math_text):
         terms.add(re.sub(r"\s+", "", t.lower()))
-    ignore_cmds = {"begin", "end", "left", "right", "frac", "cdot", "times", "sum", "prod", "int", "mid", "tag"}
     for cmd in re.findall(r"\\([A-Za-z]{2,})", math_text):
         c = cmd.lower()
-        if c not in ignore_cmds:
+        if c not in _LATEX_IGNORE_CMDS:
             terms.add(c)
     return {t for t in terms if t and len(t) >= 2}
 
@@ -1888,6 +1894,65 @@ def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]
         a_text = a.get("anchor", "") if isinstance(a, dict) else str(a)
         all_anchor_tokens |= _content_tokens(a_text)
     return q_tokens & all_anchor_tokens
+
+
+# ── Shared single-element answer check ──────────────────────────
+def _check_single_element_answer(
+    obj: Dict[str, Any],
+    pair: Dict[str, Any],
+    a_tokens: Set[str],
+    a_num_tokens: Set[str],
+) -> Tuple[bool, Dict[str, Any]]:
+    """Check whether the answer draws on BOTH elements of the pair.
+
+    Returns (is_fail, metrics_dict).  Caller decides whether to hard-fail.
+    Shared by qc_multihop_query and qc_real_user_query to avoid drift.
+    """
+    metrics: Dict[str, Any] = {}
+
+    def _elem_text(elem: Dict) -> str:
+        return (elem.get("caption", "") or "") + " " + (elem.get("content", "") or "")
+
+    def _min_overlap(elem: Dict) -> int:
+        etype = str(elem.get("element_type", "")).lower()
+        return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
+
+    span_text_by_eid: Dict[str, str] = defaultdict(str)
+    for s in obj.get("required_evidence_spans", []) or []:
+        if not isinstance(s, dict):
+            continue
+        eid = str(s.get("element_id", "")).strip()
+        span = str(s.get("span", "")).strip()
+        if eid and span:
+            span_text_by_eid[eid] += " " + span
+
+    def _overlap(elem: Dict, elem_id: str) -> int:
+        merged = (_elem_text(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
+        word_ov = len(a_tokens & _content_tokens(merged))
+        num_ov = len(a_num_tokens & _number_tokens(merged))
+        return word_ov + min(num_ov, 2)
+
+    elem_a = pair.get("element_a", {})
+    elem_b = pair.get("element_b", {})
+    ov_a = _overlap(elem_a, pair.get("element_a_id", ""))
+    ov_b = _overlap(elem_b, pair.get("element_b_id", ""))
+    metrics["answer_overlap_a"] = ov_a
+    metrics["answer_overlap_b"] = ov_b
+    total = ov_a + ov_b
+    metrics["answer_balance"] = 0.0
+
+    if total > 0:
+        balance = min(ov_a / total, ov_b / total)
+        metrics["answer_balance"] = round(balance, 4)
+        is_fail = (
+            ov_a < _min_overlap(elem_a)
+            or ov_b < _min_overlap(elem_b)
+            or balance < ANSWER_BALANCE_THRESHOLD
+        )
+    else:
+        is_fail = True
+
+    return is_fail, metrics
 
 
 # QC 主入口：meta_language / anchor_leakage / single_element_answer 等全套检查
@@ -2015,60 +2080,9 @@ def qc_multihop_query(
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
     if a_tokens or a_num_tokens:
-        # 按元素类型返回最低 overlap 阈值：figure=1, table/formula=2
-        def _min_overlap_for_elem(elem: Dict) -> int:
-            etype = str(elem.get("element_type", "")).lower()
-            return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
-
-        # 拼接 caption + content + evidence_spans 的合并文本
-        def _elem_text(elem: Dict) -> str:
-            caption = elem.get("caption", "") or ""
-            # Use caption + raw content for all modalities (including formula)
-            # to avoid prose inflation in overlap scoring.
-            return caption + " " + (elem.get("content", "") or "")
-
-        span_text_by_eid: Dict[str, str] = defaultdict(str)
-        for s in obj.get("required_evidence_spans", []) or []:
-            if not isinstance(s, dict):
-                continue
-            eid = str(s.get("element_id", "")).strip()
-            span = str(s.get("span", "")).strip()
-            if eid and span:
-                span_text_by_eid[eid] += " " + span
-
-        # 计算 answer 与单个元素的词+数字重合度
-        def _elem_overlap(elem: Dict, elem_id: str) -> int:
-            # Merge raw element text with its required evidence span to reduce
-            # false negatives from OCR/style variation in table/formula content.
-            merged = (_elem_text(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
-            word_overlap = len(a_tokens & _content_tokens(merged))
-            num_overlap = len(a_num_tokens & _number_tokens(merged))
-            # Cap numeric contribution so lexical grounding still dominates.
-            return word_overlap + min(num_overlap, 2)
-
-        elem_a = pair.get("element_a", {})
-        elem_b = pair.get("element_b", {})
-        elem_a_id = pair.get("element_a_id", "")
-        elem_b_id = pair.get("element_b_id", "")
-        overlap_a = _elem_overlap(elem_a, elem_a_id)
-        overlap_b = _elem_overlap(elem_b, elem_b_id)
-        metrics["answer_overlap_a"] = overlap_a
-        metrics["answer_overlap_b"] = overlap_b
-        total = overlap_a + overlap_b
-        metrics["answer_balance"] = 0.0
-        if total > 0:
-            contrib_a = overlap_a / total
-            contrib_b = overlap_b / total
-            balance = min(contrib_a, contrib_b)
-            metrics["answer_balance"] = round(balance, 4)
-            # Require non-trivial overlap from BOTH elements.
-            if (
-                overlap_a < _min_overlap_for_elem(elem_a)
-                or overlap_b < _min_overlap_for_elem(elem_b)
-                or balance < ANSWER_BALANCE_THRESHOLD
-            ):
-                issues.append("single_element_answer")
-        else:
+        sea_fail, sea_metrics = _check_single_element_answer(obj, pair, a_tokens, a_num_tokens)
+        metrics.update(sea_metrics)
+        if sea_fail:
             issues.append("single_element_answer")
 
     # 8. Text evidence length
@@ -2238,49 +2252,9 @@ def qc_real_user_query(
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
     if (a_tokens or a_num_tokens) and query_intent == "objective":
-        def _min_overlap_ru(elem: Dict) -> int:
-            etype = str(elem.get("element_type", "")).lower()
-            return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
-
-        def _elem_text_ru(elem: Dict) -> str:
-            return (elem.get("caption", "") or "") + " " + (elem.get("content", "") or "")
-
-        span_text_by_eid: Dict[str, str] = defaultdict(str)
-        for s in obj.get("required_evidence_spans", []) or []:
-            if not isinstance(s, dict):
-                continue
-            eid = str(s.get("element_id", "")).strip()
-            span = str(s.get("span", "")).strip()
-            if eid and span:
-                span_text_by_eid[eid] += " " + span
-
-        elem_a = pair.get("element_a", {})
-        elem_b = pair.get("element_b", {})
-        elem_a_id = pair.get("element_a_id", "")
-        elem_b_id = pair.get("element_b_id", "")
-
-        def _overlap_ru(elem: Dict, elem_id: str) -> int:
-            merged = (_elem_text_ru(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
-            word_ov = len(a_tokens & _content_tokens(merged))
-            num_ov = len(a_num_tokens & _number_tokens(merged))
-            return word_ov + min(num_ov, 2)
-
-        ov_a = _overlap_ru(elem_a, elem_a_id)
-        ov_b = _overlap_ru(elem_b, elem_b_id)
-        metrics["answer_overlap_a"] = ov_a
-        metrics["answer_overlap_b"] = ov_b
-        total = ov_a + ov_b
-        metrics["answer_balance"] = 0.0
-        if total > 0:
-            balance = min(ov_a / total, ov_b / total)
-            metrics["answer_balance"] = round(balance, 4)
-            if (
-                ov_a < _min_overlap_ru(elem_a)
-                or ov_b < _min_overlap_ru(elem_b)
-                or balance < ANSWER_BALANCE_THRESHOLD
-            ):
-                issues.append("single_element_answer")
-        else:
+        sea_fail, sea_metrics = _check_single_element_answer(obj, pair, a_tokens, a_num_tokens)
+        metrics.update(sea_metrics)
+        if sea_fail:
             issues.append("single_element_answer")
 
     # 5. Retrievability score (0–3, higher = more self-contained / easier to retrieve)

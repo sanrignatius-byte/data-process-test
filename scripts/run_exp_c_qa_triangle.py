@@ -445,6 +445,7 @@ def main() -> None:
         graph_qa_score_sum = 0.0
         n_valid = 0
         n_qa = 0
+        n_qa_errors = 0
 
         for qi, q in enumerate(queries):
             gt_ids = query_ground_truth_ids(q)
@@ -504,6 +505,7 @@ def main() -> None:
 
                 except Exception as e:
                     print(f"  [{qi+1}/{len(queries)}] LLM ERROR: {e}")
+                    n_qa_errors += 1
                     if "rate" in str(e).lower() or "429" in str(e):
                         time.sleep(30)
                     continue
@@ -530,6 +532,7 @@ def main() -> None:
         if avg_bm25_qa is not None:
             level_result["qa"] = {
                 "n_qa_pairs": n_qa,
+                "n_qa_errors": n_qa_errors,
                 "bm25_avg_evidence_mention": round(avg_bm25_qa, 4),
                 "graph_avg_evidence_mention": round(avg_graph_qa, 4),
                 "delta": round(avg_graph_qa - avg_bm25_qa, 4),
@@ -542,6 +545,8 @@ def main() -> None:
         if avg_bm25_qa is not None:
             print(f"    QA evidence mention: BM25={avg_bm25_qa:.4f}  Graph={avg_graph_qa:.4f}  "
                   f"delta={avg_graph_qa - avg_bm25_qa:+.4f}")
+            if n_qa_errors:
+                print(f"    ⚠ LLM errors: {n_qa_errors} queries skipped (QA avg based on {n_qa}/{n_valid} queries)")
 
     # Save report
     report = {

@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence, Set
 
 TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
-METHODS = ["bm25", "bm25f", "lm_dirichlet", "prf", "bm25_title_boost", "proximity", "hits", "rrf"]
+METHODS = ["bm25", "bm25f", "lm_dirichlet", "prf", "bm25_title_boost", "oracle_proximity", "hits", "rrf"]
 
 
 class Element:
@@ -354,7 +354,11 @@ def run_method(
                 if hit_ratio >= title_match_threshold:
                     s[i] += title_boost
 
-        elif method == "proximity":
+        elif method in ("proximity", "oracle_proximity"):
+            # NOTE: This is an ORACLE method — it uses ground-truth element IDs
+            # to identify relevant documents. Results are an upper-bound analysis
+            # tool, NOT a fair retrieval baseline. Do not compare directly with
+            # non-oracle methods without noting this caveat.
             docs = {ix.elems[eid2i[e]].doc_id for e in gt if e in eid2i}
             s = bm[:]
             for i, e in enumerate(ix.elems):

@@ -266,6 +266,11 @@ def main() -> None:
         "--skip-package", action="store_true",
         help="Skip package_m2_levels.py at the end",
     )
+    ap.add_argument(
+        "--enriched-elements", type=Path,
+        default=DATA_DIR / "multimodal_elements_enriched.json",
+        help="Path to MoDora-enriched elements JSON (default: data/multimodal_elements_enriched.json)",
+    )
     args = ap.parse_args()
 
     print("=" * 60)
@@ -288,7 +293,7 @@ def main() -> None:
             output=enriched_path,
             elements=DATA_DIR / "multimodal_elements.json",
             latex_graph=DATA_DIR / "latex_reference_graph.json",
-            enriched_elements=Path("data111/multimodal_elements_enriched.json"),
+            enriched_elements=args.enriched_elements,
         )
     else:
         print("\n[2/5] Skipping enrichment (using existing enriched candidates)")
