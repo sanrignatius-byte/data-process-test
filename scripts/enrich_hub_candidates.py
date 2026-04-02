@@ -46,6 +46,28 @@ from src.utils.text_utils import (  # noqa: E402
 ELEMENT_MODALITIES = {"figure", "table", "equation"}
 MINERU_MODAL_MAP = {"figure": "figure", "table": "table", "equation": "formula"}
 
+# Section-level enrichment cache: {section_id: row dict}
+_SECTION_ENRICH_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
+def load_section_enrichments(section_enrich_path: str) -> None:
+    """Load section/subsection enrichment JSON keyed by section_id.
+
+    Used by ``build_hub_semantic_summary`` to inject section-level bridge
+    context for hub candidate paths that traverse section nodes.
+    """
+    _SECTION_ENRICH_CACHE.clear()
+    if not section_enrich_path or not Path(section_enrich_path).exists():
+        return
+    data = json.loads(Path(section_enrich_path).read_text(encoding="utf-8"))
+    rows = data.get("sections", []) if isinstance(data, dict) else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        sid = str(row.get("section_id", "") or "").strip()
+        if sid:
+            _SECTION_ENRICH_CACHE[sid] = row
+
 
 # ─── Build MinerU index ──────────────────────────────────────────────────────
 
@@ -303,25 +325,27 @@ def _first_n_words(text: str, n: int) -> str:
     return excerpt
 
 
-# 规则压缩摘要：两端 enriched 描述 + bridge 片段 → 50-80 词
+# 规则压缩摘要：两端 enriched 描述 + bridge 片段 + section 上下文 → 50-90 词
 # 不调 LLM，借鉴 MoDora bottom-up cascade 的思路做纯规则拼接
 def build_hub_semantic_summary(
     el_a: Dict[str, Any],
     el_b: Dict[str, Any],
     edge_contexts: List[Dict[str, str]],
+    section_ids: Optional[List[str]] = None,
 ) -> str:
-    """Build a compressed hub semantic summary (~50-80 words).
+    """Build a compressed hub semantic summary (~50-90 words).
 
     Inspired by MoDora's bottom-up cascade summarization: combines enriched
     content from both elements plus edge context.  The result is compressed
-    from the raw concatenation to a dense 50-80 word bridge description so
+    from the raw concatenation to a dense 50-90 word bridge description so
     it fits within prompt context budgets without dominating the input.
 
     Compression strategy (rule-based, no extra LLM call):
       - Take first ~20 words from each element's enriched description.
       - Take first ~15 words from the strongest bridge context snippet.
+      - Section context from enriched section nodes traversed in the path.
       - Include up to 5 shared keywords.
-    Total budget: ~55-65 words plus tags.
+    Total budget: ~55-90 words plus tags.
     """
     parts: List[str] = []
 
@@ -353,6 +377,21 @@ def build_hub_semantic_summary(
             parts.append(f"[BRIDGE] {_first_n_words(snippet, 15)}")
             break  # one bridge snippet is enough for compression target
 
+    # Section bridge context: inject enriched section title+keywords
+    # when the candidate path traverses section nodes (::sec::)
+    if section_ids and _SECTION_ENRICH_CACHE:
+        for sid in section_ids[:2]:  # max 2 section contexts
+            row = _SECTION_ENRICH_CACHE.get(sid)
+            if not row:
+                continue
+            sec_title = (row.get("enriched_title") or row.get("section_title") or "").strip()
+            sec_keywords = (row.get("enriched_metadata") or {}).get("keywords", [])
+            if sec_title:
+                sec_text = sec_title
+                if sec_keywords:
+                    sec_text += f" ({', '.join(str(k) for k in sec_keywords[:3])})"
+                parts.append(f"[SECTION] {_first_n_words(sec_text, 15)}")
+
     # Keywords: merged from both elements, deduped, max 5
     keywords_a = (el_a.get("enriched_metadata") or {}).get("keywords", [])
     keywords_b = (el_b.get("enriched_metadata") or {}).get("keywords", [])
@@ -362,10 +401,10 @@ def build_hub_semantic_summary(
 
     summary = " | ".join(parts) if parts else ""
 
-    # Final word-count guard: hard-cap at 80 words to stay within budget
+    # Final word-count guard: hard-cap at 90 words to stay within budget
     words = summary.split()
-    if len(words) > 80:
-        summary = " ".join(words[:80])
+    if len(words) > 90:
+        summary = " ".join(words[:90])
 
     return summary
 
@@ -523,9 +562,13 @@ def enrich_candidates(
 
         # Map path node IDs to element IDs where possible
         mapped_path = []
+        path_section_ids: List[str] = []
         for nid in path_nids:
             mapped = node_to_element.get(nid)
             mapped_path.append(mapped if mapped else nid)
+            # Collect section node IDs from the path for bridge context
+            if "::sec::" in str(nid):
+                path_section_ids.append(str(nid))
 
         elem_a_dict = make_element_dict(el_a)
         elem_b_dict = make_element_dict(el_b)
@@ -545,9 +588,10 @@ def enrich_candidates(
             seen_group_eids.add(ep_eid)
             node_group.append(make_element_dict(ep_el))
 
-        # Build hub semantic summary from enriched descriptions
+        # Build hub semantic summary from enriched descriptions + section context
         hub_summary = build_hub_semantic_summary(
             elem_a_dict, elem_b_dict, edge_contexts,
+            section_ids=path_section_ids,
         )
 
         pair_dict = {
@@ -560,6 +604,7 @@ def enrich_candidates(
             "pair_type": pair_type,
             "hop_distance": cand["hop_distance"],
             "path": mapped_path,
+            "path_section_ids": path_section_ids,
             "quality_score": hub_quality.get(cand.get("hub_node_id", ""), 0.5),
             "overlap_with_existing_l1": False,
             "element_a": elem_a_dict,
@@ -689,6 +734,13 @@ def main():
         default="data/latex_graph_hubs.json",
         help="Hub topology data (for quality_score computation from bridge_score/pagerank)",
     )
+    ap.add_argument(
+        "--section-enrich",
+        default=None,
+        help="Optional section enrichment JSON (section_nodes_enriched.json). "
+             "When provided, section nodes traversed in candidate paths will be "
+             "included as bridge context in hub_semantic_summary.",
+    )
     ap.add_argument("--limit", type=int, default=0, help="Limit candidates (0=all)")
     args = ap.parse_args()
 
@@ -737,6 +789,15 @@ def main():
         hub_data["adjacent_backbone_bridges"] = hubs_topo.get("adjacent_backbone_bridges", [])
     else:
         print(f"  WARNING: hubs file {hubs_path} not found, quality_score will use default 0.5")
+
+    # Load section enrichments if provided (for section bridge context)
+    if args.section_enrich:
+        sec_path = Path(args.section_enrich)
+        if sec_path.exists():
+            load_section_enrichments(str(sec_path))
+            print(f"  Section enrichments loaded: {len(_SECTION_ENRICH_CACHE)} sections")
+        else:
+            print(f"  WARNING: section enrich file not found at {sec_path}")
 
     print("\nBuilding indices...")
     mm_index = build_mm_index(mm_data)

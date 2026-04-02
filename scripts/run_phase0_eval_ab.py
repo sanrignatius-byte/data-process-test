@@ -34,7 +34,7 @@ import sys
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.utils.text_utils import tokenize_for_retrieval as tokenize  # noqa: E402
@@ -78,7 +78,11 @@ def _to_text(v: Any) -> str:
 
 
 # 每个元素 = 一个 chunk：拼接 caption+content+context+enriched，限 1800 字符
-def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
+def build_chunks(
+    elements_json: Path,
+    max_chars: int = 1800,
+    section_enrich_path: Optional[Path] = None,
+) -> List[Chunk]:
     data = json.loads(elements_json.read_text(encoding="utf-8"))
     docs = data.get("documents", {}) or {}
     chunks: List[Chunk] = []
@@ -110,6 +114,46 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
                     enriched_content=enriched_content,
                 )
             )
+
+    # Optionally load section enrichment as additional chunks
+    if section_enrich_path and section_enrich_path.exists():
+        sec_data = json.loads(section_enrich_path.read_text(encoding="utf-8"))
+        sec_rows = sec_data.get("sections", []) if isinstance(sec_data, dict) else []
+        n_sec = 0
+        for row in sec_rows:
+            if not isinstance(row, dict):
+                continue
+            sid = str(row.get("section_id", "") or "").strip()
+            doc_id = str(row.get("doc_id", "") or "").strip()
+            if not sid or not doc_id:
+                continue
+            sec_title = _to_text(row.get("enriched_title")) or _to_text(row.get("section_title"))
+            sec_content = _to_text(row.get("enriched_content"))
+            sec_metadata = row.get("enriched_metadata") or {}
+            sec_keywords = sec_metadata.get("keywords", [])
+            kw_str = ", ".join(str(k) for k in sec_keywords[:8]) if sec_keywords else ""
+            fields = [sec_title, kw_str, sec_content]
+            text = "\n".join([x for x in fields if x]).strip()
+            if not text:
+                continue
+            if len(text) > max_chars:
+                text = text[:max_chars]
+            chunks.append(
+                Chunk(
+                    chunk_id=sid,
+                    doc_id=doc_id,
+                    text=text,
+                    caption="",
+                    content=sec_content,
+                    context="",
+                    enriched_title=sec_title,
+                    enriched_content=sec_content,
+                )
+            )
+            n_sec += 1
+        if n_sec:
+            print(f"  Loaded {n_sec} section chunks from {section_enrich_path.name}")
+
     return chunks
 
 
@@ -1077,6 +1121,9 @@ def main() -> None:
     ap.add_argument("--embedding-edges", type=Path, default=None,
                     help="Embedding-based edges JSON (from build_embedding_edges.py). "
                          "Merged into element adjacency for neighbor propagation.")
+    ap.add_argument("--section-enrich", type=Path, default=None,
+                    help="Optional section enrichment JSON (section_nodes_enriched.json). "
+                         "Section nodes are added as retrieval chunks to the corpus.")
     args = ap.parse_args()
 
     # ------------------------------------------------------------------
@@ -1086,7 +1133,11 @@ def main() -> None:
     if args.q3 is not None and args.q3.exists():
         rows += load_jsonl(args.q3)
     queries = dedupe_queries(rows)
-    chunks = build_chunks(args.elements, max_chars=args.max_chars)
+    chunks = build_chunks(
+        args.elements,
+        max_chars=args.max_chars,
+        section_enrich_path=args.section_enrich,
+    )
 
     doc_hub_prior = load_doc_hub_prior(args.hubs)
     element_hub_prior = (

@@ -1,12 +1,11 @@
 #!/bin/bash
 # ============================================================
-# M4 Workflow - 提交所有任务（带依赖）
+# PDF 下载 + MinerU 解析工作流 - 提交所有任务（带依赖）
 #
 # 用法:
 #   ./slurm_scripts/submit_all.sh --arxiv-id 2501.09959
 #   ./slurm_scripts/submit_all.sh --arxiv-id 2501.09959 --max-references 300
 #   ./slurm_scripts/submit_all.sh --skip-download
-#   ./slurm_scripts/submit_all.sh --parse-only
 #
 # 常用状态查看:
 #   squeue -u $USER
@@ -23,16 +22,11 @@ MIN_CITATIONS=${MIN_CITATIONS:-0}
 CONDA_ENV=${CONDA_ENV:-minerU}
 
 SKIP_DOWNLOAD=false
-PARSE_ONLY=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-download)
             SKIP_DOWNLOAD=true
-            shift
-            ;;
-        --parse-only)
-            PARSE_ONLY=true
             shift
             ;;
         --arxiv-id)
@@ -75,10 +69,9 @@ if [[ "$SKIP_DOWNLOAD" == false && -z "$ARXIV_ID" ]]; then
 fi
 
 echo "=========================================="
-echo "M4 Workflow Submission"
+echo "PDF Download + MinerU Parse Workflow"
 echo "Repo root: $REPO_ROOT"
 echo "Skip download: $SKIP_DOWNLOAD"
-echo "Parse only: $PARSE_ONLY"
 echo "arXiv ID: ${ARXIV_ID:-N/A}"
 echo "Output dir: $OUTPUT_DIR"
 echo "=========================================="
@@ -100,12 +93,9 @@ else
     echo "Submitted parse_pdfs: Job $JOB2"
 fi
 
-if [[ "$PARSE_ONLY" == false ]]; then
-    JOB3=$(sbatch --parsable --dependency=afterok:$JOB2 \
-        --export=ALL,REPO_ROOT="$REPO_ROOT",CONDA_ENV="$CONDA_ENV",MINERU_INPUT_DIR="data/mineru_output",QUERY_OUTPUT_DIR="data/queries_output/m4_queries" \
-        slurm_scripts/03_generate_m4_queries.sh)
-    echo "Submitted m4_query_gen: Job $JOB3 (depends on $JOB2)"
-fi
+# Note: M4 query generation step (03_generate_m4_queries.sh) was removed.
+# The active query generation pipeline is scripts/generate_multihop_l1_queries.py
+# which should be run separately after MinerU parsing + graph construction.
 
 echo ""
 echo "=========================================="
@@ -115,5 +105,4 @@ echo ""
 echo "View logs:"
 echo "  tail -f logs/fetch_refs_*.out"
 echo "  tail -f logs/parse_*.out"
-echo "  tail -f logs/m4_query_*.out"
 echo "=========================================="

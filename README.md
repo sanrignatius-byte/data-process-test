@@ -1,35 +1,42 @@
-# MinerU 多模态对比学习数据工厂
+# Document Graph for Document Understanding
 
-用于从PDF文档生成多模态对比学习训练数据的生产级流水线。专为NTU EEE集群（4x A2000 GPU）设计。
+基于多层异构图的学术文档理解系统。核心创新是面向学术论文的多层图构建方法，支持多种下游任务（query 生成、QA、文档检索、证据定位）。
 
 ## 概述
 
 本项目实现了完整的数据处理流水线：
 
-1. **PDF下载**：从arXiv获取论文（或使用本地PDF）
-2. **文档解析**：使用MinerU提取文本、表格、图片和公式
-3. **模态提取**：按模态分类和组织内容
-4. **Query生成**：使用LLM生成多样化的查询
-5. **负例采样**：构建对比学习所需的硬负例
-6. **数据输出**：导出JSONL格式用于训练
-
-### 新功能：M4跨文档Query生成
-
-基于最新学术研究（M4DocBench、TRACE、CoQA等），实现了增强的M4 Query生成：
-
-- **Multi-hop（多跳推理）**：需要2+个证据点的推理链
-- **Multi-modal（多模态）**：需要2+种模态（文本、表格、图片、公式）
-- **Multi-document（多文档）**：需要跨2+个文档的证据综合
-- **Multi-turn（多轮对话）**：自然的多轮对话格式，包含代词指代
+1. **PDF + LaTeX 下载**：从 arXiv 获取论文 PDF 和 LaTeX 源码
+2. **MinerU 解析**：提取文本、表格、图片和公式
+3. **构建 MinerU 基础图**：多模态元素 DAG（figure/table/formula/section 关系）
+4. **构建 LaTeX 基础图**：引用关系 DAG（\label/\ref/\cite）+ 跨文档引用图
+5. **合并为统一图**：拓扑分析 + Hub 检测 + 多跳候选路径
+6. **Enrichment**：无 LLM 版（纯规则/拓扑特征）和调用 LLM 版（[T]/[M]/[C] 语义增强 + section 摘要）
+7. **Query 生成**：11 种 prompt 模板 × 76 种学术人设 × 3 种 query 风格
+8. **QC 检查**：25+ 原子检查，学术/真实用户双轨 QC
+9. **实验评测**：BM25 vs Graph 检索、难度梯度验证、消融实验
 
 ## 架构
 
 ```
-PDF源 → [下载器] → MinerU解析 → 模态分割 → Passage构建
-                                                    ↓
-                                         [实体提取] → [跨文档关联]
-                                                    ↓
-JSONL输出 ← 负例采样 ← Query生成(LLM) ← Evidence Chain ←┘
+arXiv PDF+LaTeX → [下载器] → MinerU 解析 → 多模态元素提取
+                      ↓                          ↓
+               LaTeX 源码解析          build_multimodal_relationships.py
+                      ↓                          ↓
+            build_latex_reference_graph.py   multimodal_elements.json
+            build_citation_graph.py              ↓
+                      ↓                   ┌──────┴──────┐
+             LaTeX 引用 DAG + 跨文档引用图 │              │
+                      └──────────┬────────┘              │
+                    analyze_latex_graph_topology.py       │
+                                 ↓                       │
+                    Hub 检测 + 多跳候选路径               │
+                                 ↓                       ↓
+                    enrich_hub_candidates.py ← enrich_elements_modora.py
+                                 ↓              enrich_section_nodes.py
+                    generate_multihop_l1_queries.py
+                                 ↓
+                    QC (src/qc/) → 实验评测 (run_phase0_eval_ab.py)
 ```
 
 ## 安装
@@ -98,74 +105,60 @@ python scripts/view_api_usage_monthly.py \
   --output-txt "D:\Code_store\data-process-test\api_logs\usage_2026-03.txt"
 ```
 
-### 方式1：M4跨文档Query生成（推荐）
+### 方式1：完整 Pipeline（推荐）
 
 ```bash
-# 1. 先解析PDF文档
-python scripts/parse_only.py --input data/raw_pdfs --output data/mineru_output
-
-# 2. 生成M4跨文档Query
-python scripts/generate_m4_queries.py \
-    --input data/mineru_output \
-    --output data/m4_queries/queries \
-    --max-docs 10 \
-    --num-queries 20
-```
-
-#### M4脚本参数说明
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--input` | MinerU输出目录 | `data/mineru_output` |
-| `--output` | Query输出路径 | `data/m4_queries/queries` |
-| `--max-docs` | 最大处理文档数 | 10 |
-| `--num-queries` | 目标Query数量 | 10 |
-| `--provider` | LLM提供商 | `anthropic` |
-| `--model` | 模型名称 | `claude-sonnet-4-20250514` |
-| `--relaxed` | 放宽M4要求 | False |
-| `--dry-run` | 仅统计，不调用LLM | False |
-
-#### 使用示例
-
-```bash
-# Dry Run：只看实体和关联统计
-python scripts/generate_m4_queries.py --input data/mineru_output --dry-run
-
-# 指定特定文档
-python scripts/generate_m4_queries.py \
-    --input data/mineru_output \
-    --doc-ids 2401.00001 2401.00002 2401.00003
-
-# 放宽M4要求（不强制四个维度全满足）
-python scripts/generate_m4_queries.py --input data/mineru_output --relaxed
-
-# 使用OpenAI
-python scripts/generate_m4_queries.py \
-    --input data/mineru_output \
-    --provider openai \
-    --model gpt-4o-mini
-```
-
-### 方式4：输入arXiv编号，直接下载其引用文献PDF（新）
-
-```bash
+# 1. 下载引用论文 PDF + LaTeX 源码
 python scripts/download_references_by_arxiv.py \
-    --arxiv-id 2501.09959 \
-    --output data/referenced_pdfs
+    --arxiv-id 2501.09959 --output data/raw_pdfs
+python scripts/download_latex_sources.py
+
+# 2. MinerU 解析 PDF（在集群上用 GPU）
+# 使用 slurm_scripts/02_parse_pdfs.sh 或直接调用 MinerU CLI
+
+# 3. 构建 MinerU 基础图
+python scripts/build_multimodal_relationships.py
+
+# 4. 构建 LaTeX 基础图 + 跨文档引用图
+python scripts/build_latex_reference_graph.py \
+    --source-dir data/latex_sources/extracted \
+    --output data/latex_reference_graph.json
+python scripts/build_citation_graph.py \
+    --input data/latex_reference_graph.json \
+    --output data/citation_graph.json
+
+# 5. 合并为统一图 + Hub 检测
+python scripts/analyze_latex_graph_topology.py
+
+# 6. Enrichment（LLM 版）
+python scripts/enrich_elements_modora.py \
+    --input data/multimodal_elements.json \
+    --output data/multimodal_elements_enriched.json
+python scripts/enrich_section_nodes.py \
+    --reference-graph data/latex_reference_graph.json \
+    --output data/section_nodes_enriched.json
+python scripts/enrich_hub_candidates.py \
+    --hub-candidates data/latex_hub_multihop_candidates.json \
+    --elements data/multimodal_elements.json \
+    --latex-graph data/latex_reference_graph.json \
+    --output data/hub_candidates_enriched.json
+
+# 7. Query 生成（3 种风格 × 76 种人设）
+python scripts/generate_multihop_l1_queries.py \
+    --candidates data/hub_candidates_enriched.json \
+    --output data/l1_queries.jsonl \
+    --pass-only \
+    --query-style mixed \
+    --use-persona
+
+# 8. 实验评测
+python scripts/run_phase0_eval_ab.py
 ```
 
-可选参数：
-
-- `--max-references`: 限制处理的引用数量（默认全部）
-- `--min-citations`: 只保留最小引用数以上的文献
-- `--api-key`: Semantic Scholar API key（可提升速率限制）
-
-脚本会优先尝试 `arXiv PDF`、`openAccessPdf`，并回退到 `doi.org` 跳转链接；最终在输出目录写入 `reference_download_report.json` 记录每篇文献的下载状态。
-
-### 方式5：在 Slurm 上执行完整任务（推荐集群）
+### 方式2：在 Slurm 上执行下载+解析
 
 ```bash
-# 1) 提交完整流程（下载引用 -> 解析 -> 生成M4）
+# 1) 完整流程（下载引用 → MinerU 解析）
 ./slurm_scripts/submit_all.sh --arxiv-id 2501.09959
 
 # 2) 控制下载规模
@@ -174,50 +167,11 @@ python scripts/download_references_by_arxiv.py \
     --max-references 300 \
     --min-citations 3
 
-# 3) 只跑解析与生成（跳过下载）
+# 3) 跳过下载，只跑解析
 ./slurm_scripts/submit_all.sh --skip-download
 ```
 
-如果你想单独提交下载任务，也可以直接：
-
-```bash
-sbatch \
-  --export=ALL,ARXIV_ID=2501.09959,MAX_REFERENCES=200,MIN_CITATIONS=0 \
-  slurm_scripts/01_fetch_references.sh
-```
-
-常用检查命令：
-
-```bash
-squeue -u $USER
-sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
-```
-
-### 方式2：完整Pipeline
-
-```bash
-# 处理200篇文档
-python scripts/run_pipeline.py --target-docs 200
-
-# 使用自定义配置
-python scripts/run_pipeline.py --config configs/config.yaml --target-docs 200
-
-# 跳过下载，使用已有PDF
-python scripts/run_pipeline.py --skip-download
-
-# 跳过下载和解析，仅重新生成Query
-python scripts/run_pipeline.py --skip-download --skip-parse
-```
-
-### 方式3：分阶段执行
-
-```bash
-# 仅下载PDF
-python scripts/download_only.py --count 200 --categories cs.CL cs.CV
-
-# 仅解析PDF
-python scripts/parse_only.py --input ./data/raw_pdfs --output ./data/mineru_output
-```
+解析完成后，在本地继续执行图构建 → enrichment → query 生成。
 
 ## 配置说明
 
@@ -251,59 +205,23 @@ negative_sampling:
 
 ## 输出格式
 
-### M4 Query输出格式
+### Query 输出格式（L1 Dual-evidence）
 
 ```json
 {
-  "query_id": "m4_abc123",
-  "query_type": "full_m4",
-  "turns": [
-    "BERT模型在SQuAD数据集上的F1分数是多少？",
-    "它与GPT相比有什么优势？"
+  "pair_id": "abc123",
+  "query": "When the loss curve flattens above 0.8 threshold, ...",
+  "answer": "The plateau corresponds to Table 3 row 4 where ...",
+  "query_type": "figure_table_2hop",
+  "query_style": "academic",
+  "persona_id": "phd_ml_fairness",
+  "required_evidence_spans": [
+    {"element_id": "doc_fig_1", "span": "loss curve plateau", "evidence_type": "visual"},
+    {"element_id": "doc_tbl_3", "span": "row 4 threshold value", "evidence_type": "tabular"}
   ],
-  "answer": "BERT在SQuAD上达到88.5% F1，主要优势在于双向编码...",
-  "evidence_chain": {
-    "nodes": [
-      {"doc_id": "doc_a", "modal_type": "table", "content_snippet": "..."},
-      {"doc_id": "doc_b", "modal_type": "text", "content_snippet": "..."}
-    ],
-    "reasoning_steps": [
-      "从doc_a的表格获取BERT的F1分数",
-      "通过BERT实体桥接到doc_b",
-      "从doc_b的文本获取与GPT的比较"
-    ],
-    "modalities": ["table", "text"],
-    "docs": ["doc_a", "doc_b"]
-  },
-  "validation": {
-    "is_multi_hop": true,
-    "is_multi_modal": true,
-    "is_multi_doc": true,
-    "is_multi_turn": true,
-    "satisfies_full_m4": true
-  }
-}
-```
-
-### 对比学习Triplet格式
-
-```json
-{
-  "query": "该方法在PubMed数据集上的F1分数是多少？",
-  "query_type": "factual",
-  "positive": {
-    "text": "| 方法 | 数据集 | F1 |\n|------|--------|----|\n| Ours | PubMed | 0.89 |",
-    "modal_type": "table",
-    "image_path": "mineru_output/doc_001/images/table_1.png"
-  },
-  "negatives": [
-    {
-      "text": "| 方法 | 数据集 | F1 |\n|------|--------|----|\n| Baseline | PubMed | 0.75 |",
-      "modal_type": "table",
-      "negative_type": "hard_same_modal"
-    }
-  ],
-  "difficulty_score": 0.7
+  "visual_anchors": [...],
+  "qc_pass": true,
+  "qc_metrics": {...}
 }
 ```
 
@@ -311,44 +229,46 @@ negative_sampling:
 
 ```
 data-process-test/
-├── configs/
-│   └── config.yaml              # 主配置文件
 ├── data/
-│   ├── raw_pdfs/                # 下载的PDF
-│   ├── mineru_output/           # MinerU解析输出
-│   ├── m4_queries/              # M4 Query输出
-│   ├── contrastive_data/        # 最终数据集
-│   └── checkpoints/             # Pipeline检查点
-├── docs/
-│   └── M4_RESEARCH_NOTES.md     # M4研究笔记
-├── logs/                         # 执行日志
+│   ├── raw_pdfs/                         # 下载的 PDF
+│   ├── latex_sources/extracted/          # LaTeX 源码
+│   ├── mineru_output/                    # MinerU 解析输出
+│   ├── multimodal_elements.json          # MinerU 基础图
+│   ├── latex_reference_graph.json        # LaTeX 引用 DAG
+│   ├── citation_graph.json               # 跨文档引用图
+│   ├── latex_graph_hubs.json             # Hub 节点
+│   ├── latex_hub_multihop_candidates.json # 多跳候选路径
+│   ├── hub_candidates_enriched.json      # Enriched 候选对
+│   ├── personahub_academic_personas.json # 76 种学术人设
+│   └── m2/                               # 评测数据
 ├── scripts/
-│   ├── run_pipeline.py          # 完整Pipeline入口
-│   ├── generate_m4_queries.py   # M4 Query生成脚本
-│   ├── download_only.py         # PDF下载脚本
-│   ├── parse_only.py            # 解析脚本
-│   ├── download_references_by_arxiv.py  # 按arXiv拉取引用PDF（新）
-│   └── standardize_image_names.py
+│   ├── download_references_by_arxiv.py   # PDF 下载
+│   ├── download_latex_sources.py         # LaTeX 源码下载
+│   ├── build_multimodal_relationships.py # MinerU 图构建
+│   ├── build_latex_reference_graph.py    # LaTeX 图构建
+│   ├── build_citation_graph.py           # 跨文档引用图
+│   ├── analyze_latex_graph_topology.py   # 统一图 + Hub 检测
+│   ├── enrich_elements_modora.py         # 元素 [T]/[M]/[C] 增强（LLM）
+│   ├── enrich_section_nodes.py           # Section 语义摘要（LLM）
+│   ├── enrich_hub_candidates.py          # 候选对组装（无 LLM）
+│   ├── generate_multihop_l1_queries.py   # 核心 Query 生成
+│   ├── run_phase0_eval_ab.py             # BM25 vs Graph 检索评测
+│   └── ...                               # 更多评测/工具脚本
 ├── src/
-│   ├── parsers/                 # PDF下载和解析
-│   │   ├── mineru_parser.py
-│   │   ├── modal_extractor.py
-│   │   ├── pdf_downloader.py
-│   │   └── reference_pdf_collector.py
-│   ├── generators/              # Query生成
-│   │   ├── query_generator.py   # 基础Query生成
-│   │   └── m4_query_generator.py # M4增强生成
-│   ├── linkers/                 # 跨文档关联（新）
-│   │   └── cross_document_linker.py
-│   ├── samplers/                # 负例采样
-│   │   └── negative_sampler.py
-│   ├── utils/                   # 工具函数
-│   └── pipeline.py              # 主Pipeline
-├── requirements.txt
+│   ├── api/                              # 统一 LLM API 客户端
+│   ├── models/                           # 共享数据模型 (Node, Edge, Chunk)
+│   ├── parsers/                          # PDF/LaTeX 解析器
+│   ├── linkers/                          # 跨文档关联
+│   ├── prompts/                          # Prompt 模板 + 人设管理
+│   ├── qc/                               # 质量检查系统 (25+ 原子检查)
+│   ├── retrieval/                        # 检索模块 (BM25Lite)
+│   └── utils/                            # 工具函数
+├── slurm_scripts/                        # SLURM 集群作业脚本
+├── local_api_logger/                     # API 调用日志
 └── README.md
 ```
 
-## M4模块说明
+## 核心模块说明
 
 ### CrossDocumentLinker
 
@@ -357,93 +277,58 @@ data-process-test/
 - **跨文档链接**：基于名称相似度建立文档间实体关联
 - **Evidence Chain构建**：构建带有桥接实体的推理链
 
+### Query 生成系统
+
+`generate_multihop_l1_queries.py` 是核心 query 生成脚本，特点：
+- **11 种 prompt 模板**：5 种学术风格（figure+table 1/2-hop, figure+formula, formula+table, 3-step reasoning chain）+ 5 种真实用户风格（factual, summary, comparison, how_works, what_if）+ system prompt
+- **76 种学术人设**（PersonaHub）：从 `data/personahub_academic_personas.json` 加载，按 pair_id 稳定哈希分配
+- **3 种 query 风格**：`academic`（默认）/ `real_user` / `mixed`（50/50 混合）
+- **25+ QC 检查**：双轨制（学术严格 QC + 真实用户宽松 QC）
+
+Prompt 模板和人设管理从 `src/prompts/` 导出，可被其他脚本复用：
 ```python
-from src.linkers import CrossDocumentLinker
-
-linker = CrossDocumentLinker()
-# 提取实体
-entities = linker.build_document_entities(passages, doc_id)
-# 查找跨文档链接
-links = linker.find_cross_document_links()
-# 构建Evidence Chain
-chain = linker.build_evidence_chain(passages, bridge_entities)
-```
-
-### M4QueryGenerator
-
-增强的Query生成器，特点：
-- 基于实体关联选择passage组合
-- 分步生成：桥接问题→多轮转换→完整M4
-- 内置Evidence验证
-
-```python
-from src.generators import create_m4_generator
-
-generator = create_m4_generator(provider="anthropic")
-queries = generator.generate_queries_for_passages(
-    passages,
-    num_queries=10,
-    require_full_m4=True
+from src.prompts import (
+    # 模板
+    PROMPT_FIGURE_TABLE_1HOP, PROMPT_REAL_USER_FACTUAL,
+    REAL_USER_TEMPLATES, REAL_USER_STYLE_CYCLE,
+    # 人设
+    load_personahub_personas, resolve_persona, resolve_persona_id,
+    inject_persona_prefix,
+    # 风格
+    resolve_query_style, select_template,
 )
 ```
 
 ## 性能预估
 
-### 处理200篇文档
+### 处理 80+ 篇文档
 
 | 阶段 | 时间 | 说明 |
 |------|------|------|
-| PDF解析 | 2-4小时 | 4x A2000并行 |
-| M4 Query生成 | 30-60分钟 | 取决于API速率 |
-
-### 输出规模
-
-- 约6,000个对比三元组
-- 模态分布：表格~40%、图片~30%、公式~20%、文本~10%
-
-### API成本估算
-
-| 提供商 | 模型 | 6000 Queries成本 |
-|--------|------|-----------------|
-| Anthropic | claude-sonnet | ~$10-15 |
-| OpenAI | gpt-4o-mini | ~$3-4 |
+| PDF 解析 | 2-4 小时 | MinerU GPU 并行 |
+| 图构建 | < 5 分钟 | 纯规则，零 LLM 成本 |
+| Element Enrichment | ~$8 | GPT-5.4 / Claude |
+| Section Enrichment | ~$8 | GPT-5.4 / Claude |
+| Query 生成 | ~$5-15 | 取决于候选数和模型 |
 
 ## 故障排除
 
-### MinerU未找到
+### MinerU 未找到
 
 ```bash
 pip install mineru[all]
-# 或使用conda
-conda install -c conda-forge mineru
 ```
 
-### CUDA内存不足
+### API 速率限制
 
-- 减少配置中的 `num_workers`
-- 使用 `backend: "pipeline"` 回退到CPU
-
-### API速率限制
-
-- 调整 `rate_limit` 配置
+- 调整 `--delay` 参数（默认 0.3s）
 - 使用 `--dry-run` 先测试
-
-### 无法生成跨文档Query
-
-- 确保有至少2个文档
-- 检查文档是否属于同一领域（共享实体）
-- 尝试 `--relaxed` 放宽要求
+- 使用 `--incremental` 断点续跑
 
 ## 学术参考
 
-本项目的M4实现参考了以下研究：
-
-- **M4DocBench** (2025): 多模态文档深度研究基准
-- **TRACE** (EMNLP 2024): 知识三元组推理链构建
-- **CoQA**: 对话式问答数据集
-- **HiRAG**: 层次化检索增强生成
-
-详细研究笔记见 `docs/M4_RESEARCH_NOTES.md`
+- **PersonaHub** (2024): Scaling Synthetic Data Creation with 1,000,000,000 Personas (arXiv:2406.20094)
+- **MoDora** (2024): CCTree 文档理解框架
 
 ## License
 

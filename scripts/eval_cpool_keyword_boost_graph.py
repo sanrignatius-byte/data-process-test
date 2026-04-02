@@ -22,7 +22,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -60,7 +60,11 @@ def _to_text(v: Any) -> str:
     return str(v) if isinstance(v, (int, float, bool)) else ""
 
 
-def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
+def build_chunks(
+    elements_json: Path,
+    max_chars: int = 1800,
+    section_enrich_path: Optional[Path] = None,
+) -> List[Chunk]:
     data = json.loads(elements_json.read_text(encoding="utf-8"))
     docs = data.get("documents", {}) or {}
     chunks: List[Chunk] = []
@@ -81,6 +85,35 @@ def build_chunks(elements_json: Path, max_chars: int = 1800) -> List[Chunk]:
             if len(text) > max_chars:
                 text = text[:max_chars]
             chunks.append(Chunk(chunk_id=element_id, doc_id=str(doc_id), text=text))
+
+    # Optionally load section enrichment as additional chunks
+    if section_enrich_path and section_enrich_path.exists():
+        sec_data = json.loads(section_enrich_path.read_text(encoding="utf-8"))
+        sec_rows = sec_data.get("sections", []) if isinstance(sec_data, dict) else []
+        n_sec = 0
+        for row in sec_rows:
+            if not isinstance(row, dict):
+                continue
+            sid = str(row.get("section_id", "") or "").strip()
+            doc_id = str(row.get("doc_id", "") or "").strip()
+            if not sid or not doc_id:
+                continue
+            sec_title = _to_text(row.get("enriched_title")) or _to_text(row.get("section_title"))
+            sec_content = _to_text(row.get("enriched_content"))
+            sec_metadata = row.get("enriched_metadata") or {}
+            sec_keywords = sec_metadata.get("keywords", [])
+            kw_str = ", ".join(str(k) for k in sec_keywords[:8]) if sec_keywords else ""
+            fields = [sec_title, kw_str, sec_content]
+            text = "\n".join(x for x in fields if x).strip()
+            if not text:
+                continue
+            if len(text) > max_chars:
+                text = text[:max_chars]
+            chunks.append(Chunk(chunk_id=sid, doc_id=doc_id, text=text))
+            n_sec += 1
+        if n_sec:
+            print(f"  Loaded {n_sec} section chunks from {section_enrich_path.name}")
+
     return chunks
 
 
@@ -354,6 +387,9 @@ def main() -> None:
     ap.add_argument("--output", type=Path,
                     default=Path("data/m2/_eval_cpool_merged_keyword_boost_graph.json"))
     ap.add_argument("--top-k", type=int, default=10)
+    ap.add_argument("--section-enrich", type=Path, default=None,
+                    help="Optional section enrichment JSON (section_nodes_enriched.json). "
+                         "Section nodes are added as retrieval chunks to the corpus.")
     args = ap.parse_args()
 
     # Load queries
@@ -361,7 +397,7 @@ def main() -> None:
     print(f"Loaded {len(queries)} proxy C-Pool queries")
 
     # Load chunks
-    chunks = build_chunks(args.elements)
+    chunks = build_chunks(args.elements, section_enrich_path=args.section_enrich)
     chunk_id_to_idx = {c.chunk_id: i for i, c in enumerate(chunks)}
     chunk_tokens = [tokenize(c.text) for c in chunks]
     bm25 = BM25Lite(chunk_tokens)
