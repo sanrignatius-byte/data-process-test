@@ -376,7 +376,7 @@ def score_bridge_quality(bridge_text: str) -> float:
 
 # ──────────────────────────────────────────────────────────────
 # PersonaHub + Prompt templates + Query styles — now in src.prompts.*
-# See imports near line 104: src.prompts.templates, .personas, .styles
+# See imports at top of file.
 # ──────────────────────────────────────────────────────────────
 
 # ──────────────────────────────────────────────────────────────

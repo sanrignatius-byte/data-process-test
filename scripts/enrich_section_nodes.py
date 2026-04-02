@@ -83,11 +83,6 @@ def call_api(client: Any, model: str, prompt: str, provider: str) -> Tuple[Optio
     )
 
 
-def extract_json_result(text: Optional[str]) -> Optional[Dict[str, Any]]:
-    """Extract JSON from LLM output using shared parser."""
-    return parse_json(text)
-
-
 def validate_enrichment(result: Dict[str, Any]) -> List[str]:
     issues: List[str] = []
     if not (result.get("title") or "").strip():
@@ -312,7 +307,7 @@ def main() -> None:
             text, in_tok, out_tok = call_api(client, args.model, prompt, args.provider)
             total_in_tok += in_tok
             total_out_tok += out_tok
-            parsed = extract_json_result(text)
+            parsed = parse_json(text)
             if parsed is None:
                 print(f"[{idx}/{len(rows)}] {row['section_id']} — PARSE FAIL")
                 failed += 1
