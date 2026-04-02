@@ -1894,6 +1894,65 @@ def anchor_overlap_tokens(query: str, anchors: List[Dict[str, Any]]) -> Set[str]
     return q_tokens & all_anchor_tokens
 
 
+# ── Shared single-element answer check ──────────────────────────
+def _check_single_element_answer(
+    obj: Dict[str, Any],
+    pair: Dict[str, Any],
+    a_tokens: Set[str],
+    a_num_tokens: Set[str],
+) -> Tuple[bool, Dict[str, Any]]:
+    """Check whether the answer draws on BOTH elements of the pair.
+
+    Returns (is_fail, metrics_dict).  Caller decides whether to hard-fail.
+    Shared by qc_multihop_query and qc_real_user_query to avoid drift.
+    """
+    metrics: Dict[str, Any] = {}
+
+    def _elem_text(elem: Dict) -> str:
+        return (elem.get("caption", "") or "") + " " + (elem.get("content", "") or "")
+
+    def _min_overlap(elem: Dict) -> int:
+        etype = str(elem.get("element_type", "")).lower()
+        return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
+
+    span_text_by_eid: Dict[str, str] = defaultdict(str)
+    for s in obj.get("required_evidence_spans", []) or []:
+        if not isinstance(s, dict):
+            continue
+        eid = str(s.get("element_id", "")).strip()
+        span = str(s.get("span", "")).strip()
+        if eid and span:
+            span_text_by_eid[eid] += " " + span
+
+    def _overlap(elem: Dict, elem_id: str) -> int:
+        merged = (_elem_text(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
+        word_ov = len(a_tokens & _content_tokens(merged))
+        num_ov = len(a_num_tokens & _number_tokens(merged))
+        return word_ov + min(num_ov, 2)
+
+    elem_a = pair.get("element_a", {})
+    elem_b = pair.get("element_b", {})
+    ov_a = _overlap(elem_a, pair.get("element_a_id", ""))
+    ov_b = _overlap(elem_b, pair.get("element_b_id", ""))
+    metrics["answer_overlap_a"] = ov_a
+    metrics["answer_overlap_b"] = ov_b
+    total = ov_a + ov_b
+    metrics["answer_balance"] = 0.0
+
+    if total > 0:
+        balance = min(ov_a / total, ov_b / total)
+        metrics["answer_balance"] = round(balance, 4)
+        is_fail = (
+            ov_a < _min_overlap(elem_a)
+            or ov_b < _min_overlap(elem_b)
+            or balance < ANSWER_BALANCE_THRESHOLD
+        )
+    else:
+        is_fail = True
+
+    return is_fail, metrics
+
+
 # QC 主入口：meta_language / anchor_leakage / single_element_answer 等全套检查
 def qc_multihop_query(
     obj: Dict[str, Any],
@@ -2019,60 +2078,9 @@ def qc_multihop_query(
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
     if a_tokens or a_num_tokens:
-        # 按元素类型返回最低 overlap 阈值：figure=1, table/formula=2
-        def _min_overlap_for_elem(elem: Dict) -> int:
-            etype = str(elem.get("element_type", "")).lower()
-            return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
-
-        # 拼接 caption + content + evidence_spans 的合并文本
-        def _elem_text(elem: Dict) -> str:
-            caption = elem.get("caption", "") or ""
-            # Use caption + raw content for all modalities (including formula)
-            # to avoid prose inflation in overlap scoring.
-            return caption + " " + (elem.get("content", "") or "")
-
-        span_text_by_eid: Dict[str, str] = defaultdict(str)
-        for s in obj.get("required_evidence_spans", []) or []:
-            if not isinstance(s, dict):
-                continue
-            eid = str(s.get("element_id", "")).strip()
-            span = str(s.get("span", "")).strip()
-            if eid and span:
-                span_text_by_eid[eid] += " " + span
-
-        # 计算 answer 与单个元素的词+数字重合度
-        def _elem_overlap(elem: Dict, elem_id: str) -> int:
-            # Merge raw element text with its required evidence span to reduce
-            # false negatives from OCR/style variation in table/formula content.
-            merged = (_elem_text(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
-            word_overlap = len(a_tokens & _content_tokens(merged))
-            num_overlap = len(a_num_tokens & _number_tokens(merged))
-            # Cap numeric contribution so lexical grounding still dominates.
-            return word_overlap + min(num_overlap, 2)
-
-        elem_a = pair.get("element_a", {})
-        elem_b = pair.get("element_b", {})
-        elem_a_id = pair.get("element_a_id", "")
-        elem_b_id = pair.get("element_b_id", "")
-        overlap_a = _elem_overlap(elem_a, elem_a_id)
-        overlap_b = _elem_overlap(elem_b, elem_b_id)
-        metrics["answer_overlap_a"] = overlap_a
-        metrics["answer_overlap_b"] = overlap_b
-        total = overlap_a + overlap_b
-        metrics["answer_balance"] = 0.0
-        if total > 0:
-            contrib_a = overlap_a / total
-            contrib_b = overlap_b / total
-            balance = min(contrib_a, contrib_b)
-            metrics["answer_balance"] = round(balance, 4)
-            # Require non-trivial overlap from BOTH elements.
-            if (
-                overlap_a < _min_overlap_for_elem(elem_a)
-                or overlap_b < _min_overlap_for_elem(elem_b)
-                or balance < ANSWER_BALANCE_THRESHOLD
-            ):
-                issues.append("single_element_answer")
-        else:
+        sea_fail, sea_metrics = _check_single_element_answer(obj, pair, a_tokens, a_num_tokens)
+        metrics.update(sea_metrics)
+        if sea_fail:
             issues.append("single_element_answer")
 
     # 8. Text evidence length
@@ -2242,49 +2250,9 @@ def qc_real_user_query(
     a_tokens = _content_tokens(a)
     a_num_tokens = _number_tokens(a)
     if (a_tokens or a_num_tokens) and query_intent == "objective":
-        def _min_overlap_ru(elem: Dict) -> int:
-            etype = str(elem.get("element_type", "")).lower()
-            return int(MIN_OVERLAP_BY_TYPE.get(etype, 2))
-
-        def _elem_text_ru(elem: Dict) -> str:
-            return (elem.get("caption", "") or "") + " " + (elem.get("content", "") or "")
-
-        span_text_by_eid: Dict[str, str] = defaultdict(str)
-        for s in obj.get("required_evidence_spans", []) or []:
-            if not isinstance(s, dict):
-                continue
-            eid = str(s.get("element_id", "")).strip()
-            span = str(s.get("span", "")).strip()
-            if eid and span:
-                span_text_by_eid[eid] += " " + span
-
-        elem_a = pair.get("element_a", {})
-        elem_b = pair.get("element_b", {})
-        elem_a_id = pair.get("element_a_id", "")
-        elem_b_id = pair.get("element_b_id", "")
-
-        def _overlap_ru(elem: Dict, elem_id: str) -> int:
-            merged = (_elem_text_ru(elem) + " " + span_text_by_eid.get(elem_id, "")).strip()
-            word_ov = len(a_tokens & _content_tokens(merged))
-            num_ov = len(a_num_tokens & _number_tokens(merged))
-            return word_ov + min(num_ov, 2)
-
-        ov_a = _overlap_ru(elem_a, elem_a_id)
-        ov_b = _overlap_ru(elem_b, elem_b_id)
-        metrics["answer_overlap_a"] = ov_a
-        metrics["answer_overlap_b"] = ov_b
-        total = ov_a + ov_b
-        metrics["answer_balance"] = 0.0
-        if total > 0:
-            balance = min(ov_a / total, ov_b / total)
-            metrics["answer_balance"] = round(balance, 4)
-            if (
-                ov_a < _min_overlap_ru(elem_a)
-                or ov_b < _min_overlap_ru(elem_b)
-                or balance < ANSWER_BALANCE_THRESHOLD
-            ):
-                issues.append("single_element_answer")
-        else:
+        sea_fail, sea_metrics = _check_single_element_answer(obj, pair, a_tokens, a_num_tokens)
+        metrics.update(sea_metrics)
+        if sea_fail:
             issues.append("single_element_answer")
 
     # 5. Retrievability score (0–3, higher = more self-contained / easier to retrieve)
