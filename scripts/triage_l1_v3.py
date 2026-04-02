@@ -10,6 +10,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.utils.text_utils import tokenize_for_retrieval as tokenize
+
 VISUAL_WORDS = {
     "red", "blue", "green", "orange", "purple", "black", "gray", "grey",
     "left", "right", "upper", "lower", "top", "bottom", "center", "middle",
@@ -20,9 +25,7 @@ VISUAL_WORDS = {
 TEXTY_VISUAL_WORDS = {"word", "text", "caption", "label", "token", "appearing", "near"}
 CAUSAL_WORDS = {"because", "since", "due to", "therefore", "thus", "as a result", "resulting"}
 
-
-def tokenize(s: str) -> List[str]:
-    return re.findall(r"[a-zA-Z][a-zA-Z0-9_-]*", s.lower())
+# tokenize() moved to src.utils.text_utils.tokenize_for_retrieval
 
 
 def is_truncated(text: str) -> bool:

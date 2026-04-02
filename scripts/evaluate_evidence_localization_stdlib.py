@@ -29,7 +29,14 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
-TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_\-]{1,}")
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.utils.text_utils import tokenize_for_retrieval as tokenize
+
+# TOKEN_RE and tokenize() moved to src.utils.text_utils.tokenize_for_retrieval
+
+# TOKEN_RE moved to src.utils.text_utils
 DEFAULT_METHODS = [
     "bm25",
     "bm25f",
@@ -60,8 +67,7 @@ class Element:
         return "\n".join(v for v in self.fields.values() if v).strip()
 
 
-def tokenize(text: str) -> List[str]:
-    return [t.lower() for t in TOKEN_RE.findall(text or "")]
+# tokenize() moved to src.utils.text_utils.tokenize_for_retrieval
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
