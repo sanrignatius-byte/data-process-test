@@ -2883,3 +2883,140 @@ Section enrichment 影响的是 query 质量（generation prompt enrichment）�
 2. **P1：用 tuned weights 重跑全量 eval 并更新文档**
 3. **P1：正则引用模式扩展**（"Figure X"/"Table Y"），适配纯 PDF
 4. **P2：QA evaluation 改进**（answer correctness 替代 evidence mention）
+
+---
+
+## 日期：2026-04-03
+
+## Phase A: Training Pipeline Foundation + Review 修复
+
+### 一、背景
+
+Query 生成 pipeline 已产出 ~1790 条 L1/L2/L3 queries，但缺少从 query → 模型训练数据的完整链路。L1/L2/L3 三层 schema 各不相同（15 vs 34 字段），`data/contrastive_data/` 目录为空，`config.yaml` 的 output/negative_sampling 配置无代码读取。Phase A 的目标是补齐 Schema + 导出 + 负样本 + 测试。
+
+### 二、Phase A 新增文件（15 个文件，~1550 行）
+
+| 模块 | 文件 | 职责 |
+|------|------|------|
+| Schema | `src/models/training.py` | Pydantic 模型：StandardQuery / Triplet / EvidenceSpan / ReasoningStep；schema_version；L3 model_validator |
+| 导出 | `src/export/dataset_builder.py` | DatasetBuilder：load queries → build triplets → doc-level hash split → JSONL + manifest.json |
+| 负样本 | `src/sampling/negative_sampler.py` | NegativeSampler Protocol + HeuristicNegativeSampler（random / in_doc_swap）+ GraphAwareNegativeSampler（stub） |
+| CLI | `scripts/normalize_queries.py` | L1/L2/L3 legacy JSONL → 统一 StandardQuery，1461 条全量通过 |
+| CLI | `scripts/export_training_data.py` | 全链路导出 CLI |
+| QC | `src/qc/checks.py` | 12 个 QC 检查函数（numeric_leakage / yes_no / cross_modal_operator / templated_opening 等） |
+| 工具 | `src/qc/text_utils.py` | tokenize / jaccard / overlap_ratio |
+| 测试 | `tests/test_qc_checks.py` | 27 个 QC 正反例测试 |
+| 测试 | `tests/test_schema.py` | 9 个 Pydantic 验证测试 |
+| 测试 | `tests/test_text_utils.py` | 14 个分词测试 |
+| 测试 | `tests/test_negative_sampling.py` | 12 个负样本策略测试 |
+| 配置 | `tests/conftest.py` | pytest fixtures |
+| 包 | `src/export/__init__.py` | 包初始化 |
+| 包 | `src/sampling/__init__.py` | 包初始化 |
+| 包 | `src/qc/__init__.py` | 包初始化 |
+
+### 三、Review 反馈与修复
+
+#### 🔴 必须修（2 项）
+
+**#1: `_doc_key()` 从 element_id 反解 doc_id（dataset_builder.py）**
+
+问题：`_doc_key()` 用 `eid.rsplit("_", 2)` 从 element_id 字符串解析 doc_id，但 Triplet.positive 里的 EvidenceSpan 已有 doc_id 字段。这是不必要的字符串猜测。
+
+修前：
+```python
+def _doc_key(t: Triplet) -> str:
+    if t.positive:
+        eid = t.positive[0].element_id
+        parts = eid.rsplit("_", 2)
+        if len(parts) >= 2:
+            return parts[0]
+    return "unknown"
+```
+
+修后：
+```python
+def _doc_key(t: Triplet) -> str:
+    if t.positive and t.positive[0].doc_id:
+        return t.positive[0].doc_id
+    return "unknown"
+```
+
+**#2: `_in_doc_swap()` 同样从 element_id 猜 doc_id（negative_sampler.py）**
+
+问题：`_in_doc_swap()` 用 rsplit 从 positive_ids（element_id 列表）提取 doc_id，但 pool 中的 Chunk 对象自带 doc_id 字段。
+
+修前：循环 positive_ids，rsplit 得到 doc_ids。
+修后：扫描 pool 中 chunk_id 匹配 positive_ids 的 Chunk，直接取 `c.doc_id`。若 doc_ids 为空则 fallback 到 random。
+
+#### 🟡 建议改进（2 项）
+
+**#3: `_in_doc_swap()` pad 逻辑重复**
+
+问题：padding 时 `rest = self._rng.sample(pool, ...)` 从整个 pool 抽，可能和 same_doc 重复。
+
+修后：`other_doc = [c for c in pool if c.doc_id not in doc_ids]`，rest 从 other_doc 抽。
+
+**#4: `graph_aware` CLI 未标 stub**
+
+修后：help 文本加 `"'graph_aware' is a stub that falls back to random until src/graph/ is populated."`。
+
+#### 💡 低优先级（1 项）
+
+**#5: L1 element_type fallback 写死 "figure"**
+
+修后：`element_type=raw.get("figure_type") or _guess_type(eid)`，当 figure_type 字段缺失时用 element_id 推断。
+
+### 四、修改思路总结
+
+核心原则：**优先使用结构化字段，拒绝字符串猜测**。
+
+1. `_doc_key()` 和 `_in_doc_swap()` 的 bug 本质相同：在已有 doc_id 字段的情况下，用 rsplit 从 element_id 字符串反向解析 doc_id。虽然在当前 arXiv ID 格式下碰巧能工作，但这是隐含假设 + 脆弱代码。修复方案统一为"直接用已有的 doc_id 字段"。
+
+2. `_in_doc_swap()` 的 pad 重复问题是典型的"从原集合补采时忘记排除已选子集"。修复为从 `pool - same_doc` 的补集采样。
+
+3. L1 element_type 的 "figure" 硬编码短期无害（974 条全是 figure），但面向未来（L1 可能包含 table/formula）加入 `_guess_type()` fallback 是低成本高收益。
+
+4. graph_aware stub 在 CLI 中标明是用户友好性改进，防止误用。
+
+### 五、Review 中确认没问题的点
+
+- 默认路径 `data/m2/level{1,2,3}_*.jsonl` 都存在，正确
+- L1 数据 `required_evidence_spans` 字段存在，StandardQuery 的 at_least_one_evidence 验证不过严
+- `_convert_l1` 的 fallback 逻辑（figure_id → EvidenceSpan）可兜住缺 spans 的情况
+- Pydantic schema 设计合理（extra: Dict[str, Any] catch-all，L3 model_validator，schema_version）
+- doc-level split 用 hash 确保确定性，防数据泄漏
+- 62 个测试全部通过，normalize pipeline 1461/1461 条转换成功
+
+### 六、Phase A 架构设计亮点（Review 认可）
+
+| 设计 | 说明 |
+|------|------|
+| `extra: Dict[str, Any]` | StandardQuery catch-all 字段，避免丢失上游字段 |
+| `model_validator` for L3 | 强制 L3 必须有 reasoning_steps，阻断无推理链的 L3 数据 |
+| Doc-level hash split | `md5(doc_id) % 1000` → train/val/test，确保多次运行结果一致 |
+| `schema_version` | 万级数据场景下的格式迁移支撑 |
+| `NegativeSampler` Protocol | 可插拔接口，后续加 embedding sampler 无需改 builder |
+| QC 正反例测试 | 15+ 个 check 函数各有 pass/fail case |
+
+### 七、当前训练 Pipeline 状态
+
+```
+raw L1/L2/L3 JSONL (1790 条)
+    → scripts/normalize_queries.py (1461 条 → StandardQuery)
+    → scripts/export_training_data.py
+    → data/contrastive_data/v1/
+          train.jsonl
+          val.jsonl
+          test.jsonl
+          manifest.json
+```
+
+### 八、下一步
+
+1. **Phase B: Embedding Negative Sampler** — 用 Qwen3-Embedding-4B 做 embedding-based hard negative 采样，替代 random
+2. **Phase C: 全量导出 + 训练验证** — 跑通完整 normalize → export → 训练循环
+3. **GraphAwareNegativeSampler 实现** — 接入 src/graph/，用 1-hop 邻域做 graph-aware hard negatives
+
+### 九、一句话总结
+
+> Phase A 训练 pipeline 基础设施落地（Schema + 导出 + 负样本 + 62 tests），review 修复 5 项 bug/改进，核心教训：不要从 element_id 字符串猜 doc_id，直接用已有结构化字段。

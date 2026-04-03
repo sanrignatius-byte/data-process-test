@@ -18,6 +18,7 @@ setup(
         "Pillow>=10.0.0",
         "openai>=1.0.0",
         "numpy>=1.24.0",
+        "pydantic>=2.0.0",
     ],
     extras_require={
         "embeddings": ["sentence-transformers>=2.2.0"],
