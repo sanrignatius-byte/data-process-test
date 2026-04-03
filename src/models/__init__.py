@@ -1,7 +1,10 @@
 """Shared data models used across scripts.
 
-Node / Edge — graph topology (analyze_latex_graph_topology, run_phase0_eval_ab)
-Chunk       — retrieval unit  (run_phase0_eval_ab, eval_cpool_keyword_boost_graph)
+Node / Edge     — graph topology (analyze_latex_graph_topology, run_phase0_eval_ab)
+Chunk           — retrieval unit  (run_phase0_eval_ab, eval_cpool_keyword_boost_graph)
+StandardQuery   — unified query schema for L1/L2/L3 (training pipeline)
+Triplet         — contrastive learning triplet
+EvidenceSpan    — single piece of evidence
 """
 
 from __future__ import annotations
