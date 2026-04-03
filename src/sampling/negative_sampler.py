@@ -78,6 +78,8 @@ class HeuristicNegativeSampler:
     ) -> List[Chunk]:
         """Sample *n* hard negatives from *candidates*."""
         pos_set = set(positive_ids)
+        # Extract doc_ids BEFORE filtering out positives from pool
+        pos_doc_ids = {c.doc_id for c in candidates if c.chunk_id in pos_set and c.doc_id}
         pool = [c for c in candidates if c.chunk_id not in pos_set]
         if not pool:
             return []
@@ -85,7 +87,7 @@ class HeuristicNegativeSampler:
         if self.strategy == "random":
             return self._random(pool, n)
         if self.strategy == "in_doc_swap":
-            return self._in_doc_swap(pool, positive_ids, n)
+            return self._in_doc_swap(pool, pos_doc_ids, n)
         # default / modal_mixed → random fallback for now
         return self._random(pool, n)
 
@@ -97,22 +99,10 @@ class HeuristicNegativeSampler:
     def _in_doc_swap(
         self,
         pool: List[Chunk],
-        positive_ids: Sequence[str],
+        doc_ids: set[str],
         n: int,
     ) -> List[Chunk]:
         """Prefer chunks from the same document(s) as positives."""
-        if not positive_ids:
-            return self._random(pool, n)
-
-        # Use Chunk.doc_id directly — no need to parse element_id strings.
-        # Collect doc_ids from the pool chunks whose chunk_id matches a positive.
-        pos_set = set(positive_ids)
-        doc_ids: set[str] = set()
-        for c in pool:
-            if c.chunk_id in pos_set and c.doc_id:
-                doc_ids.add(c.doc_id)
-        # Fallback: also scan all candidates (positives were already excluded
-        # from pool, so check the broader candidate set if needed).
         if not doc_ids:
             return self._random(pool, n)
 
