@@ -52,6 +52,31 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-04-03 更新｜Phase A Training Pipeline + Review 修复）
+
+### 本轮完成（相对 2026-03-30）
+
+- **Phase A: Training Pipeline Foundation 落地**
+  - Pydantic Schema 层：`src/models/training.py`（StandardQuery / Triplet / EvidenceSpan / ReasoningStep），schema_version 字段，L3 model_validator 强制 reasoning_steps
+  - 数据导出层：`src/export/dataset_builder.py`（DatasetBuilder），doc-level hash split（防数据泄漏），JSONL + manifest.json 输出
+  - 负样本采样层：`src/sampling/negative_sampler.py`（NegativeSampler Protocol），HeuristicNegativeSampler（random / in_doc_swap），GraphAwareNegativeSampler（stub）
+  - CLI 脚本：`scripts/normalize_queries.py`（L1/L2/L3 → 统一 StandardQuery）+ `scripts/export_training_data.py`（全链路导出）
+  - 测试：62 个 pytest tests（QC 27 + Schema 9 + TextUtils 14 + NegativeSampling 12）
+  - 依赖：`pydantic>=2.0.0` 新增到 requirements.txt + setup.py
+
+- **Review 反馈修复（5 项）**
+  - 🔴 #1：`dataset_builder.py` `_doc_key()` — 从 `element_id` 字符串 rsplit 反解 doc_id → 直接用 `t.positive[0].doc_id`
+  - 🔴 #2：`negative_sampler.py` `_in_doc_swap()` — 从 positive_id rsplit 猜 doc_id → 用 `Chunk.doc_id` 字段直接获取
+  - 🟡 #3：`_in_doc_swap()` padding — rest 从 pool（含 same_doc）采样有重复风险 → 从 `other_doc`（pool - same_doc）采样
+  - 🟡 #4：`export_training_data.py` — `graph_aware` CLI choice 无提示是 stub → help 文本标 "(stub)"
+  - 💡 #5：`normalize_queries.py` — L1 element_type fallback 写死 "figure" → 用 `_guess_type(element_id)` 做 fallback
+
+### Review 核心教训
+
+> **不要从 element_id 字符串里猜 doc_id。** EvidenceSpan 和 Chunk 都已有 doc_id 字段，直接用即可。rsplit 式的字符串解析在 arXiv ID 多下划线场景下虽然碰巧能工作，但依赖隐含约定、脆弱且没有必要。
+
+---
+
 ## 当前状态（2026-03-24 更新｜P0-P4 Bridge Grounding 增强 + L3 质量验证）
 
 ### 本轮完成（相对 2026-03-21）
@@ -643,6 +668,15 @@ python scripts/generate_multihop_l1_queries.py \
 | `data/m2/exp_b_retrieval_enhancement.json` | **M2 Exp B 结果（复用 Phase0 eval v3）** |
 | `main.py` | **公司 API 连通性测试脚本（yunwu.ai demo）** |
 | `local_api_logger/` | **公司 API 日志库（wrap_requests_call + token 统计）——需用户放入** |
+| `src/models/training.py` | **Phase A: Pydantic 训练数据 Schema（StandardQuery/Triplet/EvidenceSpan/ReasoningStep）** |
+| `src/export/dataset_builder.py` | **Phase A: DatasetBuilder — query→triplet→doc-level split→JSONL+manifest** |
+| `src/sampling/negative_sampler.py` | **Phase A: 可插拔负样本采样（NegativeSampler Protocol + HeuristicNegativeSampler + GraphAwareNegativeSampler stub）** |
+| `scripts/normalize_queries.py` | **Phase A: L1/L2/L3 → 统一 StandardQuery schema 转换器** |
+| `scripts/export_training_data.py` | **Phase A: 全链路导出 CLI（normalize → triplet → split → disk）** |
+| `tests/test_qc_checks.py` | **Phase A 测试：27 个 QC 函数正反例测试** |
+| `tests/test_schema.py` | **Phase A 测试：9 个 Pydantic 验证测试** |
+| `tests/test_text_utils.py` | **Phase A 测试：14 个分词/文本工具测试** |
+| `tests/test_negative_sampling.py` | **Phase A 测试：12 个负样本策略测试** |
 
 ## Mentor 建议（2026-02-11）& 执行优先级
 
@@ -718,7 +752,7 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-03-20 更新）
+## 下一步 TODO（2026-04-03 更新）
 
 ### 已完成（历史）
 - ~~**M4 Strategy Review + Schema 设计**~~ ✅ **完成** — 诚实重定位为 M4-Foundation；三套 Schema 落地；step-deletion QC 集成
@@ -727,6 +761,7 @@ python scripts/generate_multihop_l1_queries.py \
 - ~~**Phase0 组件权重解耦 + Grid Search**~~ ✅ **完成** — graph_full MRR +0.0403，`continue_expand=True`
 - ~~**MoDora 四工作流代码实现**~~ ✅ **完成** — A1/A2/B1/B2/C1/C3/D1 + PersonaHub 全部已实现（代码就绪，未全量运行）
 - ~~**M2 pipeline 代码 + 数据打包**~~ ✅ **完成** — 三层数据 + L3 候选筛选 + 3-step prompt + 三组实验脚本
+- ~~**Phase A: Training Pipeline Foundation**~~ ✅ **完成** — Pydantic Schema + DatasetBuilder + NegativeSampler Protocol + normalize/export CLI + 62 tests + review 修复 5 项
 - ~~前序历史~~ ✅ 见 `docs/DISCUSSION_LOG.md`
 
 ### MoDora 工作流代码完成度（代码就绪，待全量验证）
