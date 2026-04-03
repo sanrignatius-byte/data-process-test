@@ -46,11 +46,12 @@ def _convert_l1(raw: Dict[str, Any]) -> StandardQuery:
     # Build evidence span from legacy fields
     evidence: list[EvidenceSpan] = []
     for span_raw in raw.get("required_evidence_spans", []):
+        eid = span_raw.get("element_id", raw.get("figure_id", ""))
         evidence.append(
             EvidenceSpan(
-                element_id=span_raw.get("element_id", raw.get("figure_id", "")),
+                element_id=eid,
                 doc_id=raw.get("doc_id", ""),
-                element_type=raw.get("figure_type", "figure"),
+                element_type=raw.get("figure_type") or _guess_type(eid),
                 span_text=span_raw.get("span", ""),
                 evidence_type=span_raw.get("evidence_type", ""),
                 image_path=raw.get("image_path"),
@@ -59,11 +60,12 @@ def _convert_l1(raw: Dict[str, Any]) -> StandardQuery:
 
     # Fallback: if no evidence_spans, create one from figure_id
     if not evidence and raw.get("figure_id"):
+        fid = raw["figure_id"]
         evidence.append(
             EvidenceSpan(
-                element_id=raw["figure_id"],
+                element_id=fid,
                 doc_id=raw.get("doc_id", ""),
-                element_type=raw.get("figure_type", "figure"),
+                element_type=raw.get("figure_type") or _guess_type(fid),
                 span_text=raw.get("text_evidence", ""),
                 image_path=raw.get("image_path"),
             )

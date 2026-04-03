@@ -104,22 +104,24 @@ class HeuristicNegativeSampler:
         if not positive_ids:
             return self._random(pool, n)
 
-        # Derive doc_id: element IDs follow "{arxiv_id}_{type}_{N}" where
-        # arxiv_id itself may contain underscores (e.g. "1904.03310_fig_1").
-        # We strip only the last two segments (type + number).
+        # Use Chunk.doc_id directly — no need to parse element_id strings.
+        # Collect doc_ids from the pool chunks whose chunk_id matches a positive.
+        pos_set = set(positive_ids)
         doc_ids: set[str] = set()
-        for pid in positive_ids:
-            parts = pid.rsplit("_", 2)
-            if len(parts) >= 3:
-                doc_ids.add(parts[0])
-            elif len(parts) >= 2:
-                doc_ids.add(parts[0])
+        for c in pool:
+            if c.chunk_id in pos_set and c.doc_id:
+                doc_ids.add(c.doc_id)
+        # Fallback: also scan all candidates (positives were already excluded
+        # from pool, so check the broader candidate set if needed).
+        if not doc_ids:
+            return self._random(pool, n)
 
         same_doc = [c for c in pool if c.doc_id in doc_ids]
         if len(same_doc) >= n:
             return self._rng.sample(same_doc, n)
-        # pad with random from full pool
-        rest = self._rng.sample(pool, min(n - len(same_doc), len(pool)))
+        # pad with chunks from OTHER documents to avoid duplicates
+        other_doc = [c for c in pool if c.doc_id not in doc_ids]
+        rest = self._rng.sample(other_doc, min(n - len(same_doc), len(other_doc)))
         return same_doc + rest
 
 

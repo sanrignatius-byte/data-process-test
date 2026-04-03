@@ -77,6 +77,8 @@ def main() -> None:
         "--negative-strategy", type=str, default="random",
         choices=["random", "in_doc_swap", "same_type_hard",
                  "modal_mixed", "graph_aware"],
+        help="Negative sampling strategy. 'graph_aware' is a stub that "
+             "falls back to random until src/graph/ is populated.",
     )
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument(

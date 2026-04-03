@@ -246,12 +246,8 @@ class DatasetBuilder:
         """Split by doc_id (from positive evidence) to prevent data leakage."""
 
         def _doc_key(t: Triplet) -> str:
-            if t.positive:
-                eid = t.positive[0].element_id
-                # convention: element_id = "docid_type_N"
-                parts = eid.rsplit("_", 2)
-                if len(parts) >= 2:
-                    return parts[0]
+            if t.positive and t.positive[0].doc_id:
+                return t.positive[0].doc_id
             return "unknown"
 
         # group by doc
