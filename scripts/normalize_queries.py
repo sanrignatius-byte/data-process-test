@@ -225,8 +225,8 @@ def normalize(
                 all_queries.append(sq)
                 converted += 1
             except Exception as exc:  # noqa: BLE001
-                logger.warning("[%s] Skipping %s: %s",
-                               label, rec.get("query_id", "?"), exc)
+                logger.warning("[%s from %s] Skipping %s: %s",
+                               label, path, rec.get("query_id", "?"), exc)
         counts[label] = converted
         logger.info("%s: %d / %d converted", label, converted, len(records))
 

@@ -104,11 +104,15 @@ class HeuristicNegativeSampler:
         if not positive_ids:
             return self._random(pool, n)
 
-        # Derive doc_id from the first positive id (convention: "docid_type_N")
+        # Derive doc_id: element IDs follow "{arxiv_id}_{type}_{N}" where
+        # arxiv_id itself may contain underscores (e.g. "1904.03310_fig_1").
+        # We strip only the last two segments (type + number).
         doc_ids: set[str] = set()
         for pid in positive_ids:
             parts = pid.rsplit("_", 2)
-            if len(parts) >= 2:
+            if len(parts) >= 3:
+                doc_ids.add(parts[0])
+            elif len(parts) >= 2:
                 doc_ids.add(parts[0])
 
         same_doc = [c for c in pool if c.doc_id in doc_ids]

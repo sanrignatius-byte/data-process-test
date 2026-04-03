@@ -192,7 +192,7 @@ class DatasetBuilder:
                 try:
                     queries.append(StandardQuery.model_validate_json(line))
                 except Exception as exc:  # noqa: BLE001
-                    logger.warning("Skipping line %d: %s", lineno, exc)
+                    logger.warning("Skipping line %d in %s: %s", lineno, path, exc)
         return queries
 
     def _build_triplets(
