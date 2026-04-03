@@ -41,6 +41,8 @@ class TestHeuristicSampler:
         chunks = _make_chunks(5, "docA") + _make_chunks(5, "docB")
         result = sampler.sample("test", ["docA_0"], chunks, 3)
         assert len(result) == 3
+        # All 3 should come from docA (4 remaining same-doc chunks >= n=3)
+        assert all(c.doc_id == "docA" for c in result)
 
     def test_empty_pool(self):
         sampler = HeuristicNegativeSampler(strategy="random", seed=42)
