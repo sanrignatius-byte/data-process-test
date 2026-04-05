@@ -1,8 +1,11 @@
-"""PersonaHub integration: diverse reader personas for query generation.
+"""PersonaHub 人设库 —— 76 个多样化读者人设，让 query 不千篇一律。
 
-Based on PersonaHub methodology (Ge et al., 2024):
-  "Scaling Synthetic Data Creation with 1,000,000,000 Personas"
-  arXiv:2406.20094 | Dataset: proj-persona/PersonaHub (HuggingFace)
+基于 PersonaHub 方法论（Ge et al., 2024, arXiv:2406.20094），
+策展了 50 类学术读者 + 26 个非学术人设（学生/医疗/金融法律/政府/教育媒体等）。
+
+resolve_persona() 用 pair_id 的 md5 哈希确定性分配人设（可复现），
+inject_persona_prefix() 用正则找到 prompt 首句 "You are a ..." 替换成人设描述。
+注意是替换不是拼接，避免双重角色定义。
 """
 from __future__ import annotations
 import hashlib

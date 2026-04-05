@@ -1,6 +1,11 @@
-"""Reasoning structure classification and depth analysis.
+"""推理结构分类 + 深度分析 —— 判断 query 到底是"真多跳"还是"伪多跳"。
 
-Extracted from generate_multihop_l1_queries.py — M4 Schema 1 support.
+核心问题：当前很多 L2/L3 query 其实是"两个证据并行取证"而非"串行推理链"。
+真正的多跳应该满足 step-deletion test：删掉任意中间步骤后答案不可得。
+
+classify_reasoning_structure() 用因果连接词（because/therefore/leads to）区分
+parallel 和 serial。但这是启发式的，写作风格可以欺骗它 —— 爱写 because 的模型
+会被高估。所以结果只用于 advisory / profiling，不用于硬 fail（L3 除外）。
 """
 
 from __future__ import annotations
@@ -20,11 +25,7 @@ from src.qc.constants import (
 
 
 def classify_query_intent(query: str) -> str:
-    """Classify query as ``'objective'`` or ``'subjective'``.
-
-    Heuristic rule-based; errs toward ``'objective'`` when uncertain so that QC
-    checks remain strict by default.
-    """
+    """判断 query 是客观题还是主观题 —— 不确定时默认客观（QC 偏严没坏处）。"""
     q = (query or "").strip()
     subj_hits = sum(1 for p in SUBJECTIVE_QUERY_PATTERNS if p.search(q))
     obj_hits = sum(1 for p in OBJECTIVE_QUERY_PATTERNS if p.search(q))
@@ -38,10 +39,14 @@ def classify_reasoning_structure(
     answer: str,
     evidence_spans: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Classify reasoning as parallel vs serial.
+    """分类推理结构：parallel（并行取证）vs serial（串行推理链）vs mixed。
 
-    Returns a dict with reasoning_depth_estimate, structure, marker lists,
-    evidence_types, distinct_evidence_elements, and is_true_multihop.
+    用因果连接词计数：serial_markers（because/therefore/thus...）和
+    parallel_markers（both/together/additionally...）。
+    serial ≥3 + distinct_elements ≥3 才算真多跳。
+
+    已知局限：写作风格可以欺骗（爱写 because 的会被高估），
+    所以结果是 advisory 性质的。
     """
     combined_text = (reasoning_chain or "") + " " + (answer or "")
 
@@ -104,12 +109,14 @@ def qc_reasoning_depth(
     pair: Dict[str, Any],
     min_depth: int = 3,
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """Reasoning depth analysis and auto-tagging (M4 Schema 1 support).
+    """推理深度 QC —— 两种模式。
 
-    Two modes:
-      A) If obj contains explicit ``reasoning_steps[]``: structural validation
-         with hard-fail issues.
-      B) Otherwise: heuristic analysis with advisory metrics only.
+    模式 A（有 reasoning_steps）：结构验证，硬 fail ——
+      依赖链完整性、步骤不重复、类型多样性、premise→conclusion 弧。
+    模式 B（没有 reasoning_steps）：启发式分析，advisory 只 ——
+      连接词计数 + step-deletion proxy（因果连接词数 ≥ min_depth-1）。
+
+    还有 P3（bridge 接地检查）和 P4（anchor 特异性检查）。
     """
     issues: List[str] = []
     metrics: Dict[str, Any] = {}

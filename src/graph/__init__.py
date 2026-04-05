@@ -1,13 +1,9 @@
-"""Graph construction, hub detection, and candidate enumeration.
+"""图算法层 —— 目前还是空壳，规划中。
 
-Modules:
-  - ``algorithms``  — PageRank, label propagation
-  - ``hubs``        — bridge hub / adjacent backbone bridge detection
-  - ``candidates``  — multi-hop candidate path enumeration
-
-The heavy topology graph construction and analysis logic from
-``analyze_latex_graph_topology.py`` is re-exported from here after
-scripts are updated to import from ``src.graph``.
+计划迁入的东西（现在在 analyze_latex_graph_topology.py 里）：
+  - PageRank / label propagation
+  - Bridge hub 检测 + 评分
+  - 多跳候选路径枚举
 """
 
 __all__: list = []

@@ -1,10 +1,6 @@
-"""Training dataset export layer.
+"""训练数据导出层 —— 从 query 到模型可训练数据的最后一公里。
 
-Provides :class:`DatasetBuilder` — the bridge between the query generation
-pipeline and model training.  It reads normalised ``StandardQuery`` records,
-builds contrastive triplets via pluggable negative-sampling strategies,
-performs a doc-level train/val/test split, and writes the result to JSONL
-(and optionally Parquet / HuggingFace Dataset format).
+核心类：DatasetBuilder（总指挥）和 DatasetConfig（配置）。
 """
 
 from src.export.dataset_builder import DatasetBuilder, DatasetConfig

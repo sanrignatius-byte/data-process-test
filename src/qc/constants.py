@@ -1,7 +1,12 @@
-"""QC check constants — thresholds, patterns, and vocabulary.
+"""QC 常量池 —— 阈值、正则、词表全在这。
 
-Extracted from generate_multihop_l1_queries.py to allow independent reuse
-by qc/checks.py, qc/reasoning.py, and any future QC consumers.
+从 generate_multihop_l1_queries.py 的 3900 行大单体里拆出来的，
+让 qc/checks.py、qc/reasoning.py 和任何未来的 QC 消费者都能用。
+
+关键阈值（别乱改，这些都是实验调出来的）：
+  - ANCHOR_LEAK_THRESHOLD = 0.20：query 和 anchor 的 Jaccard 超 20% 就算泄漏
+  - ANSWER_BALANCE_THRESHOLD = 0.20：答案不能只靠一个元素
+  - MAX_QUERY_WORDS = 30：query 超 30 词就太长了
 """
 
 from __future__ import annotations

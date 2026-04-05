@@ -1,13 +1,16 @@
-"""Unified training data models for the contrastive learning pipeline.
+"""训练数据的统一 Schema —— 用 Pydantic 硬卡格式，不合规直接报错。
 
-These Pydantic models enforce schema consistency across all difficulty levels
-(L1/L2/L3) and serve as the single source of truth for:
-  - query normalisation  (scripts/normalize_queries.py)
-  - triplet construction (scripts/build_dual_evidence_triplets.py)
-  - dataset export       (scripts/export_training_data.py)
+这是整个 training pipeline 的 "宪法"，所有 L1/L2/L3 的 query 最终都要
+转成这里定义的 StandardQuery。下游的 triplet 构建、数据集导出、负样本采样
+全都依赖这套 schema。
 
-Schema version is bumped whenever fields are added/removed so that downstream
-consumers can detect and handle format changes.
+关键设计：
+  - EvidenceSpan 必须有 element_id（不能为空，validator 强制）
+  - StandardQuery 必须 ≥1 个 evidence_span（没证据的 query 没有意义）
+  - L3 必须有 reasoning_steps（model_validator 强制 —— L3 没有推理链直接炸）
+  - schema_version 用于检测格式变更
+
+历史 JSONL 通过 scripts/normalize_queries.py 转换成这个格式。
 """
 
 from __future__ import annotations
@@ -26,7 +29,7 @@ SCHEMA_VERSION = "1.0.0"
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
 class DifficultyLevel(str, Enum):
-    """Difficulty level of a query."""
+    """查询难度：L1 看一个元素就能答，L2 要两个证据/跨文档，L3 要多跳推理链。"""
 
     L1 = "L1"  # single-element intra-doc
     L2 = "L2"  # dual-evidence / cross-doc
@@ -36,7 +39,11 @@ class DifficultyLevel(str, Enum):
 # ── Evidence ──────────────────────────────────────────────────────────────────
 
 class EvidenceSpan(BaseModel):
-    """A single piece of evidence grounding a query answer."""
+    """一条证据 —— 指向某个元素（figure/table/formula）的某段文本。
+
+    element_id 不能为空（validator 硬卡），doc_id 用于下游的 doc-level split 防泄漏。
+    别从 element_id 字符串里猜 doc_id！直接用 doc_id 字段！（血泪教训）
+    """
 
     element_id: str
     doc_id: str = ""
@@ -56,7 +63,11 @@ class EvidenceSpan(BaseModel):
 # ── Reasoning Step ────────────────────────────────────────────────────────────
 
 class ReasoningStep(BaseModel):
-    """A single step in a multi-hop reasoning chain (L3 queries)."""
+    """多跳推理链中的一步（L3 专属）。
+
+    depends_on_steps 建立步骤间依赖（比如 step 2 依赖 step 1 的结论），
+    reasoning_role 分 premise / bridge / conclusion，形成完整推理弧。
+    """
 
     step_id: int
     evidence_element_id: str = ""
@@ -70,11 +81,12 @@ class ReasoningStep(BaseModel):
 # ── Standard Query ────────────────────────────────────────────────────────────
 
 class StandardQuery(BaseModel):
-    """Unified query schema shared by L1 / L2 / L3.
+    """L1/L2/L3 通吃的统一 query schema —— training pipeline 的宪法。
 
-    Every query produced or consumed by the training pipeline MUST be
-    representable as a ``StandardQuery``.  Legacy JSONL files are converted
-    via ``scripts/normalize_queries.py``.
+    所有产出或消费 query 的环节都必须能用这个 schema 表示。
+    历史遗留的各种 JSONL 格式通过 normalize_queries.py 转成这个。
+
+    注意 L3 的硬约束：没有 reasoning_steps 的 L3 query 会被 model_validator 直接拒绝。
     """
 
     schema_version: str = SCHEMA_VERSION
@@ -128,10 +140,10 @@ class StandardQuery(BaseModel):
 # ── Triplet ───────────────────────────────────────────────────────────────────
 
 class Triplet(BaseModel):
-    """A training triplet for contrastive learning.
+    """对比学习三元组：query + 正样本（对的证据） + 负样本（故意选的干扰项）。
 
-    ``positive`` and ``hard_negatives`` are lists of ``EvidenceSpan``-like
-    chunk references so the downstream DataLoader can resolve texts/images.
+    positive 和 hard_negatives 都是 EvidenceSpan 列表。
+    negative_strategy 记录用了什么采样策略（in_doc_swap / random / graph_aware）。
     """
 
     schema_version: str = SCHEMA_VERSION

@@ -1,8 +1,12 @@
-"""Atomic QC check functions.
+"""原子 QC 检查函数 —— 每个函数只干一件事，返回 True/False。
 
-Each function tests a single quality criterion and returns a boolean.
-Composite QC pipelines (``qc_multihop_query``, ``qc_real_user_query``) live
-in ``src.qc.pipelines`` and compose these checks.
+这里有 25+ 个检查，分成几大类：
+  - 泄漏检查：数值泄漏、anchor 泄漏（Jaccard）、证据 token 抄袭
+  - 格式检查：yes/no 题、模板开头、太长太短
+  - 逻辑检查：单元素作答、前提-答案矛盾、并行双问
+  - 领域检查：跨模态算子、公式符号接地、架构图意图
+
+pipeline（pipelines.py）负责把这些原子函数串成完整 QC 流程。
 """
 
 from __future__ import annotations
@@ -43,7 +47,7 @@ from src.utils.text_utils import (
 # ── Numeric / leakage checks ─────────────────────────────────────────────────
 
 def has_numeric_leakage(query: str) -> bool:
-    """Flag queries that leak specific numeric values (allows 0, 1, and years)."""
+    """查 query 里有没有泄露具体数值 —— 0、1 和年份(1900-2099)豁免。"""
     nums = re.findall(r"\b\d+(?:[.,]\d+)?%?\b", query)
     suspicious = []
     for raw in nums:
@@ -63,7 +67,10 @@ def has_numeric_leakage(query: str) -> bool:
 # ── Cross-modal operator ──────────────────────────────────────────────────────
 
 def has_no_cross_modal_operator(query: str) -> bool:
-    """Return True when no explicit cross-modal operator cue is found."""
+    """检查 query 有没有跨模态动词（verify/derive/explain/affect 等 180+ 个词）。
+
+    返回 True = 没有找到跨模态算子 → 可能只涉及单一模态，质量可疑。
+    """
     q = query.lower()
     token_hit = any(
         re.search(rf"\b{re.escape(op)}\b", q, re.IGNORECASE)
@@ -78,7 +85,7 @@ def has_no_cross_modal_operator(query: str) -> bool:
 # ── Evidence spans ────────────────────────────────────────────────────────────
 
 def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
-    """Return True if required_evidence_spans covers both elements with non-trivial spans."""
+    """检查 evidence spans 是不是真的覆盖了两个元素（且 span 文本 ≥8 字符）。"""
     spans = obj.get("required_evidence_spans", [])
     if not spans or len(spans) < 2:
         return False
@@ -95,6 +102,10 @@ def check_evidence_spans(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
 # ── Yes/no checks ────────────────────────────────────────────────────────────
 
 def is_yes_no_question(query: str) -> bool:
+    """判断是不是 yes/no 题 —— 不只看开头词，还处理倒装句。
+
+    "In the context of X, does Y..." 这种也能抓到。
+    """
     q = query.strip().lower()
     if any(q.startswith(s) for s in YES_NO_STARTERS):
         return True
@@ -121,6 +132,7 @@ def is_yes_no_answer(answer: str) -> bool:
 # ── Template / opening checks ────────────────────────────────────────────────
 
 def has_shortcut_template(query: str) -> bool:
+    """抓 "Which component..." / "How does X relate to Y" 这种偷懒模板。"""
     q = query.strip().lower()
     return any(re.search(p, q) for p in QUERY_SHORTCUT_PATTERNS)
 
@@ -131,6 +143,7 @@ def has_templated_opening(query: str) -> bool:
 
 
 def has_template_collapse(query: str) -> bool:
+    """抓高频 shell pattern —— "under what..." / "why is X different from Y" 这种。"""
     q = query.strip().lower()
     return any(re.search(p, q) for p in TEMPLATE_COLLAPSE_PATTERNS)
 
@@ -249,7 +262,7 @@ def has_relationship_connector(answer: str) -> bool:
 
 
 def has_premise_answer_contradiction(query: str, answer: str) -> bool:
-    """High-precision contradiction checks to catch premise reversal artifacts."""
+    """高精度矛盾检测 —— 抓 "why does X drop" + "X does not drop" 这种前提翻转。"""
     q = query.lower()
     a = answer.lower()
 
@@ -272,6 +285,7 @@ def has_premise_answer_contradiction(query: str, answer: str) -> bool:
 # ── Anchor / overlap checks ──────────────────────────────────────────────────
 
 def anchor_leak_jaccard(query: str, anchors: List[Dict[str, Any]]) -> float:
+    """query 跟 visual anchor 的 Jaccard 相似度 —— 超过 0.20 就算泄漏。"""
     q_tokens = content_tokens(query)
     if not q_tokens:
         return 0.0
@@ -316,9 +330,11 @@ def check_single_element_answer(
     a_tokens: Set[str],
     a_num_tokens: Set[str],
 ) -> Tuple[bool, Dict[str, Any]]:
-    """Check whether the answer draws on BOTH elements of the pair.
+    """检查答案是不是只用了一个元素就能答 —— 双证据 query 必须两个都用上。
 
-    Returns ``(is_fail, metrics_dict)``.  Caller decides whether to hard-fail.
+    算法：分别计算答案与 element_a / element_b 的 token 重叠，
+    如果 balance < 0.20 或者某一边重叠低于阈值，就算 fail。
+    返回 (是否fail, 详细指标)。
     """
     metrics: Dict[str, Any] = {}
 
@@ -370,7 +386,7 @@ def check_single_element_answer(
 # ── Formula grounding ─────────────────────────────────────────────────────────
 
 def formula_symbol_hit(answer: str, terms: Set[str]) -> bool:
-    """Return True if answer explicitly mentions at least one formula symbol/term."""
+    """figure+formula 对里答案必须引用公式符号 —— 不引就说明没有真正用到公式。"""
     if not terms:
         return True
     a = (answer or "").lower()
@@ -388,7 +404,7 @@ def formula_symbol_hit(answer: str, terms: Set[str]) -> bool:
 # ── Evidence overlap ──────────────────────────────────────────────────────────
 
 def answer_text_evidence_overlap(answer: str, evidence: str) -> float:
-    """Token overlap ratio between answer and text_evidence (answer-normalized)."""
+    """答案和 text_evidence 的 token 重叠比 —— 太高说明答案只是在复述证据。"""
     a_toks = content_tokens(answer)
     if not a_toks:
         return 0.0
@@ -401,7 +417,7 @@ def answer_text_evidence_overlap(answer: str, evidence: str) -> float:
 # ── Enrichment noise filter ──────────────────────────────────────────────────
 
 def is_noisy_enrichment(text: str) -> bool:
-    """Return True if the enriched field should be discarded as noise."""
+    """检测 enrichment 噪声 —— glyph/icon/OCR error 这种垃圾直接扔掉。"""
     if not text:
         return True
     stripped = text.strip()

@@ -1,10 +1,12 @@
-"""Quality control system for query validation.
+"""QC 质量闸门 —— 不合格的 query 一个都不放过。
 
-Public API:
-  - ``qc_multihop_query``  — strict academic-style QC
-  - ``qc_real_user_query``  — relaxed real-user style QC
-  - ``qc_reasoning_depth``  — M4 Schema 1 reasoning depth analysis
-  - Individual check functions from ``checks`` sub-module
+对外的 API：
+  - qc_multihop_query  → 严格学术风格 QC（15+ 个检查组合）
+  - qc_real_user_query  → 宽松版（不查 template shortcuts，yes/no 只是 issue 不硬 fail）
+  - qc_reasoning_depth  → L3 推理深度分析（M4 Schema 1 支持）
+
+每个检查函数是独立的原子操作（在 checks.py），pipeline 把它们串起来（在 pipelines.py）。
+这样你可以单独测试每个检查，也可以自由组合。
 """
 
 from src.qc.pipelines import qc_multihop_query, qc_real_user_query

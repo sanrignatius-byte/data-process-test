@@ -1,26 +1,15 @@
-"""Training dataset builder — the bridge from queries to model-ready data.
+"""训练数据导出器 —— 从 query 到模型可用数据的最后一公里。
 
-Responsibilities
-----------------
-1. Load normalised ``StandardQuery`` records.
-2. Resolve evidence spans to ``Chunk`` objects (text + optional image path).
-3. Build contrastive triplets via pluggable :class:`NegativeSampler`.
-4. Perform a **doc-level** train / val / test split (prevents data leakage).
-5. Write output as JSONL (and optionally Parquet).
+整个流程：
+  1. 加载 normalize 后的 StandardQuery
+  2. 把 evidence span 对应到 Chunk（文本 + 可选图片路径）
+  3. 通过可插拔的 NegativeSampler 采负样本，构建对比学习 Triplet
+  4. doc-level hash split（同文档的 query 只进同一个 split，防泄漏）
+  5. 写 JSONL + manifest.json
 
-Usage
------
-::
-
-    from src.export import DatasetBuilder, DatasetConfig
-
-    cfg = DatasetConfig(train_ratio=0.9, val_ratio=0.05)
-    builder = DatasetBuilder(cfg)
-    stats = builder.build(
-        queries_path="data/queries_normalized.jsonl",
-        elements_path="data/multimodal_elements.json",
-        output_dir="data/contrastive_data/v1",
-    )
+用法很简单：
+    builder = DatasetBuilder(DatasetConfig(train_ratio=0.9))
+    builder.build("queries.jsonl", "elements.json", "output/")
 """
 
 from __future__ import annotations
@@ -49,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DatasetConfig:
-    """Configuration for :class:`DatasetBuilder`."""
+    """训练导出的配置 —— train/val/test 比例 + 负样本数量 + 采样策略。"""
 
     train_ratio: float = 0.9
     val_ratio: float = 0.05
@@ -71,7 +60,7 @@ class DatasetConfig:
 # ── Helper: element index ─────────────────────────────────────────────────────
 
 def _build_element_index(elements_path: Path) -> Dict[str, Dict[str, Any]]:
-    """Load ``multimodal_elements.json`` into a ``{element_id: record}`` map."""
+    """把 multimodal_elements.json 加载成 {element_id: 元素字典} 的索引。"""
     if not elements_path.exists():
         logger.warning("Elements file not found: %s", elements_path)
         return {}
@@ -89,7 +78,7 @@ def _build_element_index(elements_path: Path) -> Dict[str, Dict[str, Any]]:
 
 
 def _element_to_chunk(el: Dict[str, Any]) -> Chunk:
-    """Convert a raw element dict to a :class:`Chunk`."""
+    """把原始元素字典转成 Chunk —— 顺便拼好检索用的 text 字段。"""
     return Chunk(
         chunk_id=el.get("element_id", ""),
         doc_id=el.get("doc_id", ""),
@@ -103,7 +92,7 @@ def _element_to_chunk(el: Dict[str, Any]) -> Chunk:
 
 
 def _assemble_chunk_text(el: Dict[str, Any]) -> str:
-    """Build a retrieval-friendly text representation of an element."""
+    """拼检索文本：优先 enriched_content > caption > content > context_before。"""
     parts: list[str] = []
     for key in ("enriched_content", "caption", "content", "context_before"):
         val = (el.get(key) or "").strip()
@@ -115,7 +104,12 @@ def _assemble_chunk_text(el: Dict[str, Any]) -> str:
 # ── Core builder ──────────────────────────────────────────────────────────────
 
 class DatasetBuilder:
-    """Orchestrates: queries → triplets → train/val/test → disk."""
+    """总指挥：queries → triplets → train/val/test split → 写盘。
+
+    核心思路：每个 query 配上它的正样本证据，再用 NegativeSampler 采负样本，
+    组成 (query, positive, negatives) 三元组。最后按 doc_id 哈希分组，
+    保证同一篇论文的所有 query 只出现在同一个 split 里（防泄漏）。
+    """
 
     def __init__(self, config: DatasetConfig | None = None) -> None:
         self.config = config or DatasetConfig()
@@ -132,7 +126,7 @@ class DatasetBuilder:
         elements_path: str | Path,
         output_dir: str | Path,
     ) -> Dict[str, Any]:
-        """Run the full build pipeline.  Returns summary statistics."""
+        """跑完整个导出流程，返回统计信息。一把梭！"""
         queries_path = Path(queries_path)
         elements_path = Path(elements_path)
         output_dir = Path(output_dir)
@@ -243,7 +237,11 @@ class DatasetBuilder:
         self,
         triplets: List[Triplet],
     ) -> Dict[str, List[Triplet]]:
-        """Split by doc_id (from positive evidence) to prevent data leakage."""
+        """按 doc_id 哈希分 train/val/test —— 防泄漏的关键。
+
+        md5(doc_id) % 1000 决定去哪个 split，确定性、可复现、零泄漏。
+        同一篇论文的所有 query 只会出现在同一个 split 里。
+        """
 
         def _doc_key(t: Triplet) -> str:
             if t.positive and t.positive[0].doc_id:

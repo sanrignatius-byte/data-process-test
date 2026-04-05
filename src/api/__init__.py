@@ -1,9 +1,13 @@
-"""Unified LLM API client + JSON extraction.
+"""统一 LLM 调用层 —— 三条路全在这儿。
 
-Consolidates call_api / _collect_company_stream / parse_json previously
-duplicated across 4+ scripts.  Preserves the global mutable
-``_COMPANY_API_URL`` / ``_COMPANY_API_KEY`` injection pattern (user's key
-changes monthly and needs runtime injection).
+之前 4+ 个脚本各写各的 call_api / SSE 解析 / JSON 提取，重复代码满天飞。
+现在全收进这一个文件，三条 provider 路径：
+  - anthropic：直连 Claude API（默认）
+  - openai：走 OpenAI SDK
+  - company：走公司代理 yunwu.ai（SSE 流式 + local_api_logger 自动记账）
+
+全局变量 _COMPANY_API_URL / _COMPANY_API_KEY 是故意设计的 ——
+key 每月换一次，需要运行时注入，不要重构成 config 对象。
 """
 
 from __future__ import annotations
@@ -18,23 +22,25 @@ _COMPANY_API_KEY: str = ""
 
 
 def set_company_credentials(url: str, key: str) -> None:
-    """Set the company API URL and key at runtime."""
+    """运行时设置公司 API 的 URL 和 Key —— 每个脚本的 main() 里调一次就行。"""
     global _COMPANY_API_URL, _COMPANY_API_KEY
     _COMPANY_API_URL = url
     _COMPANY_API_KEY = key
 
 
 def get_company_credentials() -> Tuple[str, str]:
-    """Return the current ``(url, key)`` pair."""
+    """拿当前的 (url, key)，debug 用或者给子模块传参。"""
     return _COMPANY_API_URL, _COMPANY_API_KEY
 
 
 # ── SSE stream collector ─────────────────────────────────────────────────────
 
 def collect_company_stream(stream_generator) -> Tuple[str, int, int]:
-    """Collect content and token usage from a company API SSE stream.
+    """从公司 SSE 流里一行一行拼出完整回复 + token 用量。
 
-    Returns ``(text, input_tokens, output_tokens)``.
+    公司 API 是 OpenAI 兼容的流式接口，每行 ``data: {...}`` 格式。
+    我们逐行解析 delta.content 拼文本，最后一条带 usage 字段取 token 数。
+    返回 ``(完整文本, input_tokens, output_tokens)``。
     """
     content_parts: List[str] = []
     in_tok, out_tok = 0, 0
@@ -97,30 +103,15 @@ def call_llm(
     temperature: float = 0.4,
     user_tag: str = "pipeline",
 ) -> Tuple[Optional[str], int, int]:
-    """Call an LLM provider.  Returns ``(text, input_tokens, output_tokens)``.
+    """一把梭调 LLM —— 不管你用哪家，接口都一样。
 
-    Parameters
-    ----------
-    client
-        An initialized API client (``anthropic.Anthropic``, ``openai.OpenAI``,
-        or *None* when provider is ``"company"``).
-    model
-        Model name (e.g. ``"claude-sonnet-4-5-20250929"``).
-    prompt
-        User-message text.
-    images
-        Optional list of ``(base64_data, mime_type)`` tuples.  ``None`` entries
-        are silently skipped.
-    provider
-        One of ``"anthropic"`` | ``"openai"`` | ``"company"``.
-    system_prompt
-        System message prepended to the conversation.
-    max_tokens
-        Maximum generation tokens.
-    temperature
-        Sampling temperature.
-    user_tag
-        Identifier for the ``local_api_logger`` ``user`` field.
+    三条路径内部自动路由：
+      - anthropic: client.messages.create()，图片用 base64 source
+      - openai:    client.chat.completions.create()，图片用 image_url
+      - company:   wrap_requests_call() + SSE 流，走公司代理
+
+    返回 ``(生成的文本, input_tokens, output_tokens)``。
+    images 参数传 ``[(base64_data, mime_type), ...]``，None 会被自动跳过。
     """
     imgs = [i for i in (images or []) if i is not None]
 
@@ -221,10 +212,11 @@ def call_llm(
 # ── JSON extraction from LLM output ──────────────────────────────────────────
 
 def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
-    """Extract first valid JSON object from (possibly noisy) LLM output.
+    """从 LLM 的乱七八糟输出里抠出第一个合法 JSON。
 
-    Strips markdown fences, then uses a brace-depth scanner to find the first
-    balanced ``{ … }`` substring and parses it.
+    LLM 经常在 JSON 外面包一层 markdown 代码块，或者前后加废话。
+    这里先剥掉 ```json 围栏，然后用花括号深度扫描找第一个平衡的 {...}。
+    比 json.loads 直接上要鲁棒得多。
     """
     if not text:
         return None
@@ -264,7 +256,7 @@ def extract_json(text: Optional[str]) -> Optional[Dict[str, Any]]:
 
 
 def parse_json(txt: Optional[str]) -> Optional[Dict[str, Any]]:
-    """Parse JSON from LLM output — tries ``json.loads`` first, falls back to extraction."""
+    """解析 LLM 输出的 JSON —— 先试快路径 json.loads，失败了走 extract_json 兜底。"""
     if not txt:
         return None
     cleaned = txt.strip()

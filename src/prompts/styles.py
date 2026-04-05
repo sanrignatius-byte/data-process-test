@@ -1,4 +1,13 @@
-"""Query style resolution and template selection logic."""
+"""Query 风格路由 —— 决定每个 pair 用什么模板。
+
+select_template() 是模板路由器：
+  1. 先按 style 分轨（academic / real_user / mixed）
+  2. academic: 按模态组合 + hop 距离选模板
+  3. real_user: 5 种子类型轮换（md5 哈希确定性）
+  4. mixed: 50% academic + 50% real_user（同一个 pair 每次跑结果一样）
+
+L3 有专属模板 "3step_reasoning_chain"，通过 reasoning_chain_target flag 激活。
+"""
 from __future__ import annotations
 import hashlib
 from typing import Dict
