@@ -1,8 +1,11 @@
-"""Shared image-processing utilities.
+"""图像处理工具 —— 路径解析 + base64 编码，跨环境通吃。
 
-Consolidates encode_image / load_image_b64 / resolve_image_path previously
-duplicated across generate_multihop_l1_queries.py, enrich_elements_modora.py,
-and generate_l2_queries.py.
+之前 3 个脚本各写各的 encode_image / load_image_b64 / resolve_image_path，
+现在统一收到这里。
+
+最值得说的是 resolve_image_path()——维护了一个 _KNOWN_PREFIXES 列表，
+处理集群 / 本地 / CI 三种环境下图像路径不一致的问题。
+四级策略：直接路径 → 已知前缀剥离 → /data/mineru_output/ 后缀提取 → 通用 /data/ 重定向。
 """
 
 from __future__ import annotations
@@ -32,15 +35,14 @@ _KNOWN_PREFIXES = [
 # ── Path resolution ───────────────────────────────────────────────────────────
 
 def resolve_image_path(raw_path: str) -> Optional[Path]:
-    """Multi-strategy resolver for cross-environment image paths.
+    """多策略图像路径解析 —— 集群/本地/CI 环境随便切换不报错。
 
-    Tries, in order:
-    1. Direct path (absolute or relative to PROJECT_ROOT)
-    2. Known-prefix stripping  (cluster → local)
-    3. ``/data/mineru_output/`` suffix extraction
-    4. Generic ``/data/`` re-root
-
-    Returns *None* and prints a diagnostic to stderr when all strategies fail.
+    试四种策略：
+      1. 直接路径（绝对 or 相对于项目根）
+      2. 已知前缀剥离（/projects/myyyx1/... → 本地 data/...）
+      3. /data/mineru_output/ 后缀提取
+      4. 通用 /data/ 重定向
+    全试完还找不到就返回 None 并打个 stderr 提示。
     """
     if not raw_path:
         return None
@@ -113,10 +115,10 @@ def _fallback_image_path(raw_path: str) -> Optional[Path]:
 # ── Image encoding ────────────────────────────────────────────────────────────
 
 def encode_image(path: Optional[str]) -> Optional[Tuple[str, str]]:
-    """Return ``(base64_data, mime_type)`` or *None* if the file is missing/tiny.
+    """读图 → base64 编码，返回 (base64字符串, mime_type)。
 
-    Applies :func:`_fallback_image_path` when the direct path doesn't exist.
-    Files smaller than 500 bytes are skipped (likely corrupt / placeholder).
+    文件 <500B 跳过（大概率是坏图/占位符）。
+    找不到路径就走 _fallback_image_path 兜底。
     """
     if not path:
         return None
@@ -138,11 +140,7 @@ def encode_image(path: Optional[str]) -> Optional[Tuple[str, str]]:
 
 
 def load_image_b64(image_path: str) -> Optional[Tuple[str, str]]:
-    """Load image as base64 string.  Returns ``(b64_data, mime_type)`` or *None*.
-
-    Uses :func:`resolve_image_path` for path resolution and skips files larger
-    than :data:`MAX_IMAGE_BYTES`.
-    """
+    """加载图片为 base64 —— 比 encode_image 多一层大小限制(5MB)和 mime 自动推断。"""
     resolved = resolve_image_path(image_path)
     if resolved is None:
         return None

@@ -1,10 +1,9 @@
-"""Shared data models used across scripts.
+"""图 + 检索用到的基础数据结构，全项目共享。
 
-Node / Edge     — graph topology (analyze_latex_graph_topology, run_phase0_eval_ab)
-Chunk           — retrieval unit  (run_phase0_eval_ab, eval_cpool_keyword_boost_graph)
-StandardQuery   — unified query schema for L1/L2/L3 (training pipeline)
-Triplet         — contrastive learning triplet
-EvidenceSpan    — single piece of evidence
+Node / Edge  → 文档引用图的节点和边（analyze_latex_graph_topology 建图，run_phase0_eval_ab 评测用）
+Chunk        → 一个检索单元（一个多模态元素 = 一个 chunk，BM25 打分的最小粒度）
+
+这几个 dataclass 故意很轻量 —— 不引任何外部依赖，纯标准库。
 """
 
 from __future__ import annotations
@@ -15,7 +14,11 @@ from typing import Optional
 
 @dataclass
 class Node:
-    """A node in the document reference graph."""
+    """图里的一个节点 —— 可以是 figure/table/equation/paragraph/section 等。
+
+    mapped_element_id 是从 LaTeX label 映射到 MinerU element 的结果，
+    匹配率目前约 49.8%（Jaccard + 数字后缀 fallback），不高但够用。
+    """
 
     node_id: str
     doc_id: str
@@ -35,7 +38,11 @@ class Node:
 
 @dataclass
 class Edge:
-    """A directed edge in the document reference graph."""
+    """图里的一条有向边 —— paragraph_ref / backbone / element_ref / cross_doc_cite 等。
+
+    key() 返回 (source, target, type) 三元组，用来 set 去重 ——
+    建图过程中重复边巨多，这个 O(1) 去重很关键。
+    """
 
     source_id: str
     target_id: str
@@ -50,7 +57,11 @@ class Edge:
 
 @dataclass
 class Chunk:
-    """A retrieval unit (one per multimodal element)."""
+    """一个检索单元 = 一个多模态元素（figure/table/formula）。
+
+    text 字段是拼接 enriched_content + caption + content + context_before 的
+    检索友好文本，给 BM25 打分用。enriched_* 字段是 MoDora enrichment 后加的。
+    """
 
     chunk_id: str
     doc_id: str

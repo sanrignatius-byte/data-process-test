@@ -1,7 +1,4 @@
-"""Prompt templates, personas, and query-style logic for cross-modal query generation.
-
-Extracted from scripts/generate_multihop_l1_queries.py to enable reuse.
-"""
+"""Prompt 工程层 —— 模板 / 人设 / 风格路由，从 3900 行大单体拆出来的。"""
 
 from .templates import (  # noqa: F401
     SYSTEM_PROMPT,

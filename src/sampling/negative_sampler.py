@@ -1,7 +1,13 @@
-"""Pluggable negative-sampling strategies.
+"""负样本采样 —— 给对比学习挑"干扰项"。
 
-Each sampler follows the :class:`NegativeSampler` protocol and can be
-instantiated via the factory function :func:`build_sampler`.
+采样器是可插拔的（Protocol 接口），目前有三个实现：
+  - HeuristicNegativeSampler：规则采样（random / in_doc_swap）
+  - GraphAwareNegativeSampler：图感知采样（目前是 stub，fallback 到 random）
+  - build_sampler() 工厂函数：按 config 字典自动选实现
+
+in_doc_swap 是核心策略：优先从同文档里挑负样本（最难的干扰项），
+不够再从其他文档补。注意 pos_doc_ids 必须在过滤 pool 之前提取 ——
+不然 positive chunks 已被移除就取不到 doc_id 了（这个 bug 坑过我们一次）。
 """
 
 from __future__ import annotations
@@ -15,7 +21,7 @@ from src.models import Chunk
 # ── Protocol ──────────────────────────────────────────────────────────────────
 
 class NegativeSampler(Protocol):
-    """Interface every negative sampler must satisfy."""
+    """负样本采样器接口 —— 只要实现 sample() 就行，不用继承 ABC。"""
 
     def sample(
         self,
@@ -43,18 +49,14 @@ class NegativeSampler(Protocol):
 # ── Heuristic sampler ────────────────────────────────────────────────────────
 
 class HeuristicNegativeSampler:
-    """Rule-based negative sampling (in_doc_swap / same_type / random).
+    """基于规则的负样本采样，不需要 embedding，零成本。
 
-    Parameters
-    ----------
-    strategy : str
-        One of ``"random"``, ``"in_doc_swap"``, ``"same_type_hard"``,
-        ``"modal_mixed"`` (composite with ``distribution``).
-    distribution : dict | None
-        Required when *strategy* is ``"modal_mixed"``.  Maps sub-strategy
-        names to floats summing to 1.0.
-    seed : int
-        RNG seed for reproducibility.
+    两种策略：
+      - random：排除正样本后随便抽
+      - in_doc_swap：优先从同文档抽（hard negative），不够从其他文档补
+
+    这里有个历史 bug 教训：doc_id 不能从 element_id 字符串 rsplit 猜，
+    arXiv ID 有多个下划线会猜错。必须直接用 Chunk.doc_id 字段！
     """
 
     def __init__(
@@ -102,7 +104,11 @@ class HeuristicNegativeSampler:
         doc_ids: set[str],
         n: int,
     ) -> List[Chunk]:
-        """Prefer chunks from the same document(s) as positives."""
+        """同文档换元素 —— 最狠的 hard negative 策略。
+
+        优先挑同文档的非正样本元素，不够再从其他文档补。
+        补的时候只从 other_doc pool 里抽，避免重复。
+        """
         if not doc_ids:
             return self._random(pool, n)
 
@@ -118,11 +124,10 @@ class HeuristicNegativeSampler:
 # ── Graph-aware sampler (stub) ────────────────────────────────────────────────
 
 class GraphAwareNegativeSampler:
-    """1-hop graph neighbours that are NOT positive evidence.
+    """图感知负样本 —— 理想中用图的 1-hop 邻居做 hard negative。
 
-    .. note:: This is a stub.  Full implementation requires access to the
-       document graph (``src/graph/`` once populated).  For now it falls
-       back to random sampling.
+    目前还是个 stub（TODO），fallback 到 random。
+    等 src/graph/ 的 PageRank / label propagation 做好了再接上。
     """
 
     def __init__(self, seed: int = 42) -> None:
@@ -142,15 +147,11 @@ class GraphAwareNegativeSampler:
 # ── Factory ───────────────────────────────────────────────────────────────────
 
 def build_sampler(config: Dict[str, Any]) -> NegativeSampler:
-    """Instantiate a sampler from a config dict (e.g. ``config.yaml`` section).
+    """工厂函数 —— 按 config 字典自动选采样器实现。
 
-    Expected keys
-    -------------
-    strategy : str
-        ``"random"`` | ``"in_doc_swap"`` | ``"same_type_hard"``
-        | ``"modal_mixed"`` | ``"graph_aware"``
-    distribution : dict, optional
-    seed : int, optional
+    config 里写 strategy="in_doc_swap" 就用同文档换元素，
+    strategy="graph_aware" 就用图感知（目前 fallback 到 random），
+    其他都 fallback 到 random。
     """
     strategy = config.get("strategy", "random")
     seed = config.get("seed", 42)

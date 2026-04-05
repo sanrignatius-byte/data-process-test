@@ -1,41 +1,21 @@
-"""Persistent token usage logger — SQLite backend, management-ready reports.
+"""Token 用量铁律执行者 —— SQLite 后端，管理层可读报表。
 
-Every query-generation run is recorded in logs/token_usage.db with full
-per-run details: timestamp, script, model, purpose, token counts, cost,
-and task-level metadata (qc_pass, queries_written, …).
+铁律：任何调 LLM API 的脚本，结束时必须调 log_run() 记录 token 消耗，无例外。
+不记 token 不合并 PR。
 
-Usage in a script
------------------
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
+每次运行记录：时间戳、脚本名、模型、用途、token 数、成本、任务元数据。
+存在 logs/token_usage.db（SQLite），也支持 CLI 查看和 CSV 导出。
+
+用法：
     from src.utils.token_logger import log_run
+    log_run(script="generate_l2", model="claude-sonnet-4-5", purpose="L2 生成",
+            input_tokens=12345, output_tokens=6789,
+            extra={"qc_pass": 19, "qc_fail": 23})
 
-    log_run(
-        script="generate_l2_queries",
-        model="claude-sonnet-4-5-20250929",
-        purpose="L2 cross-document query generation (citation-based candidates)",
-        input_tokens=total_input_tokens,
-        output_tokens=total_output_tokens,
-        extra={"pairs_processed": 43, "qc_pass": 19, "qc_fail": 23},
-    )
-
-CLI usage
----------
-    # Print last 30-day summary  (default)
-    python src/utils/token_logger.py
-
-    # Custom window
-    python src/utils/token_logger.py --days 7
-
-    # All-time
-    python src/utils/token_logger.py --all
-
-    # Export CSV (e.g. for spreadsheet hand-off to manager)
-    python src/utils/token_logger.py --csv > token_report.csv
-
-    # Migrate old JSONL log into SQLite
-    python src/utils/token_logger.py --migrate logs/token_usage.jsonl
+CLI：
+    python src/utils/token_logger.py          # 最近 30 天
+    python src/utils/token_logger.py --days 7 # 最近 7 天
+    python src/utils/token_logger.py --csv    # 导出 CSV 给老板看
 """
 
 from __future__ import annotations

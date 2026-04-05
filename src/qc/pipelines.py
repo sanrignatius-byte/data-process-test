@@ -1,7 +1,10 @@
-"""Composite QC pipelines.
+"""QC 组合流水线 —— 把原子检查串成完整质量关卡。
 
-``qc_multihop_query`` and ``qc_real_user_query`` compose the atomic checks
-from ``src.qc.checks`` into complete QC flows.
+两条流水线：
+  - qc_multihop_query：严格版（学术风格），15+ 个检查全上，anchor 泄漏有 amnesty 机制
+  - qc_real_user_query：宽松版（真人用户风格），不查 template，yes/no 只是 issue 不硬 fail
+
+每个函数返回 (issues列表, metrics字典)，调用方根据 issues 决定 pass/fail。
 """
 
 from __future__ import annotations
@@ -49,7 +52,14 @@ def qc_multihop_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """Run QC checks on a multi-hop L1 query.  Returns ``(issues, metrics)``."""
+    """严格学术风格 QC —— 15+ 个检查串起来跑，不合格的 query 一个都不放过。
+
+    检查顺序大致是：元语言 → yes/no → 数值泄漏 → 模板 → 逻辑 → anchor 泄漏
+    → 单元素作答 → 证据长度 → 公式接地 → 推理连接器 → 架构图意图。
+
+    anchor 泄漏有 amnesty 机制：如果重叠 token 全是领域必需词（accuracy/f1 等），
+    就豁免，不误杀。返回 (issues列表, metrics字典)。
+    """
     issues: List[str] = []
     metrics: Dict[str, Any] = {}
     q = obj.get("query", "")
@@ -222,7 +232,12 @@ def qc_real_user_query(
     pair: Dict[str, Any],
     persona: str = "",
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """QC checks for real-user style queries (relaxed relative to academic)."""
+    """宽松版 QC —— 面向真人用户风格的 query，门槛适当放低。
+
+    相比 academic 版：不查 template shortcuts，yes/no 只是 issue 不硬 fail，
+    新增 retrievability_score（答案长度+evidence+spans 三维评分）和
+    numeric_unsupported（答案里的数字在证据里找不到 → 可能是编造的）。
+    """
     issues: List[str] = []
     metrics: Dict[str, Any] = {}
     q = obj.get("query", "")

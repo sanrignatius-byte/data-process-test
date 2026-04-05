@@ -1,7 +1,12 @@
-"""Shared text-processing utilities.
+"""文本处理工具包 —— 分词 / Jaccard / 公式符号提取等。
 
-Consolidates tokenize / jaccard / normalize_label_type / parse_number and
-related helpers previously duplicated across 5+ scripts.
+之前 5+ 个脚本各自实现了一遍分词，现在统一收到这里。
+注意有三种分词函数，别搞混了：
+  - tokenize()：≥3 字母小写化，用于拓扑分析和 hub enrichment
+  - tokenize_words()：\\w+ 小写化含数字，用于 enrich_hub_candidates
+  - tokenize_for_retrieval()：字母开头 2+ 字符，返回 list（保序+保重复），给 BM25 用
+
+content_tokens() 是 QC 专用的：去停用词后的内容 token，用于 anchor 泄漏检测。
 """
 
 from __future__ import annotations
@@ -16,35 +21,24 @@ TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,}")
 
 
 def tokenize(text: str) -> Set[str]:
-    """Return lowercased ≥3-letter tokens from *text*.
-
-    Uses a simple ``[a-zA-Z]{3,}`` pattern (no digits, no short words) which is
-    the variant used by the topology and hub-enrichment scripts.
-    """
+    """粗分词：≥3 字母小写化，不含数字不含短词。拓扑分析和 hub enrichment 用。"""
     return {t for t in re.findall(r"[a-zA-Z]{3,}", (text or "").lower())}
 
 
 def tokenize_words(text: str) -> Set[str]:
-    r"""Return lowercased ``\w+`` tokens (including digits).
-
-    This is the variant used by ``enrich_hub_candidates.py``.
-    """
+    r"""全量分词：``\w+`` 小写化含数字。enrich_hub_candidates 用。"""
     return set(re.findall(r"\w+", (text or "").lower()))
 
 
 def tokenize_for_retrieval(text: str) -> List[str]:
-    """Return lowercased tokens suitable for BM25 / retrieval scoring.
-
-    Uses :data:`TOKEN_RE` (alpha-prefixed, 2+ chars) and returns a *list*
-    (preserving order & duplicates) so callers can compute term frequencies.
-    """
+    """检索用分词：字母开头 2+ 字符，返回 list（保序+保重复）。BM25 打分用。"""
     return [t.lower() for t in TOKEN_RE.findall(text or "")]
 
 
 # ── Set similarity ────────────────────────────────────────────────────────────
 
 def jaccard(a: Set[str], b: Set[str]) -> float:
-    """Jaccard index between two token sets.  Returns 0 when either set is empty."""
+    """Jaccard 相似度：|A∩B| / |A∪B|，两个空集返回 0。"""
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
@@ -145,7 +139,7 @@ LEAK_STOPWORDS: Set[str] = {
 
 
 def content_tokens(text: str) -> Set[str]:
-    """≥3-letter words minus common stopwords — used for anchor / evidence overlap."""
+    """QC 专用分词：≥3 字母去停用词后的纯内容 token，用于 anchor/evidence 泄漏检测。"""
     words = set(re.findall(r"\b[a-zA-Z]{3,}\b", (text or "").lower()))
     return words - LEAK_STOPWORDS
 
@@ -173,10 +167,7 @@ _RE_GREEK = re.compile(
 
 
 def extract_math_regions(text: str) -> str:
-    """Extract inline/display math content from LaTeX text.
-
-    Returns concatenated math regions, or the original text if none found.
-    """
+    """从 LaTeX 文本中提取行内/行间公式内容。没找到公式就返回原文。"""
     regions: List[str] = []
     regions += re.findall(r"\$(.+?)\$", text, flags=re.DOTALL)
     regions += re.findall(r"\\\((.+?)\\\)", text, flags=re.DOTALL)
@@ -185,7 +176,10 @@ def extract_math_regions(text: str) -> str:
 
 
 def extract_formula_variables(content: str) -> str:
-    """Extract lightweight variable/function hints from formula text."""
+    """从公式文本中提取变量和函数名，给 prompt 用。
+
+    返回类似 "Variables: x, y, alpha; Functions/terms: softmax, argmax" 的字符串。
+    """
     if not content:
         return "(none)"
 
@@ -212,7 +206,7 @@ def extract_formula_variables(content: str) -> str:
 
 
 def extract_formula_symbol_terms(content: str) -> Set[str]:
-    """Extract formula-specific symbolic terms for grounding checks."""
+    """从公式中提取符号术语 —— QC 用，检查答案有没有引用公式符号。"""
     if not content:
         return set()
     math_text = extract_math_regions(content)
@@ -232,7 +226,7 @@ def extract_formula_symbol_terms(content: str) -> Set[str]:
 
 
 def extract_table_headers(content: str, max_chars: int = 150) -> str:
-    """Extract table headers/labels, avoiding dense numeric values."""
+    """从 HTML/markdown table 中提取表头标签，跳过纯数字单元格。"""
     if not content:
         return "(none)"
 

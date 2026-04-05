@@ -1,7 +1,13 @@
-"""Prompt templates for cross-modal dual-evidence query generation.
+"""Prompt 模板库 —— 11 个模板覆盖所有模态组合和风格。
 
-Extracted from generate_multihop_l1_queries.py to enable reuse by other
-scripts and modules.
+从 generate_multihop_l1_queries.py 的 3900 行大单体里拆出来的。
+两大类模板：
+  - 学术风格（6 个）：PhD persona，按模态组合分（fig+table / fig+formula / formula+table）
+    再按 hop 距离分（1hop vs 2hop+）
+  - 真人风格（5 个）：factual / summary / comparison / how_works / what_if，
+    通过 REAL_USER_STYLE_CYCLE 轮换
+
+每个模板都是一个大 f-string，里面有 {fig_id}, {tbl_caption} 这种占位符。
 """
 from __future__ import annotations
 from typing import Dict

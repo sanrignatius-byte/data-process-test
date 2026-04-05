@@ -1,6 +1,15 @@
-"""Lightweight BM25 implementation + retrieval metrics.
+"""自己手搓的 BM25 + 检索评测指标 —— 零外部依赖，纯标准库。
 
-Extracted from run_phase0_eval_ab.py to allow reuse across all eval scripts.
+BM25Lite 是经典 Okapi BM25 实现（k1=1.5, b=0.75），
+从 run_phase0_eval_ab.py 抽出来复用的。
+
+评测指标三件套：
+  - reciprocal_rank_binary (MRR)：第一个命中在第几名
+  - coverage_at_k (Recall@k)：top-k 里命中了几个
+  - ndcg_at_k：带排名折扣的标准评测
+
+实验结论：neighbor_prop 是最有效的图信号（1-hop 标签传播），
+graph_full 最优配置 nw=1.00, hw=0.15, cw=0（citation walk 负贡献关掉了）。
 """
 
 from __future__ import annotations
@@ -15,7 +24,11 @@ from src.utils.text_utils import tokenize_for_retrieval
 # ── BM25 ──────────────────────────────────────────────────────────────────────
 
 class BM25Lite:
-    """Lightweight BM25 scorer — zero external dependencies."""
+    """轻量 BM25 打分器 —— 不装 rank_bm25，自己写的才放心。
+
+    建索引时预计算 df 和 tf，query 时 O(|query_terms|) 打分。
+    用的标准 Okapi BM25 公式，k1=1.5, b=0.75。
+    """
 
     def __init__(self, docs: List[List[str]], k1: float = 1.5, b: float = 0.75):
         self.k1 = k1
@@ -53,7 +66,7 @@ class BM25Lite:
 # ── Retrieval metrics ─────────────────────────────────────────────────────────
 
 def reciprocal_rank_binary(ranked_ids: List[str], relevant: Set[str]) -> float:
-    """Return reciprocal rank (1/rank of first relevant hit, or 0)."""
+    """MRR：第一个相关结果排在第几名？排名越靠前分越高（1/rank），没命中就是 0。"""
     for i, rid in enumerate(ranked_ids, 1):
         if rid in relevant:
             return 1.0 / i
@@ -61,7 +74,7 @@ def reciprocal_rank_binary(ranked_ids: List[str], relevant: Set[str]) -> float:
 
 
 def coverage_at_k(ranked_ids: List[str], relevant: Set[str], k: int = 10) -> float:
-    """Fraction of *relevant* items found in top-k."""
+    """Recall@k：top-k 里找到了多少比例的相关文档。"""
     if not relevant:
         return 0.0
     found = sum(1 for rid in ranked_ids[:k] if rid in relevant)
@@ -69,7 +82,7 @@ def coverage_at_k(ranked_ids: List[str], relevant: Set[str], k: int = 10) -> flo
 
 
 def ndcg_at_k(ranked_ids: List[str], relevant: Set[str], k: int = 10) -> float:
-    """Binary-relevance NDCG@k."""
+    """NDCG@k（二值相关性版）：考虑排名位置折扣的评测指标。"""
     dcg = 0.0
     for i, rid in enumerate(ranked_ids[:k], 1):
         if rid in relevant:
