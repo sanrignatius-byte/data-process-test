@@ -1,18 +1,7 @@
-# Cross-document linking modules
-from .cross_document_linker import (
-    CrossDocumentLinker,
-    EntityMention,
-    DocumentEntity,
-    CrossDocumentLink,
-    EvidenceChain,
-    EvidenceNode,
-)
+"""Linker modules for cross-modal and cross-document relationship building."""
+
+from .multimodal_relationship_builder import MultimodalRelationshipBuilder
 
 __all__ = [
-    "CrossDocumentLinker",
-    "EntityMention",
-    "DocumentEntity",
-    "CrossDocumentLink",
-    "EvidenceChain",
-    "EvidenceNode",
+    "MultimodalRelationshipBuilder",
 ]
