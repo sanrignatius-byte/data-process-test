@@ -1,0 +1,59 @@
+% This work identifies an important problem with the current state-of-the-art in named entity recognition. Nevertheless, this measure is a preliminary look into the many possible biases that NER may contain, and there are some key limitations that should be considered.
+
+% First, our approach is based upon names taken from United States census data. Naturally, this data will have a strong Western bias which will skew the gender of the names. Furthermore, it is possible that entire classes of characters (e.g., Han Chinese and Cyrillic) are completely omitted from this dataset. While our approach is general enough to take any set of names as input, the performance of these models in the presence of these variations in names remains unseen. 
+
+% Second, the nine templates used to test the models are not  representative of real-world text. We chose these templates as they offer a view of the different types of bias, and provide unique opportunities for the NER systems to fail, but there is a limitless supply of sentences that could be fed to the model. Moving forward, we seek to generate a sentence corpora that is based on real-world text. 
+
+\section{Conclusion and Future Work}
+\begin{table}
+%\centering
+\begin{tabular}{ p{0.3cm} p{2cm} p{1.0cm} p{1.0cm} p{1cm} p{1cm}}
+ \toprule
+& \textbf{Dataset} & \textbf{Female Count} &\textbf{Male Count}&\textbf{Female Pct}& \textbf{Male Pct}\\
+ \midrule
+ & Census & 67,698 & 41,475 & 62\% & 38\% \\[0.5pt]
+ \midrule
+ \parbox[t]{2mm}{\multirow{2}{*}{\rotatebox[origin=c]{90}{Train}}}
+ & CoNLL 2003& 1,810 & 2,506&42\%&58\%\\[0.5pt]
+ & OntoNotes5& 2,758&3,832&42\%&58\%\\[0.5pt]
+ \midrule
+ \parbox[t]{2mm}{\multirow{2}{*}{\rotatebox[origin=c]{90}{Dev}}} &
+   CoNLL 2003&962&1,311&42\%&58\%\\[0.5pt]
+ & OntoNotes5&1,159&1,524&43\%&57\%\\[0.5pt]
+ \midrule
+ \parbox[t]{2mm}{\multirow{2}{*}{\rotatebox[origin=c]{90}{Test}}} & 
+   CoNLL 2003&879&1,228&42\%&58\%\\[0.5pt]
+ & OntoNotes5&828&1,068&44\%&56\%\\[0.5pt]
+ \bottomrule
+\end{tabular}
+\caption{Percentage of female and male names from the census data appearing in CoNLL 2003 and OntoNotes datasets with their corresponding counts. Both datasets fail to reflect the variety of female names.}
+\label{data_stats_table}
+\end{table}
+
+In this work we not only performed a historical analysis of named entity recognition systems and showed the existence of bias, but we also introduced a benchmark that can help future models evaluate the extent of gender bias in their systems. We then performed a cross version analysis of models and showed that model updates can sometimes amplify the existing bias in previous versions. We also analyzed some datasets widely used in current state-of-the-art models and showed the existence of bias in these datasets as well which can directly affect the biased performance of models. Named entity recognition systems are extensively used in different downstream tasks and having biased NER systems can have implications beyond just the NER task. We believe that using our benchmark for evaluation of future named entity recognition systems can help mitigate the gender bias issue in these applications.
+
+This work identifies an important problem with the current state-of-the-art in named entity recognition. Nevertheless, this measure is a glimpse into the many possible biases that NER may contain, and there are some key limitations that we plan to address in future work. First, the nine templates used to test the models are not necessarily representative of real-world text. There is a limitless supply of sentences that could be fed to the model. Moving forward, we seek to generate a sentence corpora that is based on real-world text. Second, our approach is based upon names taken from United States census data. This work can be extended to different languages to demonstrate the biases they pertain.
+
+% In this work we not only performed a historical analysis of named entity recognition systems and showed the existence of bias, but we also introduced a benchmark that can help future models undergo evaluations for gender bias. We then performed a cross version analysis of models and showed that model updates can sometimes amplify the existing bias in the previous versions. We also analyzed some datasets widely used in current state-of-the-art models and showed the existence of bias in these datasets as well---which can directly affect the biased performance of models. Named entity recognition systems are extensively used in different down-stream tasks and can have broad impacts on the society. It is our job as researchers to point out biases that these systems can pertain in order to suggest future work to mitigate these issues.
+% \begin{figure}
+% \includegraphics[width=0.23\textwidth,height=0.223\textwidth,trim=0cm 0.25cm 0cm 0cm,clip=true]{reality2.png}
+% \includegraphics[width=0.21\textwidth,height=0.22\textwidth,trim=0cm 0.25cm 0cm 0cm,clip=true]{data2.png}
+% \caption{Percentage of female and male names: the real world census data on the left;  CoNLL 2003 and OntoNotes 5.0 train datasets on the right.}
+% \label{data_stats}
+% \end{figure}
+Through our analysis, we provide some suggestions for avoiding gender bias in NER systems, as listed below:
+\begin{enumerate}
+    \item Using benchmarks designed for evaluation of bias in future named entity recognition systems can help mitigate the gender bias issue in these applications. 
+    \item Using contextual-based models as shown in our results can help reduce the error rates.
+    \item We encourage introduction of new models to overcome the observed gender bias in these systems. As future work, these benchmarks can be used as loss functions to train the NER system. 
+    \item A collection of new datasets reflecting reality, such as following name distributions observed in the real-world, would be helpful to the community to build models that avoid these biases. As a step towards this, we will provide our code and data upon acceptance.
+    % \item Our approach is based upon names taken from United States census data. This work can be extended to different languages and biases they pertain.
+    % \item The nine templates used to test the models are not necessarily representative of real-world text. There is a limitless supply of sentences that could be fed to the model. Moving forward, we seek to generate a sentence corpora that is based on real-world text. 
+\end{enumerate}
+
+\section{Acknowledgments}
+This material is based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under Agreement No. HR0011890019. We would want to thank Kai-Wei Chang and Jieyu Zhao for their constructive feedbacks.
+
+
+
+

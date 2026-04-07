@@ -1,0 +1,941 @@
+[
+    {
+        "type": "text",
+        "text": "Getting Gender Right in Neural Machine Translation ",
+        "text_level": 1,
+        "bbox": [
+            221,
+            80,
+            779,
+            101
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Eva Vanmassenhoveα ",
+        "bbox": [
+            156,
+            117,
+            347,
+            134
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Christian Hardmeierβ ",
+        "bbox": [
+            401,
+            117,
+            598,
+            133
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Andy Wayα ",
+        "bbox": [
+            697,
+            118,
+            803,
+            135
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "α ADAPT, School of Computing, Dublin City University, Dublin, Ireland firstname.lastname@adaptcentre.ie ",
+        "bbox": [
+            201,
+            149,
+            798,
+            184
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "β Department of Linguistics and Philology, Uppsala University, Uppsala, Sweden christian.hardmeier@lingfil.uu.se ",
+        "bbox": [
+            169,
+            199,
+            830,
+            233
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            262,
+            263,
+            342,
+            279
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Speakers of different languages must attend to and encode strikingly different aspects of the world in order to use their language correctly (Sapir, 1921; Slobin, 1996). One such difference is related to the way gender is expressed in a language. Saying “I am happy” in English, does not encode any additional knowledge of the speaker that uttered the sentence. However, many other languages do have grammatical gender systems and so such knowledge would be encoded. In order to correctly translate such a sentence into, say, French, the inherent gender information needs to be retained/recovered. The same sentence would become either “Je suis heureux”, for a male speaker or “Je suis heureuse” for a female one. Apart from morphological agreement, demographic factors (gender, age, etc.) also influence our use of language in terms of word choices or even on the level of syntactic constructions (Tannen, 1991; Pennebaker et al., 2003). We integrate gender information into NMT systems. Our contribution is twofold: (1) the compilation of large datasets with speaker information for 20 language pairs, and (2) a simple set of experiments that incorporate gender information into NMT for multiple language pairs. Our experiments show that adding a gender feature to an NMT system significantly improves the translation quality for some language pairs. ",
+        "bbox": [
+            142,
+            294,
+            460,
+            736
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            115,
+            753,
+            260,
+            768
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "In the field of linguistics, the differences between male and female traits within spoken and written language have been studied both empirically and theoretically, revealing that the language used by males and females differs in terms of style and syntax (Coates, 2015). The increasing amount of work on automatic author classification (or ‘author profiling’) reaching relatively high accuracies ",
+        "bbox": [
+            114,
+            780,
+            490,
+            910
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "on domain-specific data corroborates these findings (Rangel et al., 2013; Santosh et al., 2013). However, determining the gender of an author based solely on text is not a solved issue. Likewise, the selection of the most informative features for gender classification remains a difficult task (Litvinova et al., 2016). ",
+        "bbox": [
+            509,
+            263,
+            884,
+            376
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "When translating from one language into another, original author traits are partially lost, both in human and machine translations (Mirkin et al., 2015; Rabinovich et al., 2017). However, in the field of Machine Translation (MT) one of the most observable consequences of this missing information are morphologically incorrect variants due to a lack of agreement in number and gender with the subject. Such errors harm the overall fluency and adequacy of the translated sentence. Furthermore, gender-related errors are not just harming the quality of the translation as getting the gender right is also a matter of basic politeness. Current systems have a tendency to perpetuate a male bias which amounts to negative discrimination against half the population and this has been picked up by the media.1 ",
+        "bbox": [
+            509,
+            378,
+            884,
+            651
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Human translators rely on contextual information to infer the gender of the speaker in order to make the correct morphological agreement. However, most current MT systems do not; they simply exploit statistical dependencies on the sentence level that have been learned from large amounts of parallel data. Furthermore, sentences are translated in isolation. As a consequence, pieces of information necessary to determine the gender of the speakers, might get lost. The MT system will, in such cases, opt for the statistically most likely variant, which depending on the training data, will ",
+        "bbox": [
+            509,
+            653,
+            885,
+            847
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "1https://www.theguardian. com/technology/2017/apr/ 13/ai-programs-exhibit -racist-and-sexist-biases-research ",
+        "bbox": [
+            509,
+            859,
+            828,
+            908
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1909.05088v1 [cs.CL] 11 Sep 2019 ",
+        "bbox": [
+            21,
+            309,
+            60,
+            725
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "be either the male or the female form. Additionally, in the field of MT, training data often consists of both original and translated parallel texts: large parts of the texts have already been translated, which, as studied by Mirkin et al. (2015), does not preserve the original demographic and psychometric traits of the author, making it very hard for a Neural MT (NMT) system to determine the gender of the author. ",
+        "bbox": [
+            114,
+            74,
+            489,
+            218
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "With this in mind, a first step towards the preservation of author traits would be their integration into an NMT system. As ‘gender’ manifests itself not only in the agreement with other words in a sentence, but also in the choice of context-based words or on the level of syntactic constructions, the sets of experiments conducted in this paper focus on the integration of a gender feature into NMT for multiple language pairs. ",
+        "bbox": [
+            114,
+            219,
+            489,
+            363
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The structure of the paper is the following: related work is described in Section 2; Section 3 describes and analyses the datasets that were compiled; the experimental setup is discussed in Section 4; the results are presented in Section 5; finally, we conclude and provide some ideas for future work in Section 6. ",
+        "bbox": [
+            114,
+            366,
+            489,
+            478
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 Related Work ",
+        "text_level": 1,
+        "bbox": [
+            115,
+            494,
+            272,
+            508
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Differences in the language between male and female speakers have been studied within various fields related to linguistics, including Natural Language Processing (NLP) for author profiling, conversational agents, recommendation systems etc. Mirkin et al. (2015) motivated the need for more personalized MT. Their experiments show that MT is detrimental to the automatic recognition of linguistic signals of traits of the original author/speaker. Their work suggests using domainadaptation techniques to make MT more personalized but does not include any actual experiments on the inclusion of author traits in MT. ",
+        "bbox": [
+            114,
+            521,
+            489,
+            730
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Rabinovich et al. (2017) conducted a series of experiments on preserving original author traits, focusing particularly on gender. As suggested by Mirkin et al. (2015), they treat the personalization of Statistical MT (SMT) systems as a domain-adaptation task treating the female and male gender as two different domains. They applied two common simple domain-adaptation techniques in order to create personalized SMT: (1) using gender-specific phrase-tables and language models, and (2) using a gender-specific tun-",
+        "bbox": [
+            114,
+            732,
+            490,
+            910
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "ing set. Although their models did not improve over the baseline, their work provides a detailed analysis of gender traits in human and machine translation. ",
+        "bbox": [
+            509,
+            74,
+            884,
+            137
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Our work is, to the best of our knowledge, the first to attempt building a speaker-informed NMT system. Our approach is similar to the work of Sennrich et al. (2016) on controlling politeness, where some sentence of the training data are followed with an ‘informal’ or ‘polite’ tag indicating the level of politeness expressed. ",
+        "bbox": [
+            509,
+            140,
+            884,
+            252
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 Compilation of Datasets ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            266,
+            754,
+            282
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "One of the main obstacles for more personalized MT systems is finding large enough annotated parallel datasets with speaker information. Rabinovich et al. (2017) published an annotated parallel dataset for EN–FR and EN–DE. However, for many other language pairs no sufficiently large annotated datasets are available. ",
+        "bbox": [
+            509,
+            293,
+            884,
+            404
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "To address the aforementioned problem, we published online a collection of parallel corpora licensed under the Creative Commons Attribution 4.0 International License for 20 language pairs (Vanmassenhove and Hardmeier, 2018).2 ",
+        "bbox": [
+            509,
+            406,
+            884,
+            486
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We followed the approach described by Rabinovich et al. (2017) and tagged parallel sentences from Europarl (Koehn, 2005) with speaker information (name, gender, age, date of birth, euroID and date of the session) by retrieving speaker information provided by tags in the Europarl source files. The Europarl source files contain information about the speaker on the paragraph level and the filenames contain the data of the session. By retrieving the names of the speakers together with meta-information on the members of the European Parliament (MEPs) released by Rabinovich et al. (2017) (which includes among others name, country, date of birth and gender predictions per MEP), we were able to retrieve demographic annotations (gender, age, etc.). An overview of the language pairs as well as the amount of annotated parallel sentences per language pair is given in Table 1. ",
+        "bbox": [
+            509,
+            487,
+            884,
+            790
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3.1 Analysis of the EN–FR Annotated Dataset ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            804,
+            823,
+            835
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We first analysed the distribution of male and female sentence in our data. In the 10 different ",
+        "bbox": [
+            509,
+            843,
+            882,
+            873
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_footnote",
+        "text": "2https://github.com/evavnmssnhv/ Europarl-Speaker-Information ",
+        "bbox": [
+            510,
+            882,
+            823,
+            908
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/c58dc5443f7a09d1168fae677ec50b55e78ecefd347298e2a01aee47e6b4245a.jpg",
+        "table_caption": [
+            "Table 1: Overview of annotated parallel sentences per language pair "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Languages</td><td># sents</td><td>Languages</td><td># sents</td></tr><tr><td>EN-BG</td><td>306,380</td><td>EN-IT</td><td>1,297,635</td></tr><tr><td>EN-CS</td><td>491,848</td><td>EN-LT</td><td>481,570</td></tr><tr><td>EN-DA</td><td>1,421,197</td><td>EN-LV</td><td>487,287</td></tr><tr><td>EN-DE</td><td>1,296,843</td><td>EN-NL</td><td>1,419,359</td></tr><tr><td>EN-EL</td><td>921,540</td><td>EN-PL</td><td>478,008</td></tr><tr><td>EN-ES</td><td>1,419,507</td><td>EN-PT</td><td>1,426,043</td></tr><tr><td>EN-ET</td><td>494,645</td><td>EN-RO</td><td>303,396</td></tr><tr><td>EN-FI</td><td>1,393,572</td><td>EN-SK</td><td>488,351</td></tr><tr><td>EN-FR</td><td>1,440,620</td><td>EN-SL</td><td>479,313</td></tr><tr><td>EN-HU</td><td>251,833</td><td>EN-SV</td><td>1,349,472</td></tr></table>",
+        "bbox": [
+            131,
+            71,
+            475,
+            211
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "datasets we experimented with, the percentage of sentences uttered by female speakers is very similar, ranging between $32 \\%$ and $33 \\%$ . This similarity can be explained by the fact that Europarl is largely a multilingual corpus with a big overlap between the different language pairs. ",
+        "bbox": [
+            114,
+            277,
+            489,
+            374
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We conducted a more focused analysis on one of the subcorpora (EN–FR) with respect to the percentage of sentences uttered by males/females for various age groups to obtain a better grasp of what kind of data we are using for training. As can be seen from Figure 1, with the exception of the youngest age group (20–30), which represents only a very small percentage of the total amount of sentences $( 0 . 7 1 \\% )$ , more male data is available in all age groups. Furthermore, when looking at the entire dataset, $6 7 . 3 9 \\%$ of the sentences are produced by male speakers. Moreover, almost half of the total number of sentences are uttered by the 50–60 age group $( 4 3 . 7 6 \\% )$ . ",
+        "bbox": [
+            114,
+            376,
+            489,
+            602
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/468ba8d14abff6f7944b755481a34c00b6a15e38988a69255ad614f55413fbd9.jpg",
+        "image_caption": [
+            "Figure 1: Percentage of female and male speakers per age group "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            132,
+            626,
+            475,
+            781
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The analysis shows that indeed, there is a gender unbalance in the Europarl dataset, which will be reflected in the translations that MT systems trained on this data produce. ",
+        "bbox": [
+            114,
+            845,
+            489,
+            910
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4 Experimental Setup ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            74,
+            719,
+            91
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4.1 Datasets ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            99,
+            626,
+            112
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We carried out a set of experiments on 10 language pairs (the ones for which we compiled more than 500k annotated Europarl parallel sentences): EN–DE, EN–FR, EN–ES, EN–EL, EN–PT, EN– FI, EN–IT, EN–SV, EN–NL and EN–DA. We augmented every sentence with a tag on the English source side, identifying the gender of the speaker, as illustrated in (1). This approach for encoding sentence-specific information for NMT has been successfully exploited to tackle other types of issues, multilingual NMT systems (e.g., Zero Shot Translation (Johnson et al., 2017)), domain adaptation (Sennrich et al., 2016), etc. ",
+        "bbox": [
+            509,
+            118,
+            885,
+            328
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "(1) “FEMALE Madam President, as a...” ",
+        "text_level": 1,
+        "bbox": [
+            515,
+            337,
+            823,
+            351
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "For each of these language pairs we trained two NMT systems: a baseline and a tagged one. We evaluated the performance of all our systems on a randomly selected 2K general test set. Moreover, we further evaluated the EN–FR systems on 2K male-only and female-only test sets to have a look at the system performance with respect to genderrelated issues. We also looked at two additional male and female test sets in which the first person singular pronoun appeared. ",
+        "bbox": [
+            509,
+            360,
+            885,
+            521
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4.2 Description of the NMT Systems ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            531,
+            813,
+            546
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We used the OpenNMT-py toolkit (Klein et al., 2017) to train the NMT models. The models are sequence-to-sequence encoder-decoders with LSTMs as the recurrent unit (Bahdanau et al., 2014; Cho et al., 2014; Sutskever et al., 2014) trained with the default parameters. In order to bypass the OOV problem and reduce the number of dictionary entries, we use word-segmentation with BPE (Sennrich, 2015). We ran the BPE algorithm with 89,500 operations (Sennrich, 2015). All systems are trained for 13 epochs and the best model is selected for evaluation. ",
+        "bbox": [
+            509,
+            552,
+            885,
+            744
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "5 Results ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            756,
+            610,
+            770
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In this section we discuss some of the results obtained. We hypothesized that the male/female tags would be particularly helpful for French, Portuguese, Italian, Spanish and Greek, where adjectives and even verb forms can be marked by the gender of the speaker. Since, according to the literature, women and men also make use of different syntactic constructions and make different ",
+        "bbox": [
+            509,
+            781,
+            885,
+            910
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "word choices, we also tested the approach on other languages that do not have morphological agreement with the gender of the speaker such as Danish (DA), Dutch (NL), Finnish (FI), German (DE) and Swedish (SV). ",
+        "bbox": [
+            114,
+            74,
+            487,
+            153
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "First, we wanted to see how our tagged systems performed on the general test set compared to the baseline. In Table 2, the BLEU scores for 10 baseline and 10 gender-enhanced NMT systems are presented. ",
+        "bbox": [
+            114,
+            155,
+            487,
+            235
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "table",
+        "img_path": "images/92b6e00aa8b1acfb2c8ca3ee998fd39436d97b56a10dc52387e86398e1f5786a.jpg",
+        "table_caption": [
+            "Table 2: BLEU scores for the 10 baseline (denoted with EN) and the 10 gender-enhanced NMT (denoted with EN-TAG) systems. Entries labeled with * present statistically significant differences $( \\mathtt { p } < 0 . 0 5 )$ ). Statistical significance was computed with the MultEval tool (Clark et al., 2011). "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Systems</td><td>EN</td><td>EN-TAG</td></tr><tr><td>FR</td><td>37.82</td><td>39.26*</td></tr><tr><td>ES</td><td>42.47</td><td>42.28</td></tr><tr><td>EL</td><td>31.38</td><td>31.54</td></tr><tr><td>IT</td><td>31.46</td><td>31.75*</td></tr><tr><td>PT</td><td>36.11</td><td>36.33</td></tr><tr><td>DA</td><td>36.69</td><td>37.00*</td></tr><tr><td>DE</td><td>28.28</td><td>28.05</td></tr><tr><td>FI</td><td>21.82</td><td>21.35*</td></tr><tr><td>SV</td><td>35.42</td><td>35.19</td></tr><tr><td>NL</td><td>28.35</td><td>28.22</td></tr></table>",
+        "bbox": [
+            200,
+            247,
+            406,
+            388
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "While most of the BLEU-scores (Papineni et al., 2002) in Table 2 are consistent with our hypothesis, showing (significant) improvements for the NMT systems enriched with a gender tag (EN-TAG) over the baseline systems (EN) for French, Italian, Portuguese and Greek, the Spanish enriched system surprisingly does not (–0.19 BLEU). As hypothesized, the Dutch, German, Finnish and Swedish systems do not improve. However, the Danish (EN–DA) enriched NMT system does achieve a significant $+ 0 . 3 1$ BLEU improvement. ",
+        "bbox": [
+            114,
+            474,
+            487,
+            665
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We expected to see the strongest improvements in sentences uttered by female speakers as, according to our initial analysis, the male data was overrepresented in the training. To test this hypothesis, we evaluated all systems on a male-only and female-only test set. Furthermore, we also experimented on test sets containing the pronoun of the first person singular as this form is used when a speaker refers to himself/herself. The results on the specific test set for the EN–FR dataset are presented in Table 3. As hypothesized, the biggest BLEU score improvement is observed on the female test set, particularly, the test sets containing first person singular pronouns (F1). ",
+        "bbox": [
+            114,
+            668,
+            487,
+            892
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We had a closer look at some of the transla-",
+        "bbox": [
+            134,
+            894,
+            487,
+            908
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "table",
+        "img_path": "images/94d54bd411e9827bdf4be7db24130f11efc48615bff8c713645096eb2a69e8c4.jpg",
+        "table_caption": [
+            "Table 3: BLEU-scores on EN–FR comparing the baseline (EN) and the tagged systems (EN–TAG) on 4 different test sets: a test set containing only male data (M), only female data (F), 1st person male data (M1) and first person female data (F1). All the improvements of the EN-TAG system are statistically significant $( \\mathtt { p } < 0 . 5 )$ , as indicated by *. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Test Sets</td><td>EN</td><td>EN-TAG</td></tr><tr><td>FR (M)</td><td>37.58</td><td>38.71*</td></tr><tr><td>FR (F)</td><td>37.75</td><td>38.97*</td></tr><tr><td>FR (M1)</td><td>39.00</td><td>39.66*</td></tr><tr><td>FR (F1)</td><td>37.32</td><td>38.57*</td></tr></table>",
+        "bbox": [
+            593,
+            71,
+            801,
+            136
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "tions.3 There are cases where the gender-informed (TAG) system improves over the baseline (BASE) due to better agreement. Interestingly, in (2) the French female form of vice-president (vicepresidente) appears in the translation produced by ´ the BASE system while the male form is the correct one. The gender-informed system does make the correct agreement by using the female variant. In (3) the speaker is female but the baseline system outputs a male form of the adjective ‘happy’ (‘heureux’). ",
+        "bbox": [
+            509,
+            243,
+            882,
+            419
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(Ref) En tant que vice-president ´ ... ",
+        "bbox": [
+            517,
+            431,
+            840,
+            444
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(2) (BASE) En tant que vice-presidente ´ ... ",
+        "bbox": [
+            517,
+            444,
+            840,
+            456
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(TAG) En tant que vice-president ´ ... ",
+        "bbox": [
+            596,
+            456,
+            836,
+            468
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(Ref) ... je suis heureuse que... ",
+        "bbox": [
+            596,
+            481,
+            815,
+            493
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(BASE) ... je suis heureux que... ",
+        "bbox": [
+            596,
+            493,
+            808,
+            505
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(TAG) ... je suis heureuse que... ",
+        "bbox": [
+            596,
+            505,
+            815,
+            517
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "However, we also encountered cases where the gender-informed system fails to produce the correct agreement, as in (4), where both the BASE and the TAG system produce a male form (‘embarasse’) instead of the correct female one (‘em- ´ barassee’ or ‘g ´ enˆ ee’). ´ ",
+        "bbox": [
+            509,
+            529,
+            882,
+            625
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(Ref) je suis genˆ ee´ que... ",
+        "bbox": [
+            517,
+            637,
+            779,
+            649
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(4) (BASE) je suis embarasse´ que... ",
+        "bbox": [
+            517,
+            649,
+            808,
+            661
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "(TAG) je suis embarasse´ que... ",
+        "bbox": [
+            596,
+            661,
+            808,
+            673
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "For some language pairs the gender-informed system leads to a significant improvement even on a general test set. This implies that the improvement is not merely because of better morphological agreement, as these kinds of improvements are very hard to measure with BLEU, especially given the fact that Europarl consists of formal spoken language and does not contain many sentences using the first person singular pronoun. From our analysis, we observe that in many cases the gender-informed systems have a higher BLEU ",
+        "bbox": [
+            509,
+            684,
+            882,
+            862
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_footnote",
+        "text": "3We used the tool provided by Tilde https://www. letsmt.eu/Bleu.aspx to see where the BLEU score between the baseline and our tagged systems varied the most. ",
+        "bbox": [
+            509,
+            871,
+            882,
+            909
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "score than the baseline system due to differences in word choices as in (5) and (6), where both translations are correct, but the gender-informed system picks the preferred variant. ",
+        "bbox": [
+            114,
+            74,
+            489,
+            139
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "The observations with respect to differences in word preferences between male and female speakers are in accordance with corpus linguistic studies, which have shown that gender does not only have an effect on morphological agreement, but also manifests itself in other ways as males and females have different preferences when it comes to different types of constructions, word choices etc. (Newman et al., 2008; Coates, 2015). This also implies that, even for languages that do not mark gender overtly (i.e. grammatically), it can still be beneficial to take the gender of the author/speaker into account. ",
+        "bbox": [
+            114,
+            141,
+            489,
+            350
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "(Ref) Je pense que ... (5) (BASE) Je crois que... (TAG) Je pense que... ",
+        "bbox": [
+            122,
+            368,
+            364,
+            405
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Although more research is required in order to draw general conclusions on this matter, from other linguistic studies, it appears that it is indeed the case that there is a relation between the use of the word “pense” (“think”) / “crois” (“believe”) and the gender of the speaker. To see whether there is a difference in word choice and whether this is reflected in our data, we compiled a list of the most frequent French words for the male data and the female data. Our analysis reveals that “crois” is, in general, used more by males (having position 303 in the most frequent words for males, but only position 373 for females), while “pense” is found at a similar position in both lists (position 151 and 153). These findings are in accordance with other linguistic corpus studies on language and gender stating that women use less assertive speech (Newman et al., 2008). “Croire” and “penser” are both verbs of cognition but there is a difference in the degree of confidence in the truth value predicated: the verb “croire” denotes more confidence in the truth of the complement clause than the verb “penser” does. In the future, we would like to perform a more detailed analysis of other specific differences in lexical choices between males and females on multiple language pairs. ",
+        "bbox": [
+            114,
+            422,
+            489,
+            857
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "(Ref) J’ ai plusieurs remarques... (6) (BASE) J’ ai un nombre de commentaires... (TAG) J’ ai plusieurs remarques... ",
+        "bbox": [
+            122,
+            873,
+            485,
+            912
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "6 Conclusions and Future Work ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            74,
+            806,
+            89
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In this work, we experimented with the incorporation of speaker-gender tags during the training of NMT systems in order to improve morphological agreement. We focused particularly on language pairs that express grammatical gender but included other language pairs as well, as linguistic studies have shown that the style and syntax of language used by males and females differs (Coates, 2015). ",
+        "bbox": [
+            509,
+            101,
+            884,
+            230
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "From the experiments, we see that informing the NMT system by providing tags indicating the gender of the speaker can indeed lead to significant improvements over state-of-the-art baseline systems, especially for those languages expressing grammatical gender agreement. However, while analyzing the EN–FR translations, we observed that the improvements are not always consistent and that, apart from morphological agreement, the gender-aware NMT system differs from the baseline in terms of word choices. ",
+        "bbox": [
+            509,
+            231,
+            884,
+            406
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In the future, we would like to conduct further manual evaluation on the translations to further analyze the differences with the baseline system. Furthermore, we aim to experiment with other ways of integrating speaker information. We envisage working on gender classification techniques in order to work on other types (more informal) of corpora that are more likely to express speaker characteristics. ",
+        "bbox": [
+            509,
+            409,
+            882,
+            552
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Acknowledgements ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            568,
+            684,
+            583
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "This work has been supported by COST action IS1312, the Dublin City University Faculty of Engineering & Computing under the Daniel O’Hare Research Scholarship scheme and by the ADAPT Centre for Digital Content Technology, which is funded under the SFI Research Centres Programme (Grant 13/RC/2106). Christian Hardmeier was supported by the Swedish Research Council under grant 2017-930. ",
+        "bbox": [
+            509,
+            595,
+            882,
+            739
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We would also like to thank the anonymous reviewers for their insightful comments and feedback. ",
+        "bbox": [
+            509,
+            741,
+            882,
+            788
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            818,
+            610,
+            832
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio. 2014. Neural Machine Translation by Jointly Learning to Align and Translate. In International Conference on Learning Representations, Banff, Canada. ",
+        "bbox": [
+            510,
+            841,
+            884,
+            908
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Kyunghyun Cho, Bart van Merrienboer, C¸ alar ¨ Gulc¸ehre, Dzmitry Bahdanau, Fethi Bougares, Hol- ¨ ger Schwenk, and Yoshua Bengio. 2014. Learning Phrase Representations using RNN Encoder– Decoder for Statistical Machine Translation. In Proceedings of EMNLP 2014, pages 1724–1734, Doha, Qatar. ",
+            "Jonathan H Clark, Chris Dyer, Alon Lavie, and Noah A Smith. 2011. Better Hypothesis Testing for Statistical Machine Translation: Controlling for Optimizer Instability. In Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies: short papers-Volume 2, pages 176–181. Association for Computational Linguistics. ",
+            "Jennifer Coates. 2015. Women, Men and Language: A Sociolinguistic Account of Gender Differences in Language. Routledge, London. ",
+            "Melvin Johnson, Mike Schuster, Quoc V Le, Maxim Krikun, Yonghui Wu, Zhifeng Chen, Nikhil Thorat, Fernanda Viegas, Martin Wattenberg, Greg Corrado, ´ et al. 2017. Google’s Multilingual Neural Machine Translation System: Enabling Zero-Shot Translation. Transactions of the Association of Computational Linguistics, 5(1):339–351. ",
+            "Guillaume Klein, Yoon Kim, Yuntian Deng, Jean Senellart, and Alexander M. Rush. 2017. Open-NMT: Open-Source Toolkit for Neural Machine Translation. In Proceeding of ACL, Vancouver, Canada. ",
+            "Philipp Koehn. 2005. Europarl: A Parallel Corpus for Statistical Machine Translation. In MT Summit, volume 5, pages 79–86, Phuket, Thailand. ",
+            "Tatiana Litvinova, Pavel Seredin, Olga Litvinova, Olga Zagorovskaya, Aleksandr Sboev, Dmitry Gudovskih, Ivan Moloshnikov, and Roman Rybka. 2016. Gender Prediction for Authors of Russian Texts Using Regression And Classification Techniques. In Proceedings of the Third Workshop on Concept Discovery in Unstructured Data co-located with the 13th International Conference on Concept Lattices and Their Applications (CDUD@ CLA), pages 44–53, Moscow, Russia. ",
+            "Shachar Mirkin, Scott Nowson, Caroline Brun, and Julien Perez. 2015. Motivating Personality-Aware Machine Translation. In Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing, pages 1102–1108, Lisbon, Portugal. ",
+            "Matthew L Newman, Carla J Groom, Lori D Handelman, and James W Pennebaker. 2008. Gender Differences in Language Use: An Analysis of 14,000 Text Samples. Discourse Processes, 45(3):211–236. ",
+            "Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing Zhu. 2002. BLEU: A Method for Automatic Evaluation of Machine Translation. In Proceedings "
+        ],
+        "bbox": [
+            117,
+            76,
+            487,
+            908
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "of the 40th annual meeting on association for computational linguistics, pages 311–318. ",
+            "James W. Pennebaker, Matthias R. Mehl, and Kate G. Niederhoffer. 2003. Psychological Aspects of Natural Language Use: Our words, Our Selves. Annual review of psychology, 54(1):547–577. ",
+            "Ella Rabinovich, Raj Nath Patel, Shachar Mirkin, Lucia Specia, and Shuly Wintner. 2017. Personalized Machine Translation: Preserving Original Author Traits. In Proceedings of the 15th Conference of the European Chapter of the Association for Computational Linguistics: Volume 1, Long Papers, pages 1074–1084, Valencia, Spain. ",
+            "Francisco Rangel, Paolo Rosso, Moshe Koppel, Efstathios Stamatatos, and Giacomo Inches. 2013. Overview of The Author Profiling Task at PAN 2013. In CLEF Conference on Multilingual and Multimodal Information Access Evaluation, pages 352–365. ",
+            "K Santosh, Romil Bansal, Mihir Shekhar, and Vasudeva Varma. 2013. Author profiling: Predicting age and gender from blogs. Notebook for PAN at CLEF, pages 119–124. ",
+            "Edward Sapir. 1921. Language: An Introduction to the Study of Speech. NewYork: Harcourt Brace & Company. ",
+            "Rico Sennrich. 2015. Modelling and Optimizing on Syntactic N-grams for Statistical Machine Translation. Transactions of the Association for Computational Linguistics, 3:169–182. ",
+            "Rico Sennrich, Barry Haddow, and Alexandra Birch. 2016. Controlling Politeness in Neural Machine Translation via Side Constraints. In Proceedings of the 2016 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pages 35–40, Berlin, Germany. ",
+            "Dan I. Slobin. 1996. From Thought and Language to Thinking for Speaking. In J. Gumperz and S. Levinson, editors, Rethinking Linguistic Relativity, pages 70–96. Cambridge University Press, Cambridge. ",
+            "Ilya Sutskever, Oriol Vinyals, and Quoc V. Le. 2014. Sequence to Sequence Learning with Neural Networks. In Advances in Neural Information Processing Systems 27: Annual Conference on Neural Information Processing Systems, pages 3104–3112, Montreal, Quebec, Canada. ",
+            "Deborah Tannen. 1991. You Just Don’t Understand. Ballantine Books, New York, USA. ",
+            "Eva Vanmassenhove and Christian Hardmeier. 2018. Europarl Datasets with Demographic Speaker Information. In EAMT, Alicante, Spain. "
+        ],
+        "bbox": [
+            512,
+            76,
+            880,
+            870
+        ],
+        "page_idx": 5
+    }
+]

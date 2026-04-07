@@ -1,0 +1,83 @@
+\documentclass{article}
+
+\usepackage[final, nonatbib]{nips_2017}
+\usepackage{amsmath, amsfonts, amsthm, bm, tikz, xspace, wrapfig, subcaption, tabularx, booktabs, nicefrac}
+\input{commands}
+
+\usepackage{enumitem}
+
+
+\setlist[enumerate]{leftmargin=*}
+
+% toggle whether redundant stuff is shown or not
+\newif\ifproof
+% \prooftrue
+\prooffalse
+
+\author{
+Niki Kilbertus\textsuperscript{$\dagger$}\textsuperscript{$\ddagger$}\\
+\texttt{nkilbertus@tue.mpg.de}
+\And
+Mateo Rojas-Carulla\textsuperscript{$\dagger$}\textsuperscript{$\ddagger$}\\
+\texttt{mrojas@tue.mpg.de}
+\And
+Giambattista Parascandolo\textsuperscript{$\dagger$}\textsuperscript{\S}\\
+\texttt{gparascandolo@tue.mpg.de}
+\AND
+Moritz Hardt\textsuperscript{$\ast$}\\
+\texttt{hardt@berkeley.edu}
+\And
+Dominik Janzing\textsuperscript{$\dagger$}\\
+\texttt{janzing@tue.mpg.de}
+\And
+Bernhard Sch\"olkopf\textsuperscript{$\dagger$}\\
+\texttt{bs@tue.mpg.de}
+\AND
+\normalfont
+\normalsize\textsuperscript{$\dagger$}Max Planck Institute for Intelligent Systems\\
+\normalsize\textsuperscript{$\ddagger$}University of Cambridge\\
+\normalsize\textsuperscript{\S}Max Planck ETH Center for Learning Systems\\
+\normalsize\textsuperscript{$\ast$}University of California, Berkeley
+}
+
+\title{Avoiding Discrimination through Causal Reasoning}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  Recent work on fairness in machine learning has focused on various statistical
+  discrimination criteria and how they trade off. Most of these criteria are
+  observational: They depend only on the joint distribution of predictor,
+  protected attribute, features, and outcome. While convenient to work with,
+  observational criteria have severe inherent limitations that prevent them from
+  resolving matters of fairness conclusively.
+
+  Going beyond observational criteria, we frame the problem of discrimination
+  based on protected attributes in the language of causal reasoning. This
+  viewpoint shifts attention from ``What is the right fairness criterion?'' to
+  ``What do we want to assume about our model of the causal data generating process?''
+  Through the lens of causality, we make several contributions. First, we
+  crisply articulate why and when observational criteria fail, thus formalizing
+  what was before a matter of opinion. Second, our approach exposes previously
+  ignored subtleties and why they are fundamental to the problem. Finally, we
+  put forward natural causal non-discrimination criteria and develop algorithms
+  that satisfy them.
+\end{abstract}
+
+% sections
+\input{intro}
+\input{limitations}
+\input{proxies}
+\input{criteria}
+\input{conclusion}
+
+% bibliography
+\clearpage{}
+\printbibliography[title={References}]
+
+% appendix
+\clearpage{}
+\input{appendix}
+
+\end{document}

@@ -1,0 +1,19 @@
+$$
+s (X, Y, A, B) = \sum_ {x \in X} s (x, A, B) - \sum_ {y \in Y} s (y, A, B)
+$$
+
+$$
+s (w, A, B) = \operatorname {m e a n} _ {a \in A} \cos (\vec {w}, \vec {a}) - \operatorname {m e a n} _ {b \in B} \cos (\vec {w}, \vec {b})
+$$
+
+$$
+\Pr_ {i} \left[ s \left(X _ {i}, Y _ {i}, A, B\right) > s (X, Y, A, B) \right]
+$$
+
+$$
+\frac {\operatorname {m e a n} _ {x \in X} s (x , A , B) - \operatorname {m e a n} _ {y \in Y} s (y , A , B)}{\operatorname {s t d - d e v} _ {w \in X \cup Y} s (w , A , B)}
+$$
+
+$$
+s (w, A, B) = \frac {\operatorname {m e a n} _ {a \in A} \cos (\vec {w} , \vec {a}) - \operatorname {m e a n} _ {b \in B} \cos (\vec {w} , \vec {b})}{\operatorname {s t d - d e v} _ {x \in A \cup B} \cos (\vec {w} , \vec {x})}
+$$

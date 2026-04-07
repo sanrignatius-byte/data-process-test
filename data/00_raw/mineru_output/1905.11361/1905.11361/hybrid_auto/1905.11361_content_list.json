@@ -1,0 +1,3842 @@
+[
+    {
+        "type": "text",
+        "text": "Efficient candidate screening under multiple tests and implications for fairness ",
+        "text_level": 1,
+        "bbox": [
+            210,
+            165,
+            787,
+            218
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Lee Cohen∗ Zachary C. Lipton† Yishay Mansour‡ ",
+        "bbox": [
+            251,
+            233,
+            750,
+            253
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "May 28, 2019 ",
+        "bbox": [
+            439,
+            270,
+            558,
+            287
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            462,
+            313,
+            534,
+            325
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "When recruiting job candidates, employers rarely observe their underlying skill level directly. Instead, they must administer a series of interviews and/or collate other noisy signals in order to estimate the worker’s skill. Traditional economics papers address screening models where employers access worker skill via a single noisy signal. In this paper, we extend this theoretical analysis to a multi-test setting, considering both Bernoulli and Gaussian models. We analyze the optimal employer policy both when the employer sets a fixed number of tests per candidate and when the employer can set a dynamic policy, assigning further tests adaptively based on results from the previous tests. To start, we characterize the optimal policy when employees constitute a single group, demonstrating some interesting trade-offs. Subsequently, we address the multi-group setting, demonstrating that when the noise levels vary across groups, a fundamental impossibility emerges whereby we cannot administer the same number of tests, subject candidates to the same decision rule, and yet realize the same outcomes in both groups. ",
+        "bbox": [
+            184,
+            332,
+            813,
+            501
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            530,
+            330,
+            547
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Consider an employer seeking to hire new employees. Clearly, the employer would like to hire the best employees for the task, but how will she know which are best fit? Typically, the employee will gather information on each candidate, including their education, work history, reference letters, and for many jobs, they will actively conduct interviews. Altogether, this information can be viewed as the signal available to the employer. ",
+        "bbox": [
+            143,
+            568,
+            852,
+            643
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Suppose that candidates can be either skilled or unskilled. If the firm hires an “unskilled” candidate, it will incur a significant cost on account of lost productivity. For this reason, the employer would like to minimize the number of False Positive mistakes, instances where unskilled candidates are hired. On the other hand, the employer desires not to overspend on the hiring process, limiting the number of interviews per hired candidate (either on average, or absolutely). However, fewer ",
+        "bbox": [
+            143,
+            651,
+            852,
+            728
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "∗Tel Aviv University. This work was supported in part by The Yandex Initiative for Machine Learning. ",
+            "Email: leecohencs@gmail.com. ",
+            "†Carnegie Mellon University and Amazon AI. This work was supported by the AI Ethics and Governance Fund. Email: zlipton@cmu.edu. ",
+            "‡Tel Aviv University and Google Research. This work was supported in part by a grant from ISF. Email: mansour.yishay@gmail.com. "
+        ],
+        "bbox": [
+            143,
+            736,
+            849,
+            810
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1905.11361v1 [cs.LG] 27 May 2019 ",
+        "bbox": [
+            22,
+            229,
+            60,
+            681
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_number",
+        "text": "1 ",
+        "bbox": [
+            493,
+            847,
+            503,
+            858
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "interviews weakens the signal, causing the employer to make more mistakes. At the heart of our model is this inherent trade-off between the quality of the signal and the cost of obtaining the signal. This marks a departure from the classical economics literature, in which the signal is commonly regarded as a given. ",
+        "bbox": [
+            143,
+            119,
+            854,
+            180
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Complicating matters, hiring efficiency is not the only desiderata at play. In society, employees belong to various demographic groups, and we may strive to design policies that are in some sense fair vis-a-vis group membership. While fairness can be an elusive notion, regulators must translate it to concrete rules and laws. In the United States, a body of anti-discrimination law dating to the Civil Rights act of 1964, subjects decisions that result in disparate outcomes (as delineated by race, age, gender, religion, etc) to extra scrutiny: employers must not only show that preference for some groups over others did not drive the decision (disparate treatment doctrine) but also justify that any observed disparities arise from a business necessity (disparate impact doctrine), whether or not those disparities were intentional. ",
+        "bbox": [
+            143,
+            188,
+            854,
+            325
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we seek to understand how a complex hiring process would interact with the requirements of fairness. We extend the theory on candidate screening and statistical discrimination, addressing the setting in which employers can subject employees to multiple tests, which we assume to be conditionally independent given the worker’s skill level and group membership. To build intuition, most of our analysis focuses on a Bernoulli model of both worker skill and screening. Additionally, we begin to extend the traditionally-studied Gaussian skill and screening models to the multi-test setting (Section 5). ",
+        "bbox": [
+            143,
+            332,
+            854,
+            438
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Unlike the classical papers, in which an employer’s hiring policy is given by a simple thresholding rule, our setting requires greater care to derive the optimal employer policy. In our setting, we imagine that the employer wishes to minimize the number of tests performed subject to a constraint upper-bounding the false positive rate. We characterize the optimal policy in this case as a randomized threshold policy. ",
+        "bbox": [
+            143,
+            445,
+            852,
+            521
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We also consider the setting in which employers can allocate tests dynamically, deciding after each result whether to (i) hire the candidate; (ii) reject the candidate and move on to the next one; or (iii) administer a subsequent test. In the Bernoulli case, the optimal policy consists of administering tests until each candidate’s posterior likelihood of being a high-skilled worker either dips below the prior or rises above a threshold determined by the tolerable false positive rate. We demonstrate that the analysis of this process can be reduced to a random walk over the log posterior odds and derive the solution via the corresponding Gambler’s ruin problem. ",
+        "bbox": [
+            143,
+            527,
+            851,
+            633
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Finally, we consider the ramifications for fairness within our model when employees, despite possessing similarly-distributed skills, are evaluated with differing noise levels. ",
+        "bbox": [
+            143,
+            640,
+            854,
+            671
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "1.1 Related work ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            696,
+            328,
+            713
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The classical economics literature on discrimination in employment can broadly be divided into two focuses. The taste-based discrimination model due to [3] models the market outcomes in a setting where employers express an explicit preference for hiring members of one group, acting as if an employee’s demographic membership provides utility. This preference for certain groups induces a sorting of employees from the disadvantaged group towards those employers who discriminate the least with wages ultimately determined by the marginal discriminator. Subsequently, [16] suggested ",
+        "bbox": [
+            143,
+            729,
+            851,
+            821
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_number",
+        "text": "2 ",
+        "bbox": [
+            493,
+            847,
+            504,
+            859
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "a statistical mechanism by which similarly-skilled employees from different groups might experience differential outcomes: the comparative difficulty of screening from one group vs. another. Many subsequent works extend this analysis, typically focusing on Gaussian models of worker quality and conditionally-Gaussian test scores [2, 1]. These papers consider the setting where workers are assessed via a single test characterized by a group-dependent noise level. Our work is differentiated from these by considering richer mechanisms for acquiring signal. ",
+        "bbox": [
+            143,
+            119,
+            852,
+            210
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In the more recent literature on fairness in machine learning, researchers often focus on binary classification, with employees characterized by a protected characteristic (group membership), and other (non-protected) covariates [15, 11, 12]. There, the predictor is presumably used to guide a consequential decision, such as allocating some economic good (loans, jobs, etc.) [6] or assessing some penalty (e.g. risk scores to guide bail decisions) [5]. Papers then focus on various interventions for ensuring accurate prediction subject to various constraints such as demographic parity (outcomes independent of group membership), blindness (model cannot observe group membership), and equalized false negative and/or false positive rates [9]. Several simple impossibility results preclude simultaneously satisfying several combinations of these parities [4, 5, 13]. More recently, a number of papers have drawn inspiration from economic modeling, extending the literature on fairness in classification to consider longer-term dynamics, equilibria, and the emergence of feedback loops [10, 9, 7]. Finally, [17] provide a survey of definitions from the algorithmic fairness literature. ",
+        "bbox": [
+            143,
+            218,
+            854,
+            414
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "2 The Bernoulli Model ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            444,
+            426,
+            463
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We formalize our problem as follows. An employer accesses an infinite pool of candidates (indexed by $i \\in \\mathbb { N } ^ { + }$ ), each of which has some (hidden) skill level $y _ { i } \\in \\{ 0 , + 1 \\}$ , which denote unskilled and skilled, respectively. Underlying worker skill levels $y _ { i }$ are sampled independently from a Bernoulli distribution with parameter $p$ . An employer can access information about the $i$ -th candidate through a sequence of $\\tau$ tests, which are conditionally independent given $y _ { i }$ . Each test result, $\\hat { y } _ { i , j } \\in \\{ 0 , + 1 \\}$ disagrees with the ground truth skill with probability $\\textstyle \\operatorname* { P r } [ { \\hat { y } } _ { i , j } \\neq y _ { i } ] = { \\frac { 1 - \\sigma } { 2 } }$ , where $\\sigma \\in ( 0 , 1 )$ , i.e., $\\hat { y } _ { i , j } = y _ { i } \\oplus B r ( \\frac { 1 - \\sigma } { 2 } ) ^ { 1 }$ . For convenience, we denote the noise level as $\\begin{array} { r } { \\eta = \\frac { \\Gamma - \\sigma } { 2 } \\in ( 0 , \\frac { 1 } { 2 } ) } \\end{array}$ . We say that a test result $\\hat { y } _ { i , j }$ is flipped if $\\hat { y } _ { i , j } \\ne y _ { i }$ , and the number of flipped results for a given candidate is denoted by $Z _ { \\tau } ^ { \\eta }$ is $\\begin{array} { r } { Z _ { \\tau } ^ { \\eta } = \\sum _ { j = 1 } ^ { \\prime } \\mathbb { I } ( \\hat { y } _ { i , j } \\ne y _ { i } ) } \\end{array}$ , where $\\mathbb { I } ( \\cdot )$ is the indicator function. ",
+        "bbox": [
+            143,
+            483,
+            852,
+            621
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "A selection criterion is a mapping between test results to actions: $\\mathsf { S e l e c t } ( \\hat { y } _ { i , 1 } , \\hdots , \\hat { y } _ { i , \\tau _ { i } } ) \\in \\{ 0 , 1 \\}$ , where 0 means reject and 1 means accept (hire). A policy $\\pi$ sets the selection criteria based on $\\sigma , p$ and other possible constraints such as probability to hire, error probability, etc. A randomized threshold policy is a policy $\\pi$ with parameters $( \\tau , \\theta , r )$ such that $\\pi ( \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau _ { i } } ) \\ = \\ 1$ for $\\begin{array} { r } { S _ { \\tau } : = \\sum _ { i = 1 } ^ { \\prime } \\hat { y } _ { i , j } > \\theta } \\end{array}$ , $\\pi ( \\hat { y } _ { i , 1 } , . . . , \\hat { y } _ { i , \\tau _ { i } } ) = 0$ for $S _ { \\tau } ~ < ~ \\theta$ , and for $S _ { \\tau } ~ = ~ \\theta$ the probability that $\\pi ( \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau _ { i } } ) = 1$ is $r$ . We call a policy $\\pi$ a threshold policy if $r = 1$ . In a dynamic policy, rather than setting a fixed number of tests per candidate, the employer may decide after each test whether to accept, reject, or to perform an additional test, i.e., $\\pi ( \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau _ { i } } ) \\in \\{ 0 , 1 , \\mathrm { { m o r e } \\} }$ . Note that for a dynamic policy, the number of tests $\\tau$ is a random variable determined based on the tests’ outcomes. When designing a policy, one must carefully consider the balance between the following desiderata: ",
+        "bbox": [
+            143,
+            627,
+            852,
+            792
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "1 $\\oplus$ is the XOR operation between two binary random variables, and therefore $\\hat { y } _ { i , j }$ is also a random variable. ",
+        "bbox": [
+            161,
+            797,
+            823,
+            813
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_number",
+        "text": "3 ",
+        "bbox": [
+            493,
+            847,
+            504,
+            859
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. Minimize False Discovery Rate (FDR)—the fraction of unskilled workers among the accepted candidates, i.e., $\\mathrm { F D R } : = \\operatorname* { P r } [ y _ { i } = 0 | \\pi ( \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau } ) = + 1$ ]. ",
+            "2. Minimize False Omission Rate (FOR)—the fraction of skilled workers among the rejected candidates, i.e., $\\mathrm { F O R } : = \\operatorname* { P r } [ y _ { i } = + 1 | \\pi ( \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau } ) = 0 ]$ . ",
+            "3. Minimize False Negatives (FN)—the amount of skilled workers that are classified as unskilled. ",
+            "4. Minimize False Positives (FP)—the amount of unskilled workers that are classified as skilled. ",
+            "5. Ratio of accept probability and the number of tests—the number of tests performed per candidate hired, using a parameter $B > 1$ , we have $\\underline { { \\tau } } \\le \\operatorname* { P r } [ \\pi ( \\hat { y } _ { i , 1 } , \\ldots , \\hat { y } _ { i , \\tau } ) = + 1$ ]. "
+        ],
+        "bbox": [
+            163,
+            119,
+            852,
+            305
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "For any fixed number of tests $\\tau$ , increasing the threshold $\\theta$ of a threshold policy decreases FDR while increasing FOR. ",
+        "bbox": [
+            143,
+            308,
+            851,
+            340
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Loss: To handle the trade-off between the false positives, (i.e., when an unskilled candidate is accepted) and false negatives (i.e., when a skilled candidate is rejected), we introduce an $\\alpha$ -loss, paramaterized by $\\alpha \\in \\lfloor 0 , 1 \\rfloor$ and defined as follows: ",
+        "bbox": [
+            143,
+            345,
+            852,
+            393
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\ell_ {\\alpha} (b _ {1}, b _ {2}) = \\alpha \\mathbb {I} [ b _ {1} = 0, b _ {2} = 1 ] + (1 - \\alpha) \\mathbb {I} [ b _ {1} = 1, b _ {2} = 0 ]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            303,
+            401,
+            697,
+            420
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where $\\mathbb { I } [ \\cdot ]$ is the indicator function and $b _ { 1 } , b _ { 2 } \\in \\{ 0 , 1 \\}$ . The expected loss of a policy $\\pi$ is, ",
+        "bbox": [
+            143,
+            426,
+            782,
+            444
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nl _ {\\alpha} (\\pi) = E \\left[ \\ell_ {\\alpha} \\left(y _ {i}, \\pi \\left(\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}\\right)\\right) \\right] \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            377,
+            452,
+            851,
+            470
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where the expectation is over the type of the candidates $y _ { i }$ , the test results $\\hat { y } _ { i , j }$ , and the decisions of $\\pi$ . ",
+        "bbox": [
+            143,
+            477,
+            851,
+            506
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "3 Analysis of the Bernoulli Model with One Group ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            537,
+            745,
+            558
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "To begin, we analyze this hiring model for a single group of candidates. The employer’s goal is to minimize the expected loss, $l _ { \\alpha } ( \\pi )$ , while maintaining a given acceptance probability. For brevity, we relegate all proofs to the appendix. ",
+        "bbox": [
+            143,
+            575,
+            852,
+            623
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "3.1 The Simple Threshold Policy (Equal Number of Tests) ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            646,
+            728,
+            666
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Consider the setting where the employer must subject all candidates to an equal number of tests $\\tau$ and threshold $\\theta$ (these parameters are chosen by the employer but thereafter constant across candidates). For a given threshold, we can relate the flip probability (error rate) of the test to the probability that a candidate is accepted as follows: ",
+        "bbox": [
+            143,
+            679,
+            851,
+            741
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Recall that $\\hat { y } _ { i , j } = y _ { i } \\oplus B r ( \\eta )$ , $\\begin{array} { r } { S _ { \\tau } = \\sum _ { j = 1 } ^ { \\prime } \\hat { y } _ { i , j } } \\end{array}$ , that $\\begin{array} { r } { Z _ { \\tau } ^ { \\eta } = \\sum _ { t = 1 } ^ { \\tau } \\mathbb { I } ( \\hat { y } _ { i , j } \\neq y _ { i } ) } \\end{array}$ , and that $^ { \\prime }$ and $\\theta$ are the only parameters of the threshold policy, $\\pi$ . Informally, $S _ { \\tau }$ is the number of passed tests and $Z _ { \\tau } ^ { \\eta }$ is the number of flips (tests in error). The probability of hiring an unskilled candidate is given by: ",
+        "bbox": [
+            143,
+            746,
+            851,
+            806
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 | y _ {i} = 0 ] = \\operatorname * {P r} [ S _ {\\tau} \\geq \\theta | y _ {i} = 0 ] = \\operatorname * {P r} [ Z _ {\\tau} ^ {\\eta} \\geq \\theta ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            269,
+            808,
+            730,
+            825
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_number",
+        "text": "4 ",
+        "bbox": [
+            493,
+            847,
+            504,
+            859
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Since $Z _ { \\tau } ^ { \\eta }$ is a binomial random variable with parameters $\\tau$ and $\\eta$ , we can calculate this probability precisely as: $\\begin{array} { r } { \\operatorname* { P r } [ \\pi ( \\widehat { y } _ { i , 1 } , \\ldots , \\widehat { y } _ { i , \\tau } ) = 1 | y _ { i } = 0 ] = \\operatorname* { P r } [ Z _ { \\tau } ^ { \\eta } \\geq \\theta ] = \\sum _ { k = \\theta } ^ { \\prime } \\binom { \\tau } { k } \\eta ^ { k } ( 1 - \\eta ) ^ { \\tau - k } } \\end{array}$ , and the probability of rejecting a skilled candidate is the probability that they encounter more than $\\tau - \\theta$ flips, thus: $\\operatorname* { P r } [ \\pi ( { \\hat { y } } _ { i , 1 } , \\dots , { \\hat { y } } _ { i } , \\tau ) = 0 | y _ { i } = + 1 ] = \\operatorname* { P r } [ S _ { \\tau } < \\theta | y = + 1 ] = \\operatorname* { P r } [ Z _ { \\tau } ^ { \\eta } > \\tau - \\theta ] = \\operatorname* { P r } [ X _ { \\tau } , X _ { \\tau } , \\tau ] .$ $\\begin{array} { r } { \\sum _ { k = \\tau - \\theta + 1 } ^ { \\tau } \\binom { \\tau } { k } \\eta ^ { k } ( 1 - \\eta ) ^ { \\tau - k } } \\end{array}$ . Similarly, given a candidate’s skill level, we can calculate the probability that they obtain exactly $k$ positive tests out of $\\tau$ , i.e, ",
+        "bbox": [
+            143,
+            119,
+            852,
+            210
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ S _ {\\tau} = k | y _ {i} = 0 ] = \\operatorname * {P r} [ Z _ {\\tau} ^ {\\eta} = k ] = \\binom {\\tau} {k} \\eta^ {k} (1 - \\eta) ^ {\\tau - k}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            308,
+            220,
+            687,
+            253
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ S _ {\\tau} = k | y _ {i} = + 1 ] = \\operatorname * {P r} [ Z _ {\\tau} ^ {\\eta} = \\tau - k ] = \\binom {\\tau} {k} \\eta^ {\\tau - k} (1 - \\eta) ^ {k}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            289,
+            266,
+            709,
+            299
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Given these observations, we can now analyze the employer’s choices. ",
+        "bbox": [
+            143,
+            303,
+            645,
+            319
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Optimal solution for any ratio $\\alpha \\in ( 0 , 1 )$ ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            344,
+            527,
+            363
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "The next theorem shows that for threshold policies, the expected loss $l _ { \\alpha } ( \\pi ) = l _ { \\alpha } ( \\theta )$ is minimized at $\\theta _ { p , \\alpha } ^ { * }$ such that $\\begin{array} { r } { | \\theta _ { p , \\alpha } ^ { * } - \\tau / 2 | \\leq \\frac { \\log ( \\frac { 1 } { p } ) + \\log ( \\frac { 1 } { \\alpha } ) } { 2 \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } } \\end{array}$ . ",
+        "bbox": [
+            143,
+            377,
+            852,
+            417
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Theorem 1. The loss function $l _ { \\alpha } ( \\theta )$ is quasi-convex and a threshold of $\\begin{array} { r } { \\theta _ { p , \\alpha } ^ { * } = \\left\\lceil \\frac { 1 } { 2 } \\left( \\tau - \\frac { \\log \\left( \\frac { 1 } { p } - 1 \\right) + \\log \\left( \\frac { 1 } { \\alpha } - 1 \\right) } { \\log \\left( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } \\right) } \\right) \\right\\rceil } \\end{array}$ minimizes loss for any values of $\\alpha , p , \\sigma \\in ( 0 , 1 )$ . Namely, ",
+        "bbox": [
+            143,
+            417,
+            895,
+            459
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\theta_ {p, \\alpha} ^ {*} = \\arg \\min _ {\\theta} l _ {\\alpha} (\\theta) = \\left\\lceil \\frac {\\tau}{2} - \\frac {\\log (\\frac {1}{p} - 1) + \\log (\\frac {1}{\\alpha} - 1)}{2 \\log (1 + \\frac {2 \\sigma}{1 - \\sigma})} \\right\\rceil .\n$$",
+        "text_format": "latex",
+        "bbox": [
+            299,
+            468,
+            697,
+            510
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Next, we bound the number of tests required to guarantee that the probability of classification error by the majority decision rule (i.e., $\\theta = \\lceil \\frac { \\tau } { 2 } \\rceil$ ) does not exceed a specified quantity $\\delta$ . ",
+        "bbox": [
+            143,
+            527,
+            852,
+            558
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Theorem 2. For every using majority as a decision rule (i.e., $\\delta , p , \\alpha \\in ( 0 , 1 )$ , performing $\\theta = \\tau / 2$ ) guarantees $\\begin{array} { r } { \\tau = \\Omega ( \\frac { \\alpha + p - 2 p \\alpha } { \\sigma ^ { 2 } } \\ln ( \\frac { 1 } { \\delta } ) ) } \\end{array}$ $l _ { \\alpha } ( \\pi ) \\leq \\delta$ . tests per candidate and ",
+        "bbox": [
+            143,
+            559,
+            852,
+            590
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Equal cost for false positives and false negatives ( $\\alpha = { \\textstyle { \\frac { 1 } { 2 } } }$ ) ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            614,
+            606,
+            633
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Consider the simple loss consisting of the classification error rate (false positives and false negatives count equally), expressed via our loss function by setting $\\alpha = { \\textstyle { \\frac { 1 } { 2 } } }$ . When skilled and unskilled candidates occur with equal frequency, i.e., $p = 1 / 2$ , we can derive that the majority decision rule minimizes the classification error for any number of tests. ",
+        "bbox": [
+            143,
+            646,
+            852,
+            705
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Corollary 3. Assume $p = 1 / 2$ and $\\alpha = 1 / 2$ . For any number of tests $\\tau$ , the majority decision rule minimizes loss $l _ { \\alpha }$ . Namely, $\\mathrm { a r g m i n } _ { \\theta } l _ { \\frac { 1 } { 2 } } ( \\theta ) = \\lceil \\frac { 1 } { 2 } \\tau \\rceil$ . In addition, for every $\\delta \\in ( 0 , 1 )$ , performing $\\begin{array} { r } { \\tau = \\Omega ( \\frac { 1 } { \\sigma ^ { 2 } } \\ln ( \\frac { 1 } { \\delta } ) ) } \\end{array}$ tests per candidate and using majority as a decision rule guarantees classification error with probability of at most $\\delta$ . ",
+        "bbox": [
+            143,
+            705,
+            852,
+            768
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_number",
+        "text": "5 ",
+        "bbox": [
+            493,
+            847,
+            504,
+            858
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "FDR minimization with limited number of tests per hire for balanced groups Again, assuming balanced groups (i.e., $p = 1 / 2$ ), suppose that an employer would like to minimize the false discovery rate, subject to the constraint of lower bounding the hiring probability. We can model this optimization problem by introducing a budget parameter $B > 1$ to bound any predetermined (fixed) number of tests per hired candidate as follows: ",
+        "bbox": [
+            143,
+            119,
+            854,
+            196
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\arg \\min  _ {\\pi} \\quad \\mathrm {F D R} _ {\\pi} = \\Pr \\left[ y _ {i} = 0 \\mid \\Pr \\left[ \\pi \\left(\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}\\right) = 1 \\right] \\right.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            303,
+            204,
+            696,
+            224
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\text {s u b j e c t} \\quad \\frac {\\tau_ {\\pi}}{\\Pr [ \\pi (\\hat {y} _ {i , 1} , \\dots , \\hat {y} _ {i , \\tau}) = 1 ]} \\leq B \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            303,
+            223,
+            849,
+            258
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "where $\\tau _ { \\pi }$ is the number of tests $\\pi$ performs. The following theorem shows that the optimal policy is a randomized threshold policy. ",
+        "bbox": [
+            143,
+            263,
+            849,
+            294
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Theorem 4. There exists a randomized threshold policy π which is an optimal solution for (2). ",
+        "bbox": [
+            143,
+            295,
+            831,
+            310
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "3.2 The Dynamic Policy (Adaptively-Allocated Tests) ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            335,
+            679,
+            353
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Recall that under a dynamic policy, the employer can decide after each test whether to accept, reject, or perform another test. In general, dynamic policies are more efficient than those that must set a fixed number of tests. To build intuition, consider a candidate that has passed 2 out of 3 tests. As seen above, under an optimally-constructed fixed-test policy, any candidate that fails a single test might be rejected. 2 However, the posterior probability that this candidate is in fact skilled may still be greater than that of a fresh candidate sampled from the pool. Thus we can improve on the fixed-test policy by dynamically allocating more tests to candidates until their posterior odds either dip below the prior odds or rise above the threshold for hiring. The following theorem formalizes this notion that it is better to administer more tests to a candidate that passed the majority of previous tests than to start afresh with a new candidate: ",
+        "bbox": [
+            143,
+            368,
+            852,
+            518
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Theorem 5. For any $p , \\sigma , \\tau$ , a candidate i that passed $\\theta > \\frac { \\pi } { 2 }$ out of $\\tau$ tests is more likely to be a skilled than a freshly-sampled candidate $i ^ { \\prime }$ for whom no test results are yet available, i.e., $\\operatorname* { P r } [ y _ { i ^ { \\prime } } = + 1 ] = p < \\operatorname* { P r } [ y _ { i } = + 1 | S _ { \\tau } = \\theta ]$ . ",
+        "bbox": [
+            143,
+            518,
+            852,
+            565
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Remark 6. If $\\theta < \\frac { \\tau } { 2 }$ , the inequality would have been reversed. ",
+        "bbox": [
+            143,
+            565,
+            594,
+            580
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "The Greedy Policy We now present a greedy algorithm that continues to test a candidate so long as the posterior probability that $y _ { i } = + 1$ is greater than $\\epsilon ^ { \\prime }$ and smaller than $1 - \\epsilon$ , rejects a candidate whenever the posterior falls below $\\epsilon ^ { \\prime }$ (absent fairness concerns, employers will set $\\epsilon ^ { \\prime } = p$ for all groups), and accepts whenever the posterior rises above $1 - \\epsilon$ . Given parameters $\\epsilon , \\epsilon ^ { \\prime } > 0$ , we show that the greedy policy solves the optimization problem of minimizing the mean number of tests under these constraints, i.e., ",
+        "bbox": [
+            143,
+            604,
+            852,
+            694
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\underset {\\tau} {\\text {m i n i m i z e}} \\qquad \\mathbb {E} [ \\tau ]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            250,
+            703,
+            370,
+            724
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\text {s u b j e c t} \\quad \\forall_ {i} \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 \\text {i f f} \\Pr [ y _ {i} = + 1 | \\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau} ] \\geq 1 - \\epsilon\n$$",
+        "text_format": "latex",
+        "bbox": [
+            250,
+            727,
+            750,
+            744
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\forall_ {i} \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 0 \\text {i f f} \\Pr [ y _ {i} = + 1 | \\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau} ] <   \\epsilon^ {\\prime}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            338,
+            746,
+            725,
+            763
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Our analysis of this policy builds upon the observation that conditioned on a worker’s skill, the posterior log-odds after each test perform a one-dimensional random walk, starting with the prior ",
+        "bbox": [
+            143,
+            771,
+            852,
+            801
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_footnote",
+        "text": "2For example, if $B = 1 8$ and $\\begin{array} { r } { \\eta = \\frac { 1 } { 3 } } \\end{array}$ , the lowest false discovery rate is achieved by $\\tau = \\theta = 3$ . ",
+        "bbox": [
+            161,
+            806,
+            725,
+            824
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_number",
+        "text": "6 ",
+        "bbox": [
+            493,
+            847,
+            504,
+            858
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "log-odds $\\textstyle \\log ( { \\frac { p } { 1 - p } } )$ and moving, after each test result, either left (upon a failed test) or right (upon a passed test). When (as in our model) the probability of a flip are equal for skilled and unskilled candidates, our random walk has a fixed step size. Moreover, our random walk has absorbing barriers corresponding to (when $\\epsilon ^ { \\prime } = p$ ) falling below the prior log odds (on the left) and exceeding the hiring threshold (on the right). Owing to the fixed step size and absorbing barriers, our policy resembles the classic problem of Gambler’s ruin, in which a gambler wins or loses a unit of currency at each step, and loses when crossing a threshold on the left (going bankrupt) or on the right (bankrupting the opponent). We formalize the random walk as follows where $X _ { j }$ is the position on the walk at time $j$ : ",
+        "bbox": [
+            143,
+            119,
+            852,
+            258
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. $X _ { 0 }$ is the prior log-odds of the candidate, i.e., $\\begin{array} { r } { X _ { 0 } = \\log { \\frac { p } { 1 - p } } } \\end{array}$ . ",
+            "2. After each test result, $\\hat { y } _ { i , j }$ is observed, $\\begin{array} { r } { X _ { j } = X _ { j - 1 } + ( 2 \\hat { y } _ { i , j } - 1 ) \\cdot \\log \\Big ( \\frac { \\operatorname* { P r } [ \\hat { y } _ { i , j } = + 1 | y _ { i } = + 1 ] } { \\operatorname* { P r } [ \\hat { y } _ { i , j } = + 1 | y _ { i } = 0 ] } \\Big ) . } \\end{array}$ "
+        ],
+        "bbox": [
+            163,
+            265,
+            813,
+            316
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Let $\\pi _ { G r e e d y }$ be the policy that accepts a candidate if $\\mathrm { P r } [ y _ { i } = + 1 | \\hat { y } _ { i , 1 } , \\dotsc , \\hat { y } _ { i , j } ] \\geq 1 - \\epsilon$ , rejects if $\\mathrm { P r } [ y _ { i } = + 1 | \\hat { y } _ { i , 1 } , . . . , \\hat { y } _ { i , j } ] < \\epsilon ^ { \\prime }$ , and otherwise conducts an additional test, i.e., ",
+        "bbox": [
+            143,
+            320,
+            852,
+            354
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\pi_ {G r e e d y} (\\hat {y} _ {i, 1}, \\ldots , \\hat {y} _ {i, j}) = \\left\\{ \\begin{array}{l l} 0 & \\text {i f} \\operatorname * {P r} [ y _ {i} = + 1 | \\hat {y} _ {i, 1}, \\ldots , \\hat {y} _ {i, j} ] <   \\epsilon^ {\\prime} \\\\ 1 & \\text {i f} \\operatorname * {P r} [ y _ {i} = + 1 | \\hat {y} _ {i, 1}, \\ldots , \\hat {y} _ {i, j} ] \\geq 1 - \\epsilon \\\\ \\text {r e t e s t} & \\text {e l s e} \\end{array} \\right..\n$$",
+        "text_format": "latex",
+        "bbox": [
+            238,
+            364,
+            756,
+            421
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "An employer will generally set the lower absorbing barrier to reject all candidates with posterior log odds less than $p$ since a fresh candidate from the pool is expected to be better. However, when noise levels differ across groups, we may prefer in the interest of fairness to set $\\epsilon ^ { \\prime }$ lower than $p$ for members of the noisier group, allowing us to equalize the frequency of false negatives across groups (see Section 4). ",
+        "bbox": [
+            143,
+            430,
+            852,
+            505
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Lemma 7. Let $\\beta , \\beta ^ { \\prime } \\in \\mathbb { R }$ be the parameters that satisfy $\\begin{array} { r } { \\frac { \\beta } { \\beta + 1 } = 1 - \\epsilon } \\end{array}$ and β′β′+1 = ǫ′ (i.e., β = 1−ǫǫ and $\\begin{array} { r } { \\frac { \\beta ^ { \\prime } } { \\beta ^ { \\prime } + 1 } = \\epsilon ^ { \\prime } } \\end{array}$ $\\begin{array} { r } { \\beta = \\frac { 1 - \\epsilon } { \\epsilon } a n d } \\end{array}$ $\\begin{array} { r } { \\beta ^ { \\prime } = \\frac { \\epsilon ^ { \\prime } } { 1 - \\epsilon ^ { \\prime } } } \\end{array}$ ). Then $X _ { \\tau } \\geq \\log \\beta$ iff $\\mathrm { P r } [ y _ { i } = + 1 | \\hat { y } _ { i , 1 } , \\ldots , \\hat { y } _ { i , \\tau } ] \\ge 1 - \\epsilon$ (iff the candidate is accepted) and $X _ { \\tau } < \\log \\beta ^ { \\prime }$ iff $\\mathrm { P r } [ y _ { i } = + 1 | \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau } ] < \\epsilon ^ { \\prime }$ (iff the candidate is rejected). ",
+        "bbox": [
+            143,
+            506,
+            852,
+            559
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Corollary 8. The policy $\\pi _ { G r e e d y }$ can be described as follows. ",
+        "bbox": [
+            143,
+            559,
+            588,
+            574
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\pi_ {G r e e d y} (\\hat {y} _ {i, 1}, \\ldots , \\hat {y} _ {i, \\tau}) = \\left\\{ \\begin{array}{l l} 0 & \\text {i f X _ {\\tau} <   \\log \\frac {\\epsilon^ {\\prime}}{1 - \\epsilon^ {\\prime}}} \\\\ 1 & \\text {i f X _ {\\tau} \\geq \\log (\\frac {1 - \\epsilon}{\\epsilon})} \\\\ \\mathrm {r e t e s t} & \\text {e l s e} \\end{array} \\right.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            305,
+            585,
+            689,
+            642
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We use the following parameters in the next theorems: ",
+        "bbox": [
+            143,
+            659,
+            540,
+            674
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\na = \\left\\lceil \\frac {\\log (\\frac {(1 - \\epsilon) (1 - \\epsilon^ {\\prime}) (1 + \\sigma)}{\\epsilon \\epsilon^ {\\prime} (1 - \\sigma)})}{\\log (\\frac {1 + \\sigma}{1 - \\sigma})} \\right\\rceil \\gg \\frac {1}{\\sigma} \\quad \\mathrm {a n d} \\quad z = \\left\\lceil \\frac {\\log (\\frac {p (1 - \\epsilon^ {\\prime}) (1 + \\sigma)}{\\epsilon^ {\\prime} (1 - p) (1 - \\sigma)})}{\\log (\\frac {1 + \\sigma}{1 - \\sigma})} \\right\\rceil\n$$",
+        "text_format": "latex",
+        "bbox": [
+            259,
+            685,
+            733,
+            734
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Theorem 9 (Expected number of tests per type). The expected number of tests until a decision (namely accept or reject) for skilled candidates is $\\begin{array} { r } { \\mathbb { E } [ \\tau _ { s } ] = \\frac { 1 } { \\sigma } \\left( a \\cdot \\frac { 1 - ( \\frac { 1 - \\sigma } { 1 + \\sigma } ) ^ { z } } { 1 - ( \\frac { 1 - \\sigma } { 1 + \\sigma } ) ^ { a } } - z \\right) \\approx \\frac { 2 a } { 1 + \\sigma } - \\frac { z } { \\sigma } } \\end{array}$ and $\\begin{array} { r } { \\mathbb { E } [ \\tau _ { u } ] = \\frac { 1 } { \\sigma } \\left( z - a \\cdot \\frac { 1 - ( \\frac { 1 + \\sigma } { 1 - \\sigma } ) ^ { z } } { 1 - ( \\frac { 1 + \\sigma } { 1 - \\sigma } ) ^ { a } } \\right) \\approx \\frac { z } { \\sigma } } \\end{array}$ for unskilled candidates. ",
+        "bbox": [
+            143,
+            744,
+            852,
+            825
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_number",
+        "text": "7 ",
+        "bbox": [
+            493,
+            847,
+            503,
+            858
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "table",
+        "img_path": "images/4bfd519d4cf476219765b3fe14b5154e768742be6588dcb3df94dedd45a09170.jpg",
+        "table_caption": [
+            "Table 1: Confusion matrix for $\\pi _ { \\mathrm { g r e e d y } }$ assuming $\\epsilon \\leq 1 / 4$ and $\\epsilon ^ { \\prime } \\le p \\le 1 / 2$ . "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td colspan=\"2\">General ε&#x27;</td><td colspan=\"2\">When ε&#x27; = p</td></tr><tr><td></td><td>Skilled (yi = +1)</td><td>Unskilled (yi = 0)</td><td>Skilled</td><td>Unskilled</td></tr><tr><td>accept</td><td>TPR = Θ(1 - ε&#x27;/p(1 - σ))</td><td>FPR = Θ(ε(p - ε&#x27; + ε&#x27;σ))</td><td>Θ(σ)</td><td>Θ(εpσ)</td></tr><tr><td>reject</td><td>FNR = Θ(ε&#x27;/p(1 - σ))</td><td>TNR = Θ(1 - ε(p - ε&#x27; + ε&#x27;σ))</td><td>Θ(1 - σ)</td><td>Θ(1 - εpσ)</td></tr></table>",
+        "bbox": [
+            171,
+            143,
+            823,
+            224
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "For the probabilities of the candidates to be accepted or rejected, conditioned on their true skill level, we present the results in a form of confusion matrix in Table 1. ",
+        "bbox": [
+            143,
+            250,
+            852,
+            277
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Theorem 10. The expected number of tests until deciding whether to accept or reject a candidate is $\\begin{array} { r } { \\mathbb { E } [ \\tau | \\pi ( y _ { i , \\tau } ) \\in \\{ 0 , 1 \\} ] \\approx { \\frac { a p } { \\sigma } } } \\end{array}$ , where $a \\gg \\frac { 1 } { \\sigma }$ . ",
+        "bbox": [
+            143,
+            279,
+            852,
+            311
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "4 Fairness Considerations in the Two-Group Setting ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            339,
+            756,
+            359
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Two Groups—Threshold Policies We now discuss the effects of a threshold policy when candidates belong to two groups, $G _ { 1 }$ and $G _ { 2 }$ whose skill level is distributed identically, but whose tests are characterized by different noise levels. Without loss of generality, we assume that $\\eta _ { 1 } ~ < ~ \\eta _ { 2 }$ , where $\\eta _ { i }$ is the probability that a test result of a candidate from $G _ { i }$ is different from his skill level. To begin, we note the fundamental irreconcilability of equalizing either the false positive or the false negative rates across groups with subjecting candidates to the same policy. ",
+        "bbox": [
+            143,
+            378,
+            852,
+            468
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Theorem 11 (Impossibility result). When noise levels differ between two groups with identical skill level distribution, a single Threshold Policy $\\boldsymbol { \\mathscr { u } }$ (with the same number of tests $^ { - }$ and the same threshold $\\theta$ for both groups) cannot have equality in either the false negative rates or in the false positive rates across the groups. Particularly, there is a higher false positive rate in the noisier group, as an unskilled candidate from $G _ { 2 }$ is more likely to be accepted by the threshold policy than an unskilled candidate from $G _ { 1 }$ : ",
+        "bbox": [
+            143,
+            469,
+            852,
+            560
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {F P R} _ {\\theta , \\tau} ^ {\\eta_ {1}} = \\operatorname * {P r} _ {\\eta_ {1}} [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 | y _ {i} = 0 ] <   \\operatorname * {P r} _ {\\eta_ {2}} [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 | y _ {i} = 0 ] = \\mathrm {F P R} _ {\\theta , \\tau} ^ {\\eta_ {2}},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            196,
+            571,
+            799,
+            594
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "and also a higher false negative rate, as a skilled candidate from $G _ { 2 }$ is more likely to be rejected than a skilled candidate from $G _ { 1 }$ : ",
+        "bbox": [
+            143,
+            604,
+            854,
+            635
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {F N R} _ {\\theta , \\tau} ^ {\\eta_ {1}} = \\operatorname * {P r} _ {\\eta_ {1}} [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 0 | y _ {i} = + 1 ] <   \\operatorname * {P r} _ {\\eta_ {2}} [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 0 | y _ {i} = + 1 ] = F N R _ {\\theta , \\tau} ^ {\\eta_ {2}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            181,
+            647,
+            813,
+            670
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Connection to Economics Literature Aigner and Cain [1] discuss a similar case under a Gaussian screening model where the variance (noise level) of the single test differs across the two groups. Similarly, they note that qualified candidates fare worse in the noisy group but that unqualified candidates fare better in the noisier group. Our work differs from theirs in that we consider the effect of multiple tests and the ability to optimize over the number of tests. ",
+        "bbox": [
+            143,
+            689,
+            852,
+            765
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Two Groups–Dynamic policy We now consider the (dynamic) hiring policy in the setting when employees belong to two groups, $G _ { 1 }$ and $G _ { 2 }$ with identically-distributed skills but different ",
+        "bbox": [
+            143,
+            790,
+            854,
+            821
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_number",
+        "text": "8 ",
+        "bbox": [
+            493,
+            847,
+            504,
+            858
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "noise levels $\\eta _ { 1 } < \\eta _ { 2 }$ . We note that there are two ingredients that explain the differences among the groups: (i) The step size, $\\begin{array} { r } { \\log \\left( \\frac { \\operatorname* { P r } [ \\hat { y } _ { i , j } = + 1 | y _ { i } = + 1 ] } { \\operatorname* { P r } [ \\hat { y } _ { i , j } = + 1 | y _ { i } = 0 ] } \\right) = \\log \\left( \\frac { 1 - \\eta } { \\eta } \\right) } \\end{array}$ of $G _ { 2 }$ (the noisier group) is smaller than the step size of $G _ { 1 }$ . Thus these candidates must typically pass more tests before they are accepted; and (ii) Skilled candidates in group $G _ { 2 }$ exhibit less drift to the right (they have a higher probability of failing a test). Consequently, when an employer (rationally) sets $\\epsilon ^ { \\prime } = p$ for all groups, a skilled candidate from $G _ { 2 }$ is more likely to be fail a test in step 1, at which point the dynamic policy summarily rejects them. These two facts explain both the higher false negative rates for $G _ { 2 }$ and the longer expected duration until acceptance. By setting $\\epsilon ^ { \\prime } < p$ for members of the noisier group, we can equalize false negative rates. Precisely, setting $\\begin{array} { r } { \\epsilon { ' } = \\frac { \\eta _ { 1 } } { \\eta _ { 2 } } p } \\end{array}$ achieves the desired parity. The cost of this intervention is that it requires more tests for candidates from the noisier group. Here, our random walk analysis can be leveraged to determine exactly how many more. Once again, we cannot provide equality across the groups in all desired ways—the same acceptance criterion, the same expected number of tests, and the same false negative rates between groups—with the noise differs across groups. ",
+        "bbox": [
+            143,
+            119,
+            852,
+            337
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "5 Gaussian Worker Screening Model ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            367,
+            580,
+            388
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "In this section, we work out the analytic solutions for the conditional expectation of worker qualities given a series of conditionally independent tests $Y _ { 1 } , . . . Y _ { n }$ s.t. $\\forall i , j$ , $Y _ { i } \\perp Y _ { j } | Q$ . We assume that the worker quality $Q$ normally distributed with mean $\\mu _ { Q }$ and variance $\\sigma _ { Q } ^ { 2 }$ , so instead of binary skill level we have continuous quality of candidates. Conditioned on $Q = q$ , each test is generated according to the structural equation $y _ { i } = q + \\eta$ , where $\\eta$ is a normally distributed noise term with mean 0 and variance $\\sigma _ { \\eta } ^ { 2 }$ . Equivalently, we can say that the conditional distribution for each test $P ( \\boldsymbol { Y } | Q = q$ ) is Gaussian with mean $q$ and variance $\\sigma _ { \\eta } ^ { 2 }$ . We refer the reader to Appendix B for further details. ",
+        "bbox": [
+            143,
+            406,
+            851,
+            526
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "We show that we can equalize conditional variance between the two groups by giving more interviews to to noisier group, and that it yields the same conditional expectations. ",
+        "bbox": [
+            143,
+            535,
+            851,
+            564
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Theorem 12. For two groups, $G _ { 1 } , G _ { 2 }$ with the same worker quality $Q$ , that differ only in the variance of their noise $\\sigma _ { \\eta _ { 1 } } ^ { 2 } < \\sigma _ { \\eta _ { 2 } } ^ { 2 }$ , the variance can be equalized by using $\\begin{array} { r } { n _ { 2 } = \\frac { \\sigma _ { \\eta _ { 2 } } ^ { 2 } } { \\sigma _ { \\eta _ { 1 } } ^ { 2 } } n _ { 1 } } \\end{array}$ tests) for $G _ { 2 }$ , where $n _ { 1 }$ is the number of interviews for each candidate from $G _ { 1 }$ . ",
+        "bbox": [
+            143,
+            565,
+            851,
+            619
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Theorem 13. When equalizing conditional variances between $G _ { 1 } , G _ { 2 }$ by using $\\begin{array} { r } { n _ { 2 } = \\frac { \\sigma _ { \\eta _ { 2 } } ^ { 2 } } { \\sigma _ { \\eta _ { 1 } } ^ { 2 } } n _ { 1 } } \\end{array}$ the same conditional expectations, $\\mathbb { E } _ { \\eta _ { 1 } } [ Q | Y _ { 1 } , . . . , Y _ { n _ { 1 } } ] = \\mathbb { E } _ { \\eta _ { 2 } } [ Q | Y _ { 1 } , . . . , Y _ { n _ { 2 } } ]$ . ",
+        "bbox": [
+            143,
+            621,
+            851,
+            660
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "6 Unsupervised Parameter Estimation ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            689,
+            602,
+            709
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Now, under the assumption of realizable case, we explain how one can estimate the parameters $p$ and $\\sigma$ given tests results from a homogeneous population. Surprisingly, we discover that parameter recovery in this model does not require any ground truth labels indicating whether an employee is skilled or unskilled. We use Hoeffding’s inequality to bound the absolute difference between the estimated parameters and the true parameters by choosing $\\delta$ as the wanted upper bound and solving for the number of samples or $\\epsilon$ . ",
+        "bbox": [
+            143,
+            728,
+            851,
+            819
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "page_number",
+        "text": "9 ",
+        "bbox": [
+            493,
+            847,
+            503,
+            858
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Lemma 14 (Hoeffding’s inequality). Let $y _ { 1 } , \\ldots , y _ { m }$ be $\\sigma ^ { 2 } - s u b$ –gaussian random variables. Then, for any $\\epsilon > 0$ , ",
+        "bbox": [
+            143,
+            119,
+            854,
+            150
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ \\left| \\frac {1}{m} \\sum_ {i = 1} ^ {m} y _ {i} - \\mathbb {E} [ y _ {i} ] \\right| \\geq \\epsilon \\right] \\leq 2 e ^ {- m \\epsilon^ {2} / 2 \\sigma^ {2}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            349,
+            148,
+            648,
+            189
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "If $y _ { 1 } , \\ldots , y _ { m }$ are Bernoulli random variables with parameter $p$ , ",
+        "bbox": [
+            143,
+            194,
+            596,
+            210
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} \\left[ \\left| \\frac {1}{m} \\sum_ {i = 1} ^ {m} y _ {i} - p \\right| \\geq \\epsilon \\right] \\leq 2 e ^ {- 2 m \\epsilon^ {2}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            370,
+            220,
+            627,
+            262
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "We start by estimating $\\sigma$ and then use it to derive an estimate for $p$ . The estimated parameters are denoted by $\\hat { \\sigma }$ and $\\hat { p }$ . Notice that in order to have any information regarding the true value of $\\sigma$ , we need to have candidates with at least two tests. Hence, from now on we assume exactly that, i.e., $\\forall _ { i } \\pi _ { \\mathrm { G r e e d y } } ( \\hat { y } _ { i , 1 } ) = m o r e$ for dynamic policies and $\\tau \\geq 2$ for fixed number of tests policies. ",
+        "bbox": [
+            143,
+            279,
+            854,
+            340
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Now, in both policies we have showed that the optimal rule is to reject candidates that fail their first test. Therefore inconsistencies between the first two tests are seen only in cases where $\\hat { y } _ { i , 1 } =$ $1 , \\hat { y } _ { i , 2 } = 0$ . ",
+        "bbox": [
+            143,
+            347,
+            852,
+            393
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Let $c$ be the number of inconsistencies in the first two tests, i.e., $c = | \\{ ( \\hat { y } _ { i , 1 } , \\hat { y } _ { i , 2 } ) : y _ { i , 1 } \\neq y _ { i , 2 } \\} |$ |, and let $m$ be the number of candidates with at least two tests. Since $c$ is generated by sampling $m$ times, the distribution $\\begin{array} { r } { B r ( ( \\frac { 1 + \\sigma } { 2 } ) ( \\frac { 1 - \\sigma } { 2 } ) ) = B r ( \\frac { 1 - \\sigma ^ { 2 } } { 4 } ) } \\end{array}$ and we can estimate $\\sigma$ as stated in the next theorem: ",
+        "bbox": [
+            143,
+            398,
+            852,
+            460
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Theorem 15. If we have results from $\\begin{array} { r } { m \\geq \\frac { 1 } { 2 \\epsilon ^ { 2 } } \\ln \\frac { 2 } { \\delta } } \\end{array}$ candidates, by using $\\hat { \\sigma } = \\sqrt { 1 - 4 \\frac { c } { m } }$ , then with probability $1 - \\delta$ we have that $| \\hat { \\sigma } - \\sigma | \\le \\epsilon$ . ",
+        "bbox": [
+            143,
+            460,
+            852,
+            494
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Having an estimation of the parameter $\\hat { \\sigma }$ , we can calculate the estimated $p$ as follows: Let $p _ { \\hat { y } _ { \\ast , 1 } = 1 } : =$ $\\underline { { \\sum _ { i } \\mathbb { I } ( \\hat { y } _ { i , 1 } = 1 ) } }$ be the percentage of positive first tests. Since this number is generated by the distribution $B r ( \\frac { 1 } { 2 } ( p ( 1 + \\sigma ) + ( 1 - p ) ( 1 - \\sigma ) ) ) = B r ( \\frac { 1 } { 2 } + ( 2 p - 1 ) \\frac { \\sigma } { 2 } )$ , we can estimate $\\hat { p }$ using the estimated value of $\\hat { \\sigma }$ . ",
+        "bbox": [
+            143,
+            500,
+            852,
+            561
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Theorem 16. If we have results from $\\begin{array} { r } { m \\geq \\frac { 1 } { 2 \\epsilon ^ { 2 } } \\ln \\frac { 2 } { \\delta } } \\end{array}$ candidates, by using $\\begin{array} { r } { \\hat { p } = \\frac { 2 ( p _ { y _ { * , 1 } = 1 } - 1 ) + \\hat { \\sigma } } { \\hat { \\sigma } } } \\end{array}$ , we get that with probability $1 - \\delta$ we have that $| \\hat { p } - p | \\leq 2 \\epsilon$ . ",
+        "bbox": [
+            143,
+            561,
+            852,
+            595
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Under the Gaussian screening model, the parameter estimation is also straightforward (assuming realizability) without access to the true skill level of the employees. We start by looking at a single candidate, $i$ . Each of his test results, $\\hat { y } _ { i , j }$ is generated from a conditional distribution $P ( Y _ { i } | Q _ { i } = q _ { i } )$ which is a Gaussian with mean $q _ { i }$ and variance $\\sigma _ { \\eta } ^ { 2 }$ . Since this variance is common among all the candidates, we can simply average the estimated variance of every candidate to get an approximation for $\\sigma _ { \\eta } ^ { 2 }$ . Suppose $\\hat { y } _ { i , 1 } , \\ldots , \\hat { y } _ { i , n }$ is a sequence of $n$ i.i.d tests of candidate $i$ , and let $\\begin{array} { r } { y _ { i } = \\frac { 1 } { n } \\sum _ { j = 1 } ^ { n } y _ { i , j } } \\end{array}$ be the empirical mean of candidate $i$ ’s tests. ",
+        "bbox": [
+            143,
+            601,
+            851,
+            707
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The following theorem is a result from Hoeffding’s Inequality, in which we use to bound the error of our estimated parameters. ",
+        "bbox": [
+            143,
+            714,
+            851,
+            744
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Theorem 17. By using the following as estimators for Gaussian parameters $\\begin{array} { r } { { \\hat { \\mu } } _ { Q } = \\frac { 1 } { m } \\sum _ { i = 1 } ^ { m } y _ { i } } \\end{array}$ $\\begin{array} { r } { \\hat { \\sigma } _ { \\eta } ^ { 2 } = \\frac { 1 } { m } \\sum _ { i = 1 } ^ { m } \\frac { 1 } { n } \\sum _ { j = 1 } ^ { n } ( y _ { i , j } - y _ { i } ) ^ { 2 } } \\end{array}$ and $\\begin{array} { r } { \\hat { \\sigma } _ { Q } ^ { 2 } = \\frac { 1 } { m } \\sum _ { i = 1 } ^ { m } ( \\hat { \\mu } _ { Q } - y _ { i } ) ^ { 2 } } \\end{array}$ (notice that $\\mathbb { E } [ \\hat { \\sigma } _ { \\eta } ^ { 2 } ] = \\sigma _ { \\eta } ^ { 2 }$ mand $\\mathbb { E } [ \\hat { \\sigma } _ { Q } ^ { 2 } ] =$ $\\sigma _ { Q } ^ { 2 } )$ , the difference between each parameter and it’s estimator is bounded by $O ( \\sqrt { \\textstyle { \\frac { 1 } { m } } \\ln ( \\textstyle { \\frac { 1 } { \\delta } } ) } )$ . ",
+        "bbox": [
+            143,
+            744,
+            852,
+            804
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "page_number",
+        "text": "10 ",
+        "bbox": [
+            488,
+            845,
+            509,
+            859
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "7 Discussion and Future Work ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            116,
+            511,
+            135
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Consider two groups with identically-distributed skills and characterized by different noise levels in screening. Our results demonstrate that if a regulatory body (e.g., policymakers or a regulator) insists on the same number of tests and the same decision rule for both groups, this would yield higher false positive rates in any threshold policy. As a result, hired candidates from the noisier group would suffer higher rates of firing. In turn, this might lead employers to erroneously conclude that this group’s skill level is lower than it actually is. This paper presents a policy that handles this problem by minimizing the false positive rates of both groups, in the form of a greedy policy. Moreover the greedy policy is efficient, minimizing the expected number of tests per hire among all policies that achieve a specified false positive rate and continue testing every candidates that appear better than the a new one. However, the dynamic policy will still suffer (as does the simple threshold policy) from higher false negative rates for the noisier group, violating a notion of fairness dubbed equality of opportunity in the recent literature on fairness in machine learning [9]. We addressed this problem by modifying the greedy policy to reject candidate iff $\\mathrm { P r } [ y _ { i } = + 1 | \\hat { y } _ { i , 1 } \\ldots \\hat { y } _ { i , \\tau } ] < \\epsilon ^ { \\prime }$ by setting $\\epsilon ^ { \\prime } < p$ . Our greedy policy can be made forgiving and equalize false negative rates across groups. In future work, we plan to explore extensions to the Gaussian model. ",
+        "bbox": [
+            143,
+            155,
+            852,
+            383
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "page_number",
+        "text": "11 ",
+        "bbox": [
+            490,
+            845,
+            508,
+            859
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            116,
+            271,
+            133
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[1] Aigner, D. J., & Cain, G. G. (1977). Statistical theories of discrimination in labor markets. ILR Review, 30 (2), 175–187. ",
+            "[2] Arrow, K., et al. (1973). The theory of discrimination. Discrimination in labor markets, 3 (10), 3–33. ",
+            "[3] Becker, G. S. (1957). The economics of discrimination chicago. University of Chicago. ",
+            "[4] Berk, R., Heidari, H., Jabbari, S., Kearns, M., & Roth, A. (2018). Fairness in criminal justice risk assessments: The state of the art. Sociological Methods & Research. ",
+            "[5] Chouldechova, A. (2017). Fair prediction with disparate impact: A study of bias in recidivism prediction instruments. Big data, 5 (2), 153–163. ",
+            "[6] Corbett-Davies, S., & Goel, S. (2018). The measure and mismeasure of fairness: A critical review of fair machine learning. arXiv preprint arXiv:1808.00023 . ",
+            "[7] Ensign, D., Friedler, S. A., Neville, S., Scheidegger, C., & Venkatasubramanian, S. (2017). Runaway feedback loops in predictive policing. arXiv preprint arXiv:1706.09847 . ",
+            "[8] Feller, W. (1968). An Introduction to Probability Theory and Its Applications, vol. 1. Wiley. ",
+            "[9] Hardt, M., Price, E., Srebro, N., et al. (2016). Equality of opportunity in supervised learning. In Advances in neural information processing systems, (pp. 3315–3323). ",
+            "[10] Hu, L., & Chen, Y. (2018). A short-term intervention for long-term fairness in the labor market. In Proceedings of the 2018 World Wide Web Conference on World Wide Web, (pp. 1389–1398). International World Wide Web Conferences Steering Committee. ",
+            "[11] Kamiran, F., Calders, T., & Pechenizkiy, M. (2010). Discrimination aware decision tree learning. In ICDM . ",
+            "[12] Kamishima, T., Akaho, S., & Sakuma, J. (2011). Fairness-aware learning through regularization approach. In ICDM Workshops. ",
+            "[13] Kleinberg, J., Mullainathan, S., & Raghavan, M. (2016). Inherent trade-offs in the fair determination of risk scores. arXiv preprint arXiv:1609.05807 . ",
+            "[14] Miller, K. S. (1981). On the inverse of the sum of matrices. Mathematics magazine, 54 (2), 67–72. ",
+            "[15] Pedreshi, D., Ruggieri, S., & Turini, F. (2008). Discrimination-aware data mining. In KDD . ",
+            "[16] Phelps, E. S. (1972). The statistical theory of racism and sexism. The american economic review, (pp. 659–661). ",
+            "[17] Verma, S., & Rubin, J. (2018). Fairness definitions explained. In Proceedings of the International Workshop on Software Fairness, FairWare ’18, (pp. 1–7). New York, NY, USA: ACM. ",
+            "[18] Whitt, W. (1980). Uniform conditional stochastic order. Journal of Applied Probability, 17 (1), 112–123. "
+        ],
+        "bbox": [
+            147,
+            146,
+            854,
+            787
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "page_number",
+        "text": "12 ",
+        "bbox": [
+            488,
+            845,
+            508,
+            858
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "A Proofs ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            116,
+            277,
+            133
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "A.1 Proofs from Section 3 ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            155,
+            416,
+            171
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 1. To prove the theorem, we show that the loss function $l _ { \\alpha } ( \\tau , \\theta )$ , as a function of $\\theta$ is quasi-convex and achieves its minimum value at $\\begin{array} { r } { \\left\\lceil \\frac { 1 } { 2 } \\bigl ( \\tau - \\frac { \\log ( \\frac { 1 } { p } - 1 ) + \\log ( \\frac { 1 } { \\alpha } - 1 ) } { \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } \\bigr ) \\right\\rceil } \\end{array}$ −1) )m ",
+        "bbox": [
+            143,
+            188,
+            849,
+            228
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Namely, we show that the loss is monotone increasing for $\\begin{array} { r } { \\left\\lceil \\frac { 1 } { 2 } \\big ( \\tau - \\frac { \\log ( \\frac { 1 } { p } - 1 ) + \\log ( \\frac { 1 } { \\alpha } - 1 ) } { \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } \\big ) \\right\\rceil \\leq \\theta \\leq \\tau - 1 . } \\end{array}$ i.e., increasing $\\theta$ increases the loss: $l _ { \\alpha } ( \\theta ) < l _ { \\alpha } ( \\theta + 1 )$ . ",
+        "bbox": [
+            143,
+            229,
+            852,
+            268
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Similarly, we show that for $\\begin{array} { r } { 1 \\leq \\theta \\leq \\left\\lceil \\frac { 1 } { 2 } ( \\tau - \\frac { \\log ( \\frac { 1 } { p } - 1 ) + \\log ( \\frac { \\bot } { \\alpha } - 1 ) } { \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } ) \\right\\rceil } \\end{array}$ ≤ l 1 (τ − log( 1p −1)+log( 1α −1)2σ )m, we have $l _ { \\alpha } ( \\theta ) < l _ { \\alpha } ( \\theta - 1 )$ . ",
+        "bbox": [
+            143,
+            268,
+            794,
+            295
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Indeed, ",
+        "bbox": [
+            143,
+            294,
+            200,
+            306
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} l _ {\\alpha} (\\theta + 1, \\tau) - l _ {\\alpha} (\\theta , \\tau) = - \\alpha \\Pr [ y = 0, S _ {\\tau} = \\theta ] + (1 - \\alpha) \\Pr [ y = + 1, S _ {\\tau} = \\theta ] \\\\ = - \\alpha \\operatorname * {P r} [ S _ {\\tau} = \\theta | y = 0 ] \\operatorname * {P r} [ y = 0 ] + (1 - \\alpha) \\operatorname * {P r} [ S _ {\\tau} = \\theta | y = + 1 ] \\operatorname * {P r} [ y = + 1 ] \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            232,
+            306,
+            761,
+            347
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Since $\\operatorname* { P r } [ y = 0 ] = 1 - p$ and $\\operatorname* { P r } [ y = + 1 ] = p$ , we have ",
+        "bbox": [
+            143,
+            352,
+            527,
+            369
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\nl _ {\\frac {1}{2}} (\\theta + 1, \\tau) - l _ {\\frac {1}{2}} (\\theta , \\tau) = - (1 - p) \\alpha \\operatorname * {P r} [ S _ {\\tau} = \\theta | y = 0 ] + p (1 - \\alpha) \\operatorname * {P r} [ S _ {\\tau} = \\theta | y = + 1 ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            202,
+            378,
+            792,
+            398
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "The above expression is positive iff ",
+        "bbox": [
+            143,
+            406,
+            401,
+            421
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n(1 - p) \\alpha \\Pr [ S _ {\\tau} = \\theta | y = 0 ] <   p (1 - \\alpha) \\Pr [ S _ {\\tau} = \\theta | y = + 1 ] \\tag {3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            299,
+            431,
+            851,
+            450
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Since $\\mathrm { P r } | S _ { \\tau } = \\theta | y = 0 |$ is the probability of exactly $\\theta$ flips, and $\\mathrm { P r } | S _ { \\tau } = \\theta | y = + 1 |$ is the probability of exactly $\\tau - \\theta$ flips, we can calculate those probabilities as follows: ",
+        "bbox": [
+            143,
+            458,
+            852,
+            491
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ S _ {\\tau} = \\theta | y = 0 ] = \\binom {\\tau} {\\theta} (\\frac {1 - \\sigma}{2}) ^ {\\theta} (\\frac {1 + \\sigma}{2}) ^ {\\tau - \\theta}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            336,
+            500,
+            658,
+            532
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr [ S _ {\\tau} = \\theta | y = + 1 ] = \\binom {\\tau} {\\tau - \\theta} (\\frac {1 - \\sigma}{2}) ^ {\\tau - \\theta} (\\frac {1 + \\sigma}{2}) ^ {\\theta}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            318,
+            541,
+            678,
+            575
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Substituting expression in (3), we get ",
+        "bbox": [
+            143,
+            580,
+            418,
+            595
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n(1 - p) \\alpha \\binom {\\tau} {\\theta} (\\frac {1 - \\sigma}{2}) ^ {\\theta} (\\frac {1 + \\sigma}{2}) ^ {\\tau - \\theta} <   p (1 - \\alpha) \\binom {\\tau} {\\tau - \\theta} (\\frac {1 - \\sigma}{2}) ^ {\\tau - \\theta} (\\frac {1 + \\sigma}{2}) ^ {\\theta}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            233,
+            604,
+            761,
+            638
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Rearranging, we get ",
+        "bbox": [
+            143,
+            648,
+            294,
+            662
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n(\\frac {1 - \\sigma}{1 + \\sigma}) ^ {2 \\theta} <   (\\frac {1 - \\sigma}{1 + \\sigma}) ^ {\\tau} (\\frac {p}{1 - p}) (\\frac {1 - \\alpha}{\\alpha}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            362,
+            660,
+            633,
+            691
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Applying log on both sides gets us ",
+        "bbox": [
+            143,
+            696,
+            397,
+            710
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n2 \\theta \\log (\\frac {1 - \\sigma}{1 + \\sigma}) <   \\tau \\log (\\frac {1 - \\sigma}{1 + \\sigma}) + \\log (\\frac {p}{1 - p}) + \\log (\\frac {1 - \\alpha}{\\alpha}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            295,
+            720,
+            699,
+            752
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Solving for $\\theta$ , we find that the inequality holds if ",
+        "bbox": [
+            143,
+            760,
+            501,
+            776
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\theta > \\frac {\\tau \\log (\\frac {1 - \\sigma}{1 + \\sigma}) + \\log (\\frac {p}{1 - p}) + \\log (\\frac {1 - \\alpha}{\\alpha})}{2 \\log (\\frac {1 - \\sigma}{1 + \\sigma})} = \\left\\lceil \\frac {1}{2} (\\tau - \\frac {\\log (\\frac {1}{p} - 1) + \\log (\\frac {1}{\\alpha} - 1)}{\\log (1 + \\frac {2 \\sigma}{1 - \\sigma})}) \\right\\rceil\n$$",
+        "text_format": "latex",
+        "bbox": [
+            225,
+            785,
+            767,
+            825
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "page_number",
+        "text": "13 ",
+        "bbox": [
+            488,
+            845,
+            509,
+            859
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "For $\\begin{array} { r } { \\theta \\geq \\bigg \\lceil \\frac { 1 } { 2 } \\big ( \\tau - \\frac { \\log ( \\frac { 1 } { p } - 1 ) + l o g ( \\frac { 1 } { \\alpha } - 1 ) } { \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } \\big ) \\bigg \\rceil } \\end{array}$ , we have ",
+        "bbox": [
+            143,
+            117,
+            468,
+            143
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n(1 - p) \\alpha \\Pr [ S _ {\\tau} = \\theta | y = 0 ] <   p (1 - \\alpha) \\Pr [ S _ {\\tau} = \\theta | y = + 1 ],\n$$",
+        "text_format": "latex",
+        "bbox": [
+            295,
+            154,
+            699,
+            172
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "and for $\\begin{array} { r } { \\theta \\leq \\left\\lceil \\frac { 1 } { 2 } ( \\tau - \\frac { \\log ( \\frac { 1 } { p } - 1 ) + \\log ( \\frac { 1 } { \\alpha } - 1 ) } { \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } ) \\right\\rceil } \\end{array}$ , we have ",
+        "bbox": [
+            143,
+            181,
+            496,
+            209
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\alpha (1 - p) \\Pr [ S _ {\\tau} = \\theta | y = 0 ] > (1 - \\alpha) p \\Pr [ S _ {\\tau} = \\theta | y = + 1 ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            295,
+            219,
+            699,
+            237
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "This implies that the maximum is $\\begin{array} { r } { \\theta _ { p , \\alpha } ^ { * } = \\left\\lceil \\frac { 1 } { 2 } ( \\tau - \\frac { \\log ( \\frac { 1 } { p } - 1 ) + \\log ( \\frac { 1 } { \\alpha } - 1 ) } { \\log ( 1 + \\frac { 2 \\sigma } { 1 - \\sigma } ) } ) \\right\\rceil , } \\end{array}$ ",
+        "bbox": [
+            143,
+            247,
+            643,
+            273
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 2. We start with a skilled candidate. The expected number of tests that a skilled candidate passes is $\\mathbb { E } [ S _ { \\tau } | y = + 1 ] = \\tau ( \\frac { 1 + \\sigma } { 2 } ) > \\frac { \\tau } { 2 }$ . ",
+        "bbox": [
+            143,
+            308,
+            849,
+            340
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "By using Hoeffding’s inequality for Bernoulli distributions, for every $\\epsilon > 0$ , ",
+        "bbox": [
+            143,
+            345,
+            683,
+            361
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr [ \\mathbb {E} [ S _ {\\tau} ] - S _ {\\tau} \\geq \\epsilon | y = + 1 ] = \\Pr [ \\tau (\\frac {1 + \\sigma}{2}) - S _ {\\tau} \\geq \\epsilon | y = + 1 ] \\leq e ^ {- 2 \\epsilon^ {2} \\tau} <   \\delta .\n$$",
+        "text_format": "latex",
+        "bbox": [
+            233,
+            371,
+            759,
+            400
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Choosing $\\epsilon = \\textstyle { \\frac { o } { 2 } }$ yields $\\begin{array} { r } { S _ { \\tau } \\le \\frac { \\tau } { 2 } < \\lceil \\frac { \\tau } { 2 } \\rceil } \\end{array}$ (as $\\tau$ is odd), which holds iff a majority threshold policy would predict that this is an unskilled candidate (false negative). Solving for $\\tau$ , we get $\\begin{array} { r } { \\tau > \\frac { 1 } { \\sigma ^ { 2 } } \\ln \\bigl ( \\frac { 1 } { \\delta } \\bigr ) } \\end{array}$ . ",
+        "bbox": [
+            143,
+            410,
+            849,
+            444
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "We now repeat the process for an unskilled candidate. The expected number of tests that an unskilled candidate passes is $\\begin{array} { r } { \\mathbb { E } [ S _ { \\tau } | y = 0 ] = \\tau ( \\frac { 1 - \\sigma } { 2 } ) < \\frac { \\tau } { 2 } } \\end{array}$ . ",
+        "bbox": [
+            143,
+            448,
+            849,
+            481
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "By using Hoeffding’s inequality again, we have ",
+        "bbox": [
+            143,
+            486,
+            483,
+            501
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ S _ {\\tau} - \\mathbb {E} [ S _ {\\tau} ] \\geq \\epsilon | y = 0 ] = \\operatorname * {P r} [ S _ {\\tau} - \\tau (\\frac {1 - \\sigma}{2}) \\geq \\epsilon | y = 0 ] \\leq e ^ {- 2 \\epsilon^ {2} \\tau} <   \\delta\n$$",
+        "text_format": "latex",
+        "bbox": [
+            250,
+            512,
+            746,
+            541
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Choosing $\\epsilon = \\textstyle { \\frac { o } { 2 } }$ yields $\\begin{array} { r } { S _ { \\tau } > \\frac { \\tau } { 2 } } \\end{array}$ , which holds iff a majority threshold falsely predicts that this is a skilled candidate (false positive). Solving for $\\tau$ again, we get $\\begin{array} { r } { \\tau > \\frac { 1 } { \\sigma ^ { 2 } } \\ln ( \\frac { 1 } { \\delta } ) } \\end{array}$ . ",
+        "bbox": [
+            143,
+            550,
+            849,
+            580
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Overall, $\\begin{array} { r } { \\tau > \\frac { \\alpha ( 1 - p ) } { \\sigma ^ { 2 } } \\ln ( \\frac { 1 } { \\delta } ) + \\frac { p ( 1 - \\alpha ) } { \\sigma ^ { 2 } } \\ln ( \\frac { 1 } { \\delta } ) = \\Omega ( \\frac { \\alpha + p - 2 p \\alpha } { \\sigma ^ { 2 } } \\ln ( \\frac { 1 } { \\delta } ) ) } \\end{array}$ σ2 σ2 ",
+        "bbox": [
+            143,
+            580,
+            578,
+            601
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 4. Let $\\pi ^ { \\prime }$ be any optimal policy for (2) (not necessarily threshold) with a fixed number of tests, $\\tau$ . We will show, in two steps, how to transform it into an optimal randomized threshold policy. The first step is to symmetrize $\\pi ^ { \\prime }$ . Let $r _ { k } = \\mathrm { P r } [ \\pi ( \\hat { y } ) = 1 | S _ { \\tau } = k ]$ . Define a policy $\\pi ^ { \\prime \\prime }$ , which performs $\\tau$ tests, and accepts with probability $r _ { k }$ where $k = S _ { \\tau }$ . Clearly, both $\\pi ^ { \\prime }$ and $\\pi ^ { \\prime \\prime }$ have the same accept probability. In addition, since condition on $S _ { \\tau } = k$ , any sequence of outcomes is equally likely. Furthermore, and the probability that $y = 1$ given any sequence of outcomes with $S _ { \\tau } = k$ , is identical. (Technically, $S _ { \\tau }$ is a sufficient statistics.) This implies that the false discovery rate is also unchanged. ",
+        "bbox": [
+            143,
+            613,
+            851,
+            734
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "This yields that $\\pi$ with the randomization vector $r$ is also optimal. ",
+        "bbox": [
+            143,
+            742,
+            624,
+            758
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "The second step is to suppose—for sake of contradiction—that $\\pi ^ { \\prime \\prime }$ is not a randomized threshold policy. We will show that we can improve the FDR of $\\pi ^ { \\prime \\prime }$ while keeping the probability of acceptance unchanged. This will contradict the hypothesis that $\\pi ^ { \\prime }$ is optimal. ",
+        "bbox": [
+            143,
+            765,
+            849,
+            810
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "page_number",
+        "text": "14 ",
+        "bbox": [
+            488,
+            847,
+            508,
+            858
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "If $\\pi ^ { \\prime \\prime }$ is not a randomized threshold policy, then there is no $\\theta$ and $k$ , such that ",
+        "bbox": [
+            143,
+            119,
+            709,
+            136
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\nr _ {k} = \\operatorname * {P r} [ \\pi (\\hat {y} _ {i, 1}, \\ldots , \\hat {y} _ {i, \\tau}) = 1 | S _ {\\tau} = k \\neq \\theta ] = \\left\\{ \\begin{array}{l l} 0, & \\quad \\text {i f} k <   \\theta \\\\ 1 & \\quad \\text {i f} k > \\theta \\end{array} \\right..\n$$",
+        "text_format": "latex",
+        "bbox": [
+            279,
+            143,
+            715,
+            185
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Now, let $k$ be the minimal value such that $r _ { k } \\ > \\ 0$ and let $\\ : 0 < i < \\tau - k \\ :$ be the minimal value for which $0 < r _ { k + i } < 1$ . Clearly, the FDR is lower at $S _ { \\tau } = k + i$ than at $S _ { \\tau } = k$ . Intuitively, we can shift some probability mass, $\\epsilon _ { k } > 0$ from $r _ { k }$ to $r _ { k + i }$ in a way that maintains the acceptance probability of $\\pi$ and decreases the false positive rates. ",
+        "bbox": [
+            143,
+            193,
+            854,
+            253
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Let $\\epsilon _ { k + i } > 0$ be such that $\\epsilon _ { k } \\cdot r _ { k } = \\epsilon _ { k + i } \\cdot r _ { k + i }$ . Let $r ^ { \\prime }$ be a modified randomization vector for $\\boldsymbol { \\mathscr { U } }$ $\\begin{array} { r } { \\operatorname* { P r } [ \\pi ( \\hat { y } _ { i , 1 } , \\dots , \\hat { y } _ { i , \\tau } ) = 1 ] = \\sum _ { l = 1 } ^ { \\prime } r _ { l } = \\sum _ { l \\not \\in \\{ k , k + i \\} } r _ { l } + r _ { k } ^ { \\prime } + r _ { k + i } ^ { \\prime } } \\end{array}$ such that $r _ { k } ^ { \\prime } = r _ { k } ( 1 - \\epsilon _ { k } ) , r _ { k + i } ^ { \\prime } = r _ { k + i } ( 1 + \\epsilon _ { k + i } )$ and for every l  , the acceptance probability remains $l \\notin \\{ k , k + i \\} \\ r _ { l } ^ { \\prime } = r _ { l }$ . Since the same. As for the false discovery rate, since $\\mathrm { P r } [ y _ { i } = 0 | S _ { \\tau } = k + i ] < \\mathrm { P r } [ y _ { i } = 0 | S _ { \\tau } = k ]$ , $\\mathrm { P r } [ S _ { \\tau } = k + i ]$ is higher with $r ^ { \\prime }$ than with $r$ , $\\mathrm { P r } [ S _ { \\tau } = k ]$ is lower with $r ^ { \\prime }$ than with $r$ and for any $l \\notin \\{ k , k + i \\}$ , $\\mathrm { P r } [ S _ { \\tau } = l ]$ with $r ^ { \\prime }$ is the same as with $r$ , the false discovery rate with $r ^ { \\prime }$ is lower, which contradicts the optimality of $\\pi$ with $r$ as the randomization vector. ",
+        "bbox": [
+            143,
+            261,
+            854,
+            369
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 5. Using Bayes’ theorem, the conditional probability can be decomposed as ",
+        "bbox": [
+            145,
+            383,
+            821,
+            398
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ y _ {i} = + 1 \\mid S _ {\\tau} = \\theta \\right] = \\frac {\\Pr \\left[ y _ {i} = + 1 \\right] \\Pr \\left[ S _ {\\tau} = \\theta \\mid y _ {i} = + 1 \\right]}{\\Pr \\left[ S _ {\\tau} = \\theta \\right]} =\n$$",
+        "text_format": "latex",
+        "bbox": [
+            294,
+            406,
+            700,
+            441
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {p \\binom {\\tau} {\\theta} (\\frac {1 - \\sigma}{2}) ^ {\\tau - \\theta} (\\frac {1 + \\sigma}{2}) ^ {\\theta}}{p \\binom {\\tau} {\\theta} (\\frac {1 - \\sigma}{2}) ^ {\\tau - \\theta} (\\frac {1 + \\sigma}{2}) ^ {\\theta} + (1 - p) \\binom {\\tau} {\\tau - \\theta} (\\frac {1 + \\sigma}{2}) ^ {\\tau - \\theta} (\\frac {1 - \\sigma}{2}) ^ {\\theta}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            307,
+            446,
+            687,
+            488
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Since $\\tau - \\theta < \\theta$ and $\\left( { \\tau \\atop \\theta } \\right) = \\left( { \\tau \\atop \\tau - \\theta } \\right)$ , we get ",
+        "bbox": [
+            143,
+            492,
+            437,
+            510
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {p (1 + \\sigma) ^ {2 \\theta - \\tau}}{p (1 + \\sigma) ^ {2 \\theta - \\tau} + (1 - p) (1 - \\sigma) ^ {2 \\theta - \\tau}} = \\frac {p (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {2 \\theta - \\tau}}{p (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {2 \\theta - \\tau} + 1 - p}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            289,
+            518,
+            707,
+            559
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Since $\\textstyle { \\left( { \\frac { 1 + \\sigma } { 1 - \\sigma } } \\right) } > 1$ it holds that $\\begin{array} { r } { \\big ( \\frac { 1 + \\sigma } { 1 - \\sigma } \\big ) ^ { 2 \\theta - \\tau } > 1 } \\end{array}$ , ",
+        "bbox": [
+            143,
+            566,
+            472,
+            585
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right) ^ {2 \\theta - \\tau} (1 - p) > 1 - p.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            395,
+            595,
+            599,
+            625
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "So, ",
+        "bbox": [
+            143,
+            633,
+            173,
+            648
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n(\\frac {1 + \\sigma}{1 - \\sigma}) ^ {2 \\theta - \\tau} > p (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {2 \\theta - \\tau} + 1 - p,\n$$",
+        "text_format": "latex",
+        "bbox": [
+            364,
+            645,
+            633,
+            676
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "And finally, ",
+        "bbox": [
+            143,
+            680,
+            233,
+            695
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ y _ {i ^ {\\prime}} = + 1 ] = p <   \\frac {p (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {2 \\theta - \\tau}}{p (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {2 \\theta - \\tau} + 1 - p} = \\operatorname * {P r} [ y _ {i} = + 1 | S _ {\\tau} = \\theta ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            274,
+            691,
+            723,
+            731
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Proof of Lemma 7. Let $\\begin{array} { r } { S _ { \\tau } ^ { \\prime } = \\sum _ { j = 1 } ^ { \\tau } ( 2 \\hat { y } _ { i , j } - 1 ) } \\end{array}$ , and let $s _ { \\tau } \\in \\{ - \\tau , \\ldots , \\tau \\}$ be any of the possible values of $S _ { \\tau } ^ { \\prime }$ . Note that ",
+        "bbox": [
+            143,
+            763,
+            852,
+            795
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {\\mathrm {P r} [ \\hat {y} _ {i , j} = 1 | y _ {i} = 1 ]}{\\mathrm {P r} [ \\hat {y} _ {i , j} = 1 | y _ {i} = 0 ]} = \\frac {1 + \\sigma}{1 - \\sigma}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            395,
+            792,
+            601,
+            828
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "page_number",
+        "text": "15 ",
+        "bbox": [
+            488,
+            845,
+            509,
+            859
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Since the $\\hat { y } _ { i , j }$ are i.i.d., we have ",
+        "bbox": [
+            143,
+            119,
+            375,
+            135
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} X _ {\\tau} = X _ {0} + \\sum_ {j = 1} ^ {\\tau} (2 \\hat {y} _ {i, j} - 1) \\cdot \\log \\left(\\frac {\\Pr [ \\hat {y} _ {i , j} = + 1 | y _ {i} = + 1 ]}{\\Pr [ \\hat {y} _ {i , j} = + 1 | y _ {i} = 0 ]}\\right) \\\\ = \\log (\\frac {p}{1 - p}) + S _ {\\tau} \\log (\\frac {1 + \\sigma}{1 - \\sigma}) \\\\ = \\log \\left(\\left(\\frac {p}{1 - p}\\right) \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right) ^ {S _ {\\tau}}\\right). \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            310,
+            148,
+            687,
+            252
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Since ",
+        "bbox": [
+            143,
+            262,
+            187,
+            275
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {\\operatorname * {P r} [ S _ {\\tau} = s _ {\\tau} | y _ {i} = 1 ]}{\\operatorname * {P r} [ S _ {\\tau} = s _ {\\tau} | y _ {i} = 0 ]} = \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right) ^ {s _ {\\tau}},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            380,
+            272,
+            614,
+            306
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "we have ",
+        "bbox": [
+            143,
+            311,
+            205,
+            323
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\nX _ {\\tau} = \\log \\left(\\left(\\frac {p}{1 - p}\\right) \\left(\\frac {\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\mid y _ {i} = 1 \\right]}{\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\mid y _ {i} = 0 \\right]}\\right)\\right). \\tag {4}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            354,
+            321,
+            849,
+            353
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Since ",
+        "bbox": [
+            143,
+            358,
+            187,
+            369
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\mid y _ {i} = 1 \\right] = \\frac {\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\right] \\cdot \\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]}{\\Pr \\left[ y _ {i} = 1 \\right]}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            305,
+            368,
+            689,
+            401
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "and ",
+        "bbox": [
+            143,
+            407,
+            174,
+            419
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\mid y _ {i} = 0 \\right] = \\frac {\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\right] \\cdot \\Pr \\left[ y _ {i} = 0 \\mid S _ {\\tau} = s _ {\\tau} \\right]}{\\Pr \\left[ y _ {i} = 0 \\right]},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            303,
+            416,
+            691,
+            449
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "assigning ${ \\mathrm { P r } } [ y _ { i } = 0 ] = 1 - p$ and ${ \\mathrm { P r } } [ y _ { i } = 1 ] = p$ , we get ",
+        "bbox": [
+            143,
+            454,
+            540,
+            470
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\mid y _ {i} = 1 \\right]}{\\Pr \\left[ S _ {\\tau} = s _ {\\tau} \\mid y _ {i} = 0 \\right]} = \\frac {(1 - p) \\cdot \\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]}{p \\cdot \\Pr \\left[ y _ {i} = 0 \\mid S _ {\\tau} = s _ {\\tau} \\right]}. \\tag {5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            318,
+            479,
+            849,
+            513
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Applying (5) in (4) and adding $X _ { \\tau } \\geq \\log \\beta$ gives us ",
+        "bbox": [
+            143,
+            523,
+            514,
+            537
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\nX _ {\\tau} = \\log \\left(\\frac {\\Pr [ y _ {i} = 1 | S _ {\\tau} = s _ {\\tau} ]}{\\Pr [ y _ {i} = 0 | S _ {\\tau} = s _ {\\tau} ]}\\right) = \\log \\left(\\frac {\\Pr [ y _ {i} = 1 | S _ {\\tau} = s _ {\\tau} ]}{1 - \\Pr [ y _ {i} = 1 | S _ {\\tau} = s _ {\\tau} ]}\\right) \\geq \\log \\beta\n$$",
+        "text_format": "latex",
+        "bbox": [
+            238,
+            547,
+            754,
+            580
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {\\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]}{1 - \\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]} \\geq \\beta\n$$",
+        "text_format": "latex",
+        "bbox": [
+            400,
+            592,
+            596,
+            625
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right] \\geq \\beta \\left(1 - \\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]\\right)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            330,
+            628,
+            663,
+            645
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ y _ {i} = 1 | S _ {\\tau} = s _ {\\tau} ] \\geq \\frac {\\beta}{1 + \\beta}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            398,
+            650,
+            596,
+            681
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Applying (5) in (4) and adding $X _ { \\tau } < \\log \\beta ^ { \\prime }$ gives us ",
+        "bbox": [
+            143,
+            694,
+            519,
+            709
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {\\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]}{1 - \\Pr \\left[ y _ {i} = 1 \\mid S _ {\\tau} = s _ {\\tau} \\right]} <   \\beta^ {\\prime}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            397,
+            719,
+            598,
+            752
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Hence ",
+        "bbox": [
+            143,
+            762,
+            192,
+            773
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ y _ {i} = 1 | S _ {\\tau} = s _ {\\tau} ] <   \\frac {\\beta^ {\\prime}}{1 + \\beta^ {\\prime}}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            395,
+            772,
+            598,
+            804
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "page_number",
+        "text": "16 ",
+        "bbox": [
+            488,
+            845,
+            508,
+            858
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 9. First recall that given a skilled candidate, for every test $j$ , ",
+        "bbox": [
+            145,
+            119,
+            718,
+            136
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ \\hat {y} _ {i, j} = + 1 | y _ {i} = + 1 ] = \\frac {1 + \\sigma}{2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            385,
+            145,
+            609,
+            175
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr [ \\hat {y} _ {i, j} = 0 | y _ {i} = + 1 ] = \\frac {1 - \\sigma}{2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            393,
+            184,
+            602,
+            213
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Hence ",
+        "bbox": [
+            145,
+            218,
+            194,
+            231
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ \\hat {y} _ {i, j} = 0 \\mid y _ {i} = 1 \\right] - \\Pr \\left[ \\hat {y} _ {i, j} = + 1 \\mid y _ {i} = 1 \\right] = - \\sigma .\n$$",
+        "text_format": "latex",
+        "bbox": [
+            326,
+            232,
+            666,
+            250
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "The lower absorbing barrier is reached when a candidate’s posterior skill level is lower than the prior of the skill level, i.e., ",
+        "bbox": [
+            143,
+            255,
+            849,
+            285
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\log \\frac {\\epsilon^ {\\prime}}{1 - \\epsilon^ {\\prime}} - \\log \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            405,
+            285,
+            586,
+            316
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "and the starting point is just one step away from the lower absorbing barrier: ",
+        "bbox": [
+            143,
+            323,
+            702,
+            338
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\nX _ {0} = \\log \\frac {p}{1 - p}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            439,
+            347,
+            553,
+            376
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "According to Corollary 8, the upper absorbing barrier is in ",
+        "bbox": [
+            143,
+            386,
+            570,
+            401
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\log (\\frac {1 - \\epsilon}{\\epsilon}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            455,
+            412,
+            537,
+            440
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "To derive the results for the expected duration of the random walk for skilled and unskilled candidates, we shift the locations of the absorbing points so that the lower barrier would be in 0 and also divide them by a step size (so now we have that every step is of size 1). The new upper absorbing barrier is at ",
+        "bbox": [
+            143,
+            450,
+            852,
+            508
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\na = \\left\\lceil \\frac {\\log \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) - \\left(\\log \\frac {\\epsilon^ {\\prime}}{1 - \\epsilon^ {\\prime}} - \\log \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right)\\right)}{\\log \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right)} \\right\\rceil = \\left\\lceil \\frac {\\log \\left(\\frac {(1 - \\epsilon) (1 - \\epsilon^ {\\prime}) (1 + \\sigma)}{\\epsilon \\epsilon^ {\\prime} (1 - \\sigma)}\\right)}{\\log \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right)} \\right\\rceil .\n$$",
+        "text_format": "latex",
+        "bbox": [
+            254,
+            518,
+            740,
+            566
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "And we also shift the starting point: ",
+        "bbox": [
+            143,
+            577,
+            410,
+            593
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\nz = \\left\\lceil \\frac {\\log \\frac {p}{1 - p} - (\\log \\frac {\\epsilon^ {\\prime}}{1 - \\epsilon^ {\\prime}} - \\log (\\frac {1 + \\sigma}{1 - \\sigma}))}{\\log (\\frac {1 + \\sigma}{1 - \\sigma})} \\right\\rceil = \\left\\lceil \\frac {\\log (\\frac {p (1 - \\epsilon^ {\\prime}) (1 + \\sigma)}{\\epsilon^ {\\prime} (1 - p) (1 - \\sigma)})}{\\log (\\frac {1 + \\sigma}{1 - \\sigma})} \\right\\rceil\n$$",
+        "text_format": "latex",
+        "bbox": [
+            276,
+            603,
+            715,
+            651
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "As stated in [8], the expected duration of a random walk with absorbing barriers of 0 and $a$ from $z = 1$ is (equation 3.4, chapter XIV [page 348]): ",
+        "bbox": [
+            143,
+            669,
+            849,
+            702
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ \\tau_ {s} ] = \\mathbb {E} [ D _ {z = 1} ] = \\frac {1}{q - p} \\left(z - a \\cdot \\frac {1 - (\\frac {q}{p}) ^ {z}}{1 - (\\frac {q}{p}) ^ {a}}\\right) = \\frac {1}{- \\sigma} \\left(z - a \\cdot \\frac {1 - (\\frac {1 - \\sigma}{1 + \\sigma}) ^ {z}}{1 - (\\frac {1 - \\sigma}{1 + \\sigma}) ^ {a}}\\right).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            228,
+            710,
+            766,
+            752
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Hence, ",
+        "bbox": [
+            145,
+            762,
+            197,
+            776
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ \\tau_ {s} ] = \\frac {1}{\\sigma} \\left(a \\cdot \\frac {1 - (\\frac {1 - \\sigma}{1 + \\sigma}) ^ {z}}{1 - (\\frac {1 - \\sigma}{1 + \\sigma}) ^ {a}} - z\\right).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            377,
+            775,
+            617,
+            816
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            490,
+            845,
+            506,
+            858
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "As for unskilled candidates, the absorbing points and the starting point are the same, the only difference is that ",
+        "bbox": [
+            143,
+            119,
+            849,
+            148
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ \\hat {y} _ {i, j} = + 1 | y _ {i} ] = \\frac {1 - \\sigma}{2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            408,
+            146,
+            589,
+            175
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "and ",
+        "bbox": [
+            143,
+            178,
+            178,
+            191
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname * {P r} [ \\hat {y} _ {i, j} = 0 | y _ {i} = + 1 ] = \\frac {1 + \\sigma}{2}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            390,
+            186,
+            606,
+            217
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Therefore, ",
+        "bbox": [
+            143,
+            220,
+            223,
+            234
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left[ \\hat {y} _ {i, j} = 0 \\mid y _ {i} = 0 \\right] - \\Pr \\left[ \\hat {y} _ {i, j} = + 1 \\mid y _ {i} = 0 \\right] = \\sigma\n$$",
+        "text_format": "latex",
+        "bbox": [
+            336,
+            234,
+            658,
+            251
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "and we deduce ",
+        "bbox": [
+            143,
+            255,
+            256,
+            268
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ \\tau_ {u} ] = \\frac {1}{\\sigma} \\left(z - a \\cdot \\frac {1 - (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {z}}{1 - (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {a}}\\right).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            377,
+            266,
+            617,
+            308
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Deviations for the confusion matrix (Table 1). We split the claim in the confusion matrix (Table 1) into two parts. First, using equation (2.4) from chapter XIV [page 345] in [8], we get ",
+        "bbox": [
+            143,
+            338,
+            849,
+            369
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {F N R} = \\Pr \\left[ \\pi_ {\\mathrm {G r e e d y}} (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 0 | y _ {i} = + 1 \\right] = \\frac {\\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {a} - \\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {z}}{\\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {a} - 1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            261,
+            376,
+            733,
+            415
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "and ",
+        "bbox": [
+            143,
+            422,
+            178,
+            436
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {T N R} = \\operatorname * {P r} [ \\pi_ {\\mathrm {G r e e d y}} (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 0 | y _ {i} = 0 ] = \\frac {(\\frac {1 + \\sigma}{1 - \\sigma}) ^ {a} - (\\frac {1 + \\sigma}{1 - \\sigma}) ^ {z}}{(\\frac {1 + \\sigma}{1 - \\sigma}) ^ {a} - 1}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            264,
+            433,
+            730,
+            472
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The second part follows from the fact the gambler’s ruin must end in case of absorbing barriers. ",
+        "bbox": [
+            143,
+            482,
+            834,
+            498
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {T P R} = \\Pr \\left[ \\pi_ {\\text {G r e e d y}} \\left(\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}\\right) = 1 \\mid y _ {i} = + 1 \\right] = 1 - \\frac {\\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {a} - \\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {z}}{\\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {a} - 1} =\n$$",
+        "text_format": "latex",
+        "bbox": [
+            238,
+            503,
+            754,
+            544
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {(\\frac {1 - \\sigma}{1 + \\sigma}) ^ {z} - 1}{(\\frac {1 - \\sigma}{1 + \\sigma}) ^ {a} - 1} = \\frac {\\frac {\\epsilon^ {\\prime} (1 - p) (1 - \\sigma)}{p (1 - \\epsilon^ {\\prime}) (1 + \\sigma)} - 1}{\\frac {\\epsilon^ {\\prime} \\epsilon (1 - \\sigma)}{(1 - \\epsilon^ {\\prime}) (1 - \\epsilon) (1 + \\sigma)} - 1} = \\frac {\\frac {\\mu (1 - p)}{p} - 1}{\\frac {\\epsilon \\mu}{(1 - \\epsilon)} - 1} = \\frac {(1 - \\epsilon) (\\mu (1 - p) - p)}{p (\\epsilon \\mu - (1 - \\epsilon))},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            236,
+            550,
+            759,
+            597
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Where µ := (1−ǫ′)(1+σ) . $\\begin{array} { r } { \\mu : = \\frac { \\epsilon ^ { \\prime } ( 1 - \\sigma ) } { ( 1 - \\epsilon ^ { \\prime } ) ( 1 + \\sigma ) } } \\end{array}$ ǫ′(1−σ) For $\\epsilon \\leq 1 / 4$ and $p < 1 / 2$ we get $0 \\le \\mu \\le 1 / 3$ and $\\mu = \\Theta ( \\epsilon ^ { \\prime } ( 1 - \\sigma ) )$ , therefore ",
+        "bbox": [
+            143,
+            602,
+            852,
+            633
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {T P R} = \\Theta \\left(\\frac {p - \\mu}{p}\\right) = \\Theta \\left(1 - \\frac {\\epsilon^ {\\prime}}{p} (1 - \\sigma)\\right).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            344,
+            632,
+            650,
+            666
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Hence $\\begin{array} { r } { \\mathrm { F N R } = \\Theta ( \\frac { \\epsilon ^ { \\prime } } { p } ( 1 - \\sigma ) ) } \\end{array}$ . ",
+        "bbox": [
+            143,
+            676,
+            349,
+            699
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathrm {F P R} = \\Pr [ \\pi_ {\\mathrm {G r e e d y}} (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 | y _ {i} = 0 ] = \\frac {(\\frac {1 + \\sigma}{1 - \\sigma}) ^ {z} - 1}{(\\frac {1 + \\sigma}{1 - \\sigma}) ^ {a} - 1} = \\frac {\\frac {p (1 - \\epsilon^ {\\prime}) (1 + \\sigma)}{(1 - p) \\epsilon^ {\\prime} (1 - \\sigma)} - 1}{\\frac {(1 - \\epsilon^ {\\prime}) (1 - \\epsilon) (1 + \\sigma)}{\\epsilon^ {\\prime} \\epsilon (1 - \\sigma)} - 1} = \\\\ = \\frac {\\frac {p}{(1 - p) \\mu} - 1}{\\frac {(1 - \\epsilon)}{\\epsilon \\mu} - 1} \\frac {\\epsilon (p - (1 - p) \\mu)}{(1 - p) (1 - \\epsilon - \\epsilon \\mu)} = \\Theta (\\epsilon (p - \\mu)) = \\Theta (\\epsilon (p - \\epsilon^ {\\prime} + \\epsilon^ {\\prime} \\sigma)) \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            200,
+            713,
+            795,
+            804
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Hence $\\mathrm { T N R } = \\Theta \\left( 1 - \\epsilon ( p - \\epsilon ^ { \\prime } + \\epsilon ^ { \\prime } \\sigma ) \\right)$ . ",
+        "bbox": [
+            143,
+            806,
+            416,
+            824
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "page_number",
+        "text": "18 ",
+        "bbox": [
+            488,
+            845,
+            509,
+            858
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 10. ",
+        "bbox": [
+            145,
+            119,
+            303,
+            135
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ \\tau ] = \\mathbb {E} [ \\tau_ {s} ] p + \\mathbb {E} [ \\tau_ {u} ] (1 - p) =\n$$",
+        "text_format": "latex",
+        "bbox": [
+            390,
+            135,
+            606,
+            151
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} = \\frac {1}{\\sigma} \\left(a \\cdot \\frac {1 - \\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {z}}{1 - \\left(\\frac {1 - \\sigma}{1 + \\sigma}\\right) ^ {a}} - z\\right) p + \\frac {1}{\\sigma} \\left(z - a \\cdot \\frac {1 - \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right) ^ {z}}{1 - \\left(\\frac {1 + \\sigma}{1 - \\sigma}\\right) ^ {a}}\\right) (1 - p) = \\\\ \\approx \\frac {1}{\\sigma} \\left(a \\cdot \\left(1 - \\frac {\\epsilon^ {\\prime}}{p} (1 - \\sigma)\\right) - z\\right) p + \\frac {1}{\\sigma} \\left(z - a \\left(\\epsilon \\left(p - \\epsilon^ {\\prime} + \\epsilon^ {\\prime} \\sigma\\right)\\right)\\right) (1 - p) \\approx \\frac {a p}{\\sigma} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            243,
+            176,
+            754,
+            253
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "A.2 Proofs from Section 4 ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            297,
+            415,
+            314
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "The next lemma aids in the proof of Theorem (11). ",
+        "bbox": [
+            143,
+            330,
+            514,
+            345
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Lemma 18. Let $Z _ { n } ^ { \\prime \\prime }$ be a Binomial random variable with parameters $n \\in \\mathbb N$ and $\\eta \\in ( 0 , 1 )$ . Given a number of successes, $k \\in \\{ 0 , \\ldots , n \\}$ , we know that the probability mass function of $Z _ { n } ^ { \\eta }$ is $f _ { k } ( \\eta ) : =$ n kmaximum likelihood of $\\textstyle \\operatorname* { P r } [ Z _ { n } ^ { \\eta } = k ] = { \\binom { n } { k } } \\eta ^ { k } ( 1 - \\eta ) ^ { n - k }$ $f _ { k } ( \\eta )$ is . Let $\\begin{array} { r } { \\eta = \\frac { k } { n } } \\end{array}$ $\\mathcal { L } ( \\eta | k )$ . I.e., be the likelihood function of the event $Z _ { n } ^ { \\eta } = k$ . Then the ",
+        "bbox": [
+            143,
+            345,
+            851,
+            409
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathcal {L} (\\eta | k) = \\operatorname {a r g m a x} _ {\\eta} f _ {k} (\\eta) = \\operatorname {a r g m a x} _ {\\eta} \\binom {n} {k} \\eta^ {k} (1 - \\eta) ^ {n - k} = \\frac {k}{n}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            289,
+            419,
+            705,
+            452
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Proof of Lemma 18. We notice that $\\binom { n } { k }$ does not depend on $\\eta$ , thus ",
+        "bbox": [
+            145,
+            465,
+            635,
+            483
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname {a r g m a x} _ {\\eta} f _ {k} (\\eta) = \\operatorname {a r g m a x} _ {\\eta} \\binom {n} {k} \\eta^ {k} (1 - \\eta) ^ {n - k} = \\operatorname {a r g m a x} _ {\\eta} \\eta^ {k} (1 - \\eta) ^ {n - k}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            253,
+            493,
+            740,
+            526
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "The log-likelihood is particularly convenient for maximum likelihood estimation. Logarithms are strictly increasing functions, as a result, maximizing the likelihood is equivalent to maximizing the log-likelihood, i.e., ",
+        "bbox": [
+            143,
+            535,
+            851,
+            580
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname {a r g m a x} _ {\\eta} \\eta^ {k} (1 - \\eta) ^ {n - k} = \\operatorname {a r g m a x} _ {\\eta} \\ln (\\eta^ {k} (1 - \\eta) ^ {n - k}) = \\operatorname {a r g m a x} _ {\\eta} k \\ln (\\eta) + (n - k) \\ln (1 - \\eta)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            181,
+            589,
+            810,
+            609
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Differentiating (with respect to $\\eta$ ) and comparing to zero we get ",
+        "bbox": [
+            143,
+            618,
+            609,
+            633
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {d \\ln (f _ {k} (\\eta))}{d \\eta} = \\frac {k}{\\eta} - \\frac {n - k}{1 - \\eta} = 0.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            390,
+            643,
+            604,
+            676
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "And after refactoring, ",
+        "bbox": [
+            143,
+            684,
+            303,
+            699
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\nk (1 - \\eta) = (n - k) \\eta\n$$",
+        "text_format": "latex",
+        "bbox": [
+            424,
+            699,
+            570,
+            715
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "The function $\\ln ( f _ { k } ( \\eta ) )$ is a strictly concave as its second derivative is negative, ",
+        "bbox": [
+            143,
+            720,
+            710,
+            736
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {d ^ {2} \\ln (f _ {k} (\\eta))}{d \\eta^ {2}} = - \\frac {k}{\\eta^ {2}} - \\frac {n - k}{(1 - \\eta) ^ {2}} <   0,\n$$",
+        "text_format": "latex",
+        "bbox": [
+            367,
+            746,
+            627,
+            780
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "And since the derivative of a strictly concave function is zero at $\\textstyle { \\frac { k } { n } }$ , then $\\begin{array} { r } { \\hat { \\eta } = \\frac { k } { n } } \\end{array}$ is a global maximum. Therefore, $\\begin{array} { r } { \\hat { \\eta } = \\frac { k } { n } } \\end{array}$ obtains absolute maximum in $f _ { k } ( \\eta )$ . ",
+        "bbox": [
+            143,
+            790,
+            852,
+            825
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "page_number",
+        "text": "19 ",
+        "bbox": [
+            488,
+            845,
+            508,
+            859
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 11. Let $Z _ { \\tau } ^ { \\eta _ { i } }$ be a random variable that represents the number of flips out of a $\\tau$ -tests sequence with a noise level of $\\eta _ { i }$ , i.e., $Z _ { \\tau } ^ { \\eta _ { i } }$ is the number of times when $y _ { j } \\neq y$ for $1 \\le j \\le \\tau$ . We use $Z _ { \\tau } ^ { \\eta _ { i } }$ to express $\\operatorname* { P r } [ \\pi ( \\hat { y } _ { i , 1 } , . . . , \\hat { y } _ { i , \\tau } ) = 1 | y _ { i } = 0 , \\eta = \\eta _ { i } ]$ as the probability that at least $\\theta$ flips, ",
+        "bbox": [
+            143,
+            119,
+            854,
+            167
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 | y _ {i} = 0, \\eta = \\eta_ {i} ] = \\Pr \\left[ Z _ {\\tau} ^ {\\eta_ {i}} \\geq \\theta \\right]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            310,
+            176,
+            684,
+            195
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "and the probability of $\\operatorname* { P r } [ \\pi ( \\hat { y } _ { i , 1 } , . . . , \\hat { y } _ { i , \\tau } ) = 1 | q = + 1 , \\eta = \\eta _ { i } ]$ as at most $\\tau - \\theta$ flips, thus ",
+        "bbox": [
+            143,
+            205,
+            781,
+            222
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr [ \\pi (\\hat {y} _ {i, 1}, \\dots , \\hat {y} _ {i, \\tau}) = 1 | y _ {i} = + 1, \\eta = \\eta_ {i} ] = \\Pr [ Z _ {\\tau} ^ {\\eta_ {i}} \\leq \\tau - \\theta ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            289,
+            232,
+            707,
+            251
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "From Lemma (18) and since probability density function (pdf) are is monotone increasing, we derive that the pdf of $Z _ { n } ^ { \\eta _ { 2 } }$ satisfies monotone likelihood ratio property over the pdf of $Z _ { n } ^ { \\eta _ { 1 } }$ . This implies that the pdf of $Z _ { n } ^ { \\eta _ { 2 } }$ also has first-order stochastic dominance over $Z _ { n } ^ { \\eta _ { 1 } }$ by Theorem 1.1 in [18]. From stochastic dominance, we can derive the desired inequalities ",
+        "bbox": [
+            143,
+            261,
+            852,
+            321
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "equation",
+        "text": "$$\nF P _ {\\theta , \\tau} ^ {\\eta_ {1}} = \\Pr [ \\theta \\leq Z _ {n} ^ {\\eta_ {1}} ] <   \\Pr [ \\theta \\leq Z _ {n} ^ {\\eta_ {2}} ] = F P _ {\\theta , \\tau} ^ {\\eta_ {2}}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            338,
+            333,
+            658,
+            352
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "and ",
+        "bbox": [
+            143,
+            362,
+            179,
+            376
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "equation",
+        "text": "$$\nF N _ {\\theta , \\tau} ^ {\\eta_ {1}} = \\Pr \\left[ Z _ {n} ^ {\\eta_ {1}} \\leq \\tau - \\theta \\right] <   \\Pr \\left[ Z _ {n} ^ {\\eta_ {2}} \\leq \\tau - \\theta \\right] = F N _ {\\theta , \\tau} ^ {\\eta_ {2}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            303,
+            375,
+            691,
+            395
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "B Gaussian Worker Screening Model Extension ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            444,
+            705,
+            465
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "In this extension, we characterize the conditional expectation, $\\mathbb { E } [ Q | Y _ { 1 } , . . . , Y _ { n } ]$ and the conditional variance of $Q$ given the tests $Y _ { i }$ , i.e., $\\operatorname { V a r } \\lfloor Q \\rfloor Y _ { 1 } , . . . , Y _ { n } \\rfloor$ . ",
+        "bbox": [
+            143,
+            483,
+            852,
+            516
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "First, note that because $P ( Q )$ is Gaussian, and the conditionals $P ( Y _ { i } | Q )$ are all Gaussian, the joint probability $P ( Q , Y _ { 1 } , . . . , Y _ { n } )$ is a multivariate Gaussian. We work out the precise analytic forms for the mean and variance of the conditional $P ( Q | Y _ { 1 } , . . . , Y _ { n } )$ in terms of the quality and noise variances ( $\\sigma _ { Q } ^ { 2 }$ and $\\sigma _ { \\eta } ^ { 2 }$ ) and the number of tests $n$ . ",
+        "bbox": [
+            143,
+            521,
+            852,
+            584
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "To begin, we note the properties of the joint distribution over $P ( Q , Y _ { 1 } , . . . , Y _ { n } )$ . Owing to the generative process for our $Y _ { i }$ , all have mean $\\mu _ { Q }$ , and thus the joint over the means is an $n + 1$ - dimensional vector $( \\mu _ { Q } , . . . , \\mu _ { Q } )$ . The full $n + 1 \\times n + 1$ covariance matrix $\\Sigma$ has the form ",
+        "bbox": [
+            143,
+            589,
+            854,
+            636
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Sigma = \\left[ \\begin{array}{c c c c} \\sigma_ {Q} ^ {2} & \\sigma_ {Q} ^ {2} & \\dots & \\sigma_ {Q} ^ {2} \\\\ \\sigma_ {Q} ^ {2} & \\sigma_ {Q} ^ {2} + \\sigma_ {\\eta} ^ {2} & \\dots & \\sigma_ {Q} ^ {2} \\\\ \\vdots & \\vdots & \\ddots & \\vdots \\\\ \\sigma_ {Q} ^ {2} & \\sigma_ {Q} ^ {2} & \\dots & \\sigma_ {Q} ^ {2} + \\sigma_ {\\eta} ^ {2} \\end{array} \\right] \\tag {6}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            362,
+            646,
+            851,
+            720
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "where all off-diagonal entries $\\Sigma _ { i j }$ for $i \\neq j$ have value $\\sigma _ { Q } ^ { 2 }$ and all diagonal entries $i \\ = \\ j \\ \\geq \\ 2$ corresponding to the variance of tests $Y _ { i }$ take value $\\sigma _ { Q } ^ { 2 } + \\sigma _ { \\eta } ^ { 2 }$ . The top-left entry corresponds to the variance of the test Q and thus has variance $\\sigma _ { Q } ^ { 2 }$ . ",
+        "bbox": [
+            143,
+            731,
+            852,
+            784
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "We can now derive the equations for the conditional mean and conditional variance of $Q | Y _ { 1 } , . . . , Y _ { n }$ . To begin, note the following basic facts about deriving conditionals from multivariate Gaussians: ",
+        "bbox": [
+            143,
+            787,
+            854,
+            818
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "page_number",
+        "text": "20 ",
+        "bbox": [
+            488,
+            845,
+            509,
+            859
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "to estimate the conditional of one set of variables, given another set $P ( \\mathbf { x } _ { 1 } | \\mathbf { x } _ { 2 } )$ we can segment our data matrix into those rows corresponding to the variables we don’t condition upon (here, just $Q$ ) and those we do (here, $Y _ { 1 } , . . , Y _ { n }$ ), expressing our covariance matrix in terms of the following submatrices: ",
+        "bbox": [
+            143,
+            119,
+            849,
+            176
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Sigma = \\left[ \\begin{array}{c c} \\Sigma_ {1 1} & \\Sigma_ {1 2} \\\\ \\Sigma_ {2 1} & \\Sigma_ {2 2} \\end{array} \\right]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            436,
+            176,
+            557,
+            209
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Here, $\\Sigma _ { 1 1 } \\in \\mathbb { R } ^ { 1 \\times 1 }$ , $\\Sigma _ { 2 1 } \\in \\mathbb { R } ^ { n \\times 1 }$ , $\\Sigma _ { 2 1 } \\in \\mathbb { R } ^ { 1 \\times n }$ , and Σ22 ∈ Rn×n. ",
+        "bbox": [
+            143,
+            214,
+            596,
+            231
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "The conditional expectation $\\mathbb { E } [ Q | Y _ { 1 } , . . . , Y _ { n } ]$ is then expressed as ",
+        "bbox": [
+            143,
+            238,
+            604,
+            253
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\mu_ {Q} + \\Sigma_ {1 2} \\Sigma_ {2 2} ^ {- 1} (\\mathbf {y} - \\mu_ {y}) \\tag {7}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            357,
+            265,
+            849,
+            282
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "and the conditional variance $V a r [ Q | Y _ { 1 } , . . . , Y _ { n } ]$ can be expressed as ",
+        "bbox": [
+            143,
+            292,
+            622,
+            310
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "equation",
+        "text": "$$\nV a r [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\Sigma_ {1 1} - \\Sigma_ {1 2} \\Sigma_ {2 2} ^ {- 1} \\Sigma_ {2 1} \\tag {8}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            364,
+            321,
+            848,
+            338
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "which should be familiar as the Schur complement of the $n \\times n$ matrix $\\Sigma _ { 2 2 }$ . Intuitively, this corresponds to inverting the full matrix $\\Sigma$ , deleting those rows and columns corresponding to observed variables, and then inverting the resulting $( 1 \\times 1 )$ matrix back. ",
+        "bbox": [
+            143,
+            349,
+            849,
+            393
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "What remains is to show that for the particular covariance matrix that interests us (Equation 6), these expressions have simple analytically computable forms. Specifically we state the following simple theorems. ",
+        "bbox": [
+            143,
+            402,
+            851,
+            446
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Theorem 19. For jointly Gaussian variables $Q , Y _ { 1 } , . . . , Y _ { n }$ characterized by the covariance matrix given in (Equation 6), the conditional expectation takes form ",
+        "bbox": [
+            143,
+            446,
+            849,
+            478
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\mu_ {Q} + \\left[ \\frac {1}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n}, \\dots \\right] \\cdot (\\mathbf {y} - \\mu_ {y}) \\tag {9}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            326,
+            488,
+            849,
+            539
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Theorem 20. For jointly Gaussian variables $Q , Y _ { 1 } , . . . , Y _ { n }$ characterized by the covariance matrix given in (Equation 6), the conditional variance of $Q$ given the tests $Y _ { i }$ takes form ",
+        "bbox": [
+            143,
+            549,
+            849,
+            580
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname {V a r} [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\frac {1}{\\frac {1}{\\sigma_ {Q} ^ {2}} + \\frac {n}{\\sigma_ {\\eta} ^ {2}}} \\tag {10}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            400,
+            592,
+            848,
+            628
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "B.1 Proofs from Appendix B ",
+        "text_level": 1,
+        "bbox": [
+            143,
+            651,
+            442,
+            667
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 19. The crucial step to apply Equation 7 to this data is to work out a simple expression for the inverse of the $n \\times n$ submatrix $\\Sigma _ { 2 2 }$ . We recall that this matrix is symmetrical with all diagonal entries equal to $\\sigma _ { Q } ^ { 2 } + \\sigma _ { \\eta } ^ { 2 }$ and all off diagonals equal to $\\sigma _ { Q } ^ { 2 }$ . ",
+        "bbox": [
+            143,
+            684,
+            849,
+            732
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "We call upon a lemma due to [14]. Which states that when $A$ is invertible and $B$ is a rank-1 matrix, the inverse of their sum takes the following form: ",
+        "bbox": [
+            143,
+            736,
+            849,
+            767
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "equation",
+        "text": "$$\n(A + B) ^ {- 1} = A ^ {- 1} - \\frac {1}{1 + \\operatorname {T r a c e} \\left(B A ^ {- 1}\\right)} A ^ {- 1} B A ^ {- 1} \\tag {11}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            326,
+            786,
+            848,
+            815
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "page_number",
+        "text": "21 ",
+        "bbox": [
+            488,
+            845,
+            506,
+            858
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "We can decompose $\\Sigma _ { 2 2 }$ into such an $A$ and $B$ by defining $B$ to be the matrix that takes value $\\sigma _ { Q } ^ { 2 }$ everywhere and $A$ to be a diagonal matrix that takes values $\\sigma _ { \\eta } ^ { 2 }$ (along the main diagonal). Thus $\\Sigma _ { 2 2 } ^ { - 1 } = ( A + B ) ^ { - 1 }$ and we can proceed by applying the lemma. ",
+        "bbox": [
+            143,
+            119,
+            851,
+            170
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "First we note that $A ^ { - 1 }$ is a diagonal matrix with all entries on the main diagonal set to $\\textstyle { \\frac { 1 } { \\sigma _ { \\eta } ^ { 2 } } }$ . Then we note that $B A ^ { - 1 }$ is an $n \\times n$ matrix with all entries set to $\\frac { \\sigma _ { Q } ^ { 2 } } { \\sigma _ { \\eta } ^ { 2 } }$ . Thus, $\\begin{array} { r } { \\mathrm { T r a c e } ( B A ^ { - 1 } ) = \\frac { n \\dot { \\sigma } _ { Q } ^ { 2 } } { \\sigma _ { \\eta } ^ { 2 } } } \\end{array}$ = nσ2Q . ",
+        "bbox": [
+            143,
+            176,
+            852,
+            224
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "The matrix $A ^ { - 1 } B A ^ { - 1 }$ has all entries equal to σ2Qσ4η and thus our desired inverse Σ−122 c $\\frac { \\sigma _ { Q } ^ { 2 } } { \\sigma _ { \\eta } ^ { 4 } }$ , $\\Sigma _ { 2 2 } ^ { - 1 }$ an be expressed as follows: ",
+        "bbox": [
+            143,
+            229,
+            851,
+            265
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Sigma_ {2 2} ^ {- 1} = (A + B) ^ {- 1} = \\left[ \\begin{array}{c c c} \\frac {1}{\\sigma_ {\\eta} ^ {2}} & & 0 \\\\ & \\ddots & \\\\ 0 & & \\frac {1}{\\sigma_ {\\eta} ^ {2}} \\end{array} \\right] - \\frac {1}{1 + \\frac {n \\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {2}}} \\left[ \\begin{array}{c c c} \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {4}} & \\dots & \\dots \\\\ \\vdots & \\ddots & \\vdots \\\\ \\vdots & \\dots & \\ddots \\end{array} \\right]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            267,
+            263,
+            728,
+            337
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "Thus each off-diagonal entry takes values ",
+        "bbox": [
+            143,
+            340,
+            444,
+            356
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} - \\frac {\\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {4}}}{1 + \\frac {n \\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {2}}} = - \\frac {\\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {4}}}{1 + \\frac {n \\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {2}}} \\cdot \\frac {\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}}}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}}} (12) \\\\ = - \\frac {\\frac {1}{\\sigma_ {\\eta} ^ {2}}}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n} (13) \\\\ = - \\frac {1}{\\frac {\\sigma_ {\\eta} ^ {4}}{\\sigma_ {Q} ^ {2}} + n \\sigma_ {\\eta} ^ {2}} (14) \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            395,
+            367,
+            851,
+            513
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "and each on-diagonal entry has an additional $\\textstyle { \\frac { 1 } { \\sigma _ { \\eta } ^ { 2 } } }$ term that comes from $A ^ { - 1 }$ . ",
+        "bbox": [
+            143,
+            525,
+            694,
+            547
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {1}{\\sigma_ {\\eta} ^ {2}} - \\frac {1}{\\frac {\\sigma_ {\\eta} ^ {4}}{\\sigma_ {Q} ^ {2}} + n \\sigma_ {\\eta} ^ {2}} \\tag {15}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            442,
+            558,
+            849,
+            599
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "Now that we know the precise expression for all entries of $\\Sigma _ { 2 2 } ^ { - 1 }$ , we can calculate the vector-matrix product $\\Sigma _ { 1 2 } \\Sigma _ { 2 2 } ^ { - 1 }$ . Because every entry of $\\Sigma _ { 1 2 }$ takes value $\\sigma _ { Q } ^ { 2 }$ , and because every column of $\\Sigma _ { 2 2 } ^ { - 1 }$ ha s the same $n$ values (just in different order), the product $\\Sigma _ { 1 2 } \\Sigma _ { 2 2 } ^ { - 1 }$ is an $n$ dimensional vector, where ",
+        "bbox": [
+            143,
+            619,
+            852,
+            669
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "page_number",
+        "text": "22 ",
+        "bbox": [
+            488,
+            845,
+            508,
+            858
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "all $n$ values are equal: ",
+        "bbox": [
+            145,
+            119,
+            307,
+            135
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\Sigma_ {1 2} \\Sigma_ {2 2} ^ {- 1} = \\left[ \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {2}} - \\frac {n \\sigma_ {Q} ^ {2}}{\\frac {\\sigma_ {\\eta} ^ {4}}{\\sigma^ {2}} + n \\sigma_ {\\eta} ^ {2}}, \\dots \\right] \\\\ = \\left[ \\begin{array}{c} \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {2}} \\left(\\frac {\\sigma_ {\\eta} ^ {4}}{\\sigma_ {Q} ^ {2}} + n \\sigma_ {\\eta} ^ {2}\\right) n \\sigma_ {Q} ^ {2} \\\\ \\hline \\frac {\\sigma_ {\\eta} ^ {4}}{\\sigma_ {Q} ^ {2}} + n \\sigma_ {\\eta} ^ {2} \\end{array} , \\dots \\right] \\\\ = \\left[ \\begin{array}{c} \\sigma_ {\\eta} ^ {2} \\\\ \\hline \\frac {\\sigma_ {\\eta} ^ {4}}{\\sigma_ {Q} ^ {2}} + n \\sigma_ {\\eta} ^ {2} \\end{array} , \\dots \\right] \\\\ = \\left[ \\frac {1}{\\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {Q} ^ {2}} + n}, \\dots \\right] \\tag {16} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            359,
+            141,
+            848,
+            347
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "This expression for $\\Sigma _ { 1 2 } \\Sigma _ { 2 2 } ^ { - 1 }$ , together with the definition of the conditional expectation of a multivariate Gaussian (Equation 7) concludes the proof. ",
+        "bbox": [
+            143,
+            352,
+            852,
+            383
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 20. We can now produce the expression for $\\Sigma _ { 1 2 } \\Sigma _ { 2 2 } ^ { - 1 } \\Sigma _ { 2 1 }$ . Because every entry of the $1 \\times n$ matrix $\\Sigma _ { 1 2 } \\Sigma _ { 2 2 } ^ { - 1 }$ takes value ",
+        "bbox": [
+            143,
+            421,
+            852,
+            450
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {1}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            470,
+            450,
+            527,
+            491
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "and because every entry in the $n \\times 1$ matrix $\\Sigma _ { 2 1 }$ takes value $\\sigma _ { Q } ^ { 2 }$ ",
+        "bbox": [
+            143,
+            494,
+            609,
+            513
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Sigma_ {1 2} \\Sigma_ {2 2} ^ {- 1} \\Sigma_ {2 1} = \\frac {n \\sigma_ {Q} ^ {2}}{\\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {Q} ^ {2}} + n} \\tag {17}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            416,
+            518,
+            849,
+            563
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "The expression for the conditional variance $\\operatorname { V a r } [ Q | Y _ { 1 } , . . . , Y _ { n } ]$ follows: ",
+        "bbox": [
+            143,
+            568,
+            635,
+            585
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\operatorname {V a r} [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\Sigma_ {1 1} - \\Sigma_ {1 2} \\Sigma_ {2 2} ^ {- 1} \\Sigma_ {2 1} \\\\ = \\sigma_ {Q} ^ {2} - \\frac {n \\sigma_ {Q} ^ {2}}{\\frac {\\sigma_ {n} ^ {2}}{\\sigma_ {Q} ^ {2}} + n} \\\\ = \\frac {\\sigma_ {Q} ^ {2} \\left(\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n\\right) - n \\sigma_ {Q} ^ {2}}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n} \\\\ = \\frac {\\sigma_ {\\eta} ^ {2}}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n} \\\\ = \\frac {1}{\\frac {1}{\\sigma_ {Q} ^ {2}} + \\frac {n}{\\sigma_ {\\eta} ^ {2}}} \\tag {18} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            356,
+            613,
+            848,
+            819
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "page_number",
+        "text": "23 ",
+        "bbox": [
+            488,
+            845,
+            506,
+            858
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "B.2 Proofs ",
+        "text_level": 1,
+        "bbox": [
+            145,
+            160,
+            267,
+            176
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 12. First, recall that ",
+        "bbox": [
+            145,
+            193,
+            429,
+            208
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {V a r} [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\frac {1}{\\frac {1}{\\sigma_ {Q} ^ {2}} + \\frac {n}{\\sigma_ {\\eta} ^ {2}}} = \\frac {\\sigma_ {Q} ^ {2} \\sigma_ {\\eta} ^ {2}}{\\sigma_ {\\eta} ^ {2} + n \\sigma_ {Q} ^ {2}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            215,
+            650,
+            258
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "Solving for $n _ { 2 }$ in the equation $\\operatorname { V a r } _ { 1 } [ Q | Y _ { 1 } , . . . , Y _ { n _ { 1 } } ] = \\operatorname { V a r } _ { 2 } [ Q | Y _ { 1 } , . . . , Y _ { n _ { 2 } } ]$ , ",
+        "bbox": [
+            143,
+            263,
+            653,
+            282
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\frac {\\sigma_ {Q} ^ {2} \\sigma_ {\\eta_ {1}} ^ {2}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}} = \\frac {\\sigma_ {Q} ^ {2} \\sigma_ {\\eta_ {2}} ^ {2}}{\\sigma_ {\\eta_ {2}} ^ {2} + n _ {2} \\sigma_ {Q} ^ {2}}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            401,
+            297,
+            596,
+            337
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "we get ",
+        "bbox": [
+            143,
+            339,
+            196,
+            353
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\sigma_ {\\eta_ {1}} ^ {2} \\left(\\sigma_ {\\eta_ {2}} ^ {2} + n _ {2} \\sigma_ {Q} ^ {2}\\right) = \\sigma_ {\\eta_ {2}} ^ {2} \\left(\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}\\right)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            367,
+            351,
+            627,
+            372
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "and hence ",
+        "bbox": [
+            143,
+            375,
+            223,
+            387
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\sigma_ {\\eta_ {1}} ^ {2} n _ {2} = \\sigma_ {\\eta_ {2}} ^ {2} n _ {1}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            441,
+            387,
+            553,
+            407
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "Extracting $n _ { 2 }$ , we find that $\\begin{array} { r } { n _ { 2 } = \\frac { \\sigma _ { \\eta _ { 2 } } ^ { 2 } } { \\sigma _ { \\eta _ { 1 } } ^ { 2 } } n _ { 1 } } \\end{array}$ σ2η22 n1. ",
+        "bbox": [
+            143,
+            410,
+            434,
+            440
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 13. First, recall that ",
+        "bbox": [
+            145,
+            450,
+            429,
+            465
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} [ Q | Y _ {1}, \\dots , Y _ {n} ] = \\mu_ {Q} + \\left[ \\frac {1}{\\frac {\\sigma_ {\\eta} ^ {2}}{\\sigma_ {Q} ^ {2}} + n}, \\dots \\right] \\cdot (\\mathbf {y} - \\mu_ {y}) = \\mu_ {Q} + \\left[ \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta} ^ {2} + n \\sigma_ {Q} ^ {2}}, \\dots \\right] \\cdot (\\mathbf {y} - \\mu_ {y})\n$$",
+        "text_format": "latex",
+        "bbox": [
+            197,
+            473,
+            799,
+            525
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "Now, ",
+        "bbox": [
+            143,
+            531,
+            187,
+            545
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {E} _ {1} [ Q | Y _ {1}, \\dots , Y _ {n _ {1}} ] - \\mathbb {E} _ {2} [ Q | Y _ {1}, \\dots , Y _ {n _ {2}} ] = \\\\ \\left[ \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}}, \\ldots \\right] \\cdot (\\mathbf {y _ {1}} - \\boldsymbol {\\mu_ {y}}) - \\left[ \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta_ {2}} ^ {2} + n _ {2} \\sigma_ {Q} ^ {2}}, \\ldots \\right] \\cdot (\\mathbf {y _ {2}} - \\boldsymbol {\\mu_ {y}}) \\\\ = \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}} n _ {1} (\\bar {\\mathbf {y _ {1}}}) - \\frac {\\sigma_ {Q} ^ {2}}{\\sigma_ {\\eta_ {2}} ^ {2} + n _ {2} \\sigma_ {Q} ^ {2}} n _ {2} (\\bar {\\mathbf {y _ {2}}}) \\\\ = \\frac {\\sigma_ {Q} ^ {2} n _ {1}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}} (\\bar {\\mathbf {y}} _ {\\mathbf {1}}) - \\frac {\\sigma_ {Q} ^ {2} n _ {2}}{\\sigma_ {\\eta_ {2}} ^ {2} + n _ {2} \\sigma_ {Q} ^ {2}} (\\bar {\\mathbf {y}} _ {\\mathbf {2}}) \\\\ = \\frac {\\sigma_ {Q} ^ {2} n _ {1}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}} (\\bar {\\mathbf {y _ {1}}}) - \\frac {\\sigma_ {Q} ^ {2} \\frac {\\sigma_ {\\eta_ {2}} ^ {2}}{\\sigma_ {\\eta_ {1}} ^ {2}} n _ {1}}{\\sigma_ {\\eta_ {2}} ^ {2} + \\frac {\\sigma_ {\\eta_ {2}} ^ {2}}{\\sigma_ {\\eta_ {1}} ^ {2}} n _ {1} \\sigma_ {Q} ^ {2}} (\\bar {\\mathbf {y _ {2}}}) \\\\ = \\frac {\\sigma_ {Q} ^ {2} n _ {1}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}} (\\bar {\\mathbf {y _ {1}}}) - \\frac {\\sigma_ {Q} ^ {2} n _ {1}}{\\sigma_ {\\eta_ {1}} ^ {2} + n _ {1} \\sigma_ {Q} ^ {2}} (\\bar {\\mathbf {y _ {2}}}) \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            276,
+            546,
+            722,
+            799
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "page_number",
+        "text": "24 ",
+        "bbox": [
+            488,
+            845,
+            509,
+            859
+        ],
+        "page_idx": 23
+    }
+]

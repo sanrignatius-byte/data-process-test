@@ -1,0 +1,427 @@
+\section{Model and Preliminaries}
+
+We model each individual as being described by a tuple $((x, x'), y)$,
+where $x\in \cX$ denotes a vector of \emph{protected attributes},
+$x'\in \cX'$ denotes a vector of \emph{unprotected attributes}, and
+$y\in \{0, 1\}$ denotes a label. Note that in our formulation, an
+auditing algorithm not only may not see the unprotected attributes
+$x'$, it may not even be aware of their existence. For example, $x'$
+may represent proprietary features or consumer data purchased by a
+credit scoring company.
+
+We will write $X = (x, x')$ to denote the joint feature vector. We
+assume that points $(X, y)$ are drawn i.i.d. from an unknown
+distribution $\mathcal{P}$.  Let $D$ be a decision making algorithm,
+and let $D(X)$ denote the (possibly randomized) decision induced by
+$D$ on individual $(X,y)$. We restrict attention in this paper to the
+case in which $D$ makes a binary classification decision:
+$D(X) \in \{0,1\}$. Thus we alternately refer to $D$ as a classifier.
+When \emph{auditing} a fixed classifier $D$, it will be helpful to
+make reference to the distribution over examples $(X, y)$ together
+with their induced classification $D(X)$. Let $\PA(D)$ denote the
+induced \emph{target joint distribution} over the tuple $(x, y, D(X))$
+% joint distribution} over the tuple $(x, x', y, D(X))$
+that results from sampling $(x, x', y) \sim \mathcal{P}$, and
+providing $x$, the true label $y$, and the classification
+$D(X) = D(x,x')$ but not the unprotected attributes $x'$.  Note that
+the randomness here is over both the randomness of $\mathcal{P}$, and
+the potential randomness of the classifier $D$.
+
+
+We will be concerned with learning and auditing classifiers $D$
+satisfying two common statistical fairness constraints: equality of
+classification rates (also known as statistical parity), and equality
+of false positive rates (also known as equal opportunity). Auditing
+for equality of false negative rates is symmetric and so we do not
+explicitly consider it. Each fairness constraint is defined with
+respect to a set of protected groups. We define sets of protected
+groups via a family of indicator functions $\cF$ for those groups,
+defined over protected attributes. Each $g:\cX \to \{0,1\} \in \cF$
+has the semantics that $g(x) = 1$ indicates that an individual with
+protected features $x$ is in group $g$.
+
+
+\begin{definition}[Statistical Parity (SP) Subgroup Fairness]
+  Fix any classifier $D$, distribution $\mathcal{P}$, collection of
+  group indicators $\cG$, and parameter $\gamma\in [0, 1]$.
+  For each $g\in \cG$, define
+  \begin{align*}
+    \spsize(g, \cP) = \Pr_{\cP}[g(x) = 1] \quad \mbox{and,} \quad
+    \spdisp(g, D, \cP) = \left|\SP(D) - \SP(D, g)\right|,
+  \end{align*}
+  where $\SP(D) = \Pr_{\cP, D}[D(X) = 1]$ and
+  $\SP(D, g) = \Pr_{\cP, D}[D(X) = 1 | g(x) = 1]$ denote the overall
+  acceptance rate of $D$ and the acceptance rate of $D$ on group $g$
+  respectively.  We say that $D$ satisfies $\gamma$-\emph{statistical
+    parity (SP) Fairness} with respect to $\mathcal{P}$ and $\cF$ if
+  for every $g \in \cF$
+  \[ \spsize(g, \cP) \; \spdisp(g, D, \cP)\leq \gamma.\] We will
+  sometimes refer to $\SP(D)$ as the \emph{SP base rate}.
+\end{definition}
+
+\begin{remark}
+  Note that our definition references two approximation parameters,
+  both of which are important. We are allowed to ignore a 
+  group $g$ if it (or its complement) represent only a small fraction
+  of the total probability mass. The parameter $\alpha$ governs how
+  small a fraction of the population we are allowed to
+  ignore. Similarly, we do not require that the probability of a
+  positive classification in every subgroup is exactly equal to the
+  base rate, but instead allow deviations up to $\beta$. Both of these
+  approximation parameters are necessary from a statistical estimation
+  perspective. We control both of them with a single parameter
+  $\gamma$.
+\end{remark}
+
+\begin{definition}[False Positive (FP) Subgroup Fairness]\label{fp-fair}
+  Fix any classifier $D$, distribution $\mathcal{P}$, collection of
+  group indicators $\cF$, and parameter $\gamma \in [0,1]$.  For each
+  $g\in \cG$, define
+  \begin{align*}
+    \fpsize(g, \cP) = \Pr_{\cP}[g(x) = 1, y=0] \quad \mbox{and,} \quad
+                      \fpdisp(g, D, \cP) = \left| \FP(D) - \FP(D, g) \right|
+  \end{align*}
+  where $\FP(D) = \Pr_{D, \cP} [D(X) = 1\mid y=0]$ and
+  $\FP(D, g) = \Pr_{D, \cP}[D(X) = 1\mid g(x) =1 , y=0]$ denote the
+  overall false-positive rate of $D$ and the false-positive rate of
+  $D$ on group $g$ respectively.
+
+
+  We say $D$
+  satisfies $\gamma$-\emph{False Positive (FP) Fairness} with respect
+  to $\mathcal{P}$ and $\cF$ if for every $g \in \cG$
+  \[ \fpsize(g, \cP) \; \fpdisp(g, D, \cP) \leq \gamma.\] We will
+  sometimes refer to $\FP(D)$ FP-base rate.% , which we write as:
+  % $b_{FP} = b_{FP}(D, P) = \Pr[D(X) = 1 | y = 0].$
+\end{definition}
+
+\begin{remark}
+  This definition is symmetric to the definition of statistical parity
+  fairness, except that the parameter $\alpha$ is now used to exclude
+  any group $g$ such that \emph{negative examples} ($y = 0$) from
+  $g$ (or its complement) have probability mass less than
+  $\alpha$. This is again necessary from a statistical estimation perspective.
+\end{remark}
+
+For either statistical parity and false positive fairness, if the
+algorithm $D$ fails to satisfy the $\gamma$-fairness condition, then
+we say that $D$ is $\gamma$-\emph{unfair} with respect to
+$\mathcal{P}$ and $\cF$. We call any subgroup $g$ which witnesses this
+unfairness an $\gamma$-\emph{unfair certificate} for
+$(D, \mathcal{P})$.
+
+%\begin{definition}[Notions of Subgroup Fairness]\label{def:fair}
+%  Fix any algorithm $D$, distribution $P$, and class of group
+%  classifiers $\cF$. Consider the following three notions of
+%  \emph{base rates}:
+%\begin{align*}
+%  b_1 &= b_1(D, P) = \Pr[D(X) = 1]\\
+%  b_2 &= b_2(D, P) = \Pr[D(X) = 1 \mid y = 0]\\
+%  b_3 &= b_3(D, P) = \Pr[y = 1 \mid D(X) = 1]
+%\end{align*}
+%For any $\alpha, \beta \in (0, 1)$, let
+%$\cF_\alpha = \{g\in \cF \mid \Pr[g(x) = 1], \Pr[g(x) = 0] \geq
+%\alpha\}$, and we say $D$ satisfies
+%\begin{itemize}
+%\item $(\alpha, \beta)$-\emph{statistical parity (SP) fairness} w.r.t. $P$ and $\cF$ if for
+%  every $g\in \cF_\alpha$%  such that
+%  % $\Pr[f(x) = 1], \Pr[f(x) = 0] \geq \alpha$
+%  :
+%  \[ | \Pr[D(X) = 1 | g(x) = 1] - b_1 | \leq \beta
+%  \]
+%\item $(\alpha, \beta)$-\emph{false-positive (FP) fairness} w.r.t. $P$ and
+%  $\cF$ if for every $g\in
+%  \cF_\alpha$: % such that $\Pr[f(x) = 1], \Pr[f(x) = 0] \geq \alpha$
+%  \[ | \Pr[D(X) = 1 | g(x) = 1, y = 0] - b_2 | \leq \beta
+%  \]
+%\item $(\alpha, \beta)$-\emph{positive predictive (PP) fairness}
+%  w.r.t. $P$ and $\cF$ if for every $g\in \cF_\alpha$:
+%  \[
+%    | \Pr[y = 1 | g(x) = 1, D(X) = 1] - b_3 | \leq \beta.
+%  \]
+%\end{itemize}
+%For any fixed fairness notion above, if the algorithm $D$ fails to
+%meet the $(\alpha, \beta)$-fairness condition, then we say $D$ is
+%$(\alpha, \beta)$-\emph{unfair} w.r.t. $P$ and $\cF$, and we call the
+%corresponding subgroup $f$ to be an $(\alpha, \beta)$-\emph{unfair
+%  certificate} of $(D, P)$.
+%\end{definition}
+
+
+
+
+\iffalse
+\begin{definition}[Auditable Class]
+  Fix any of the fairness notions defined above. We say that a
+  function class $F$ is \emph{(efficiently) auditable} if there exists
+  an auditing algorithm $\cT$ such that for any
+  $\alpha, \beta \in (0, 1)$, algorithm $D$ and any distribution $P$
+  over $(x, x', y)$, when given access to labeled examples $(x, D(X))$
+  from the underlying distribution, with probability $(1-\delta)$,
+  $\cT$ does the following: If $D$ is $(\alpha, \beta)$-unfair
+  w.r.t. $P$ and $F$, then $\cT$ will output the unfair certificate of
+  $D$ under $\poly(1/\alpha, 1/\beta, 1/\delta)$ time;
+    % such that
+  % \[
+  %   \Pr_P[f(x) = 1] \geq \alpha \qquad \mbox{ and, } \qquad |
+  %   \Pr[D(x,x') = 1 | f(x) = 1] - b(D, P) | \leq \beta;
+  % \]
+  % \item If $D$ is $(\alpha/2, \beta/2)$-fair w.r.t. $P$ and $F$, then
+  %   $\cT$ will output ``fair'' under time
+  %   $\poly(1/\alpha, 1/\beta, 1/\delta)$ time.
+
+\end{definition}
+\fi
+
+An \emph{auditing algorithm} for a notion of fairness is given sample access to $\PA(D)$ for some classifier $D$. It will either deem $D$ to be fair with respect to $\mathcal{P}$, or will else produce a certificate of unfairness.
+
+
+
+\begin{definition}[Auditing Algorithm]
+  Fix a notion of fairness (either statistical parity or false
+  positive fairness), a collection of group indicators $\cF$ over the
+  protected features, and any $\delta, \gamma, \gamma' \in (0, 1)$
+  such that $\gamma'\leq \gamma$.  A {$(\gamma, \gamma')$-auditing
+    algorithm for $\cF$ with respect to distribution $\mathcal{P}$} is
+  an algorithm $\cA$ such that for any classifier $D$, when given
+  access the distribution $\PA(D)$, $\cA$ runs in time
+  $\poly(1/\gamma', \log(1/\delta))$, and with probability $1-\delta$,
+  outputs a $\gamma'$-unfair certificate for $D$ whenever $D$ is
+  $\gamma$-unfair with respect to $\mathcal{P}$ and $\cF$. If $D$ is
+  $\gamma'$-fair, $\cA$ will output ``fair''.
+  % $D$ is $(\alpha, \beta - 2\rho)$-fair w.r.t. $P$ and $\cF$,
+  % then $A$ will output ``fair.''
+\end{definition}
+
+\iffalse
+\begin{definition}[Auditing]
+  Fix a notion of fairness (either statistical parity or
+  false-positive fairness), a collection of group indicators $\cF$
+  over the protected features, and any $\gamma, \gamma' \in (0, 1]$
+  such that $\gamma'\leq \gamma$.  A collection of classifiers
+  $\mathcal{H}$ is \emph{$(\gamma, \gamma')$-(efficiently) auditable
+    under distribution $\mathcal{P}$ with respect to $\cF$} if there
+  exists an auditing algorithm $A$ such that for every classifier
+  $D \in \mathcal{H}$, when given access the distribution $\PA(D)$,
+  $A$ runs in time $\poly(1/\gamma', \log(1/\delta))$, and with
+  probability $(1-\delta)$, outputs an $\gamma'$-unfair certificate
+  for $D$ whenever $D$ is $\gamma$-unfair with respect to
+  $\mathcal{P}$ and $\cF$.
+  % \item If $D$ is $(\alpha, \beta - 2\rho)$-fair w.r.t. $P$ and $\cF$,
+  %   then $A$ will output ``fair.''
+\end{definition}
+\fi
+As we will show, our definition of auditing is closely related to  weak
+agnostic learning.
+
+\begin{definition}[Weak Agnostic Learning~\citep{agnostic,KMV08}]
+  Let $Q$ be a distribution over $\cX\times\{0, 1\}$ and let
+  $\eps, \eps' \in (0, 1/2)$ such that $\eps \geq \eps'$. We say that
+  the function class $\cF$ is \emph{$(\eps , \eps')$-weakly
+    agnostically learnable} under distribution $Q$ if there exists an
+  algorithm $L$ such that when given sample access to $Q$, $L$ runs in
+  time $\poly(1/\eps', 1/\delta)$, and with probability $1 - \delta$,
+  outputs a hypothesis $h\in \cF$ such that
+  \[
+    \min_{f\in\cF} err(f, Q) \leq 1/2 - \eps \implies err(h, Q) \leq
+    1/2 - \eps'.
+  \]
+  % where $M = \min\{err_P(\mathbf{1}), err_P(\mathbf{0})\}$ denotes the
+  % the smaller error achieved by the constant functions.
+  where $err(h,Q) = \Pr_{(x,y) \sim Q}[h(x) \neq y]$.
+\end{definition}
+% \sw{make err function consistent throughout}
+
+\paragraph{Cost-Sensitive Classification.}
+In this paper, we will also give reductions to \emph{cost-sensitive classification
+  (CSC)} problems. Formally, an instance of a CSC problem for the
+class $\cH$ is given by a set of $n$ tuples
+$\{(X_i, c_i^0, c_i^1)\}_{i=1}^n$ such that $c_i^\ell$ corresponds to
+the cost for predicting label $\ell$ on point $X_i$. Given such an
+instance as input, a CSC oracle finds a hypothesis $\hat h \in \cH$ that
+minimizes the total cost across all points:
+\begin{equation}
+  \hat h \in \argmin_{h\in \cH} \sum_{i = 1}^n [h(X_i) c_i^1 + (1 -
+  h(X_i)) c_i^0]\label{csc}
+\end{equation}
+A crucial property of a CSC problem is that the solution is invariant
+to translations of the costs.
+
+
+
+\begin{claim}
+\label{claim:csc}
+  Let $\{(X_i, c_i^0, c_i^1)\}_{i=1}^n$ be a CSC instance, and
+  $\{(\tilde c_i^0, \tilde c_i^1)\}$ be a set of new costs such that
+  there exist $a_1, a_2,\ldots, a_n\in \RR$ such that
+  $\tilde c_i^\ell = c_i^\ell + a_i$ for all $i$ and $\ell$. Then
+\[
+  \argmin_{h\in \cH} \sum_{i = 1}^n [h(X_i) c_i^1 + (1 - h(X_i))
+  c_i^0] = \argmin_{h\in \cH} \sum_{i = 1}^n [h(X_i) \tilde c_i^1 + (1
+  - h(X_i)) \tilde c_i^0]
+\]
+\end{claim}
+
+\begin{remark}
+  We note that cost-sensitive classification is polynomially
+  equivalent to agnostic learning~\cite{ZLA03}.  We give both
+  definitions above because when describing our results for auditing,
+  we wish to directly appeal to known hardness results for weak
+  agnostic learning, but it is more convenient to describe our
+  algorithms via oracles for cost-sensitive classification.
+\end{remark} % \ar{Added this}
+
+\paragraph{Follow the Perturbed Leader.}
+
+We will make use of the \emph{Follow the Perturbed Leader (FTPL)}
+algorithm as a no-regret learner for online linear optimization
+problems \citep{KV05}.  To formalize the algorithm, consider
+$\cS \subset \{0, 1\}^d$ to be a set of ``actions'' for a learner  in an online decision problem. The
+learner interacts with an adversary over $T$ rounds, and in each round
+$t$, the learner (randomly) chooses some action $a^t \in \cS$, and the
+adversary chooses a loss vector $\ell^t \in [-M , M]^d$. The learner incurs a loss of $\langle \ell^t, a^t \rangle$ at round $t$.
+
+FTPL is a simple algorithm that in each round perturbs the cumulative
+loss vector over the previous rounds
+$\overline \ell = \sum_{s< t} \ell^s$, and chooses the action that
+minimizes loss with respect to the perturbed cumulative loss vector. We present the full
+algorithm in \Cref{alg:ftpl}, and its formal guarantee in
+\Cref{thm:ftpl-regret}.
+
+
+\begin{algorithm}[h]
+  \caption{Follow the Perturbed Leader (FTPL) Algorithm}
+ \label{alg:ftpl}
+  \begin{algorithmic}
+    \STATE{\textbf{Input}: Loss bound $M$, action set
+      $\cS \in \{0, 1\}^d$ } \STATE{\textbf{Initialize}: Let
+      $\eta = (1/M) \sqrt{\frac{1}{\sqrt{d} T}} $, $\cD_U$ be the
+      uniform distribution over $[0, 1]^d$, and let $a^1\in \cS$ be
+      arbitrary.}
+
+    \STATE{\textbf{For} $t = 1, \ldots, T$:}
+    \INDSTATE{Play action
+      $a^t$; Observe loss vector $\ell^t$ and suffer loss
+      $\langle \ell^t , a^t \rangle$.}
+
+    \INDSTATE{Update:}
+    \[
+      a^{t+1} = \argmin_{a\in \cS} \left[ \eta \sum_{s \leq t} \langle
+        \ell^s , a \rangle + \langle \xi^t , a \rangle\right]
+    \]
+    \INDSTATE{where $\xi^t$ is drawn independently for each $t$ from the distribution $\cD_U$.  }
+    \end{algorithmic}
+  \end{algorithm}
+
+
+  \begin{theorem}[\cite{KV05}]\label{thm:ftpl-regret}
+    For any sequence of loss vectors $\ell^1, \ldots , \ell^T$, the
+    FTPL algorithm has regret
+    \[
+      \Ex{}{\sum_{t=1}^T \langle \ell^t , a^t \rangle } - \min_{a\in
+        \cS} \sum_{t=1}^T \langle \ell^t, a \rangle \leq 2 d^{5/4}
+      M\sqrt{T}
+      %% Calculations:
+      %% L = 1 , sigma = sqrt{d} , D = sqrt{d}  , G = sqrt{d} M
+      %  regret \leq 2 L D G sqrt{sigma T}
+      %% eta^2 = sigma/ (G^2 L T) = 1 / (\sqrt{d} M^2 T)
+      %% eta = sqrt{1 / \sqrt{d} T} * (1/M)
+    \]
+    where the randomness is taken over the perturbations $\xi^t$ across
+    rounds.
+  \end{theorem}
+
+% \ar{There are probably theorems that get better dependencies on $d$ if we care.}
+
+
+
+
+\subsection{Generalization Error}
+\label{subsec:gen}
+In this section, we observe that the error rate of a classifier $D$,
+as well as the degree to which it violates $\gamma$-fairness (for both
+statistical parity and false positive rates) can be accurately
+approximated with the empirical estimates for these quantities on a
+dataset (drawn i.i.d. from the underlying distribution $\mathcal{P}$)
+so long as the dataset is sufficiently large. Once we establish this
+fact, since our main interest is in the computational problem of
+auditing and learning, in the rest of the paper, we assume that we
+have direct access to the underlying distribution (or equivalently,
+that the empirical data defines the distribution of interest), and do
+not make further reference to sample complexity or overfitting issues.
+
+
+
+A standard VC dimension bound (see, e.g. \cite{KV94}) states:
+\begin{theorem}
+  Fix a class of functions $\cH$. For any distribution $\mathcal{P}$,
+  let $S \sim \mathcal{P}^m$ be a dataset consisting of $m$ examples
+  $(X_i, y_i)$ sampled i.i.d. from $\mathcal{P}$. Then for any
+  $0 < \delta < 1$, with probability $1-\delta$, for every
+  $h \in \cH$, we have:
+$$\left|err(h, \mathcal{P}) - err(h, S) \right| \leq O\left(\sqrt{\frac{\mathrm{VCDIM}(\cH)\log m + \log(1/\delta)}{m}} \right)$$
+where
+$err(h, S) = \frac{1}{m}\sum_{i=1}^m \mathbbm{1}[h(X_i) \neq y_i]$.
+\end{theorem}
+
+The above theorem implies that so long as $m \geq \tilde O(\mathrm{VCDIM}(\cH)/\epsilon^2)$, then minimizing error over the empirical sample $S$ suffices to minimize error up to an additive $\epsilon$ term on the true distribution $\mathcal{P}$. Below, we give two analogous statements for fairness constraints:
+\begin{theorem}[SP Uniform Convergence]
+\label{thm:SP-uc}
+Fix a class of functions $\cH$ and a class of group indicators
+$\cG$. For any distribution $\mathcal{P}$, let $S \sim \mathcal{P}^m$
+be a dataset consisting of $m$ examples $(X_i, y_i)$ sampled
+i.i.d. from $\mathcal{P}$. Then for any $0 < \delta < 1$, with
+probability $1-\delta$, for every $h \in \cH$ and $g \in \cG$
+\[
+  \left| \spsize(g, \cP_S) \; \spdisp(g, h, \cP_S) - {\spsize(g, \cP) \;
+      \spdisp(g, h, \cP)}\right| \leq
+  \tilde{O}\left(\sqrt{\frac{(\mathrm{VCDIM}(\cH) +
+        \mathrm{VCDIM}(\cG))\log m + \log(1/\delta)}{m}} \right)
+\]
+where $\cP_S$ denotes the empirical distribution over the realized
+sample $S$.
+\end{theorem}
+
+Similarly:
+\begin{theorem}[FP Uniform Convergence]
+\label{thm:FP-uc}
+Fix a class of functions $\cH$ and a class of group indicators
+$\cG$. For any distribution $\mathcal{P}$, let $S \sim \mathcal{P}^m$
+be a dataset consisting of $m$ examples $(X_i, y_i)$ sampled
+i.i.d. from $\mathcal{P}$. Then for any $0 < \delta < 1$, with
+probability $1-\delta$, for every $h \in \cH$ and $g \in \cG$, we
+have:
+$$
+\left| \fpsize(g, \cP) \; \fpdisp(g, D, \cP) - {\fpsize(g, \cP) \;
+    \fpdisp(g, D, \cP)}\right| \leq
+\tilde{O}\left(\sqrt{\frac{(\mathrm{VCDIM}(\cH) +
+      \mathrm{VCDIM}(\cG))\log m + \log(1/\delta)}{m}} \right)$$ where
+$\cP_S$ denotes the empirical distribution over the realized sample
+$S$.
+\end{theorem}
+
+These theorems together imply that for both SP and FP subgroup
+fairness, the degree to which a group $g$ violates the constraint of
+$\gamma$-fairness can be estimated up to error $\epsilon$, so long as
+$m \geq \tilde O((\mathrm{VCDIM}(\cH) +
+\mathrm{VCDIM}(\cG))/\epsilon^2)$. The proofs can be found in Appendix
+\ref{app:generalization}.
+
+
+
+
+%\paragraph{Remark}
+%If the function class contains the constant 0 and constant 1
+%functions, then the weak learner outputs meaningful hypothesis only if
+%the optimal error $err_P(h^*)$ is no more than $(1/2 -\gamma)$.
+
+% \paragraph{Problem}
+% Suppose we are given points $(x, x')$ drawn from $P$ along with the
+% algorithm's decisions $D(x, x')$. Is there any efficient algorithm (in
+% terms of both sample complexity and computational complexity) that
+% detects whether the algorithm satisfies $(\alpha, \beta)$-fairness or
+% not
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,229 @@
+% The debiasing algorithm will be based on the Lagrangian Relaxation by adding some corpus-wised constraints. With such algorithm we do not need to change the original inference method. In this section, we will first describe the original inference problem and then explain the constraints we add to the models.  In the end we will  provide the approach for the debiasing.
+In this section, we introduce {\bf R}educing {\bf B}ias {\bf A}mplification, \alg{}, a debiasing technique for calibrating the predictions from a structured prediction model.
+The intuition behind the algorithm is to inject constraints to ensure the model predictions follow the distribution observed from the training data.
+For example, the constraints added to the vSRL system ensure the gender ratio of each verb in Eq.~\eqref{eq:gender_ratio} are within a given margin based on the statistics of the training data.
+These constraints are applied at the corpus level, because computing gender ratio requires the predictions of all test instances.
+As a result, a joint inference over test instances is required\footnote{A sufficiently large sample of test instances must be used so that bias statistics can be estimated. In this work we use the entire test set for each respective problem. }.
+Solving such a giant inference problem with constraints is hard.
+Therefore, we present an approximate inference algorithm based on Lagrangian relaxation. The advantages of this approach are:
+%It also requires all test instances to be present at inference time, which is not practical for applications where test instances come in a streaming fashion.
+\begin{itemize}
+    \item Our algorithm is iterative, and at each iteration, the joint inference problem is decomposed to a per-instance basis. This can be solved by the original inference algorithm. That is, our approach works as a meta-algorithm and developers do not need to implement a new inference algorithm. 
+    
+    \item The approach is general and can be applied in any structured model. 
+    
+    \item Lagrangian relaxation guarantees the solution is optimal if the algorithm converges and all constraints are satisfied. 
+\end{itemize}
+In practice, it is hard to obtain a solution where all corpus-level constrains are satisfied. However, we show that the performance of the proposed approach is empirically strong.
+%Interestingly, the resulting weights of the Lagrangian multipliers can be used as an offset to the feature weights, resulting in a less biased model with similar performance as the original.
+We use imSitu for vSRL as a running example to explain our algorithm. 
+
+
+
+%In the following, we first provide a background of structured output prediction, then we discuss how to inject constraints to calibrate biases. The resulting constrained inference problem can be solved by various techniques. We proposed an algorithm based on Lagrangian Relaxation, in which we can use the original inference algorithm as a black-box.  We use vSRL as a running example. However, our approach is general and can be applied to any structured prediction model where the correlations between the target labels are explicitly modeled.
+
+%We first formulate the inference problem as an Integer Linear Programming (ILP) problem.
+%As the inaccessibility to the ground truth makes it impossible to set the constraints for each instance during the prediction, in this paper we will add the corpus-wise constraints.
+%There can be many solutions for such problem, such as the Markov Logic Network. Here we choose to build our \alg algorithm  based on Lagrangian Relaxation  because we can just integrate the constraints to the original problem and solve it without changing the inference algorithm.
+
+\paragraph{Structured Output Prediction}
+As we mentioned in Sec. \ref{sec:general}, we assume the structured output $y \in Y$ consists of several sub-components. 
+Given a test instance $i$ as an input, the inference problem is to find 
+$$\arg \max_{y\in Y} \quad f_\theta (y, i),$$
+where $f_\theta(y,i)$ is a scoring function based on a model $\theta$ learned from the training data. The structured output $y$ and the scoring function $f_\theta(y,i)$ can be decomposed into small components based on an independence assumption. For example, in the vSRL task, the 
+output $y$ consists of two types of binary output variables $\{y_v\}$ and $\{y_{v,r}\}$.  
+The variable $y_v = 1$ if and only if the activity $v$ is chosen. Similarly, $y_{v,r} = 1$ if and only if both the activity $v$ and the semantic role $r$ are assigned~\footnote{We use $r$ to refer to a combination of role and noun. For example, one possible value indicates an \texttt{agent} is a \texttt{woman}.}. 
+The scoring function $f_\theta(y,i)$ is decomposed accordingly such that: $$f_\theta(y,i) = \sum_v y_v s_\theta(v,i) + \sum_{v,r}y_{v,r}s_\theta(v,r,i),$$ 
+represents the overall score of an assignment, and $s_\theta(v,i)$ and $s_\theta(v,r,i)$ are the potentials of the sub-assignments. The output space $Y$ contains all feasible assignments of $y_v$ and $y_{v,r}$, which can be represented as instance-wise constraints. For example, the constraint, 
+$\sum_v y_v = 1$ ensures only one activity is assigned to one image.
+
+
+
+%In this section, we will provide the description of the original inference problem using the semantic role labeling system imSitu as an example. 
+%In this system, when trying to get the prediction, we will calculate scores for different verbs as well as scores for different semantic role pairs (such as ``place" - ``room"). As we mentioned before, imSitu adopts the CRF model which will also provide a score for the relation between verbs and the semantic role pairs.
+
+%To generate the prediction for each instance in imSitu, there are some constraints:
+%\begin{compactitem}
+%    \item For all the candidate verbs, each time only one verb can be chosen.
+    %\item For one given verb, there can be several semantic role pairs, such as (``agent'' - ``people''), (``tool'' - ``shears'') and (``place'' - ``field''). 
+%\end{compactitem}
+
+%We use $s(x)$ to stand for the score of role $x$. We also define $y \in \{0,1\}$ to control if one element will be chosen. So the original problem can be defined as:
+
+%\begin{subequations}
+%\label{eq:ori}
+%\begin{align}
+    %\max_{y_v, y_{v,r}} & \quad {(\sum_v y_v s(v) + \sum_{v,r}y_{v,r}s(v,r))} \label{eq:obj} \\        
+    %\text{s.t.} 
+        %& \sum_v y_v = 1, \label{eq:oneverb}\\           
+        %& \sum_r y_{v,r} > 0 \Longrightarrow y_v = 1,  \forall v  \label{eq:vtor}
+%\end{align}
+%\end{subequations}
+%where $v$ stands for ``verb'', $r$ stands for the semantic role pairs. 
+%Eq~\eqref{eq:oneverb} means that at each time only one verb can be chosen. Eq~\eqref{eq:vtor} means that if some semantic role pairs for one verb $v$ are chosen in the prediction, this verb $v$ must also occur in the prediction.
+
+
+%In imSitu, different verbs can have different roles. We define  $\Omega(v,r)$ to stand for all the possible roles for the verb $v$. Each semantic role can be assigned with different objects, for example the role ``place''can be assigned with ``outdoor'', ``lake'' or ``field''. Different objects for this specific role will have different coefficients. The model will try to find the appropriate one among all the possible choices. So we can get the following constraint:
+%\begin{equation}
+%\sum_o y_{u,o} = 1, \quad \forall u \in \Omega(v,r)
+%\label{eq:rvso}
+%\end{equation}
+%where $o$ stands for the object and $u$ stands for the role of the corresponding verb $v$. Eq~\eqref{eq:rvso} means that for each role $u$, there will be only one object assigned to it.
+
+%Among all the possible objects for this specific role, there can be a null value. For example, given the verb ``cooking'' there shouldn't be any object  assigned to the role ``vehicle''. At this time, $y_{u,null} = 1$. But we can not assign all the roles with ``null'' for the chosen verb. So we get another constraint:
+
+%\begin{equation}
+%\forall v, \quad \sum_u y_{v,u,o^n} < |u| \Longrightarrow y_v =1
+%\label{eq:null_object}
+%\end{equation}
+%where $o^n$ means $object = null$.
+
+%With Eq~\eqref{eq:ori} to \eqref{eq:null_object}, the originial inference problem is now formulated as the integer linear programming problems. Next we will define our corpus-wise linear constraints and then adopt Lagrangian Relaxation algorithm to solve them which will be described in the following.
+
+
+\paragraph{Corpus-level Constraints}
+Our goal is to inject constraints to ensure the output labels follow a desired distribution. For example, we can set a constraint to ensure the gender ratio for each activity in Eq. \eqref{eq:gender_ratio} is within a given margin. 
+Let $y^i = \{y^i_v\} \cup \{y^i_{v,r}\}$ be the output assignment for test instance $i$\footnote{For the sake of simplicity, we abuse the notations and use $i$ to represent both input and data index.}.
+For each activity $v^*$, the constraints can be written as 
+\begin{equation}\label{eq:cons_ratio} 
+ b^* \!-\! \gamma \!\leq\! \frac{\sum_i y^i_{v = v^*, r \in M}}{\sum_i y^i_{v = v^*, r \in W} \!+\! \sum_i y^i_{v = v^*, r \in M}} \!\leq\! b^* + \gamma
+\end{equation}
+where $b^* \equiv b^*(v^*, man)$ is the desired gender ratio of an activity $v^*$, $\gamma$ is a user-specified margin. $M$ and $W$ are a set of semantic role-values representing the agent as a \texttt{man} or a \texttt{woman}, respectively. 
+
+Note that the constraints in \eqref{eq:cons_ratio} involve all the test instances.
+Therefore, it requires a joint inference over the entire test corpus.
+In general, these corpus-level constraints can be represented in a form of $A\sum_i y^i - b \leq 0$, where each row in the matrix $A\in R^{l \times K}$ is the coefficients of one constraint, and $b\in R^l$.
+The constrained inference problem can then be formulated as:
+\begin{equation}
+\begin{split}
+\label{eq:objforlr}
+    \max_{\{y^i\}\in \{Y^i\}} \quad& \sum_i {f_\theta(y^i, i)}, \\
+      \text{s.t. } \quad& 
+    A\sum_i y^i - b \leq 0,
+\end{split}
+\end{equation}
+where $\{Y^i\}$ represents a  space spanned by possible combinations of labels for all instances. Without the corpus-level constraints, Eq. \eqref{eq:objforlr} can be optimized by maximizing each instance $i$ $$\max_{y_i\in Y^i} f_\theta (y^i, i),$$ separately. 
+
+%and $a_2$ are the lower bound and the upper bound of the gender ratio in corpus-wise predictions. $y^i_{v = v^*, r- m}$ means that ``$v^*$'' is the predicted verb and the combination (``agent'' - ``man'') will appear as one  semantic role pair. In Eq~\eqref{eq:cons_ratio}, ``m'' stands for ``man'' and ``w'' stands for ``woman''. The whole formula means that among all the predictions, for verb ``$v^*$'', the gender ratio is restricted to range $[a_1, a_2]$. In this work, we get $a_1$ and $a_2$ based on the training dataset. All the constraints generated from Eq~\eqref{eq:cons_ratio}  can be written in the form $Ay - b \leq 0$. Thus our object function is:
+
+
+\iffalse
+
+In imSitu, when doing the inference, we will predict one verb and correlated semantic role pairs for each instance. But sometimes we can not determine if  the predicted result is appropriate  for the specific instance. 
+For example, after the imSitu makes predictions for the randomly chosen image not in the dev data set, we do not know if the prediction is correct. Under this situation, we can make constraints on the whole corpus to prevent the prediction extremely biased to one direction. 
+
+Previously we have defined our inference algorithm, but
+Eq~\eqref{eq:ori} is the object function for one instance. In our work, we will consider on the whole corpus. So the modified object is 
+\begin{equation}
+ \max_{y^i_v, y^i_{v_r}}{\sum_i(\sum_v y^i_v s^i(v) + \sum_{v,r}y^i_{v,r}s^i(v,r))}
+ \label{eq:con_obj}
+\end{equation}
+where $i$ stands for each instance in the corpus.
+And the corpus-level constraints can be written as linear functions:
+\begin{equation}\label{eq:cor_cons}
+ \sum_i(\sum_v y^i_v c^i(v) + \sum_{v,r}y^i_{v,r}c^i(v,r)) \leq a
+\end{equation}
+where $c^i(v)$, $c^i(v,r)$ and $a$ are the coefficients of the constraints. For example, if we set $c^i(v) = 1$, $c^i(v,r) = 0$ and $a = 20$, we make constraints that in our predictions, no more than 20 verbs can occur as the result. Note that all the coefficients are not dependent on instance $i$, so we can simplify the notations to $c(v)$ and $c(v,r)$.
+
+As we mentioned above, we focus on decreasing the gender bias in modern semantic role labeling systems, besides constraints such as Eq~\eqref{eq:oneverb} and \eqref{eq:vtor}, we also make some corpus-level constraints: we will add  margins to the gender ratio for each verb:
+\begin{equation}\label{eq:cons_ratio}
+ a_1 \leq \frac{\sum_i y^i_{v = v^*, r - m}}{\sum_i y^i_{v = v^*, r - w} + \sum_i y^i_{v = v^*, r - m}} \leq a_2
+\end{equation}
+where $a_1$ and $a_2$ are the lower bound and the upper bound of the gender ratio in corpus-level predictions. $y^i_{v = v^*, r- m}$ means that ``$v^*$'' is the predicted verb and the combination (``agent'' - ``man'') will appear as one  semantic role pair. In Eq~\eqref{eq:cons_ratio}, ``m'' stands for ``man'' and ``w'' stands for ``woman''. The whole formula means that among all the predictions, for verb ``$v^*$'', the gender ratio is restricted to range $[a_1, a_2]$. In this work, we get $a_1$ and $a_2$ based on the training dataset. 
+Without loss of generality, the constraints in Eq~\eqref{eq:cons_ratio} can be written in the form $Ay - b \leq 0$, where each row in the matrix $A\in R^{l \times K}$ is the coefficients of one constraint, and $b\in R^l$.  Thus, our object function is:
+
+\begin{subequations}
+\label{eq:objforlr}
+\begin{align}
+    \max_{y^i_v, y^i_{v_r}} & {\sum_i (\sum_v  y^i_v s^i(v)+\sum_{v,r}y^i_{v,r}s^i(v,r))} 
+    \label{eq:objforlr1} \\        
+& \text{s.t. } 
+    A\sum_i y_{v,r}^i - b \leq 0, \label{eq:objforlr2}       
+\end{align}
+\end{subequations}
+
+
+
+\fi
+
+\paragraph{Lagrangian Relaxation}
+Eq. \eqref{eq:objforlr} can be solved by several combinatorial optimization methods. For example, one can represent the problem as an integer linear program and solve it using an off-the-shelf solver (e.g., Gurobi~\cite{gurobi}). However, Eq. \eqref{eq:objforlr} involves all test instances. Solving a constrained optimization problem on such a scale is difficult. Therefore, we consider relaxing the constraints and solve Eq. \eqref{eq:objforlr} using a
+Lagrangian relaxation technique~\cite{Rush2012}. 
+%In real applications, when given an input instance $x$, we want to get a structured prediction $y$, where the objective %function is usually defined as:
+%\begin{equation} \label{eq:map}
+%	y^* = \underset{y\in\mathcal{Y}}{\mathrm{argmax}}\ f(y)
+%\end{equation} 
+We introduce a Lagrangian multiplier $\lambda_j \geq 0$ for each corpus-level constraint. The Lagrangian is
+%Here $\mathcal{Y}$ is a finite set and $\mathcal{Y} \in \mathcal{R}^d$. In our application, $f(y)$ is defined as Eq~\eqref{eq:objforlr1}. As we aimed at the gender bias issue in this work, we only set constraints to the semantic role ``agent'' and without constraints to the verbs. So we can simplify $\max_{{y_v}^i,y_{v,r}^i}$ to $\max_{y^i}$ where $y^i$ stands for $y_{v,r}^i$.
+%With Lagrangian Relaxation, we can get the solution for Eq~\eqref{eq:map} in a finite set $\mathcal{Y'}$ where  $\mathcal{Y} \subset \mathcal{Y'}$. 
+%Here $\mathcal{Y'} = \{y^i| y^i \in \{0,1\} \}$ 
+%and we can get $\mathcal{Y}$ from $\mathcal{Y'}$ with constraints $\mathcal{Y} = \{y^i| y^i \in \{0,1\}, A\sum_i y^i -b \leq 0\}$ where $A \in \mathbb{R}^{K\times d}$ and $b \in \mathbb{R}^K$. $ A\sum_i y^i -b \leq 0 $ introduces $K$ linear constraints for $y^i$.
+% Though the object function seems just linear one, however, sometimes it can be a NP problem, which is  computationally challenging.
+% The idea is that, $\mathcal{Y'}$ includes all the elements in $\mathcal{Y}$ as well as some vectors that are not in $\mathcal{Y}$. In $\mathcal{Y'}$   we can get the solution more ``easily'' for Eq~\eqref{eq:map} only changing $\mathcal{Y}$ to $\mathcal{Y'}$.
+% We can get $\mathcal{Y}$ from $\mathcal{Y'}$ with some linear constraints, i.e. 
+% \begin{equation}\label{eq:cony}
+%     \mathcal{Y} = \{y: y \in \mathcal{Y'}\ \text{and}\ Ay \leq b\}
+% \end{equation}
+%To get the solutions for the modified object function with these $K$ linear constraints, we can use the Lagrangian Relaxation by introducing the Lagrangian multipliers $\lambda \in \mathcal{R}^K$. The Lagrangian objective is:
+\begin{equation}\label{eq:lag}
+\begin{split}
+ &L(\lambda, \{y^i\}) = \\
+ &\sum_i f_\theta(y^i) - \sum_{j=1}^l \lambda_j  \left(A_j \sum_i y^i - b_j \right),
+ \end{split}
+\end{equation}
+where all the $\lambda_j \geq 0, \forall j \in \{1,\ldots,l\}$.
+% Eq~\eqref{eq:lag} can be solved by it dual problem. The dual objective is: 
+% $$L(\lambda) = \max_{y \in \mathcal{Y'}} L(\lambda, y)$$
+% The dual problem is to find:
+% \begin{equation}\label{eq:dua}
+%  \min_{\lambda \in \mathbb{R}^k} L(\lambda)
+% \end{equation}
+The solution of Eq. \eqref{eq:objforlr} can be obtained by the following iterative procedure:
+\begin{enumerate}[label={\arabic*})]
+    \item At iteration $t$, get the output solution of each instance $i$
+    \begin{equation}
+    \label{eq:updatey}
+    y^{i,(t)} = \underset{y \in \mathcal{Y'}}{\mathrm{argmax}}\ L(\lambda^{(t-1)}, y)
+    \end{equation}
+    \item update the Lagrangian multipliers. 
+    \begin{equation*}
+     \label{eq:updatel}
+     \lambda^{(t)} \!=\! \max \left(0, \lambda^{(t-1)} \!+\! \sum_i \eta(Ay^{i, (t)} -b)\right),
+    \end{equation*}
+\end{enumerate}
+ where $\lambda^{(0)} = \boldsymbol{0}$. $\eta$ is the learning rate for updating $\lambda$. Note that with a fixed $\lambda^{(t-1)}$, Eq. \eqref{eq:updatey} can be solved using the original inference algorithms. 
+ The algorithm loops until all constraints are satisfied (i.e. optimal solution achieved) or reach maximal number of iterations.  
+ 
+ \iffalse
+ Algorithm~\ref{alg:lr} summarizes the procedure. 
+ %With Lagrangian Relaxation, we do not need to change the original inference algorithms. What we need to do is only to make the inference with the new score for each instance and then update the Lagrangian multipliers. The new score will be calculated using the $\lambda$.    We first get all the constraints, i.e. the margin of the gender ratio for each verb from the training data and then do the updating rules we showed above. Our algorithm is shown in Algorithm~\ref{alg:lr}.
+
+% It can be proved that if we can get $y^* = \mathrm{argmax}_{y\in \mathcal{Y'}}\ L(\lambda, y)$, and $Ay^* = b$ then $y^* = \mathrm{argmax}_{y\in \mathcal{Y}} \ y\cdot \theta$. And for any $t$, if $Ay^{(t)} = b$, then $y^{(t)} = \mathrm{argmax}_{y\in \mathcal{Y}} \ y\cdot \theta $. Thus we can get the optimal solution from the Lagrangian Relaxation.
+
+\begin{algorithm}
+\SetAlgoLined
+\KwData{training\_data, dev\_data}
+\KwResult{ $y$, $\lambda$}
+constraints = get\_constraints(training\_data)\;
+$\lambda^{(0)}(k) \gets 0, \forall k \in\{1, 2, ..., K\}$ \;
+\For {$t = 1$ to $\mathcal{T}$}{
+    Obtain $y^{i,(t)}$ by solving Eq. \eqref{eq:updatey} \;
+    % $y^{(t)}_v \gets \text{argmax}_{y_v \in \mathcal{Y}_v}(f(y_v) - \sum_{k}\lambda^{(t-1)}(k)(\sum_{i,v} y_v(i)c(v) - a_v(k) )$\;
+    %$y^{(t)}_{v,r} \gets \text{argmax}_{y_{v,r} \in \mathcal{Y}_{v,r}}(f(y_{v,r}) - \sum_{k}\lambda^{(t-1)}(k)(\sum_{i,k,v}y_{v,r}(i)c(v,r) - a_{v,r}(k) )$\;
+
+   %$\lambda^{(t)} \gets \lambda^{(t-1)} + \eta * (
+%   \sum_{i,v} y_v(i)c(v) - a_v(k) + 
+   %\sum_{i,k,v}y_{v,r}(i)c(v,r) - a_{v,r}(k)) $ \;
+   Update $\labmda$ according to \eqref{eq:updatel} \;
+  
+    %\If{$\lambda^{(t)}(i) < 0$}{
+   %$\lambda^{(t)}(k) = 0$, $\forall k \in {1,2,\ldots, K}$\;
+   %}
+ }
+ \caption{Lagrangian Relaxation for Debiasing}
+ \label{alg:lr}
+\end{algorithm}
+
+In Algorithm~\ref{alg:lr}, $i$ stands for the instance in the development dataset. $c(v)$ and $a(v)$ are the constraint coefficients for the predicted verbs, while $c(v,r)$ and $a_{v,r}(k)$ are the constraint coefficients for the predicted semantic role pairs. 
+
+\fi

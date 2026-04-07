@@ -1,0 +1,3975 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Using Simpson’s Paradox to Discover Interesting Patterns in Behavioral Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                109,
+                119,
+                885,
+                141
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Nazanin Alipourfard, Peter G. Fennell and Kristina Lerman "
+                    }
+                ]
+            },
+            "bbox": [
+                240,
+                165,
+                754,
+                183
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "USC Information Sciences Institute "
+                    }
+                ]
+            },
+            "bbox": [
+                380,
+                183,
+                614,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "4676 Admiralty Way "
+                    }
+                ]
+            },
+            "bbox": [
+                426,
+                196,
+                566,
+                210
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Marina del Rey, California 90292 "
+                    }
+                ]
+            },
+            "bbox": [
+                387,
+                210,
+                609,
+                224
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                250,
+                273,
+                313,
+                286
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We describe a data-driven discovery method that leverages Simpson’s paradox to uncover interesting patterns in behavioral data. Our method systematically disaggregates data to identify subgroups within a population whose behavior deviates significantly from the rest of the population. Given an outcome of interest and a set of covariates, the method follows three steps. First, it disaggregates data into subgroups, by conditioning on a particular covariate, so as minimize the variation of the outcome within the subgroups. Next, it models the outcome as a linear function of another covariate, both in the subgroups and in the aggregate data. Finally, it compares trends to identify disaggregations that produce subgroups with different behaviors from the aggregate. We illustrate the method by applying it to three real-world behavioral datasets, including Q&A site Stack Exchange and online learning platforms Khan Academy and Duolingo. "
+                    }
+                ]
+            },
+            "bbox": [
+                99,
+                297,
+                464,
+                501
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                225,
+                523,
+                336,
+                540
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Digital traces of activity have exposed human behavior to quantitative analysis (Lazer et al. 2009; McFarland, Lewis, and Goldberg 2016). Data mining algorithms have explored behavioral data to test social psychology and decision theories (Kleinberg et al. 2017; Bond et al. 2012) and obtain new insights into factors affecting online behavior. Yet, behavioral data analysis is still largely a trial-and-error process, driven by ad-hoc methods rather than principled solutions. Compounding the difficulty are the multi-faceted challenges presented by behavioral data: it is massive, multidimensional, noisy, sparse (few observations per individual), heterogeneous (composed of differently behaving individuals), and highly unbalanced (very few observations of the outcome of interest exist). As a result, given a new behavioral data set, it is often unclear where to start or how to even go about identifying interesting phenomena in data. To explore a new data set, a researcher may do exploratory analysis, for example, plot the distributions of features of interest or perform principal component analysis, but beyond this, lack of clear guidelines for analytic practice make quantitative exploration of large-scale behavioral data more of an art than a science. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                547,
+                478,
+                851
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The current paper takes a step towards solving this problem by automating discovery from behavioral data. We propose a method that systematically uncovers surprising patterns in data by identifying subgroups within the population whose behaviors are substantially different from the rest of the population. Our method leverages Simpson’s paradox (Blyth 1972; Norton and Divine 2015), a phenomenon wherein an association or a trend observed in the data at the level of the entire population disappears or even reverses when data is disaggregated by its underlying subgroups. The goal of our method is to identify a covariate, such that conditioning data on the covariate significantly changes the association between the outcome and another covariate (acting as an independent variable). To address this challenge, we introduce Simpson’s Disaggregation, a method that decomposes the population into subgroups and compares behavioral trends within subgroups to find surprising patterns. First, our method identifies potential subgroups by disaggregating the data into bins that minimize the variation of the outcome of interest. It then uses a linear model to represent behavioral trends within subgroups, as well as in aggregate data, and looks for trend reversal. Finally, it uses statistical methods to assess the significance of trends in both aggregated and disaggregated data, and compares disaggregations based on their explanatory power. "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                273,
+                913,
+                619
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We apply the fully automatic method to several real-world behavioral data sets that include Q&A site Stack Exchange, online learning platforms Khan Academy and Duolingo. These data sets are all highly heterogeneous. After disaggregating the data, we find that the trends describing the response of the outcome to various covariates within the subgroups can be very different from the population-level response. We show that disaggregations lead to models that better explain the data. We uncover common patterns across data sets about the effects of skill and experience on user performance and suggest further lines of inquiry into behaviors on these platforms. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                621,
+                913,
+                787
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "By dissecting the data into more homogeneous subgroups, our method can uncover surprising subgroups that behave differently from the rest of the population. Such patterns are a sign that strong individual differences exist within the population, differences that must be accounted for in analysis. Thus, the method gives a researcher a powerful tool for automatically identifying behavioral patterns meriting deeper "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                790,
+                913,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "Copyright "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\circledcirc"
+                    },
+                    {
+                        "type": "text",
+                        "content": "2018, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                861,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1805.03094v1 [cs.CY] 8 May 2018 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                260,
+                60,
+                700
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "study. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                69,
+                125,
+                82
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The rest of the paper is organized as follows. First, we review Simpson’s paradox and methods used to identify it. Next, we describe a method that automatically partitions the data into more homogenous subgroups and identifies surprising trends. In the Results section, we apply the method to real-world behavioral data and show that our method is able to identify interesting phenomena in data. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                83,
+                477,
+                180
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Background and Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                150,
+                191,
+                411,
+                208
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Simpson’s paradox (Blyth 1972; Norton and Divine 2015) often confounds analysis of heterogeneous data, especially social and behavioral data. According to the paradox, an association observed in data that has been aggregated over the entire population may be different from, and even opposite to, associations existing in the subgroups comprising the population. Failure to take this paradox into account can distort conclusions of analysis. Arguably the most famous example of Simpson’s paradox arose from a lawsuit alleging gender discrimination at UC Berkeley (Bickel, Hammel, and O’Connell 1975). Analysis of the aggregate admissions data for the school revealed a statistically significant bias against women: a smaller fraction of female applicants were admitted. However, when admissions data was disaggregated by department, women were shown to have parity, and even a slight advantage in some departments, over men. The paradox arose because departments that female applicants prefer have lower admissions rates for both genders. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                209,
+                477,
+                458
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Computational social scientists are often interested in measuring relationships between some outcome and a covariate. Here too Simpson’s paradox can distort results (Blyth 1972; Lerman 2018). For example, a study (Vaupel and Yashin 1985) of recidivism showed that the rate at which released convicts return to prison declines over time. From this, one may conclude that age has a pacifying effect, and older convicts are less likely to re-offend. In reality, however, this is not the case. Instead, the population of exconvicts can be considered to be composed of two subgroups with nearly constant, but different recidivism rate. The first subgroup is composed of convicts that have been reformed and will never commit a crime once they are released from prison. The second subgroup is composed of incorrigibles, who are highly likely to re-offend. Over time, members of this subgroup commit offenses and return to prison, leaving fewer of them in the population. Survivor bias changes the composition of the population, giving an illusion of an overall decline in recidivism. As Vaupel and Yashin warn, “unsuspecting researchers who are not wary of heterogeneity’s ruses may fallaciously assume that observed patterns for the population as a whole also hold on the sub-population or individual level.” Researchers have not routinely tested for the presence of Simpson’s paradox in their data, although such as test was recently proposed (Lerman 2018). "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                460,
+                477,
+                804
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The idea for using Simpson’s paradox to uncover interesting patterns in data was explored by researchers in the past (Fabris and Freitas 2000). Our work extends previous research in new directions. We not only provide a principled way to disaggregate data, but also introduce a novel measure that allows us to quantify how interesting or surprising "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                806,
+                477,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "an instance of Simpson’s paradox is. As we demonstrate in the results, this provides a novel tool for studying behavioral data. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                69,
+                911,
+                109
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Methods "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                678,
+                130,
+                751,
+                145
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We describe Simpson’s Disaggregation, a method for automatically uncovering interesting patterns in data. The method takes as input a set of observations of an outcome, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and a set of covariates, or features, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r l } { X } & { { } = } \\end{array}"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ X _ { 1 } , X _ { 2 } , . . . , X _ { m } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "associated with it. The approach has three steps. First, it disaggregates data into more homogenous subgroups based on some covariate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Next, it uses a linear model to capture trends with respect to some other covariate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", both within the subgroups and within the aggregate data. Finally, it quantifies how well the models describe the disaggregated data compared to aggregate data to identify the important disaggregations. We describe these steps in detail below.1 "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                156,
+                911,
+                334
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Step 1: Disaggregating Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                519,
+                354,
+                733,
+                369
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We disaggregate the data by partitioning it on the conditioning variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into non-overlapping bins, such that data points within each bin are more similar to each other than to data in other bins. These bins correspond to the more homogeneous subgroups within the population generating the data. Simply partitioning the data into fixed-size bins (Alipourfard, Fennell, and Lerman 2018), or percentiles, can be problematic when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has a heavy-tailed distribution, since the bins covering the tail will have few data points in them. In such cases, logarithmic binning is a better choice. However, the decision then has to be made about the size and scale of each bin. This decision must balance two considerations: first, each bin has to be homogeneous, i.e., it must contain data points that are more similar to each other in relation to the outcome variable than to variables in other bins, and secondly, it needs to have a sufficient number of data points. Basically, too small a bin may not contain enough samples for a statistically significant measurement, while the samples in too large a bin may be too heterogeneous for a robust trend. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                378,
+                911,
+                654
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The binning method described below partitions the values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "exhibits little variation within each bin but significant variation between bins. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                657,
+                911,
+                699
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Quantifying the Partition Total sum of squares (SST) is the key concept used to describe the variation in observations {yi}Ni=1 "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ y _ { i } \\} _ { i = 1 } ^ { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of a random variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". It is defined as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { S S T = \\sum _ { i = 1 } ^ { N } ( y _ { i } - \\bar { y } ) ^ { 2 } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\bar { y } = \\frac { 1 } { N } \\sum _ { i = 1 } ^ { N } y _ { i } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the mean of all observations. The sample variance, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is equal to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S S T / ( N - 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", thus the SST is related to variation in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For any arbitrary partition "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { X _ { c } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we can quantify how much variation of the outcome variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be explained by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { X _ { c } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by decomposing the total sum of squares "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                713,
+                911,
+                843
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1The code implementing the method is available on https://github.com/ninoch/Trend-Simpsons-Paradox/. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                862,
+                911,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "as: "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                71,
+                106,
+                80
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\sum_ {i = 1} ^ {N} \\left(y _ {i} - \\bar {y}\\right) ^ {2} = \\sum_ {b \\in P _ {X _ {c}}} N _ {b} \\left(\\bar {y} _ {b} - \\bar {y}\\right) ^ {2} + \\sum_ {b \\in P _ {X _ {c}}} \\sum_ {i = 1} ^ {N _ {b}} \\left(y _ {b, i} - \\bar {y} _ {b}\\right) ^ {2}, \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/cb646cf24d21b128d4ae9a43e758fce5a512bde38d6f21ff2ad2ae499d239fe2.jpg"
+                }
+            },
+            "bbox": [
+                84,
+                87,
+                478,
+                143
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "N _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the number of data points in bin b, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { b , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th data point in bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\bar { y } } _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the average of values in that bin. The first term on the right hand side of Eq. (1) is the sum of squares between groups, a weighted average of squared differences between global "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\bar { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and local "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\hat { y _ { b } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "average. This sum measures how much "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "varies between different bins of the partition. The second term is the sum of squares within groups, which measure how much variation in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "remains within each bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Then, the proportion of the explained sum of squares to the total sum of squares, or coefficient of determination, is: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                143,
+                478,
+                297
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "R ^ {2} = \\frac {\\sum_ {b \\in P _ {X _ {c}}} N _ {b} (\\bar {y} _ {b} - \\bar {y}) ^ {2}}{S S T} \\tag {2}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/5eb5b0b0ad75d321ec9af180920b84be43cec764c7d3d065d25444fddb5bbf95.jpg"
+                }
+            },
+            "bbox": [
+                184,
+                301,
+                478,
+                335
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "measure takes values between zero and one, with large values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "indicating a larger proportion of the variation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "explained by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", for this specific binning "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { X _ { c } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                340,
+                478,
+                387
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Finding the Best Partition Now, we will describe the systematic way for learning partition "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { X _ { c } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which explains the largest possible variation of the outcome "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Given the data, the domain of the feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be split at some value "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into two bins: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c } \\le s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c } > s"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". From Eq. (2), the proportion of variation in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "explained by such a split is: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                390,
+                480,
+                489
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "R ^ {2} (s; X _ {c}) = \\frac {N _ {b _ {1}} (\\bar {y} _ {b _ {1}} - \\bar {y}) ^ {2} + N _ {b _ {2}} (\\bar {y} _ {b _ {2}} - \\bar {y}) ^ {2}}{S S T}, \\tag {3}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/086ef234c57cd9120a3a4ddc88cdc5891fefc262435f5f49238cf41efc94a035.jpg"
+                }
+            },
+            "bbox": [
+                124,
+                494,
+                478,
+                527
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "N _ { b _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { y } _ { b _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are the number of data points and average value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c } \\ \\leq \\ s"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "N _ { b _ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { y } _ { b _ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are the number of data points and average value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c } > s"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The s can take any value in the domain of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and afterward the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 } ( s ; X _ { c } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be computed for that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Thus, among all possible values for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s \\in [ m i n ( X _ { c } ) , m a x ( X _ { c } ) ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we can choose "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the optimal split for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which maximizes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 } ( s ; X _ { c } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For the next iteration, we can choose the next best split "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to optimize improvement in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In general, assume we have bins "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ b _ { u } \\} _ { u = 1 } ^ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "after "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k - 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "iterations, and for next iteration we have found best split "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s _ { k + 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which divides the bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into two bins, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i _ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "associated with data points in bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c } \\le s _ { k + 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i _ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "associated with data points in bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c } > s _ { k + 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Thus, after splitting we will have bins "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i _ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "instead of bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this case, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "improvement is the following: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                531,
+                480,
+                753
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\Delta R ^ {2} (s | P _ {X _ {c}}; X _ {c}) = \\frac {1}{S S T} \\left(N _ {b _ {i _ {1}}} (\\bar {y} _ {b _ {i _ {1}}}) ^ {2} + N _ {b _ {i _ {2}}} (\\bar {y} _ {b _ {i _ {2}}}) ^ {2} \\right. \\\\ \\left. - N _ {b _ {i}} \\left(\\bar {y} _ {b _ {i}}\\right) ^ {2}\\right) \\tag {4} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7e5bbacb3d490d07736f2e8cd9d9122f39813d3c65639058b094978967720676.jpg"
+                }
+            },
+            "bbox": [
+                101,
+                762,
+                482,
+                825
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this manner, the method recursively splits the domain of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to create a partition of the feature. However, this procedure will continue indefinitely until "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has been partitioned into bins consisting of single points, overfitting the "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                832,
+                480,
+                890
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "data. To prevent this, we constrain the algorithm so that the maximum number of bins is 20, while the minimum number of data points per bin is 100. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                69,
+                913,
+                111
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Step 2: Modeling Disaggregated Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                122,
+                807,
+                138
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Next, the method measures the association between the outcome variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the independent variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the aggregate data and compares it to the associations in the disaggregated data. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                140,
+                911,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "At an aggregate level, we model the relationship between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as a linear model of the form "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                196,
+                911,
+                224
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} [ Y | X _ {j} = x _ {j} ] = f (\\alpha + \\beta X _ {j}), \\tag {5}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/213af042e2800226785495c63bcf3d8707c52f77e4fbf8f3d7b27b60ab12f89f.jpg"
+                }
+            },
+            "bbox": [
+                607,
+                232,
+                911,
+                250
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f ( \\alpha + \\beta X _ { j } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a monotonically increasing function of its argument "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\overset { \\vartriangle } { \\alpha } + \\beta \\boldsymbol { X } _ { j } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The parameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Eq. (5) is related to the intercept of the regression function, while the coefficient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "quantifies the effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For the disaggregated data, we fit linear models of the same form but with different values of the parameters "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "depending on values of the conditioning variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ": "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                255,
+                913,
+                354
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} \\left[ Y \\mid X _ {j} = x _ {j}, X _ {c} = x _ {c} \\right] = f \\left(\\alpha \\left(x _ {c}\\right) + \\beta \\left(x _ {c}\\right) X _ {j}\\right). \\tag {6}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/32b40f0f45b0a9de5930e3d2f8763850a4f1d62e74fe0eba484a800936e64c9e.jpg"
+                }
+            },
+            "bbox": [
+                537,
+                361,
+                911,
+                378
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To check whether disaggregating data on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "results in a Simpson’s paradox, we look for trend reversal by comparing the sign of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the fit to the aggregate data (Eq. 5) to the signs of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s from fits to the disaggregated data (Eq. 6) (given that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta \\mathbf { s }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are significantly different from zero). if more than half of the subgroups have different sign with aggregated trend, then Simpson’s paradox exists. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                385,
+                911,
+                482
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Trend reversal is an interesting phenomenon, because it occurs when subgroups exhibit behaviors that are different from the trends within the population as a whole. However, behavioral differences can exist even without trend reversal. Consider, for example, trend lines with zero slope that are stacked, because outcomes within each subgroup are systematically different from each other. In this case, disaggregating data is still desirable, even if the trend reversal rules for Simpson’s paradox do not indicate it. Rather than simply look for trend reversal, we measure the significance of the disaggregations of data. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                482,
+                913,
+                635
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Step 3: Significance of Disaggregations "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                646,
+                816,
+                662
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We conjecture that surprising subgroups are those whose behavior deviates substantially from that of the population as a whole. Existence of such subgroups suggests that important behavioral differences exist that require deeper analysis. To identify such subgroups we must first quantify how well a model, in simplest case a linear model, describes the data. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                665,
+                911,
+                748
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we examine the case where the outcome variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is binary. In this case, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbb { E } [ Y | X _ { j } = x _ { j } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the probability of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { i } = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j } ~ = ~ x _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Therefore, we use the logistic regression as our linear model, and Equation (5) becomes: "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                750,
+                913,
+                816
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} [ Y | X _ {j} = x _ {j} ] = f (\\alpha + \\beta X _ {j}) = \\frac {1}{1 + e ^ {- (\\alpha + \\beta X _ {j})}} \\tag {7}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c9395f682d4ee37b52110e3fbd692267ad101bf82696d128f23b3e13f1843175.jpg"
+                }
+            },
+            "bbox": [
+                537,
+                824,
+                911,
+                853
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Logistic regression uses Maximum Likelihood Estimation to find the best fit to data. Likelihood of the model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                859,
+                911,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "the data is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { L } ( \\mathcal { M } | x ) = P ( X = x | \\mathcal { M } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For a binary outcome variable, it becomes: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                66,
+                478,
+                95
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {L} (\\mathcal {M} | x) = \\prod_ {i = 1} ^ {N} y _ {i} \\times \\left(P _ {\\mathcal {M}} \\left(x _ {i}\\right)\\right) + \\left(1 - y _ {i}\\right) \\times \\left(1 - P _ {\\mathcal {M}} \\left(x _ {i}\\right)\\right) \\tag {8}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4bc179d42255ac8681cd8ebcb3ff533c6ddda05a6c3f1605853ae9dcb160f146.jpg"
+                }
+            },
+            "bbox": [
+                83,
+                104,
+                478,
+                157
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and then the log likelihood is give by: "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                157,
+                334,
+                174
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\log \\mathcal {L} (\\mathcal {M} | x) = \\sum_ {i = 1} ^ {N} y _ {i} \\times \\log \\left(P _ {\\mathcal {M}} \\left(x _ {i}\\right)\\right) + \\left(1 - y _ {i}\\right) \\times \\log \\left(1 - P _ {\\mathcal {M}} \\left(x _ {i}\\right)\\right) \\tag {9}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/439a1fddf22426ac4b47329a71717a004965d86a0584fa5992c08d60ca8e2e6a.jpg"
+                }
+            },
+            "bbox": [
+                81,
+                181,
+                509,
+                233
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For assessing the goodness of fit, we can use deviance (Hosmer Jr, Lemeshow, and Sturdivant 2013). It compares Loglikelihood of two models. In the case of the Logistic regression of Eq. 7, this corresponds to comparing the full model with a null model consisting only of an intercept. Letting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the reduced model and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "the full model, the deviance of these two models is: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                234,
+                478,
+                330
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "D \\left(\\mathcal {M} _ {1}, \\mathcal {M} _ {0}\\right) = 2 \\times \\left[ \\log \\mathcal {L} \\left(\\mathcal {M} _ {1} | x\\right) - \\log \\mathcal {L} \\left(\\mathcal {M} _ {0} | x\\right) \\right] \\tag {10}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/964cc3bc0b549bd9c00d1373853ae29f77da99d594a6c21f602e702c3b4480c7.jpg"
+                }
+            },
+            "bbox": [
+                96,
+                339,
+                478,
+                357
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In the case where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a nested model of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where nested means full model can be reduced to null model by imposing constraints on the parameters, under the null hypothesis that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "provide a similar quality statistical explanations of the outcome, for sufficiently large sample size, the deviance comes from a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\chi ^ { 2 } ( p )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "distribution (Hosmer Jr, Lemeshow, and Sturdivant 2013), where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the number of degrees of freedom, which equals the number of extra parameters of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in comparison to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". If the hypothesis is rejected, it means that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "provides a significantly better description of the outcome variable than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { M } _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                363,
+                480,
+                517
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Significance of Aggregate Data Model For assessing the significance of a model of aggregate data, we use deviance to compare the aggregate data model, given by Eq. (5), to a model where all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are equal to the global mean "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\bar { y } = \\frac { \\sum _ { i = 1 } ^ { N } y _ { i } } { N } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this case, Eq. (10) becomes: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                523,
+                480,
+                599
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "D \\left(\\mathcal {M} _ {1}, \\mathcal {M} _ {0}\\right) = 2 \\times \\sum_ {i = 1} ^ {N} y _ {i} \\times \\log \\left(\\frac {\\hat {y} _ {i}}{\\bar {y}}\\right) + \\left(1 - y _ {i}\\right) \\times \\log \\left(\\frac {1 - \\hat {y} _ {i}}{1 - \\bar {y}}\\right) \\tag {11}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4eb0a72b25761ef2095811abfbd3c39c459326981b3b7a6f989571c3c9831e3b.jpg"
+                }
+            },
+            "bbox": [
+                83,
+                609,
+                478,
+                661
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Where, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th outcome, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r l r } { \\hat { y } _ { i } } & { { } = } & { f ( \\alpha \\ + } \\end{array}"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta x _ { i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Clearly, these two models are nested; therefore, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D ( \\mathcal { M } _ { 1 } , \\mathcal { M } _ { 0 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\chi ^ { 2 } ( 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "distribution (Hosmer Jr, Lemeshow, and Sturdivant 2013). We can apply statistical hypothesis test to see whether the found trend for aggregated data is significant or not. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                661,
+                480,
+                746
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Significance of Disaggregated Data Model For assessing the significance of a disaggregation of data, we can use deviance to compare the model of Eq. (6) with a model where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is equal to the average outcome for data points in the bin of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this case, Eq. (10) becomes: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                753,
+                480,
+                824
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "2 \\times \\sum_ {b \\in P _ {X _ {c}}} \\sum_ {i = 1} ^ {N _ {b}} y _ {b, i} \\times \\log \\left(\\frac {\\hat {y} _ {b , i}}{\\bar {y} _ {b}}\\right) + (1 - y _ {b, i}) \\times \\log \\left(\\frac {1 - \\hat {y} _ {b , i}}{1 - \\bar {y} _ {b}}\\right), \\tag {12}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/6cd7591d9e607a4a9ff5676d7262f874532ea5c956bb2bab4af78e54cb948cb9.jpg"
+                }
+            },
+            "bbox": [
+                81,
+                832,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { b , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-th data point in bin b, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { y } _ { b } ~ = ~ \\frac { \\sum _ { i = 1 } ^ { N _ { b } } { y _ { b , i } } } { N _ { b } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the mean outcome within bin "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { b , i } = f ( \\alpha ( \\boldsymbol x _ { b , i } ^ { c } ) +"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta ( x _ { b , i } ^ { c } ) \\times x _ { b , i } ^ { j } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". By imposing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta ( x _ { c } ) = 0 , \\forall x _ { c } \\in X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we conclude that these two models are nested. Thus again, we can use statistical test "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\chi ^ { 2 } ( | P _ { X _ { c } } | )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to see whether the disaggregated trends are significant or not. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                65,
+                913,
+                165
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Comparing Disaggregations Comparing disaggregations of data based on how well the linear models describe trends within subgroups can help us identify interesting behavioral patterns in data. A disaggregation on variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( X _ { j _ { 1 } } , X _ { c _ { 1 } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is more interesting than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( X _ { j _ { 2 } } , X _ { c _ { 2 } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if it has more explanatory power than the second pair. McFadden (McFadden and others 1973), introduced a measure, called McFadden "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", to capture the ratio of likelihood improvement: "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                171,
+                913,
+                282
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "R _ {M c F a d d e n} ^ {2} = 1 - \\frac {\\log \\mathcal {L} _ {f u l l}}{\\log \\mathcal {L} _ {n u l l}} \\tag {13}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7ccaca58d3fa11e756309f1230ae3b35331cab4a42fb3e9e8039314748e676c7.jpg"
+                }
+            },
+            "bbox": [
+                617,
+                287,
+                911,
+                321
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "If we assume that the full model is at least good as the null model (means "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "l o g \\mathcal { L } _ { f u l l } ~ > ~ l o g \\mathcal { L } _ { n u l l } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then the value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R _ { M c F a d d e n } ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is between zero and one, with larger values showing more improvement in log-likelihood, and values 0.2 to 0.4 considered to represent excellent fits (McFadden and others 1977). Thus, we can fix the null model and compute the value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R _ { M c F a d d e n } ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for all disaggregations. For the null model, we choose simple global average for all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Thus, the right hand side of Eq. (13) becomes: "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                325,
+                913,
+                454
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "1 - \\frac {\\sum_ {b \\in P _ {X _ {c}}} \\sum_ {i = 1} ^ {N _ {b}} y _ {b , i} \\times \\log \\left(y _ {\\hat {b} , i}\\right) + \\left(1 - y _ {b , i}\\right) \\times \\log \\left(1 - y _ {\\hat {b} , i} ^ {\\prime}\\right)}{\\sum_ {i = 1} ^ {N} y _ {i} \\times \\log (\\bar {y}) + \\left(1 - y _ {i}\\right) \\times \\log (1 - \\bar {y})} \\tag {14}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/775b2ccc8bfd8e6ae03c808760de05eda65d7cab6b50d92b7fcd4168a5647154.jpg"
+                }
+            },
+            "bbox": [
+                517,
+                458,
+                934,
+                512
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We use pseude- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to rank disaggregations by their explanatory power. In addition, we can also use it to identify the best conditioning variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { c }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for disaggregating the data that best explains the trends with respect to a covariate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                511,
+                913,
+                570
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Results "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                681,
+                580,
+                750,
+                595
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We illustrate proposed method by applying it to study human performance data from several online domains. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                599,
+                913,
+                628
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Stack Exchange "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                638,
+                643,
+                654
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "First, we study answerer performance on Stack Exchange (SE). Launched in 2008 as a forum for asking computer programming questions, Stack Exchange has grown to encompass a variety of technical and non-technical topics. Any user can ask a question, which others may answer. Users can vote for answers they find helpful, but only the asker can accept one of the answers as the best answer to the question. We used anonymized data representing all answers to questions posted on Stack Exchange from August 2008 until September 2014.2 Approximately half of the 9.6M questions had an accepted answer, and we included in the study questions that received two or more answers. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                656,
+                913,
+                821
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To understand factors affecting user performance on SE, we study the relationship between the various features extracted from data and the outcome, here a binary attribute "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                823,
+                913,
+                866
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2https://archive.org/details/stackexchange "
+                    }
+                ]
+            },
+            "bbox": [
+                535,
+                873,
+                908,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/8b918a9fb2bde89fe1ee51f0bfd3c145b309679ad9c2ebf0a652c051648d9492.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Variables defining important disaggregations of Stack Exchange data, along with their pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { . } R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "scores. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>R2Mc</td><td>Covariate Xj</td><td>Conditioning on Xc</td></tr><tr><td>0.03</td><td>Answer position</td><td>Number of answers</td></tr><tr><td>0.03</td><td>Session length</td><td>Number of answers</td></tr><tr><td>0.02</td><td>Number of answers</td><td>Reputation</td></tr><tr><td>0.02</td><td>Answer position</td><td>Reputation</td></tr><tr><td>0.02</td><td>Session length</td><td>Reputation</td></tr><tr><td>0.01</td><td>Readability</td><td>Lines of codes</td></tr><tr><td>&lt; 10-2</td><td>Answer position</td><td>Session length</td></tr><tr><td>&lt; 10-2</td><td>Time since prev ans</td><td>Answer position</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                122,
+                111,
+                441,
+                224
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "denoting whether the answer written by a user is accepted by the asker as best answer to his or her question. To this end, for each answer written by a user, we create a list of features describing the answer and the user. Features include the numbers of words, hyperlinks, and lines of code the answer contains, and its Flesch readability score (Kincaid et al. 1975). Features describing answerers are their reputation, tenure on SE (in seconds and in terms of percentile rank) and the total number of answers written during their tenure. These features relate to user experience. We also use activity-related features, including time since previous answer written by the user, session length, giving the number of answers user writes during the session, and answer position within that session. We define a session as a period of activity without a break of 100 minutes of longer. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                261,
+                478,
+                470
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Of the 110 potential disaggregations of SE data arising from all possible pairs of covariates, our method identified 8 as significant. Table 1 ranks these disaggregations along with their pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "scores. Note that user experience, either in terms of the reputation or the number of answers written by the user over his or her tenure, comes up as an important conditioning variable in several disaggregations. Features related to user activity, such as answer position within a session, session length, and time since previous answer, appear as important dimensions of performance. This suggests that answerer behavior over the course of a session changes significantly, and these changes are different across different sub-populations. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                470,
+                478,
+                652
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1 visualizes the data, disaggregated on the number of answers. Each horizontal band in the heatmap in Fig. 1(a) is a different bin of the conditioning variable number of answers, and it corresponds to a distinct subgroup within the data. The first bin ranges in value from one to eleven answers, the second bin from 12 to over 50 answers, etc. Within each bin, the color shows the relationship between the outcome—the probability the answer is accepted—and answer’s position within a session. Dark blue corresponds to the lowest acceptance probability, and dark red to the highest. Within each bin, the color changes from lighter blue to darker blue (for the bottom-most bins), indicating a lower acceptance probability for answers written later in the session. For the top-most bins, the acceptance probability is overall higher, but also decreases, e.g., from pink to white to blue. Note that data is noisy, as manifested by color flipping, where there are few data points (Fig. 1(b)). "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                652,
+                480,
+                891
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The trends corresponding to these empirical observations are captured in Fig. 1(c). Note that the decreasing trends are in contrast to the trend in aggregate data (Fig. 1(d)), which shows performance increasing with answer position within the session. This suggests that user experience, as captured by the number of answers, is an important factor differentiating the behavior of users. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                69,
+                911,
+                165
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2 shows an alternate disaggregation of SE data for the covariate answer position, here conditioned on user reputation. This disaggregation is slightly worse, resulting in a somewhat lower value pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { \\bar { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". While performance declines in the lower reputation subgroups as a function of answer position, the highest reputation users appear to write better answers in longer sessions. The acceptance probability for high reputation users is more than 0.50, potentially indicating that askers pay attention to very high reputation users and are more likely to accept their answers. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                165,
+                913,
+                305
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Khan Academy "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                316,
+                640,
+                333
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Khan Academy3 (KA) is an educational platform offering online tools to help students learn a variety of subjects. Student progress by watching short videos and complete exercises by solving problems. We studied an anonymized dataset, collected over two years, which contains information about attempts by KA adult students to solve problems. We partitioned student activity into sessions, also defined as a sequence of problems without a break of more than one hour between them. The vast majority of students completed only a single session. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                335,
+                911,
+                474
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As an outcome variable in this data, we take student performance on a problem, a binary variable equal to one when the student solved the problem correctly on the first try, and zero otherwise (either did not solve it correctly, or used hints). To study factors affecting performance, we extracted the features of problems and users. These included the overall solving time during user activity, total solve time and the number of attempts made to solve the problem, time since the previous problem (tspp), the number of sessions prior to the current one, all sessions user contributed to, the session length in terms of the number of problems solved, problem position within the session (session index of the problem), the timestamp of the attempt, including the month, day of week, type of weekday ( whether it is weekend or not) and hour the student attempted to solve the problem, the month the student joined KA, his or her tenure, the number of all attempts on all problems solved since joining, and how many of the problems were solved correctly on the first attempts. As a proxy of skill or some background knowledge the student brings, we use how many problems were correctly solved during the student’s five first attempts to solve problems. For example, the least prepared students answered few of the five problems they attempted to solve, but best students would have solved all five correctly. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                476,
+                913,
+                806
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our method identified 32 significant disaggregations of KA data, out of 342 potential disaggregations. Some of these are presented in Table 2. The table lists conditioning variables for selected covariates, sorted by their pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { \\breve { 2 } }"
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                806,
+                913,
+                864
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3https://www.khanacademy.org "
+                    }
+                ]
+            },
+            "bbox": [
+                537,
+                873,
+                725,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c7471c3ce2d01976b362e47dbd8276f44695552384a6b68056d323ed52cd5284.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                70,
+                495,
+                300
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/fe85c4f716e70caed94cad7c7bbec6f469ad02704472fcf08d7397fc4770388c.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Disaggregated data "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(c) Subgroup trends "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                330,
+                452,
+                539
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e53aa1db277ef829ff5c6d39372d15edb47bf553df7b025c8225e685a3247e8d.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                501,
+                74,
+                903,
+                300
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/cfa526a91fb9810df9539d84da020b47e19e22b30ecbd82b4bb83e4fa9b8f5b3.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Number of samples "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(d) Aggregate trend "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Disaggregation of Stack Exchange data. (a) The heat map shows the probability the answer is accepted as a function of its answer position within a session, with the horizontal bands corresponding to the different subgroups, conditioned on total number of answers the user has written. (b) Number of data samples within each bin of the heat map. Note that the outcome becomes noisy when there are few samples. The trends in performance as a function of answer position in (c) disaggregated data and (d) aggregate data. Error bars in (c) and (d) show "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "confidence interval. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                500,
+                329,
+                864,
+                539
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "scores. For example, when examining how performance— probability to solve a problem correctly—changes over the course of a day "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { j }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is hour24), the relevant disaggregation conditions the data on all first attempts, i.e., the number of all problems the user solved correctly on their first attempt. On the other hand, several disaggregations can explain the trends in performance as a function of month. Conditioning on first five attempts has the most explanatory power, followed by disaggregations conditioned on session index, the total time it took the user to solve all problems, the timestamp and weekday of the attempt. Many of the conditioning variables used in the disaggregations represent different aspects of user experience on the site: the number of problems they tried to solve or correctly solved, their tenure on the site, and how much time they spent solving problems. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                670,
+                478,
+                880
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3 takes a closer look at the disaggregation corresponding to covariate hour24. In the aggregate data (Fig. 3(d)), there is a small but significant upward trend in performance over the course of a day. It looks like performance is higher at night than during the day. However, when data is disaggregated by all first attempts, only a couple of subgroups have the up-trend: the rest stay flat or even decline in performance. All first attempts, which represents how many of all problems users solved correctly on their first try, captures both user’s motivation to use KA (the more motivated, the more problems they attempt), and skill (the more skilled, the more problems they will solve on their first attempt). The high-achieving users actually perform better in the morning, in contrast to aggregate trends. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                670,
+                913,
+                866
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4 shows the disaggregation corresponding to the "
+                    }
+                ]
+            },
+            "bbox": [
+                532,
+                875,
+                911,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/1c7361688ba5e89fba58c6d20ef412afedf83d2aa7c39444abab578b71db3893.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                89,
+                69,
+                495,
+                300
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/7f4a92fe6c92cdf1892afa89b90e261693d9ddf747b826fd10ec758cb2bbe241.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Disaggregated data "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(c) Subgroup trends "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                329,
+                452,
+                539
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/552728f99cfa7dfe5df65193dc56936e1fa3a322b4c7764c4f0f9792f4e13766.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                503,
+                74,
+                903,
+                300
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/21a6eceb7db159e54ebf3b528619184a91d09b7fa16841b1af5784e31440a788.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Number of samples "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(d) Aggregate trend "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Disaggregation of Stack Exchange data similar to Fig. 1, but instead disaggreagted on user reputation. (a) The heat map shows acceptance probability as a function of its answer position within a session. (b) Number of data samples within each bin of the heat map. Note that the outcome becomes noisy when there are few samples. The trends in (c) disaggregated data and (d) aggregate data. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                500,
+                329,
+                864,
+                539
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "covariate month, conditioned on five first attempts. When data is aggregated over the entire population, there appears to be a slight seasonal variation, with performance higher on average during the summer months (Fig. 4(d)). Once data is disaggregated by five first attempts, the seasonal trends are no longer so obvious in several subgroups (Fig. 4(c)). Interestingly, it appears to be the high achieving users (who correctly answer more of the five first problems), who perform better during the summer months. This suggests that population of KA changes over the course of the year, with motivated, high achieving students using the platform during their summer break. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                656,
+                478,
+                824
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Duolingo "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                838,
+                158,
+                854
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Duolingo (DL) is an online language learning platform, which allows users to learn dozens of different lan-"
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                859,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "guages. DL offers a gamified learning environment, where users progress through levels by practicing vocabulary and dictation skills. The DL halflife-regression (Settles and Meeder 2016) dataset (https://github.com/duolingo/halfliferegression) follows a subset of learners over a period of two weeks. Users are shown vocabulary words and asked to recall them correctly. Users may be shown between 7 and 20 words per lesson, and may have multiple lessons in a session. Sessions are defined in a similar way as before—a period of activity without a break longer than one hour. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                656,
+                913,
+                797
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Users in general perform quite well, correctly recalling a large number of words in a lesson. This makes it difficult to discern changes in performance. Therefore, we define performance in a more stringent way, as a binary variable, which is equal to one if the user had perfect performance (i.e., correctly recalled all words in a lesson), and zero oth-"
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                804,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/8bd05b07d0e6d05f775ed38ac28e5e81c45814624464a4cca206aad87ef1b92e.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Variables defining important disaggregations of the Khan Academy data, along with their pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\boldsymbol { R } } ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "scores. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>R2Mc</td><td>Covariate Xj</td><td>Conditioning on Xc</td></tr><tr><td>0.06</td><td>All attempts</td><td>All first attempts</td></tr><tr><td>0.03</td><td>All attempts</td><td>All problems</td></tr><tr><td>0.01</td><td>All attempts</td><td>Tenure</td></tr><tr><td>0.01</td><td>All attempts</td><td>Total solve time</td></tr><tr><td>0.04</td><td>Hour24</td><td>All first attempts</td></tr><tr><td>0.04</td><td>Session number</td><td>All first attempts</td></tr><tr><td>0.02</td><td>Session number</td><td>All problems</td></tr><tr><td>0.01</td><td>Session number</td><td>Tenure</td></tr><tr><td>0.01</td><td>Session number</td><td>All attempts</td></tr><tr><td>0.01</td><td>Session number</td><td>All sessions</td></tr><tr><td>0.01</td><td>Session number</td><td>Total solve time</td></tr><tr><td>0.0</td><td>Session number</td><td>Join month</td></tr><tr><td>0.03</td><td>Month</td><td>Five first attempts</td></tr><tr><td>0.01</td><td>Month</td><td>Session index</td></tr><tr><td>0.01</td><td>Month</td><td>Total solve time</td></tr><tr><td>0.01</td><td>Month</td><td>Timestamp</td></tr><tr><td>&lt; 10-2</td><td>Month</td><td>Week day</td></tr><tr><td>0.01</td><td>Problem position</td><td>Session length</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                130,
+                111,
+                433,
+                344
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6574aa4538e0e234781196f46a46c532766ae525d37d110fabb8fb7b6105eff5.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                368,
+                276,
+                481
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/ce39034223e5d55e00787d44680b7cd1d331b947aa7993f1a44ed73446e34a5c.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                279,
+                368,
+                473,
+                481
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/bd48d7ab7e6309dc1f01ac95ae02d51eabef9afa88eb8f912f475f123eb05f23.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Disaggregated data "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                502,
+                259,
+                604
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f634ad64a31dd944191fe38270121325fa59a1574d5da5be0f7c63106e780b98.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Number of samples "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(c) Subgroup trends "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(d) Aggregate trend "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                282,
+                501,
+                455,
+                603
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "erwise. We used more than two dozen features to describe performance. These include the number of words seen and correctly answered during a lesson (lesson seen and lesson correct), the number of distinct words shown during a lesson, lesson index among all lessons for this user, time to next lesson, time since the previous lesson, lesson position within its session, session length in terms of the number of lessons and duration, etc. User-related features include the number of five first lessons correctly answers, number of all perfect lessons with perfect performance, total number of lessons, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                750,
+                480,
+                888
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/b4b227979c468a6be8f102f4c07cb6dadcfdafe78ba593bc23bb616a2de5744e.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3: A disaggregation of the Khan Academy data showing performance as a function of hour of day, conditioned on all first attempts. (a) The heat map shows average performance within a subgroup as a function of the hour of day. (b) Number of data samples within each subgroup. The trends in (c) the disaggregated data and in (d) aggregated data. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                521,
+                66,
+                712,
+                181
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e82d550683175f73f21d7ea597ce8cbfa29409cdfeaddc7b63ab16a44861f327.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Disaggregated data "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(c) Subgroup trends "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                519,
+                205,
+                696,
+                305
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/344206a8eb743cb04ce1d8b4a9a48c60eb9dddd6277ff642543bb7a1fad3c3cd.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                714,
+                70,
+                908,
+                181
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/5579bdf368b79f1562e5f0dd001adca8df0734e49e596c8c994bc6c6eee296fa.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Number of samples "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(d) Aggregate trend "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 4: Disaggregation of Khan Academy data showing performance as a function of month, conditioned on five first attempts. (a) The heat map shows average performance as a function of the month. (b) Number of data samples within each subgroup. The trends in (c) the disaggregated data and in (d) aggregated data. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                715,
+                205,
+                888,
+                305
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "the total number of words seen and the correctly answered, and the time the user was active. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                452,
+                911,
+                479
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Of the 462 potential disaggregations of DL data, 51 were found to be significant using the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\chi ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "test. Table 3 reports disaggregations associated with select covariates, including lesson’s position within a session, lesson index in user’s history, the number of lessons the user completed, etc. The trends with respect to some of the covariates could be explained by several different disaggregations, with some of them having relatively high values of pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Again, user experience (all perfect lessons) and initial skill (five first lessons) appear as significant conditioning variables. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                481,
+                913,
+                621
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5 examines the impact of experience on performance. In the aggregate data Fig. 5(d), performance appears to increase as function of experience (lesson index): users who have more practice perform better. However, once the data is disaggregated by initial performance (five first lessons), or skill, in Fig. 5(c), a subtler picture emerges. Users who initially performed the worst (bottom bins in Fig. 5(a)) improve their performance as they have more lessons, while the best performers initially (top bins) decline. This may be due to “regression to the mean”, as pure luck could have helped the initially best performers and hurt the initially worst performers. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                623,
+                913,
+                789
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Another disaggregation of DL data is shown in Figure 6. The plots show performance as a function of lesson correct, the number of words correctly answered in a lesson. In the aggregate data, performance shows an overall decline; however, conditioned on distinct words (the total number of unique words shown in a lesson), performance shows more complex trends. The red values appearing initially "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                791,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/92ee48bdf21a8197424a5607949a67cea5f830f08da8366a8957711fda894d90.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3: Variables defining important disaggregations of Duolingo data, along with their pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "scores. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>R2Mc</td><td>Covariate Xj</td><td>Conditioning on Xc</td></tr><tr><td>0.08</td><td>Lesson position</td><td>All perfect lessons</td></tr><tr><td>0.11</td><td>Lesson index</td><td>All perfect lessons</td></tr><tr><td>0.09</td><td>Lesson index</td><td>First five lessons</td></tr><tr><td>0.16</td><td>Number of lessons</td><td>All perfect lessons</td></tr><tr><td>0.09</td><td>Number of lessons</td><td>First five lessons</td></tr><tr><td>0.11</td><td>Number of sessions</td><td>All perfect lessons</td></tr><tr><td>0.09</td><td>Number of sessions</td><td>First five lessons</td></tr><tr><td>0.05</td><td>Number of sessions</td><td>Session seen</td></tr><tr><td>0.1</td><td>Session number</td><td>All perfect lessons</td></tr><tr><td>0.09</td><td>Session number</td><td>First five lessons</td></tr><tr><td>0.05</td><td>Session number</td><td>Session seen</td></tr><tr><td>0.05</td><td>Session number</td><td>Session correct</td></tr><tr><td>0.05</td><td>Session number</td><td>Distinct words</td></tr><tr><td>0.02</td><td>Session number</td><td>Time since previous lesson</td></tr><tr><td>0.09</td><td>Session length</td><td>All perfect lessons</td></tr><tr><td>0.06</td><td>Session correct</td><td>Distinct words</td></tr><tr><td>0.09</td><td>Session duration</td><td>First five lessons</td></tr><tr><td>0.09</td><td>Session duration</td><td>All perfect lessons</td></tr><tr><td>0.0</td><td>Session duration</td><td>Session length</td></tr><tr><td>0.08</td><td>Time since previous lesson</td><td>All perfect lessons</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                98,
+                111,
+                464,
+                383
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c25201a70b1ceceee184dca6800d7aeb25d94e405f9b15bada894ccce3ccd932.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                407,
+                276,
+                523
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/376d2477c92e844df83be0698d5b713ab8ced98c2c6811b03aae52b55db1ea3a.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                279,
+                407,
+                473,
+                522
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/21481a20ff1c171fecfa031354c0db742edd142b2f48ea013d8fcd9521c1e55a.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Disaggregated data "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                542,
+                259,
+                647
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/58118630ade70e2592a08aa9de1766d98e31c2ae085539bfda559495510271d3.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Number of samples "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(c) Subgroup trends "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(d) Aggregate trend "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                281,
+                542,
+                455,
+                646
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "along the diagonal show perfect lessons, where users answered all words they were shown correctly. However, as the lessons become more difficult—more distinct words are introduced—it becomes more difficult for users to have perfect performance. After 20 new words are shown in a lesson, users can no longer answer all the words correctly. Also in-"
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                805,
+                480,
+                888
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/63d0231c65fa8e647795fc8a498aa384cc714c0431ab2cba7d711b6ef3eb4dee.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5: Disaggregation of Duolingo data. (a) The heat map shows performance, as a function of how many lessons the user completed, conditioned on how many of the five first lessons were answered correctly. (b) Number of data samples within each bin of the heat map. Trends in (c) the disaggregated data and in (d) aggregate data. Errors bars show "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "confidence interval. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                519,
+                66,
+                712,
+                179
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/9b7ca39c02b956a821b20ed02f005521b5d2e87da94fbfefe13162ef9ccfc1ad.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                714,
+                70,
+                908,
+                179
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a1b80f4ee9e05a3e5c68a2f82bb94e9ccb5df91c96b2d9919bedf52b7521cb17.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Disaggregated data "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                519,
+                198,
+                696,
+                304
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/9023fa640cf6502347a90c44665f465231b8a3bccd745d77075c0f527aabc360.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Number of samples "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(c) Subgroup trends "
+                    },
+                    {
+                        "type": "text",
+                        "content": "(d) Aggregate trend "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 6: Disaggregation of Duolingo data showing performance as a function of lesson Correct (a) The heat map shows performance, i.e., probability to answer all the words correctly, conditioned on the number of distinct words in the lesson. (b) Number of data samples in each bin of the heat map. Trends in (c) the disaggregated data and in (d) aggregate data. Errors bars show "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "confidence interval. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                715,
+                198,
+                888,
+                304
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "teresting is a region of lower performance starting around values of lesson correct near 20 and distinct words between 3 and 10, and continues upwards and to the right. For some reason user performance drops in this regime. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                460,
+                913,
+                518
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                532,
+                604,
+                546
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "There are several commonalities emerging from the three data sets we studied. Across platforms, initial performance, captured by first five attempts in the KA data or first five lessons in the DL data, appeared as an important conditioning variable differentiating the subgroups. Those users who were initially high performers appear to be different from the low performers, especially when looking at how their performance changes over time. While initial performance could capture skill or background knowledge, further analysis is needed to link it to this characteristic. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                553,
+                911,
+                691
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Experience also appeared as an important feature differentiating users. As a proxy of experience we used such features as the number of lessons in DL data, user tenure in KA data, and number of answers and reputation in SE data. However, whether this variable reflects the benefits of practice, or simply captures user motivation, is not clear. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                693,
+                913,
+                777
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Features linked to user activity differentiated many important subgroups across all three data sets. Features such as time since previous lesson, session length and position within a session, total time solving a problem, were all significant conditioning variables. This suggests that performance on these platforms has a non-trivial dynamic component that merits deeper investigation. Indeed, a study of Stack Exchange observed short term deterioration in perfor-"
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                777,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "mance (Ferrara et al. 2017). Our study suggests that such an effect may be general. In addition, temporal features, such as month, type of weekday, timestamp, were found to be important covariates. This indicates that temporal effects can explain differences in performance: e.g., people who use learning web sites on weekends are different from those who use them during the week. Our analysis helps identify such subgroups and understand their behavior. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                69,
+                477,
+                179
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Conclusion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                233,
+                195,
+                328,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We described a method that identifies interesting behaviors within heterogeneous behavioral data by leveraging Simpson’s paradox. The method automatically disaggregates data by partitioning it on some conditioning variable, and looks for those conditioning variables that result in trend reversal in many subgroups. The method ranks these disaggregations based on how well linear models describe the disaggregated data compared to how well they describe population as a whole. These disaggregated subgroups are interesting because their behavior is significantly different from that of the remainder of the population, which implies that important behavioral differences exist within the population. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                215,
+                477,
+                380
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We illustrated the use of the method as a data exploration tool by applying it to study human performance on three online platforms, including question-answering site Stack Exchange, and online learning sites Khan Academy and Duolingo. Our method identified skill (judged from user’s initial performance on the site) and experience (how long the user has been active on the site) as important features differentiating user performance. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                382,
+                477,
+                492
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Conditioning on a variable to make subgroups more homogenous is the important and the first step in our method; however, subgroups may still be heterogeneous. As a future direction, we can use multiple features for conditioning on the data to make the subgroups even more homogenous, afterward we can look at an independent variable trend reversal in these subgroups. We have used our method for binary outcome variables, however there are also continues outcome variables in behavioral data. Our method can be extended to more general forms, like GLM, to support all types of outcome variable. However, new trend analysis algorithm needs different statistical methods as a goodness of fit measure. In addition, prelithat pairs of variables with high "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R _ { M c F a d d e n } ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rations suggestvalue could be used in combination to make a new variable which is highly correlated with outcome variable. For example, in KA data, pair (all first attempts, all attempts) has the highest value of pseudo- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "among all pairs. We can define new variable as ratio of number of correctly solved question on the first attempt to characterize user performance during his or her tenure. This new variable is highly correlated with outcome variable, performance. The same thing is happened for pairs (session seen, session correct) in Duolingo, and (number of answers, Reputation) in Stack Exchange. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                493,
+                477,
+                825
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                205,
+                840,
+                357,
+                856
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This material is based upon work supported by the U.S. Army Small Business Innovation Research Program Office, "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                861,
+                477,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Defense Advanced Research Projects Agency (DARPA) and the Army Research Office under Contract No. W911NF-18- C-0011, and the James S. McDonnell Foundation. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                69,
+                911,
+                109
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                669,
+                122,
+                761,
+                136
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Alipourfard, Fennell, and Lerman 2018] Alipourfard, N.; Fennell, P. G.; and Lerman, K. 2018. Can you trust the trend: Discovering simpson’s paradoxes in social data. arXiv preprint arXiv:1801.04385. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Bickel, Hammel, and O’Connell 1975] Bickel, P. J.; Hammel, E. A.; and O’Connell, J. W. 1975. Sex bias in graduate admissions: Data from berkeley. Science 187(4175):398–404. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Blyth 1972] Blyth, C. R. 1972. On simpson’s paradox and the surething principle. Journal of the American Statistical Association 67(338):364–366. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Bond et al. 2012] Bond, R. M.; Fariss, C. J.; Jones, J. J.; Kramer, A. D.; Marlow, C.; Settle, J. E.; and Fowler, J. H. 2012. A 61- million-person experiment in social influence and political mobilization. Nature 489(7415):295–298. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Fabris and Freitas 2000] Fabris, C., and Freitas, A. 2000. Discovering surprising patterns by detecting occurrences of simpson’s paradox. In Bramer, M.; Macintosh, A.; and Coenen, F., eds., Research and Development in Intelligent Systems XVI. Springer London. 148–160. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Ferrara et al. 2017] Ferrara, E.; Alipoufard, N.; Burghardt, K.; Gopal, C.; and Lerman, K. 2017. Dynamics of content quality in collaborative knowledge production. In Proceedings of 11th AAAI International Conference on Web and Social Media. AAAI. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Hosmer Jr, Lemeshow, and Sturdivant 2013] Hosmer Jr, D. W.; Lemeshow, S.; and Sturdivant, R. X. 2013. Applied logistic regression. volume 398. John Wiley & Sons. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Kincaid et al. 1975] Kincaid, J. P.; R. P. Fishburnea, J.; Rogers, R. L.; and Chissom, B. S. 1975. Derivation of new readability formulas (automated readability index, fog count and flesch reading ease formula) for navy enlisted personnel. Technical report, U.S. Navy. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Kleinberg et al. 2017] Kleinberg, J.; Lakkaraju, H.; Leskovec, J.; Ludwig, J.; and Mullainathan, S. 2017. Human decisions and machine predictions. Technical report, National Bureau of Economic Research. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Lazer et al. 2009] Lazer, D.; Pentland, A.; Adamic, L.; Aral, S.; Barabasi, A.-L.; Brewer, D.; Christakis, N.; Contractor, N.; Fowler, ´ J.; Gutmann, M.; and Jebara, T. 2009. Computational social science. Science 323:721–723. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Lerman 2018] Lerman, K. 2018. Computational social scientist beware: Simpson’s paradox in behavioral data. Journal of Computational Social Science 1(1):49–58. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[McFadden and others 1973] McFadden, D., et al. 1973. In Conditional logit analysis of qualitative choice behavior, 121. Institute of Urban and Regional Development, University of California. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[McFadden and others 1977] McFadden, D., et al. 1977. In Quantitative methods for analyzing travel behavior of individuals: some recent developments, 307. Institute of Transportation Studies, University of California. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[McFarland, Lewis, and Goldberg 2016] McFarland, D. A.; Lewis, K.; and Goldberg, A. 2016. Sociology in the era of big data: The ascent of forensic social science. The American Sociologist 47(1):12–35. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Norton and Divine 2015] Norton, H. J., and Divine, G. 2015. Simpson’s paradox and how to avoid it. Significance 12(4):40– 43. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                140,
+                913,
+                887
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Settles and Meeder 2016] Settles, B., and Meeder, B. 2016. A trainable spaced repetition model for language learning. In Proceedings of the Association for Computational Linguistics (ACL), 1848–1858. ACL. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Vaupel and Yashin 1985] Vaupel, J. W., and Yashin, A. I. 1985. Heterogeneity’s ruses: some surprising effects of selection on population dynamics. The American Statistician 39(3):176–185. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                68,
+                480,
+                162
+            ]
+        }
+    ]
+]

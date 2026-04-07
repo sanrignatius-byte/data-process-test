@@ -1,0 +1,17 @@
+\section{CLAN's Resilience to Skewed Data}
+% FM: We need to better motivate this experiment.
+%NM: Changed it but not sure how effective it is.
+One potential issue with community detection is that it could completely ignore entire communities \emph{if membership in that community is correlated with degree}. For example, a community of introverts is likely to be overlooked because they do not form many links. This presents a challenge to our approach as well, because Step 1 consists of identifying the major communities in the dataset. 
+In order to test our method against this potential drawback, we conducted an experiment in which methods discussed in this paper would be tested in a synthetic environment in which the community distribution is skewed according to degree. This experiment serves two goals. First, it would compare the methods in terms of their performance on a different set of data. Secondly, it would show our method's behavior along with other methods while the distribution of each dataset is changed in terms of the node degree in the network which correlates with the popularity of a user in the social network.
+\subsection{Experimental Setup}
+In this experiment, we subsampled each dataset so that community membership is determined as a function of degree. Nodes with a particular degree are subsampled so that the statistic in Equation~\ref{equations} follows a particular trend. 
+For example, in the Gamergate dataset, we changed the distribution such that the graph observed from plotting the degree vs. fraction of users in each of the two distinct groups, Gamergate supporter vs. Gamergate opposer, would have a particular trend. The same procedure was followed for the U.S. election dataset with its two groups being the political party a user was following. 
+\begin{equation}
+    \frac {\left|N_{D=i}^{Gamergate \, Supporter}\right|} {\left|N_{D=i}^{Gamergate \, Opposer}\right|}  \quad \textrm{and} \quad    \frac {\left|N_{D=i}^{Democrat}\right|} {\left|N_{D=i}^{Republican}\right|}
+    \label{equations}
+\end{equation} 
+
+In Figure \ref{synthetic1}, the original distribution of the Gamergate dataset is shown on the top right corner of the figure with its corresponding network colored with the modularity value, and one of the synthetic distributions with a particular slope is shown in the bottom left with its corresponding network representation. Figure \ref{synthetic2} contains the same graphs and networks for the U.S. Presidential Election dataset. 
+
+\subsection{Results}
+The results for the Gamergate and U.S. Presidential Election datasets are  shown in Figures \ref{synthetic1} and \ref{synthetic2} respectively. The graphs located in the top left corner of the figures show the Jaccard similarity scores for each of the distributional settings, and the graph on the bottom left corner contains the results for the F1 scores.  The networks shown under each of the slope values in Figures \ref{synthetic1} and \ref{synthetic2} are the network of the users in the new distributional environments that have that particular slope range values. This confirms the fact that under different degree distributional settings CLAN can have reasonable and superior performance over the state of the art methods.

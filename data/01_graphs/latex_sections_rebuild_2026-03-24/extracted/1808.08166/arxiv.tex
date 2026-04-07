@@ -1,0 +1,235 @@
+\newif\ifdraft \draftfalse
+\newif\iffull \fulltrue
+
+\documentclass[9pt]{article}
+
+% \documentclass{pnastwo}
+% \documentclass[format=sigconf]{acmart}
+
+
+% Switch between display or inline math depending on mode
+\usepackage{booktabs}
+\usepackage{subfigure}
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+\usepackage{fullpage}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{color}
+%\usepackage{kpfonts}
+\usepackage{xcolor}
+%\usepackage{multicol}
+\usepackage{natbib}
+\usepackage{authblk}
+
+
+
+\definecolor{DarkGreen}{rgb}{0.1,0.5,0.1}
+\definecolor{DarkRed}{rgb}{0.5,0.1,0.1}
+\definecolor{DarkBlue}{rgb}{0.1,0.1,0.5}
+\usepackage[]{hyperref}
+\hypersetup{
+    unicode=false,          % non-Latin characters in Acrobat's bookmarks
+    pdftoolbar=true,        % show Acrobat toolbar?
+    pdfmenubar=true,        % show Acrobat menu?
+    pdffitwindow=false,      % page fit to window when opened
+    pdftitle={},    % title
+    pdfauthor={}
+    pdfsubject={},   % subject of the document
+    pdfnewwindow=true,      % links in new window
+    pdfkeywords={keywords}, % list of keywords
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=DarkRed,          % color of internal links
+    citecolor=DarkGreen,        % color of links to bibliography
+    filecolor=DarkRed,      % color of file links
+    urlcolor=DarkBlue,          % color of external links
+}
+\usepackage{xspace}
+\usepackage{cleveref}
+%\usepackage{thmtools, thm-restate}
+%\usepackage{natbib}
+
+\newcommand{\sw}[1]{\ifdraft \textcolor{blue}{[Steven: #1]}\fi}
+\newcommand{\sn}[1]{\ifdraft \textcolor{purple}{[Seth: #1]}\fi}
+\newcommand{\ar}[1]{\ifdraft \textcolor{red}{[Aaron: #1]}\fi}
+\newcommand{\mk}[1]{\ifdraft \textcolor{orange}{[Michael: #1]}\fi}
+
+%Macros
+\newcommand\ZZ{\mathbb{Z}}
+\newcommand\NN{\mathbb{N}}
+\newcommand\RR{\mathbb{R}}
+\newcommand\cA{\mathcal{A}}
+\newcommand\cB{\mathcal{B}}
+\newcommand\cE{\mathcal{E}}
+% \newcommand\cF{\mathcal{F}}
+\newcommand\cF{\mathcal{G}}
+\newcommand\cL{\mathcal{L}}
+\newcommand\cG{\mathcal{G}}
+\newcommand\cH{\mathcal{H}}
+\newcommand\cK{\mathcal{K}}
+\newcommand\cM{\mathcal{M}}
+\newcommand\cP{\mathcal{P}}
+\newcommand\cQ{\mathcal{Q}}
+\newcommand\cR{\mathcal{R}}
+\newcommand\cX{\mathcal{X}}
+\newcommand\cD{\mathcal{D}}
+\newcommand\cU{\mathcal{U}}
+\newcommand\cN{\mathcal{N}}
+\newcommand\cS{\mathcal{S}}
+\newcommand\cV{\mathcal{V}}
+\newcommand\cI{\mathcal{I}}
+\newcommand\knrw{\mathrm{SUBGROUP}}
+\newcommand\MSR{\mathrm{MARGINAL}}
+
+\DeclareMathOperator{\poly}{poly}
+\DeclareMathOperator{\polylog}{polylog}
+\newcommand{\ex}[1]{\mathbb{E}\left[#1\right]}
+\DeclareMathOperator*{\Expectation}{\mathbb{E}}
+\newcommand{\Ex}[2]{\Expectation_{#1}\left[#2\right]}
+\DeclareMathOperator*{\Probability}{Pr}
+\newcommand{\prob}[1]{\Pr\left[#1\right]}
+\newcommand{\Prob}[2]{\Probability_{#1}\left[#2\right]}
+
+\newcommand\FFP{{\bf{FairFictPlay\;}}}
+\newcommand\FP{\mathrm{FP}}
+\newcommand\SP{\mathrm{SP}}
+\newcommand\PA{P_\mathrm{audit}}
+\newcommand\PY{P_{y=0}}
+\newcommand\PYD{P_{y=0}^D}
+\newcommand\PDO{P_{D=1}^y}
+\newcommand\PXD{P^D}
+\newcommand\VCD{\mathrm{VCDIM}}
+\newcommand\Reg{\mathrm{Reg}}
+\newcommand\LC{\mathrm{LC}}
+\newcommand\CSC{\mathrm{CSC}}
+\newcommand\spsize{\alpha_{SP}}
+\newcommand\spdisp{\beta_{SP}}
+\newcommand\fpsize{\alpha_{FP}}
+\newcommand\fpdisp{\beta_{FP}}
+
+
+\newcommand{\eps}{\varepsilon}
+\def\epsilon{\varepsilon}
+\DeclareMathOperator{\OPT}{OPT}
+\DeclareMathOperator*{\argmin}{\mathrm{argmin}}
+\DeclareMathOperator*{\argmax}{\mathrm{argmax}}
+\newcommand{\INDSTATE}[1][1]{\STATE\hspace{#1\algorithmicindent}}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{fact}[theorem]{Fact}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{prop}[theorem]{Proposition}
+\newtheorem{assumpt}[theorem]{Assumption}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+%\widowpenalty=10000
+%\clubpenalty=10000
+
+\begin{document}
+
+\title{An Empirical Study of Rich Subgroup\\ Fairness for Machine Learning}
+
+%\author{
+%Michael Kearns \and Seth Neel \and Aaron Roth \and Zhiwei Steven Wu
+%}
+
+\author[1]{Michael Kearns}
+\author[1]{Seth Neel}
+\author[1]{Aaron Roth}
+\author[2]{Zhiwei Steven Wu}
+\affil[1]{University of Pennsylvania}
+\affil[2]{University of Minnesota}
+
+
+%\contributor{Submitted to Proceedings of the National Academy of Sciences
+%of the United States of America}
+
+%\significancetext{
+%Motivated by the tensions between the need to treat individuals fairly in decision making procesees, and the statistical and computational realities of machine learning, we introduce a statistical fairness definition that is able to guarantee a form of equity across not just a small number of coarsely defined groups, but across an infinitely large collection of finely defined subgroups, while still avoiding overfitting. Moreover, we derive practical, provably convergent algorithms that are able to optimize classification accuracy subject to this fairness constraint, and map out its tradeoffs. With these tools in hand, we conduct extensive computational experiments on a number of real-world datasets for which fairness is a concern, both to validate the effectiveness of our approach, and to elucidate the fundamental tradeoffs between our notion of fairness and predictive accuracy.}
+
+
+%%%Newly updated.
+%%% If significance statement need, then can use the below command otherwise just delete it.
+%% \significancetext{RJSM and ACAC developed the concept of the
+%% study. RJSM conducted the analysis, data interpretation and drafted
+%% the manuscript. AGB contributed to the development of the
+%% statistical methods, data interpretation and drafting of the
+%% manuscript.}
+
+% \affil{1}{University of Pennsylvania, Philadelphia,
+% United States},
+% Aaron Roth\affil{1}{},
+% Zhiwei Steven Wu\affil{1}{},
+% \and
+% Grigory Yaroslavtsev\affil{1}{}
+% }
+
+%\begin{article}
+\maketitle
+
+\begin{abstract}
+  \cite{KNRW18} recently proposed a notion of \emph{rich subgroup
+    fairness} intended to bridge the gap between statistical and
+  individual notions of fairness. Rich subgroup fairness picks a
+  statistical fairness constraint (say, equalizing false positive
+  rates across protected groups), but then asks that this constraint
+  hold over an exponentially or infinitely large collection of
+  \emph{subgroups} defined by a class of functions with bounded VC
+  dimension.  They give an algorithm guaranteed to learn subject to
+  this constraint, under the condition that it has access to oracles
+  for perfectly learning absent a fairness constraint. In this paper,
+  we undertake an extensive empirical evaluation of the algorithm of
+  Kearns et al.  On four real datasets for which fairness is a
+  concern, we investigate the basic convergence of the algorithm when
+  instantiated with fast heuristics in place of learning oracles,
+  measure the tradeoffs between fairness and accuracy, and compare
+  this approach with the recent algorithm of \cite{MSR}, which
+  implements weaker and more traditional marginal fairness constraints
+  defined by individual protected attributes. We find that in general,
+  the Kearns et al.  algorithm converges quickly, large gains in
+  fairness can be obtained with mild costs to accuracy, and that
+  optimizing accuracy subject only to marginal fairness leads to
+  classifiers with substantial subgroup unfairness.  We also provide a
+  number of analyses and visualizations of the dynamics and behavior
+  of the Kearns et al. algorithm.  Overall we find this algorithm to
+  be effective on real data, and rich subgroup fairness to be a viable
+  notion in practice.
+\end{abstract}
+
+\input{intro}
+
+\input{defs}
+
+\input{empirical}
+
+\input{conclusions}
+
+\bibliographystyle{plainnat}
+ \bibliography{./arxiv.bbl}
+
+ \clearpage
+ \newpage
+
+ \appendix
+ \input{appendix}
+
+%\bibliographystyle{plainnat}
+% \bibliography{./refs}
+% \bibliographystyle{plainnat}
+
+% \bibliography{./refs}
+
+% \appendix
+
+%\end{article}
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

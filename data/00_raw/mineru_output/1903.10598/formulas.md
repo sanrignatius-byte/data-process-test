@@ -1,0 +1,71 @@
+$$
+\mathrm {P} (y | \mathbf {x} _ {\mathrm {p}}) = \mathrm {P} (y) \quad \text {f o r a l l} y \in \mathcal {Y} \text {a n d} \mathbf {x} _ {\mathrm {p}} \in \mathcal {X} _ {\mathrm {p}}. \tag {1}
+$$
+
+$$
+\begin{array}{l} \mathrm{D} \mathrm{I} \mathrm{D} \mathrm{I}_{\mathrm{c}}(\mathcal{D}) = \sum_{y\in \mathcal{Y}}\sum_{\mathbf{x}_{\mathrm{p}}\in \mathcal{X}_{\mathrm{p}}}\left|\frac{\left|\left\{i\in\mathcal{N}:y_{i} = y\right\}\right|}{\left|\mathcal{N}\right|}\right. \\ \left. - \frac {\mid \{i \in \mathcal {N} : y _ {i} = y \cap \mathbf {x} _ {\mathrm {p} , i} = \mathbf {x} _ {\mathrm {p}} \} \mid}{\mid \{i \in \mathcal {N} : \mathbf {x} _ {\mathrm {p} , i} = \mathbf {x} _ {\mathrm {p}} \mid} \right|. \\ \end{array}
+$$
+
+$$
+\mathrm {P} (\tilde {y} | y, \mathbf {x} _ {\mathrm {p}}) = \mathrm {P} (\tilde {y} | y) \text {f o r a l l} \tilde {y}, y \in \mathcal {Y} \text {a n d} \mathbf {x} _ {\mathrm {p}} \in \mathcal {X} _ {\mathrm {p}}. \tag {2}
+$$
+
+$$
+\begin{array}{l} \mathrm {P} (\tilde {y}) = \sum_ {y \in \mathcal {Y}} \mathrm {P} (\tilde {y} | y) \mathrm {P} (y) = \sum_ {y \in \mathcal {Y}} \mathrm {P} (\tilde {y} | y, \mathbf {x} _ {\mathrm {p}}) \mathrm {P} (y | \mathbf {x} _ {\mathrm {p}}) \\ = \sum_ {y \in \mathcal {Y}} \mathrm {P} (\tilde {y} \cap y | \mathbf {x} _ {\mathrm {p}}) = \mathrm {P} (\tilde {y} | \mathbf {x} _ {\mathrm {p}}). \\ \end{array}
+$$
+
+$$
+\mathsf {E} (y | \mathbf {x} _ {\mathrm {p}}) = \mathsf {E} (y) \quad \text {f o r a l l} \mathbf {x} _ {\mathrm {p}} \in \mathcal {X} _ {\mathrm {p}}. \tag {3}
+$$
+
+$$
+\mathsf {E} (\tilde {y} - y | \mathbf {x} _ {\mathrm {p}}) = \mathsf {E} (\tilde {y} - y) \quad \text {f o r a l l} \tilde {y} \in \mathcal {Y} \text {a n d} \mathbf {x} _ {\mathrm {p}} \in \mathcal {X} _ {\mathrm {p}}.
+$$
+
+$$
+\begin{array}{l} \text {P r o o f . E} (\hat {y} | \mathbf {x} _ {\mathrm {p}}) = \mathsf {E} (\hat {y} - y | \mathbf {x} _ {\mathrm {p}}) + \mathsf {E} (y | \mathbf {x} _ {\mathrm {p}}) = E (\hat {y} - y) + \\ \mathsf {E} (y) = \mathsf {E} (\hat {y}). \end{array}
+$$
+
+$$
+\mathrm {D I D I} _ {\mathrm {r}} (\mathcal {D}) = \sum_ {\mathbf {x} _ {\mathrm {p}} \in \mathcal {X} _ {\mathrm {p}}} \left| \frac {\sum_ {i \in \mathcal {N}} y _ {i} \mathcal {I} \left(\mathbf {x} _ {\mathrm {p} , i} = \mathbf {x} _ {\mathrm {p}}\right)}{\sum_ {i \in \mathcal {N}} \mathcal {I} \left(\mathbf {x} _ {\mathrm {p} , i} = \mathbf {x} _ {\mathrm {p}}\right)} - \frac {1}{| \mathcal {N} |} \sum_ {i \in \mathcal {N}} y _ {i} \right|
+$$
+
+$$
+\mathrm {P} (y | \mathbf {x} _ {\overline {{\mathrm {p}}}}, \mathbf {x} _ {\mathrm {p}}) = \mathrm {P} (y | \mathbf {x} _ {\overline {{\mathrm {p}}}}) \quad \text {f o r a l l} y \in \mathcal {Y} \text {a n d} \mathbf {x} \in \mathcal {X}.
+$$
+
+$$
+\begin{array}{l} \mathrm{DTDI}_{\mathrm{c}}(\mathcal{D}) = \sum_{\substack{y\in \mathcal{Y},\\ \mathbf{x}_{\mathrm{p}}\in \mathcal{X}_{\mathrm{p}}\\ j\in \mathcal{N}}}\bigg|\frac{\sum_{i\in\mathcal{N}}d(\mathbf{x}_{\overline{\mathrm{p}},i},\mathbf{x}_{\overline{\mathrm{p}},j})\mathcal{I}(y_{i} = y)}{\sum_{i\in\mathcal{N}}d(\mathbf{x}_{\overline{\mathrm{p}},i},\mathbf{x}_{\overline{\mathrm{p}},j})} \\ - \frac {\sum_ {i \in \mathcal {N}} d \left(\mathbf {x} _ {\overline {{\mathrm {p}}} , i} , \mathbf {x} _ {\overline {{\mathrm {p}}} , j}\right) \mathcal {I} \left(y _ {i} = y \cap \mathbf {x} _ {\mathrm {p} , i} = \mathbf {x} _ {\mathrm {p}}\right)}{\sum_ {i \in \mathcal {N}} d \left(\mathbf {x} _ {\overline {{\mathrm {p}}} , i} , \mathbf {x} _ {\overline {{\mathrm {p}}} , j}\right) \mathcal {I} \left(\mathbf {x} _ {\mathrm {p} , i} = \mathbf {x} _ {\mathrm {p}}\right)} \Bigg |, \tag {4} \\ \end{array}
+$$
+
+$$
+d (\mathbf {x} _ {\overline {{\mathbf {p}}}, i}, \mathbf {x} _ {\overline {{\mathbf {p}}}, j}) = \left\{ \begin{array}{l l} 1 & \text {i f} \mathbf {x} _ {\overline {{\mathbf {p}}}, i} \text {i s a k - n e a r e s t n e i g h b o r o f} \mathbf {x} _ {\overline {{\mathbf {p}}}, j} \\ 0 & \text {e l s e .} \end{array} \right.
+$$
+
+$$
+\mathsf {E} (y | \mathbf {x} _ {\overline {{\mathrm {p}}}}, \mathbf {x} _ {\mathrm {p}}) = \mathsf {E} (y | \mathbf {x} _ {\overline {{\mathrm {p}}}}) \quad \text {f o r a l l} \mathbf {x} \in \mathcal {X}.
+$$
+
+$$
+\begin{array}{l} \mathrm {D T D I} _ {\mathrm {r}} (\mathcal {D}) = \sum_ {\mathbf {x} _ {\mathrm {p}} \in \mathcal {X} _ {\mathrm {p}, j} \in \mathcal {N}} \left| \frac {\sum_ {i \in \mathcal {N}} d \left(\mathbf {x} _ {\overline {{\mathrm {p}}} , i} , \mathbf {x} _ {\overline {{\mathrm {p}}} , j}\right) y _ {i}}{\sum_ {i \in \mathcal {N}} d \left(\mathbf {x} _ {\overline {{\mathrm {p}}} , i} , \mathbf {x} _ {\overline {{\mathrm {p}}} , j}\right)} \right. \tag {5} \\ - \frac {\sum_ {i \in \mathcal {N}} d (\mathbf {x} _ {\overline {{\mathbf {p}}} , i} , \mathbf {x} _ {\overline {{\mathbf {p}}} , j}) \mathcal {I} (\mathbf {x} _ {\mathbf {p} , i} = \mathbf {x} _ {\mathbf {p}}) y _ {i}}{\sum_ {i \in \mathcal {N}} d (\mathbf {x} _ {\overline {{\mathbf {p}}} , i} , \mathbf {x} _ {\overline {{\mathbf {p}}} , j}) \mathcal {I} (\mathbf {x} _ {\mathbf {p} , i} = \mathbf {x} _ {\mathbf {p}})} \Bigg |, \\ \end{array}
+$$
+
+$$
+\ell_ {\mathrm {c} / \mathrm {r}} (\mathcal {T}, \hat {y}) + \lambda \ell_ {\mathrm {c} / \mathrm {r}} ^ {\mathrm {d}} (\mathcal {T}, \hat {y}), \tag {6}
+$$
+
+$$
+\mathcal {P} = \left\{p \in \{0, 1 \} ^ {| \mathcal {V} | \times | \mathcal {X} |}: \sum_ {j \in \mathcal {F}} p _ {\nu j} = 1 \quad \forall \nu \in \mathcal {V} \right\}
+$$
+
+$$
+\hat {\mathcal {Y}} (z) = \left\{\hat {y} \in \mathbb {R} ^ {| \mathcal {N} |}: \exists u \in \mathcal {Y} ^ {| \mathcal {L} |} \text {w i t h} \hat {y} _ {i} = \sum_ {l \in \mathcal {L}} z _ {i l} u _ {l} \forall i \right\}.
+$$
+
+$$
+\mathcal {P} = \left\{p \in \mathbb {R} ^ {| \mathcal {V} | \times | \mathcal {X} |}: \sum_ {j \in \mathcal {F}} p _ {\nu j} = 1 \quad \forall \nu \in \mathcal {V} \right\}.
+$$
+
+$$
+\hat {\mathcal {Y}} (z) = \left\{ \begin{array}{l l} \hat {y} \in \mathcal {Y} ^ {| \mathcal {N} |}: & \exists u _ {l} \in \mathbb {R} ^ {d},   l \in \mathcal {L} \text {w i t h} \\ & \hat {y} _ {i} = \sum_ {l \in \mathcal {L}} z _ {i l} u _ {l} ^ {\top} \mathbf {x} _ {i} \quad \forall i \in \mathcal {N} \end{array} \right\}.
+$$

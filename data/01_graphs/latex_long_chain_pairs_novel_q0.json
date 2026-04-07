@@ -1,0 +1,973 @@
+{
+  "metadata": {
+    "source": "data/latex_cross_modal_pairs.json",
+    "min_hops": 2,
+    "max_hops": 4,
+    "max_chains_per_doc": 800,
+    "min_quality": 0.0,
+    "only_novel_endpoints": true,
+    "prefer_longer": false,
+    "num_input_pairs": 118,
+    "num_output_pairs": 14,
+    "num_output_chains": 204
+  },
+  "summary": {
+    "pair_hop_distribution": {
+      "2": 6,
+      "3": 8
+    },
+    "pair_type_distribution": {
+      "figure+formula": 3,
+      "figure+table": 8,
+      "formula+table": 3
+    },
+    "top_docs": {
+      "2005.07293": 8,
+      "2109.03952": 3,
+      "1801.07593": 2,
+      "1809.10083": 1
+    }
+  },
+  "pairs": [
+    {
+      "pair_id": "1801.07593_lc_0001",
+      "doc_id": "1801.07593",
+      "element_a_id": "1801.07593_figure_2",
+      "element_b_id": "1801.07593_table_3",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 2,
+      "path": [
+        "1801.07593_figure_2",
+        "1801.07593_formula_1",
+        "1801.07593_table_3"
+      ],
+      "quality_score": 0.333,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "1801.07593_figure_2",
+        "element_type": "figure",
+        "caption": "Figure 2: Diagram illustrating the gradients in Eqn. 1 and the relevance of the projection term $\\mathrm { p r o j } _ { h } g$ . Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in the diagram, which actually helps the adversary. With the projection term, the predictor will never move in a direction that helps the adversary.",
+        "content": "Figure 2: Diagram illustrating the gradients in Eqn. 1 and the relevance of the projection term $\\mathrm { p r o j } _ { h } g$ . Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in the diagram, which actually helps the adversary. With the projection term, the predictor will never move in a direction that helps the adversary.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/1801.07593/1801.07593/hybrid_auto/images/1801.07593_page0_fig1.jpg",
+        "context_before": "As in Figure 1, we assume that the model is trained by attempting to modify weights $W$ to minimize some loss $L _ { P } ( \\hat { y } , y )$ , using a gradient-based method such as stochastic gradient descent.\n\n(2016), the\n\nTable 1: Completions for he : she :: doctor : ?\n\nWe update $U$ to minimize $L _ { A }$ at each training time step, according to the gradient $\\nabla _ { U } L _ { A }$ . We modify $W$ according\n\n2Achieving equality of odds and demographic parity are generally incongruent goal",
+        "context_after": "$$ \\nabla_ {W} L _ {P} - \\operatorname {p r o j} _ {\\nabla_ {W} L _ {A}} \\nabla_ {W} L _ {P} - \\alpha \\nabla_ {W} L _ {A} \\tag {1} $$\n\nwhere $\\alpha$ is a tuneable hyperparameter that can vary at each time step and we define $\\mathrm { p r o j } _ { v } x = 0$ if $v = 0$ .\n\nThe middle term p $\\mathbf { r o j } _ { \\nabla _ { W } L _ { A } } \\nabla _ { W } L _ { P }$ prevents the predictor from moving in a direction that helps the adversary decrease its loss while the last term, $\\alpha \\nabla _ "
+      },
+      "element_b": {
+        "element_id": "1801.07593_table_3",
+        "element_type": "table",
+        "caption": "Table 3: Confusion matrices on the UCI Adult dataset, with and without equality of odds enforcement.",
+        "content": "Table 3: Confusion matrices on the UCI Adult dataset, with and without equality of odds enforcement.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/1801.07593/1801.07593/hybrid_auto/images/f8a5da271202e5818f0db76045e8dc38022f67693a17833977d88ae3c6d87026.jpg",
+        "context_before": "Details on the features that the dataset provides are available in Table 2. We use both categorical and continuous columns as given, with exception to the fnlwgt feature, which we discard. We convert the remaining columns into tensors where the categorical columns are sparse tensors, age is bucketized at boundaries [18, 25, 30, 35, 40, 45, 50, 55, 60, 65], and the rest of the continuous columns are real-valued.\n\nDetails on the features that the dataset provides are available in Table 2.\n\nwhere $",
+        "context_after": "We notice that debiasing has only a small effect on overall accuracy $( 8 6 . 0 \\%$ vs $8 4 . 5 \\%$ ), and that the debiased model indeed (nearly) obeys equality of odds: as shown in Table 4, with debiasing, the FNR and FPR values are approximately equal across sex subgroups: $0 . 0 6 4 7 \\approx 0 . 0 7 0 1$ and $0 . 4 4 5 8 \\approx 0 . 4 3 4 9$ .\n\nAlthough the values don’t exactly reach equality, neither difference is statistically significant: a two-proportion twotail large sample $z$ -test y"
+      },
+      "edge_contexts": [
+        {
+          "source": "1801.07593_figure_2",
+          "target": "1801.07593_formula_1",
+          "ref_text": "\\ref{eq:grads}",
+          "context_snippet": "\\includegraphics[width=\\columnwidth]{gradients2.png}     \\caption{Diagram illustrating the gradients in Eqn. \\ref{eq:grads} and the relevance of the projection term $\\text{proj}_h g$. Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in",
+          "segment_index": 0
+        },
+        {
+          "source": "1801.07593_formula_1",
+          "target": "1801.07593_table_3",
+          "ref_text": "\\ref{table:adult}",
+          "context_snippet": "We implemented a technique that helped: by increasing the hyperparameter $\\alpha$ in Eqn. \\ref{eq:grads} over time, the predictor had a much easier time learning to deceive the adversary and therefore more strictly enforce equality of odds. We set $\\alpha=\\sqrt{t}$ (where $t$ is the step counter), a",
+          "segment_index": 1
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "\\includegraphics[width=\\columnwidth]{gradients2.png}     \\caption{Diagram illustrating the gradients in Eqn. \\ref{eq:grads} and the relevance of the projection term $\\text{proj}_h g$. Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in\n\nWe implemented a technique that helped: by increasing the hyperparameter $\\alpha$ in Eqn. \\ref{eq:grads} over time, the predictor had a much easier time learning to deceive the adversary and therefore more strictly enforce equality of odds. We set $\\alpha=\\sqrt{t}$ (where $t$ is the step counter), a",
+        "strategy": "direct+proximity",
+        "labels": [
+          "fig:grads",
+          "eq:grads",
+          "table:adult"
+        ],
+        "avg_match_conf": 0.7315
+      },
+      "chain_count_for_endpoints": 1
+    },
+    {
+      "pair_id": "1801.07593_lc_0002",
+      "doc_id": "1801.07593",
+      "element_a_id": "1801.07593_figure_2",
+      "element_b_id": "1801.07593_table_4",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 2,
+      "path": [
+        "1801.07593_figure_2",
+        "1801.07593_formula_1",
+        "1801.07593_table_4"
+      ],
+      "quality_score": 0.333,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "1801.07593_figure_2",
+        "element_type": "figure",
+        "caption": "Figure 2: Diagram illustrating the gradients in Eqn. 1 and the relevance of the projection term $\\mathrm { p r o j } _ { h } g$ . Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in the diagram, which actually helps the adversary. With the projection term, the predictor will never move in a direction that helps the adversary.",
+        "content": "Figure 2: Diagram illustrating the gradients in Eqn. 1 and the relevance of the projection term $\\mathrm { p r o j } _ { h } g$ . Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in the diagram, which actually helps the adversary. With the projection term, the predictor will never move in a direction that helps the adversary.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/1801.07593/1801.07593/hybrid_auto/images/1801.07593_page0_fig1.jpg",
+        "context_before": "As in Figure 1, we assume that the model is trained by attempting to modify weights $W$ to minimize some loss $L _ { P } ( \\hat { y } , y )$ , using a gradient-based method such as stochastic gradient descent.\n\n(2016), the\n\nTable 1: Completions for he : she :: doctor : ?\n\nWe update $U$ to minimize $L _ { A }$ at each training time step, according to the gradient $\\nabla _ { U } L _ { A }$ . We modify $W$ according\n\n2Achieving equality of odds and demographic parity are generally incongruent goal",
+        "context_after": "$$ \\nabla_ {W} L _ {P} - \\operatorname {p r o j} _ {\\nabla_ {W} L _ {A}} \\nabla_ {W} L _ {P} - \\alpha \\nabla_ {W} L _ {A} \\tag {1} $$\n\nwhere $\\alpha$ is a tuneable hyperparameter that can vary at each time step and we define $\\mathrm { p r o j } _ { v } x = 0$ if $v = 0$ .\n\nThe middle term p $\\mathbf { r o j } _ { \\nabla _ { W } L _ { A } } \\nabla _ { W } L _ { P }$ prevents the predictor from moving in a direction that helps the adversary decrease its loss while the last term, $\\alpha \\nabla _ "
+      },
+      "element_b": {
+        "element_id": "1801.07593_table_4",
+        "element_type": "table",
+        "caption": "Table 4: False Positive Rate (FPR) and False Negative Rate (FNR) for income bracket predictions for the two sex subgroups, with and without adversarial debiasing.",
+        "content": "Table 4: False Positive Rate (FPR) and False Negative Rate (FNR) for income bracket predictions for the two sex subgroups, with and without adversarial debiasing.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/1801.07593/1801.07593/hybrid_auto/images/a670a34fb79175675f388e5348270f7122f116ea7add225c3a76b1008f6e0d0b.jpg",
+        "context_before": "We train the model twice, once with debiasing and once without, and present side-by-side confusion matrices on the test set for income bracket with respect to the protected variable values Male and Female, shown in Table 3, and we present the false positive rates (FPR) and false negative rates (FNR) in Table 4. Note that false negative rate is equal to $1 -$ true positive rate, so the trade-offs are directly comparable to the $( x , y )$ values of an ROC curve.\n\nWe train the model twice, once wi",
+        "context_after": "In this work, we demonstrate a general and powerful method for training unbiased machine learning models. We state and prove theoretical guarantees for our method under reasonable assumptions, demonstrating in theory that the method can enforce the constraints that we claim, across multiple definitions of fairness, regardless of the complexity of the predictor’s model, or the nature (discrete or continuous) of the predicted and protected variables in question. We apply the method in practice to "
+      },
+      "edge_contexts": [
+        {
+          "source": "1801.07593_figure_2",
+          "target": "1801.07593_formula_1",
+          "ref_text": "\\ref{eq:grads}",
+          "context_snippet": "\\includegraphics[width=\\columnwidth]{gradients2.png}     \\caption{Diagram illustrating the gradients in Eqn. \\ref{eq:grads} and the relevance of the projection term $\\text{proj}_h g$. Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in",
+          "segment_index": 0
+        },
+        {
+          "source": "1801.07593_formula_1",
+          "target": "1801.07593_table_4",
+          "ref_text": "\\ref{tab:false_rates}",
+          "context_snippet": "We implemented a technique that helped: by increasing the hyperparameter $\\alpha$ in Eqn. \\ref{eq:grads} over time, the predictor had a much easier time learning to deceive the adversary and therefore more strictly enforce equality of odds. We set $\\alpha=\\sqrt{t}$ (where $t$ is the step counter), a",
+          "segment_index": 1
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "\\includegraphics[width=\\columnwidth]{gradients2.png}     \\caption{Diagram illustrating the gradients in Eqn. \\ref{eq:grads} and the relevance of the projection term $\\text{proj}_h g$. Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in\n\nWe implemented a technique that helped: by increasing the hyperparameter $\\alpha$ in Eqn. \\ref{eq:grads} over time, the predictor had a much easier time learning to deceive the adversary and therefore more strictly enforce equality of odds. We set $\\alpha=\\sqrt{t}$ (where $t$ is the step counter), a",
+        "strategy": "direct+proximity",
+        "labels": [
+          "fig:grads",
+          "eq:grads",
+          "tab:false_rates"
+        ],
+        "avg_match_conf": 0.7315
+      },
+      "chain_count_for_endpoints": 1
+    },
+    {
+      "pair_id": "1809.10083_lc_0003",
+      "doc_id": "1809.10083",
+      "element_a_id": "1809.10083_figure_6",
+      "element_b_id": "1809.10083_table_5",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 2,
+      "path": [
+        "1809.10083_figure_6",
+        "1809.10083_formula_1",
+        "1809.10083_table_5"
+      ],
+      "quality_score": 0.515,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "1809.10083_figure_6",
+        "element_type": "figure",
+        "caption": "Figure 6: MNIST-ROT – reconstruction from $e _ { 1 }$ and $e _ { 2 }$ , (c) e. Columns in each block reflect (left to right): real, reconstruction from $e _ { 1 }$ and that from $e _ { 2 }$ .",
+        "content": "Figure 6: MNIST-ROT – reconstruction from $e _ { 1 }$ and $e _ { 2 }$ , (c) e. Columns in each block reflect (left to right): real, reconstruction from $e _ { 1 }$ and that from $e _ { 2 }$ .",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/1809.10083/1809.10083/hybrid_auto/images/1809.10083_page0_fig21.jpg",
+        "context_before": "in the training data. Thus, information about these $z$ cannot be used to train supervised invariance induction models. We also provide ablation results on this dataset using the same baselines $B _ { 0 }$ and $B _ { 1 }$ . Table 4 summarizes the results of this experiment. The results show significantly better performance of our model compared to CAI and the baselines. More notably, CAI performs significantly worse than our baseline models, indicating that the supervised approach of invariance\n",
+        "context_after": "variations. The prediction model is then trained on the expanded dataset. The resulting model, thus, becomes robust to specific forms of variations of certain nuisance factors that it has seen during training. Invariance induction, on the other hand, aims to completely prevent prediction models from using information about nuisance factors. Data augmentation methods can be more effectively used for improving the prediction of $y$ by using the expanded dataset for inducing invariance by exclusion"
+      },
+      "element_b": {
+        "element_id": "1809.10083_table_5",
+        "element_type": "table",
+        "caption": "Table 5: Results on Amazon Reviews dataset – Accuracy of predicting $y$ from $e _ { 1 }$ (Ay)",
+        "content": "Table 5: Results on Amazon Reviews dataset – Accuracy of predicting $y$ from $e _ { 1 }$ (Ay)",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/1809.10083/1809.10083/hybrid_auto/images/e5ff4b31639748861b3e76c258fe19abd26f73e6a328e70e08e82e3524f6c1e6.jpg",
+        "context_before": "variations. The prediction model is then trained on the expanded dataset. The resulting model, thus, becomes robust to specific forms of variations of certain nuisance factors that it has seen during training. Invariance induction, on the other hand, aims to completely prevent prediction models from using information about nuisance factors. Data augmentation methods can be more effectively used for improving the prediction of $y$ by using the expanded dataset for inducing invariance by exclusion",
+        "context_after": "in the training data. Thus, information about these $z$ cannot be used to train supervised invariance induction models. We also provide ablation results on this dataset using the same baselines $B _ { 0 }$ and $B _ { 1 }$ . Table 4 summarizes the results of this experiment. The results show significantly better performance of our model compared to CAI and the baselines. More notably, CAI performs significantly worse than our baseline models, indicating that the supervised approach of invariance "
+      },
+      "edge_contexts": [
+        {
+          "source": "1809.10083_formula_1",
+          "target": "1809.10083_figure_6",
+          "ref_text": "\\ref{fig:recon_mnist_rot}",
+          "context_snippet": "We incorporate the idea of splitting $F$ into $F_y$ and $\\overline{F}_y$ in our framework in a more relaxed sense as learning a disentangled latent representation of $x$ in the form of $e = [e_1 \\ e_2]$, where $e_1$ aims to capture all the information in $F_y$ and $e_2$ that in $\\overline{F}_y$. Onc",
+          "segment_index": 0
+        },
+        {
+          "source": "1809.10083_formula_1",
+          "target": "1809.10083_table_5",
+          "ref_text": "\\ref{tab:amzrev}",
+          "context_snippet": "We incorporate the idea of splitting $F$ into $F_y$ and $\\overline{F}_y$ in our framework in a more relaxed sense as learning a disentangled latent representation of $x$ in the form of $e = [e_1 \\ e_2]$, where $e_1$ aims to capture all the information in $F_y$ and $e_2$ that in $\\overline{F}_y$. Onc",
+          "segment_index": 1
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "We incorporate the idea of splitting $F$ into $F_y$ and $\\overline{F}_y$ in our framework in a more relaxed sense as learning a disentangled latent representation of $x$ in the form of $e = [e_1 \\ e_2]$, where $e_1$ aims to capture all the information in $F_y$ and $e_2$ that in $\\overline{F}_y$. Onc",
+        "strategy": "proximity",
+        "labels": [
+          "eq:uif",
+          "fig:recon_mnist_rot",
+          "tab:amzrev"
+        ],
+        "avg_match_conf": 0.653
+      },
+      "chain_count_for_endpoints": 6
+    },
+    {
+      "pair_id": "2005.07293_lc_0004",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_figure_1",
+      "element_b_id": "2005.07293_formula_1",
+      "element_a_type": "figure",
+      "element_b_type": "formula",
+      "pair_type": "figure+formula",
+      "hop_distance": 2,
+      "path": [
+        "2005.07293_figure_1",
+        "2005.07293_table_3",
+        "2005.07293_formula_1"
+      ],
+      "quality_score": 0.37,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_figure_1",
+        "element_type": "figure",
+        "caption": "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity.",
+        "content": "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig0.jpg",
+        "context_before": "Fred Morstatter University of Southern California Information Sciences Institute morstatt@usc.edu\n\nMachine learning systems have been shown to propagate the societal errors of the past. In light of this, a wealth of research focuses on designing solutions that are “fair.” Even with this abundance of work, there is no singular definition of fairness, mainly because fairness is subjective and context dependent. We propose a new fairness definition, motivated by the principle of equity, that consid",
+        "context_after": "theoretical analysis of these definitions have found that many at the forefront are incompatible with each other [Kleinberg, Mullainathan, and Raghavan, 2016]. For now at least, fairness remains a philosophical question that is not yet answered in the computational domain. In light of that, we propose and mathematically formalize the equity notion of fairness in which resources and outcomes are distributed to overcome obstacles experienced by groups in order to maximize their opportunities [Sche"
+      },
+      "element_b": {
+        "element_id": "2005.07293_formula_1",
+        "element_type": "formula",
+        "caption": "",
+        "content": "$$\\min _ {\\theta} L (\\theta). \\tag {3}$$",
+        "image_path": null,
+        "context_before": "We also show the significance of these results in Table 1.\n\nThrough MannWhitney U significance\n\n<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Beta</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>0.1</td><td rowspan=\"9\">Equity</td><td>0.0003</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><t",
+        "context_after": ""
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 1
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how\n\n\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+        "strategy": "proximity",
+        "labels": [
+          "motivation",
+          "accuracy_p",
+          "equity_eq"
+        ],
+        "avg_match_conf": 0.806
+      },
+      "chain_count_for_endpoints": 3
+    },
+    {
+      "pair_id": "2005.07293_lc_0005",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_figure_1",
+      "element_b_id": "2005.07293_table_1",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 3,
+      "path": [
+        "2005.07293_figure_1",
+        "2005.07293_table_3",
+        "2005.07293_formula_1",
+        "2005.07293_table_1"
+      ],
+      "quality_score": 0.34,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_figure_1",
+        "element_type": "figure",
+        "caption": "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity.",
+        "content": "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig0.jpg",
+        "context_before": "Fred Morstatter University of Southern California Information Sciences Institute morstatt@usc.edu\n\nMachine learning systems have been shown to propagate the societal errors of the past. In light of this, a wealth of research focuses on designing solutions that are “fair.” Even with this abundance of work, there is no singular definition of fairness, mainly because fairness is subjective and context dependent. We propose a new fairness definition, motivated by the principle of equity, that consid",
+        "context_after": "theoretical analysis of these definitions have found that many at the forefront are incompatible with each other [Kleinberg, Mullainathan, and Raghavan, 2016]. For now at least, fairness remains a philosophical question that is not yet answered in the computational domain. In light of that, we propose and mathematically formalize the equity notion of fairness in which resources and outcomes are distributed to overcome obstacles experienced by groups in order to maximize their opportunities [Sche"
+      },
+      "element_b": {
+        "element_id": "2005.07293_table_1",
+        "element_type": "table",
+        "caption": "Table 1: One vs all (Equity loss vs Parity and Classifier losses) MannWhitney U test for COMPAS and Adult datasets. The results show the statistical significance of experiments performed for evaluation of fairness gain amongst different losses over different $\\beta$ values. The assumed test hypothesis was whether Equity will have greater fairness gain compared to Parity and Classifier losses. Table 2: Features used in the experiments from the COM-PAS dataset.",
+        "content": "Table 1: One vs all (Equity loss vs Parity and Classifier losses) MannWhitney U test for COMPAS and Adult datasets. The results show the statistical significance of experiments performed for evaluation of fairness gain amongst different losses over different $\\beta$ values. The assumed test hypothesis was whether Equity will have greater fairness gain compared to Parity and Classifier losses. Table 2: Features used in the experiments from the COM-PAS dataset.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/5bca1eeb81ee4d3cf6bc71a795a6e5468579757886ed0a934f2427d076b5b651.jpg",
+        "context_before": "",
+        "context_after": "test we show that this gain is significant for all the $\\beta$ values for both of the datasets. With regards to degrade in test accuracy, as expected, larger $\\beta$ values resulted in more loss in test accuracy, while more gain in fairness. However, this loss was shown to be non-significant for one of our datasets, the COMPAS dataset, for low to mid $\\beta$ values which we recommend using. For the Adult dataset, although the loss was shown to be statistically significant, the test accuracy loss"
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 1
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_1",
+          "ref_text": "\\ref{fairness_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how\n\n\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+        "strategy": "proximity",
+        "labels": [
+          "motivation",
+          "accuracy_p",
+          "equity_eq",
+          "fairness_p"
+        ],
+        "avg_match_conf": 0.7337
+      },
+      "chain_count_for_endpoints": 1
+    },
+    {
+      "pair_id": "2005.07293_lc_0006",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_figure_1",
+      "element_b_id": "2005.07293_table_7",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 3,
+      "path": [
+        "2005.07293_figure_1",
+        "2005.07293_table_3",
+        "2005.07293_formula_1",
+        "2005.07293_table_7"
+      ],
+      "quality_score": 0.34,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_figure_1",
+        "element_type": "figure",
+        "caption": "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity.",
+        "content": "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig0.jpg",
+        "context_before": "Fred Morstatter University of Southern California Information Sciences Institute morstatt@usc.edu\n\nMachine learning systems have been shown to propagate the societal errors of the past. In light of this, a wealth of research focuses on designing solutions that are “fair.” Even with this abundance of work, there is no singular definition of fairness, mainly because fairness is subjective and context dependent. We propose a new fairness definition, motivated by the principle of equity, that consid",
+        "context_after": "theoretical analysis of these definitions have found that many at the forefront are incompatible with each other [Kleinberg, Mullainathan, and Raghavan, 2016]. For now at least, fairness remains a philosophical question that is not yet answered in the computational domain. In light of that, we propose and mathematically formalize the equity notion of fairness in which resources and outcomes are distributed to overcome obstacles experienced by groups in order to maximize their opportunities [Sche"
+      },
+      "element_b": {
+        "element_id": "2005.07293_table_7",
+        "element_type": "table",
+        "caption": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>\n\nTable 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers ",
+        "content": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>\n\nTable 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers ",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig15.jpg",
+        "context_before": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>\n\nTable 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers reported in parenthesis for different $\\beta$ values.",
+        "context_after": ""
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 1
+        },
+        {
+          "source": "2005.07293_table_7",
+          "target": "2005.07293_formula_1",
+          "ref_text": "\\ref{equity_eq}",
+          "context_snippet": "\\includegraphics[width=0.45\\textwidth,trim=3.0cm 18.9cm 6.5cm 2.5cm,clip=true]{images/adult_fairness_gain.pdf} \\caption{Accuracy and fairness gain results for the COMPAS and Adult datasets over different $\\beta$ values. Top plots report the accuracy results, while bottom plots report the fairness ga",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how\n\n\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t\n\n\\includegraphics[width=0.45\\textwidth,trim=3.0cm 18.9cm 6.5cm 2.5cm,clip=true]{images/adult_fairness_gain.pdf} \\caption{Accuracy and fairness gain results for the COMPAS and Adult datasets over different $\\beta$ values. Top plots report the accuracy results, while bottom plots report the fairness ga",
+        "strategy": "proximity",
+        "labels": [
+          "motivation",
+          "accuracy_p",
+          "equity_eq",
+          "Adult_acc_gain"
+        ],
+        "avg_match_conf": 0.6873
+      },
+      "chain_count_for_endpoints": 1
+    },
+    {
+      "pair_id": "2005.07293_lc_0007",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_figure_4",
+      "element_b_id": "2005.07293_formula_1",
+      "element_a_type": "figure",
+      "element_b_type": "formula",
+      "pair_type": "figure+formula",
+      "hop_distance": 2,
+      "path": [
+        "2005.07293_figure_4",
+        "2005.07293_table_3",
+        "2005.07293_formula_1"
+      ],
+      "quality_score": 0.37,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_figure_4",
+        "element_type": "figure",
+        "caption": "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios.",
+        "content": "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig14.jpg",
+        "context_before": "",
+        "context_after": "With relatively recent popularity of fairness in machine learning and natural language processing domains, the need to find a universal and a more complete fairness definition and measure is crucial. Although finding such definition and measure is a challenge not only in machine learning but also in social and political sciences, steps need to be taken to make current definitions evolve and cover more real world cases. In light of this many fairness definitions have been proposed. Some tried to "
+      },
+      "element_b": {
+        "element_id": "2005.07293_formula_1",
+        "element_type": "formula",
+        "caption": "",
+        "content": "$$\\min _ {\\theta} L (\\theta). \\tag {3}$$",
+        "image_path": null,
+        "context_before": "We also show the significance of these results in Table 1.\n\nThrough MannWhitney U significance\n\n<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Beta</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>0.1</td><td rowspan=\"9\">Equity</td><td>0.0003</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><t",
+        "context_after": ""
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_table_3",
+          "target": "2005.07293_figure_4",
+          "ref_text": "\\ref{mturk_violin}",
+          "context_snippet": "From results shown in Figure \\ref{plots1}, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) Mann–Whitney U test in Table \\r",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 1
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "From results shown in Figure \\ref{plots1}, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) Mann–Whitney U test in Table \\r\n\n\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+        "strategy": "proximity",
+        "labels": [
+          "accuracy_p",
+          "mturk_violin",
+          "equity_eq"
+        ],
+        "avg_match_conf": 0.806
+      },
+      "chain_count_for_endpoints": 3
+    },
+    {
+      "pair_id": "2005.07293_lc_0008",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_figure_4",
+      "element_b_id": "2005.07293_table_1",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 3,
+      "path": [
+        "2005.07293_figure_4",
+        "2005.07293_table_3",
+        "2005.07293_formula_1",
+        "2005.07293_table_1"
+      ],
+      "quality_score": 0.34,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_figure_4",
+        "element_type": "figure",
+        "caption": "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios.",
+        "content": "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig14.jpg",
+        "context_before": "",
+        "context_after": "With relatively recent popularity of fairness in machine learning and natural language processing domains, the need to find a universal and a more complete fairness definition and measure is crucial. Although finding such definition and measure is a challenge not only in machine learning but also in social and political sciences, steps need to be taken to make current definitions evolve and cover more real world cases. In light of this many fairness definitions have been proposed. Some tried to "
+      },
+      "element_b": {
+        "element_id": "2005.07293_table_1",
+        "element_type": "table",
+        "caption": "Table 1: One vs all (Equity loss vs Parity and Classifier losses) MannWhitney U test for COMPAS and Adult datasets. The results show the statistical significance of experiments performed for evaluation of fairness gain amongst different losses over different $\\beta$ values. The assumed test hypothesis was whether Equity will have greater fairness gain compared to Parity and Classifier losses. Table 2: Features used in the experiments from the COM-PAS dataset.",
+        "content": "Table 1: One vs all (Equity loss vs Parity and Classifier losses) MannWhitney U test for COMPAS and Adult datasets. The results show the statistical significance of experiments performed for evaluation of fairness gain amongst different losses over different $\\beta$ values. The assumed test hypothesis was whether Equity will have greater fairness gain compared to Parity and Classifier losses. Table 2: Features used in the experiments from the COM-PAS dataset.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/5bca1eeb81ee4d3cf6bc71a795a6e5468579757886ed0a934f2427d076b5b651.jpg",
+        "context_before": "",
+        "context_after": "test we show that this gain is significant for all the $\\beta$ values for both of the datasets. With regards to degrade in test accuracy, as expected, larger $\\beta$ values resulted in more loss in test accuracy, while more gain in fairness. However, this loss was shown to be non-significant for one of our datasets, the COMPAS dataset, for low to mid $\\beta$ values which we recommend using. For the Adult dataset, although the loss was shown to be statistically significant, the test accuracy loss"
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_table_3",
+          "target": "2005.07293_figure_4",
+          "ref_text": "\\ref{mturk_violin}",
+          "context_snippet": "From results shown in Figure \\ref{plots1}, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) Mann–Whitney U test in Table \\r",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 1
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_1",
+          "ref_text": "\\ref{fairness_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "From results shown in Figure \\ref{plots1}, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) Mann–Whitney U test in Table \\r\n\n\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+        "strategy": "proximity",
+        "labels": [
+          "accuracy_p",
+          "mturk_violin",
+          "equity_eq",
+          "fairness_p"
+        ],
+        "avg_match_conf": 0.7337
+      },
+      "chain_count_for_endpoints": 1
+    },
+    {
+      "pair_id": "2005.07293_lc_0009",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_figure_4",
+      "element_b_id": "2005.07293_table_7",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 3,
+      "path": [
+        "2005.07293_figure_4",
+        "2005.07293_table_3",
+        "2005.07293_formula_1",
+        "2005.07293_table_7"
+      ],
+      "quality_score": 0.34,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_figure_4",
+        "element_type": "figure",
+        "caption": "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios.",
+        "content": "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig14.jpg",
+        "context_before": "",
+        "context_after": "With relatively recent popularity of fairness in machine learning and natural language processing domains, the need to find a universal and a more complete fairness definition and measure is crucial. Although finding such definition and measure is a challenge not only in machine learning but also in social and political sciences, steps need to be taken to make current definitions evolve and cover more real world cases. In light of this many fairness definitions have been proposed. Some tried to "
+      },
+      "element_b": {
+        "element_id": "2005.07293_table_7",
+        "element_type": "table",
+        "caption": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>\n\nTable 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers ",
+        "content": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>\n\nTable 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers ",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/2005.07293_page0_fig15.jpg",
+        "context_before": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>\n\nTable 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers reported in parenthesis for different $\\beta$ values.",
+        "context_after": ""
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_table_3",
+          "target": "2005.07293_figure_4",
+          "ref_text": "\\ref{mturk_violin}",
+          "context_snippet": "From results shown in Figure \\ref{plots1}, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) Mann–Whitney U test in Table \\r",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 1
+        },
+        {
+          "source": "2005.07293_table_7",
+          "target": "2005.07293_formula_1",
+          "ref_text": "\\ref{equity_eq}",
+          "context_snippet": "\\includegraphics[width=0.45\\textwidth,trim=3.0cm 18.9cm 6.5cm 2.5cm,clip=true]{images/adult_fairness_gain.pdf} \\caption{Accuracy and fairness gain results for the COMPAS and Adult datasets over different $\\beta$ values. Top plots report the accuracy results, while bottom plots report the fairness ga",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "From results shown in Figure \\ref{plots1}, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) Mann–Whitney U test in Table \\r\n\n\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t\n\n\\includegraphics[width=0.45\\textwidth,trim=3.0cm 18.9cm 6.5cm 2.5cm,clip=true]{images/adult_fairness_gain.pdf} \\caption{Accuracy and fairness gain results for the COMPAS and Adult datasets over different $\\beta$ values. Top plots report the accuracy results, while bottom plots report the fairness ga",
+        "strategy": "proximity",
+        "labels": [
+          "accuracy_p",
+          "mturk_violin",
+          "equity_eq",
+          "Adult_acc_gain"
+        ],
+        "avg_match_conf": 0.6873
+      },
+      "chain_count_for_endpoints": 1
+    },
+    {
+      "pair_id": "2005.07293_lc_0010",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_formula_1",
+      "element_b_id": "2005.07293_table_4",
+      "element_a_type": "formula",
+      "element_b_type": "table",
+      "pair_type": "formula+table",
+      "hop_distance": 3,
+      "path": [
+        "2005.07293_formula_1",
+        "2005.07293_table_3",
+        "2005.07293_figure_1",
+        "2005.07293_table_4"
+      ],
+      "quality_score": 0.34,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_formula_1",
+        "element_type": "formula",
+        "caption": "",
+        "content": "$$\\min _ {\\theta} L (\\theta). \\tag {3}$$",
+        "image_path": null,
+        "context_before": "We also show the significance of these results in Table 1.\n\nThrough MannWhitney U significance\n\n<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Beta</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>0.1</td><td rowspan=\"9\">Equity</td><td>0.0003</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><t",
+        "context_after": ""
+      },
+      "element_b": {
+        "element_id": "2005.07293_table_4",
+        "element_type": "table",
+        "caption": "Table 4: Performance of Mann-Whitney U test for showing the effectiveness of Equity in reducing bias in the feedback loop compared to Parity and Classifier losses over different iterations for COMPAS and Adult datasets. The obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.5.",
+        "content": "Table 4: Performance of Mann-Whitney U test for showing the effectiveness of Equity in reducing bias in the feedback loop compared to Parity and Classifier losses over different iterations for COMPAS and Adult datasets. The obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.5.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/328d67e868f4fc560580db7a11ffd090f810a9b28b2225d0705eb9ff00788a88.jpg",
+        "context_before": "Figure 3 reports $| p ( Y | A = { \\mathrm { f e m a l e } } ) - p ( Y | A = { \\mathrm { m a l e } } )$ |, averaged across 10 runs, as a measure for disparity for both predicted class labels $Y ~ = ~ 0$ and $Y ~ = ~ 1$ in each of the datasets for each of the fairness notions for each $\\beta$ value.\n\nThe obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.1.\n\nAn important and major concern in the fairness community is the feedback loop phenomenon [",
+        "context_after": "Hypothesis 2 The Equity classification objective can be the most effective in terms of reducing the disparities (bias) defined as $| p ( Y | A = a ) -$ $p ( Y | A = b ) |$ between demographic groups a and b over some iterations when predictive outcomes on the test sets are accumulated over time on the historical train sets.\n\n4.1 Experimental Design and Results\n\nHerein, we answer the question of what will happen if the equity classifier is allowed to play out in a realistic environment. We simula"
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 1
+        },
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_4",
+          "ref_text": "\\ref{05_feedbackloop_p}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t\n\nTwo different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how",
+        "strategy": "proximity",
+        "labels": [
+          "equity_eq",
+          "accuracy_p",
+          "motivation",
+          "05_feedbackloop_p"
+        ],
+        "avg_match_conf": 0.8658
+      },
+      "chain_count_for_endpoints": 2
+    },
+    {
+      "pair_id": "2005.07293_lc_0011",
+      "doc_id": "2005.07293",
+      "element_a_id": "2005.07293_formula_1",
+      "element_b_id": "2005.07293_table_5",
+      "element_a_type": "formula",
+      "element_b_type": "table",
+      "pair_type": "formula+table",
+      "hop_distance": 3,
+      "path": [
+        "2005.07293_formula_1",
+        "2005.07293_table_3",
+        "2005.07293_figure_1",
+        "2005.07293_table_5"
+      ],
+      "quality_score": 0.34,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2005.07293_formula_1",
+        "element_type": "formula",
+        "caption": "",
+        "content": "$$\\min _ {\\theta} L (\\theta). \\tag {3}$$",
+        "image_path": null,
+        "context_before": "We also show the significance of these results in Table 1.\n\nThrough MannWhitney U significance\n\n<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Beta</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>0.1</td><td rowspan=\"9\">Equity</td><td>0.0003</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><t",
+        "context_after": ""
+      },
+      "element_b": {
+        "element_id": "2005.07293_table_5",
+        "element_type": "table",
+        "caption": "Table 5: Number of people preferring solutions provided by the equity vs solutions provided by the parity notions of fairness in different scenarios.",
+        "content": "Table 5: Number of people preferring solutions provided by the equity vs solutions provided by the parity notions of fairness in different scenarios.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2005.07293/2005.07293/hybrid_auto/images/0a67ab02538002abba9d0a51e025d28cd1928b8c4ca2d01c300ef31b2c8b8acc.jpg",
+        "context_before": "Figure 3 reports $| p ( Y | A = { \\mathrm { f e m a l e } } ) - p ( Y | A = { \\mathrm { m a l e } } )$ |, averaged across 10 runs, as a measure for disparity for both predicted class labels $Y ~ = ~ 0$ and $Y ~ = ~ 1$ in each of the datasets for each of the fairness notions for each $\\beta$ value.\n\nThe obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.1.\n\nequality/parity. For each scenario, we asked workers to rate how fair they think each solu",
+        "context_after": "uity). The other proposes to equally distribute houses across different racial categories (parity).\n\n• Scenario 4 (College Admission): We asked respondents to rate college admission systems—one based on equity considering if the student is a first generation college student (equity). The other equally admits students from first generation and non-first generation backgrounds (parity).\n\nAfter gathering and analyzing responses from mechanical turk workers, we observed that there are some cases in "
+      },
+      "edge_contexts": [
+        {
+          "source": "2005.07293_formula_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t",
+          "segment_index": 0
+        },
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_3",
+          "ref_text": "\\ref{accuracy_p}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 1
+        },
+        {
+          "source": "2005.07293_figure_1",
+          "target": "2005.07293_table_5",
+          "ref_text": "\\ref{votes_stats}",
+          "context_snippet": "Two different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how ",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "\\begin{itemize}     \\item Equity Loss: This loss function is our proposed loss function in Equation~\\ref{equity_eq} introduced in the previous section.     \\item Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with t\n\nTwo different fairness realizations are depicted in Figure \\ref{motivation}. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how",
+        "strategy": "proximity",
+        "labels": [
+          "equity_eq",
+          "accuracy_p",
+          "motivation",
+          "votes_stats"
+        ],
+        "avg_match_conf": 0.8707
+      },
+      "chain_count_for_endpoints": 2
+    },
+    {
+      "pair_id": "2109.03952_lc_0012",
+      "doc_id": "2109.03952",
+      "element_a_id": "2109.03952_figure_5",
+      "element_b_id": "2109.03952_table_2",
+      "element_a_type": "figure",
+      "element_b_type": "table",
+      "pair_type": "figure+table",
+      "hop_distance": 3,
+      "path": [
+        "2109.03952_figure_5",
+        "2109.03952_formula_1",
+        "2109.03952_figure_2",
+        "2109.03952_table_2"
+      ],
+      "quality_score": 0.44,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2109.03952_figure_5",
+        "element_type": "figure",
+        "caption": "Figure 5: Additional qualitative results from the non-tabular data experiment on the job classification task based on the bio texts. Green regions represent top three words that the model used for its prediction based on the attention weights. Accuracy vs EQOP (UCI Adult)",
+        "content": "Figure 5: Additional qualitative results from the non-tabular data experiment on the job classification task based on the bio texts. Green regions represent top three words that the model used for its prediction based on the attention weights. Accuracy vs EQOP (UCI Adult)",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2109.03952/2109.03952/hybrid_auto/images/2109.03952_page0_fig7.jpg",
+        "context_before": "More details about each of the datasets along with the descriptions of each feature for the Adult dataset can be found $\\mathrm { a t } ^ { 6 }$ and for the Heritage Health dataset can be found at 7. In our qualitative results, we used the feature names as marked in these datasets. If the names or acronyms are unclear kindly reference to the references mentioned for more detailed description for each of the features. Although most of the features in the Adult datasets are self-descriptive, Herit",
+        "context_after": "We also included some additional qualitative results from the experiments on non-tabular data in Fig. 5."
+      },
+      "element_b": {
+        "element_id": "2109.03952_table_2",
+        "element_type": "table",
+        "caption": "Table 2: Some abbreviations used in Heritage Health dataset’s feature names. These abbreviations are listed for clarity of interpreting each feature’s meaning specifically in our qualitative analysis or attribution visualizations.",
+        "content": "Table 2: Some abbreviations used in Heritage Health dataset’s feature names. These abbreviations are listed for clarity of interpreting each feature’s meaning specifically in our qualitative analysis or attribution visualizations.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2109.03952/2109.03952/hybrid_auto/images/4e1c17194cf759adbc783dca48daf90a0edd66fd43ca02a9aa736aecf203a87b.jpg",
+        "context_before": "bias the model against different attributes, such as gender vs. race. For the baseline pre-processing method, we masked the gender-related words, such as names and gender words, as provided in the biosbias dataset and trained the model on the filtered dataset. On the other hand, we trained the model on the raw bios for our post-processing method and only manipulated attention weights of the gender words during the testing process as also provided in the biosbias dataset. In order to measure the\n",
+        "context_after": "5https://fairlearn.org\n\n6https://archive.ics.uci.edu/ml/datasets/adult\n\n3RVW\u00103URFHVVLQJ\u0003 2XUV\n\nfound in the appendix. Fig. 2 summarizes our results by visualizing the attributions, which we now discuss.\n\nble to achieve different trade-offs. Moreover, our approach does not need to know sensitive attributes while training; thus, it could work with other sensitive attributes not known beforehand or during training. Lastly, here we merely focused on mitigating bias (as our goal was to show that the "
+      },
+      "edge_contexts": [
+        {
+          "source": "2109.03952_formula_1",
+          "target": "2109.03952_figure_5",
+          "ref_text": "\\ref{fig:NLP_qualitative_appendix}",
+          "context_snippet": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti",
+          "segment_index": 0
+        },
+        {
+          "source": "2109.03952_formula_1",
+          "target": "2109.03952_figure_2",
+          "ref_text": "\\ref{fig:interpret_results}",
+          "context_snippet": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti",
+          "segment_index": 1
+        },
+        {
+          "source": "2109.03952_figure_2",
+          "target": "2109.03952_table_2",
+          "ref_text": "\\ref{feature_abbriv}",
+          "context_snippet": "First, we test our method's ability to capture correct attributions in controlled experiments with synthetic data (described in Sec.~\\ref{syn_data_sec}). We also conduct a similar experiment with \\textit{UCI Adult} and \\textit{Heritage Health} datasets which can be found in the appendix. Fig.~\\ref{f",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti\n\nFirst, we test our method's ability to capture correct attributions in controlled experiments with synthetic data (described in Sec.~\\ref{syn_data_sec}). We also conduct a similar experiment with \\textit{UCI Adult} and \\textit{Heritage Health} datasets which can be found in the appendix. Fig.~\\ref{f",
+        "strategy": "proximity",
+        "labels": [
+          "mitig_alg",
+          "fig:NLP_qualitative_appendix",
+          "fig:interpret_results",
+          "feature_abbriv"
+        ],
+        "avg_match_conf": 0.7875
+      },
+      "chain_count_for_endpoints": 2
+    },
+    {
+      "pair_id": "2109.03952_lc_0013",
+      "doc_id": "2109.03952",
+      "element_a_id": "2109.03952_figure_9",
+      "element_b_id": "2109.03952_formula_1",
+      "element_a_type": "figure",
+      "element_b_type": "formula",
+      "pair_type": "figure+formula",
+      "hop_distance": 3,
+      "path": [
+        "2109.03952_figure_9",
+        "2109.03952_table_2",
+        "2109.03952_figure_2",
+        "2109.03952_formula_1"
+      ],
+      "quality_score": 0.44,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2109.03952_figure_9",
+        "element_type": "figure",
+        "caption": "Figure 9: Results from the real-world datasets. Note that in our $\\hat { y } _ { z }$ notation we replaced indexes with actual feature names for clarity in these results on real-world datasets as there is not one universal indexing schema, but the feature names are more universal and discriptive for this case. Labels on the points represent the feature name that was removed (zeroed out) according to our $\\hat { y } _ { z }$ notation. The results show how the accuracy and fairness of the model (i",
+        "content": "Figure 9: Results from the real-world datasets. Note that in our $\\hat { y } _ { z }$ notation we replaced indexes with actual feature names for clarity in these results on real-world datasets as there is not one universal indexing schema, but the feature names are more universal and discriptive for this case. Labels on the points represent the feature name that was removed (zeroed out) according to our $\\hat { y } _ { z }$ notation. The results show how the accuracy and fairness of the model (in terms of statistical parity difference) change by exclusion of each feature.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2109.03952/2109.03952/hybrid_auto/images/2109.03952_page0_fig14.jpg",
+        "context_before": "",
+        "context_after": "Fig. 9 shows results on a subset of the features from the UCI Adult and Heritage Health datasets (to keep the plots uncluttered and readable, we incorporated the most interesting features in the plot), and provide some intuition about how different features in these datasets contribute to the model fairness and accuracy. While features such as capital gain and capital loss in the UCI Adult dataset are responsible for improving accuracy and reducing bias, we can observe that features such as rela"
+      },
+      "element_b": {
+        "element_id": "2109.03952_formula_1",
+        "element_type": "formula",
+        "caption": "",
+        "content": "$$H = \\tanh (E) \\quad \\alpha = \\operatorname {s o f t m a x} \\left(w ^ {T} H\\right) \\quad r = \\tanh \\left(E \\alpha^ {T}\\right) \\tag {1}$$",
+        "image_path": null,
+        "context_before": "",
+        "context_after": ""
+      },
+      "edge_contexts": [
+        {
+          "source": "2109.03952_figure_9",
+          "target": "2109.03952_table_2",
+          "ref_text": "\\ref{feature_abbriv}",
+          "context_snippet": "\\subsection{Interpreting Fairness with Attention} Fig.~\\ref{fig:interpret_results_2} shows results on a subset of the features from the \\textit{UCI Adult} and \\textit{Heritage Health} datasets (to keep the plots uncluttered and readable, we incorporated the most interesting features in the plot), an",
+          "segment_index": 0
+        },
+        {
+          "source": "2109.03952_figure_2",
+          "target": "2109.03952_table_2",
+          "ref_text": "\\ref{feature_abbriv}",
+          "context_snippet": "First, we test our method's ability to capture correct attributions in controlled experiments with synthetic data (described in Sec.~\\ref{syn_data_sec}). We also conduct a similar experiment with \\textit{UCI Adult} and \\textit{Heritage Health} datasets which can be found in the appendix. Fig.~\\ref{f",
+          "segment_index": 1
+        },
+        {
+          "source": "2109.03952_formula_1",
+          "target": "2109.03952_figure_2",
+          "ref_text": "\\ref{fig:interpret_results}",
+          "context_snippet": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti",
+          "segment_index": 2
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "\\subsection{Interpreting Fairness with Attention} Fig.~\\ref{fig:interpret_results_2} shows results on a subset of the features from the \\textit{UCI Adult} and \\textit{Heritage Health} datasets (to keep the plots uncluttered and readable, we incorporated the most interesting features in the plot), an\n\nFirst, we test our method's ability to capture correct attributions in controlled experiments with synthetic data (described in Sec.~\\ref{syn_data_sec}). We also conduct a similar experiment with \\textit{UCI Adult} and \\textit{Heritage Health} datasets which can be found in the appendix. Fig.~\\ref{f\n\nAs discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti",
+        "strategy": "proximity",
+        "labels": [
+          "fig:interpret_results_2",
+          "feature_abbriv",
+          "fig:interpret_results",
+          "mitig_alg"
+        ],
+        "avg_match_conf": 0.8878
+      },
+      "chain_count_for_endpoints": 2
+    },
+    {
+      "pair_id": "2109.03952_lc_0014",
+      "doc_id": "2109.03952",
+      "element_a_id": "2109.03952_formula_1",
+      "element_b_id": "2109.03952_table_2",
+      "element_a_type": "formula",
+      "element_b_type": "table",
+      "pair_type": "formula+table",
+      "hop_distance": 2,
+      "path": [
+        "2109.03952_formula_1",
+        "2109.03952_figure_2",
+        "2109.03952_table_2"
+      ],
+      "quality_score": 0.47,
+      "overlap_with_existing_l1": false,
+      "element_a": {
+        "element_id": "2109.03952_formula_1",
+        "element_type": "formula",
+        "caption": "",
+        "content": "$$H = \\tanh (E) \\quad \\alpha = \\operatorname {s o f t m a x} \\left(w ^ {T} H\\right) \\quad r = \\tanh \\left(E \\alpha^ {T}\\right) \\tag {1}$$",
+        "image_path": null,
+        "context_before": "",
+        "context_after": ""
+      },
+      "element_b": {
+        "element_id": "2109.03952_table_2",
+        "element_type": "table",
+        "caption": "Table 2: Some abbreviations used in Heritage Health dataset’s feature names. These abbreviations are listed for clarity of interpreting each feature’s meaning specifically in our qualitative analysis or attribution visualizations.",
+        "content": "Table 2: Some abbreviations used in Heritage Health dataset’s feature names. These abbreviations are listed for clarity of interpreting each feature’s meaning specifically in our qualitative analysis or attribution visualizations.",
+        "image_path": "/projects/_hdd/myyyx1/data-process-test/data/mineru_output/2109.03952/2109.03952/hybrid_auto/images/4e1c17194cf759adbc783dca48daf90a0edd66fd43ca02a9aa736aecf203a87b.jpg",
+        "context_before": "bias the model against different attributes, such as gender vs. race. For the baseline pre-processing method, we masked the gender-related words, such as names and gender words, as provided in the biosbias dataset and trained the model on the filtered dataset. On the other hand, we trained the model on the raw bios for our post-processing method and only manipulated attention weights of the gender words during the testing process as also provided in the biosbias dataset. In order to measure the\n",
+        "context_after": "5https://fairlearn.org\n\n6https://archive.ics.uci.edu/ml/datasets/adult\n\n3RVW\u00103URFHVVLQJ\u0003 2XUV\n\nfound in the appendix. Fig. 2 summarizes our results by visualizing the attributions, which we now discuss.\n\nble to achieve different trade-offs. Moreover, our approach does not need to know sensitive attributes while training; thus, it could work with other sensitive attributes not known beforehand or during training. Lastly, here we merely focused on mitigating bias (as our goal was to show that the "
+      },
+      "edge_contexts": [
+        {
+          "source": "2109.03952_formula_1",
+          "target": "2109.03952_figure_2",
+          "ref_text": "\\ref{fig:interpret_results}",
+          "context_snippet": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti",
+          "segment_index": 0
+        },
+        {
+          "source": "2109.03952_figure_2",
+          "target": "2109.03952_table_2",
+          "ref_text": "\\ref{feature_abbriv}",
+          "context_snippet": "First, we test our method's ability to capture correct attributions in controlled experiments with synthetic data (described in Sec.~\\ref{syn_data_sec}). We also conduct a similar experiment with \\textit{UCI Adult} and \\textit{Heritage Health} datasets which can be found in the appendix. Fig.~\\ref{f",
+          "segment_index": 1
+        }
+      ],
+      "latex_bridge": {
+        "bridge_text": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm~\\ref{miti\n\nFirst, we test our method's ability to capture correct attributions in controlled experiments with synthetic data (described in Sec.~\\ref{syn_data_sec}). We also conduct a similar experiment with \\textit{UCI Adult} and \\textit{Heritage Health} datasets which can be found in the appendix. Fig.~\\ref{f",
+        "strategy": "proximity",
+        "labels": [
+          "mitig_alg",
+          "fig:interpret_results",
+          "feature_abbriv"
+        ],
+        "avg_match_conf": 0.8365
+      },
+      "chain_count_for_endpoints": 2
+    }
+  ]
+}

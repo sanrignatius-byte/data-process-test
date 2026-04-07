@@ -1,0 +1,4296 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A Causal Framework for Discovering and Removing Direct and Indirect Discrimination "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                233,
+                119,
+                763,
+                161
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Lu Zhang, Yongkai Wu, and Xintao Wu "
+                    }
+                ]
+            },
+            "bbox": [
+                328,
+                183,
+                666,
+                200
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "University of Arkansas "
+                    }
+                ]
+            },
+            "bbox": [
+                421,
+                200,
+                575,
+                214
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{lz006,yw009,xintaowu}@uark.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                382,
+                214,
+                614,
+                227
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                250,
+                273,
+                313,
+                286
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Anti-discrimination is an increasingly important task in data science. In this paper, we investigate the problem of discovering both direct and indirect discrimination from the historical data, and removing the discriminatory effects before the data is used for predictive analysis (e.g., building classifiers). We make use of the causal network to capture the causal structure of the data. Then we model direct and indirect discrimination as the path-specific effects, which explicitly distinguish the two types of discrimination as the causal effects transmitted along different paths in the network. Based on that, we propose an effective algorithm for discovering direct and indirect discrimination, as well as an algorithm for precisely removing both types of discrimination while retaining good data utility. Different from previous works, our approaches can ensure that the predictive models built from the modified data will not incur discrimination in decision making. Experiments using real datasets show the effectiveness of our approaches. "
+                    }
+                ]
+            },
+            "bbox": [
+                101,
+                296,
+                460,
+                510
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                227,
+                530,
+                334,
+                544
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination refers to unjustified distinctions in decisions against individuals based on their membership in a certain group. Federal Laws and regulations (e.g., the Equal Credit Opportunity Act of 1974) have been established to prohibit discrimination on several grounds, such as gender, age, sexual orientation, race, religion or belief, and disability or illness, which are referred to as the protected attributes. Nowadays various predictive models have been built around the collection and use of historical data to make important decisions like employment, credit and insurance. If the historical data contains discrimination, the predictive models are likely to learn the discriminatory relationship present in the data and apply it when making new decisions. Therefore, it is imperative to ensure that the data goes into the predictive models and the decisions made with its assistance are not subject to discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                549,
+                478,
+                770
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In the legal field, discrimination is usually divided into direct and indirect discrimination. Direct discrimination occurs when individuals receive less favorable treatment explicitly based on the protected attributes. An example would be rejecting a qualified female applicant in applying a university just because of her gender. Indirect discrimination "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                770,
+                478,
+                854
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "refers to the situation where the treatment is based on apparently neutral non-protected attributes but still results in unjustified distinctions against individuals from the protected group. A well-known example of indirect discrimination is redlining, where the residential Zip code of the individual is used for making decisions such as granting a loan. Although Zip code is apparently a neutral attribute, it correlates with race due to the racial makeups of certain areas. Thus, Zip code can indirectly lead to racial discrimination if there is no good reason to justify its use in making decisions. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                273,
+                913,
+                412
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination discovery and removal has received an increasing attention over the past few years in data science (Hajian and Domingo-Ferrer 2013; Kamiran and Calders 2012; Ruggieri, Pedreschi, and Turini 2010; Romei and Ruggieri 2014; Feldman et al. 2015). Many approaches have been proposed to deal with both direct and indirect discrimination. However, significant issues exist in current techniques. For discrimination discovery, the difference in decisions across the protected and non-protected groups is a combined (not necessarily linear) effect of direct discrimination, indirect discrimination, and other effects which are objectively explainable and should not be considered as discrimination. However, few works have explicitly identified the three different effects when measuring discrimination. For example, the classic metrics risk difference, risk ratio, relative chance, odds ratio, etc. (Romei and Ruggieri 2014) treat all the difference in decisions as discrimination. (Zliobait ˇ e, Kamiran, and Calders 2011) considered the ex- ˙ plainable effect, but failed to distinguish the effects of direct and indirect discrimination. For discrimination removal, an algorithm must ensure that the predictive models built from the historical data do not incur discrimination in decision making. However, as we will show in our experiments, previous works in removing discrimination cannot guarantee that the predictive models are not subject to discrimination even though they attempt to modify the historical data to contain no discrimination. In addition, it is a general requirement is to preserve the data utility while achieving non-discrimination. As will also shown in the experiments, totally removing all connections between the protected attribute and decision as proposed in (Feldman et al. 2015) may suffer significant utility loss. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                414,
+                911,
+                858
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The causal modeling based discrimination detection has been proposed most recently (Bonchi et al. 2015; Zhang, "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                859,
+                911,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "Copyright "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "©"
+                    },
+                    {
+                        "type": "text",
+                        "content": "2017, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                861,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1611.07509v1 [cs.LG] 22 Nov 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                258,
+                57,
+                705
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/4768166b148d2e1cbe6577c284123b2b224c8670e68a3cd944b2a3bc28de350b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: The toy model. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                189,
+                64,
+                372,
+                109
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Wu, and Wu 2016b; 2016a) for improving the correlation based approaches. In this paper, we develop a framework for discovering and removing both direct and indirect discrimination based on the causal network. A causal network is a directed acyclic graph (DAG) widely used for causal representation, reasoning and inference (Pearl 2009), where causal effects are carried by the paths that trace arrows pointing from the cause to the effect which are referred to as the causal paths. Using this model, direct and indirect discrimination can be captured by the causal effects of the protected attribute on the decision transmitted along different paths. Direct discrimination is modeled by the causal effect transmitted along the direct path from the protected attribute to the decision. Indirect discrimination, on the other hand, is modeled by the causal effect transmitted along other causal paths that contain any unjustified attribute. Consider a toy model of a loan application system shown in Figure 1 for example. Assume that we treat Race as the protected attribute, Loan as the decision, and Zip code as the unjustified attribute that causes redlining. Direct discrimination is then modeled by path "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathtt { R a c e } \\to \\mathtt { L o a n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and indirect discrimination is modeled by path Race → Zip code Loan. Assume that the use of Income can be objectively justified as it is reasonable to deny a loan if the applicant has low income. In this case, path Race → Income Loan is explainable, which means that the difference in loan issuance across different race groups can be explained by the fact that some race groups in the dataset tend to be under-paid. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                143,
+                477,
+                532
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To measure the causal effect transmitted along a certain causal path, we employ the formulation of the path-specific effect (Avin, Shpitser, and Pearl 2005; Shpitser 2013). We define direct and indirect discrimination as different pathspecific effects and show how to accurately measure them using the observational data. Based on that, we propose an effective algorithm for discovering direct and indirect discrimination, as well as an algorithm for precisely removing both types of discrimination while retaining good data utility. Our approaches can ensure that the predictive models built from the modified data are not subject to any type of discrimination. The experiments using two real datasets show that our approaches are effective in discovering and removing discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                534,
+                478,
+                728
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Preliminary Concepts "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                187,
+                742,
+                375,
+                758
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "A causal network is a DAG "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { G } = ( \\mathbf { V } , \\mathbf { A } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where V is a set ,of nodes and A is a set of arcs. Each node represents an attribute. Each arc, denoted by an arrow pointing from the cause to the effect represents the direct causal relationship. Throughout the paper, we denote an attribute by an uppercase alphabet, e.g., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; denote a subset of attributes by a bold uppercase alphabet, e.g., X. We denote a domain value of attribute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by a lowercase alphabet, e.g., x; denote a value assignment of attributes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { X }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by a bold lowercase alphabet, e.g., "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                762,
+                480,
+                891
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "x. For a node "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", its parents are denoted by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P a ( X )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and its children are denoted by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C h ( X )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Each node is associated with a conditional probability table (CPT), i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( x | P a ( X ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We also use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P a ( X )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to represent a value assignment of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s parents if no unambiguity occurs in the context. The joint distribution over all attributes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\mathbf { v } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be computed using the factorization formula (Koller and Friedman 2009) "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                68,
+                913,
+                167
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "P (\\mathbf {v}) = \\prod_ {V \\in \\mathbf {V}} P (v | P a (V)), \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/5fd79af9b938e5df28cb16d9284f185113515a3086c46a1838b9b854bee4d62b.jpg"
+                }
+            },
+            "bbox": [
+                637,
+                172,
+                911,
+                204
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\nu | P a ( V ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the observational distribution. "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                210,
+                849,
+                224
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In the causal network, the measuring of causal effects is facilitated with the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d o"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-calculus (Pearl 2009), which simulates the physical interventions that force some attributes X to take certain values x. The post-intervention distributions, which represent the effect of the intervention, can be estimated from the observational data. Formally, the intervention that sets the value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { X }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { X }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is denoted by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d o ( \\mathbf { X } = \\mathbf { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The post-intervention distribution of all other attributes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { Y } ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\bf V } \\backslash { \\bf X }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\mathbf { Y } = \\mathbf { y } | d o ( \\mathbf { X } = \\mathbf { x } ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or simply "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\mathbf { y } | d o ( \\mathbf { x } ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", can be expressed as a truncated factorization formula (Pearl 2009) "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                226,
+                913,
+                364
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "P (\\mathbf {y} | d o (\\mathbf {x})) = \\prod_ {Y \\in \\mathbf {Y}} P (y | P a (Y)) \\delta_ {\\mathbf {X} = \\mathbf {x}},",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/1f49353edf7c316eab71661335c820607ba8a6a88c33f774f532b1cc2e158244.jpg"
+                }
+            },
+            "bbox": [
+                602,
+                372,
+                826,
+                402
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta \\mathbf { { x } } = \\mathbf { { x } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "means assigning any attributes in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { X }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "involved in δthe term ahead with the corresponding values in x. Specifically, the post-intervention distribution of a single attribute Y given an intervention on a single attribute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is given by "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                410,
+                911,
+                467
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "P (y | d o (x)) = \\sum_ {\\mathbf {V} \\backslash \\{X, Y \\}, Y = y} \\prod_ {V \\in \\mathbf {V} \\backslash \\{X \\}} P (v | P a (V)) \\delta_ {X = x}, \\tag {2}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/87e7d03ac225ef9c0856251e9dfbda8db186af27b26db4d032953982f76ff6ec.jpg"
+                }
+            },
+            "bbox": [
+                560,
+                474,
+                911,
+                507
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where the summation is a marginalization that traverses all value combinations of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\bf V } \\backslash \\{ X , Y \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                515,
+                911,
+                542
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": ",By using the do-calculus, the total causal effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on Y is defined as follows (Pearl 2009). Note that in this definition, the effect of the intervention is transmitted along all causal paths from the cause "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to the effect Y. "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                542,
+                911,
+                598
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 1 (Total causal effect) The total causal effect of the change of X from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y = y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is given by "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                603,
+                913,
+                633
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "T E \\left(x _ {2}, x _ {1}\\right) = P \\left(y \\mid d o \\left(x _ {2}\\right)\\right) - P \\left(y \\mid d o \\left(x _ {1}\\right)\\right).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/54fe0a402f32be5a538b2e1475f0c1e4ed0ce522b255b78992b108d8edeee442.jpg"
+                }
+            },
+            "bbox": [
+                581,
+                638,
+                844,
+                656
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The path-specific effect is an extension to the total causal effect in the sense that the effect of the intervention is transmitted only along a subset of causal paths from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to Y. Denote a subset of causal paths by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect conπ πsiders a counterfactual situation where the effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with the intervention is transmitted along "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", while the effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πon Y without the intervention is transmitted along paths not in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We denote by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( y \\mid d o ( x _ { 2 } | \\pi ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "the distribution of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πafter an intervention of changing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πfrom "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with the effect transmitted along "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Then, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π πon Y is defined as follows (Avin, Shpitser, and Pearl 2005). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                662,
+                913,
+                816
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 2 (Path-specific effect) Given a path set "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect of the value change of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y = y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is given by "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                820,
+                911,
+                863
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "S E _ {\\pi} \\left(x _ {2}, x _ {1}\\right) = P (y \\mid d o \\left(x _ {2} \\mid_ {\\pi}\\right)) - P (y \\mid d o \\left(x _ {1}\\right)).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/3ce954f30355e7cb72b6599f978f955178e22ee7f10e4459cee96caf309b9e22.jpg"
+                }
+            },
+            "bbox": [
+                563,
+                871,
+                862,
+                887
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2a05efa4650886897cd74b28eb9d2c881a83f1a373db01963e1b32250e8936a4.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: An example with the recanting witness criterion satisfied. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                189,
+                64,
+                372,
+                103
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The authors in (Avin, Shpitser, and Pearl 2005) have given the condition under which the path-specific effect can be estimated from the observational data, known as the recanting witness criterion. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                150,
+                478,
+                205
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 3 (Recanting witness criterion) Given a path set , let Z be a node in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { G }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "such that: 1) there exists a path πfrom X to Z which is a segment of a path in ; 2) there exπists a path from Z to Y which is a segment of a path in ; 3) πthere exists another path from Z to Y which is not a segment of any path in . Then, the recanting witness criterion for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π-specific effect is satisfied with Z as a witness. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                213,
+                480,
+                311
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Theorem 1 (Identifiability) The -specific effect can be esπtimated from the observational data if and only if the recanting witness criterion for the -specific effect is not satisfied. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                316,
+                478,
+                359
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "If the recanting witness criterion is not satisfied, the - specific effect "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi } ( x _ { 2 } , x _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π can be computed as follows based π ,on (Shpitser 2013). First, express "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( y | d o ( x _ { 1 } ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the truncated factorization formula according to Equation (2). Second, to compute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( y \\mid d o ( x _ { 2 } | \\pi ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", divide the children of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into two sets "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C h ( X ) = { \\bf S } _ { \\pi } \\cup \\bar { \\bf S } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π’s each child "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πwhere arc "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X  S"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π π πis a segment of a path in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains X’s each child "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where either "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is not π πincluded in any path from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", or arc "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X  S"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a segment of a path not in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Finally, replace values "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for πthe terms corresponding to nodes in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and keep values "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πunchanged for the terms corresponding to nodes in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                364,
+                478,
+                531
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Note that the above computation requires "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi } \\cap \\bar { \\mathbf { S } } _ { \\pi } = \\varnothing"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Theorem 1 is reflected in that: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi } \\cap \\bar { \\mathbf { S } } _ { \\pi } \\overset { . } { \\neq } \\varnothing"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π π if and only if the πrecanting witness criterion for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π-specific effect is satisπfied. Figure 2 shows an example with the recanting witness criterion satisfied, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi = \\{ X \\to Z _ { 1 } \\to Z _ { 2 } \\to Y \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". According to the definitions, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πis contained in both "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                532,
+                480,
+                617
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Modeling Direct and Indirect Discrimination as Path-Specific Effects "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                89,
+                628,
+                470,
+                664
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Consider a historical dataset "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { D }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that contains a group of tuples, each of which describes the profile of an individual. Each tuple is specified by a set of attributes V, including the protected attributes, the decision, and the nonprotected attributes. Among the non-protected attributes, assume there is a set of attributes that cannot be objectively justified if used in the decision making process, which we refer to as the redlining attributes denoted by R. For ease of presentation, we assume that there is only one protected attribute with binary values. We denote the protected attribute by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "associated with two domain values "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g., female) and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g., male); denote the decision by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "associated with two domain values "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(i.e., negative decision) and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(i.e., positive decision). Our approach can extend to handling multiple domain values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and even multiple Cs. We assume that a causal graph "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { G }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be built "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                666,
+                480,
+                890
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "to correctly represent the causal structure of dataset "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { D }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In the past decades, many algorithms have been proposed to learn the causal network from data and they are proved to be quite successful (Spirtes, Glymour, and Scheines 2000; Neapolitan and others 2004; Colombo and Maathuis 2014; Kalisch and Buhlmann 2007). We also make a reasonable ¨ assumption that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has no parent in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { G }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", as the protected attribute is always an inherent nature of an individual. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                69,
+                911,
+                178
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination can be captured by the causal effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In our context, the causal effect includes direct/indirect discrimination and other explainable effects. We model direct discrimination as the causal effect transmitted along the direct path from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C  E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Define "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the path set that contains only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C  E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π-specific effect of the change of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E = e ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is given by "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                179,
+                913,
+                277
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "S E _ {\\pi_ {d}} \\left(c ^ {+}, c ^ {-}\\right) = P \\left(e ^ {+} \\mid d o \\left(c ^ {+} \\mid_ {\\pi_ {d}}\\right)\\right) - P \\left(e ^ {+} \\mid d o \\left(c ^ {-}\\right)\\right).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/20bf6a43983bab1523437c504da3cd84ca032bdf748e73d6825460427b5858b8.jpg"
+                }
+            },
+            "bbox": [
+                550,
+                282,
+                879,
+                299
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physical meaning of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the expected π ,change in decisions (in term of the probability of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E = e ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") of individuals from protected group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", if it is told that these individuals were from the other group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and everything else remains unchanged. When applied to the example in Figure 1, it means the expected change in loan approval of applications actually from the disadvantage group (e.g., black), when the bank is instructed to treat the applicants as from the advantage group (e.g., white). Thus, the measurement of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect exactly follows the definition of direct πdiscrimination and is appropriate for measuring the discriminatory effect. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                305,
+                913,
+                470
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Similarly, we model indirect discrimination as the causal effect transmitted along all the indirect paths from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that contain the redlining attributes. Given the set of redlining attributes R, define "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the path set that contains all the causal paths from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which pass through R, i.e., each of the paths includes at least one node in R. Then, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "- specific effect, which is given by "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                472,
+                911,
+                569
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "S E _ {\\pi_ {i}} \\left(c ^ {+}, c ^ {-}\\right) = P \\left(e ^ {+} \\mid d o \\left(c ^ {+} \\mid_ {\\pi_ {i}}\\right)\\right) - P \\left(e ^ {+} \\mid d o \\left(c ^ {-}\\right)\\right),",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7f0bab2a99d5bfc992e57a4f52b5d50cdc6af2106b4589cb546b051f528f2ff7.jpg"
+                }
+            },
+            "bbox": [
+                550,
+                575,
+                877,
+                590
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "represents the expected change in decisions of individuals from protected group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", if the profiles of these individuals along path "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "were changed as if they were from the other group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π. When applied to the example in Figure 1, it means the expected change in loan approval of the disadvantage group if they had the same racial makeups shown in the Zip code as the advantage group. Thus, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect is πappropriate for measuring the discriminatory effect of indirect discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                597,
+                911,
+                720
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Therefore, we propose the criterion for claiming direct and indirect discrimination based on the path-specific effect. We say that direct discrimination against protected group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is claimed if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau > 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a useπ , > τ τ >defined threshold for discrimination depending on the law. For instance, the 1975 British legislation for sex discrimination sets "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau = 0 . 0 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", namely a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "difference. Similarly, given τ .the redlining attributes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { R }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we say that indirect discrimination against protected group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ^ { - }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is claimed if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) > \\tau ."
+                    },
+                    {
+                        "type": "text",
+                        "content": ". To π , > τavoid reverse discrimination, we do not specify which group is the protected group. Therefore, we give the following criterion. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                722,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Theorem 2 Given the protected attribute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", decision "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and redlining attributes R, direct discrimination is claimed if either "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { - } , c ^ { + } ) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": "holds, and indiπ , > τ π , >rect discrimination is claimed if either "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { - } , c ^ { + } ) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": "holds. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                68,
+                478,
+                138
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It is worth noting that, if a path set "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains all causal paths from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π, it can be directly obtained from the definition that the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect is equivalent to the total causal effect, i.e., "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                141,
+                478,
+                198
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "S E _ {\\pi} \\left(c ^ {+}, c ^ {-}\\right) = T E \\left(c ^ {+}, c ^ {-}\\right) = P \\left(e ^ {+} \\mid d o \\left(c ^ {+}\\right)\\right) - P \\left(e ^ {+} \\mid d o \\left(c ^ {-}\\right)\\right).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/bacb8fb3f125339646acf71acfdfaf1e592a3f30cf33e4a916d005de958af278.jpg"
+                }
+            },
+            "bbox": [
+                91,
+                203,
+                468,
+                219
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It can be proved straightforwardly using Equation (2) that the above equation equals to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( e ^ { + } | c ^ { + } ) \\ – \\ P ( e ^ { + } | c ^ { - } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which is known as risk difference (Romei and Ruggieri 2014) widely used for discrimination measurement in the antidiscrimination literature. Therefore, the path-specific effect can be considered as a significant extension to risk difference for explicitly distinguishing the discriminatory effects of direct and indirect discrimination from the total causal effect. On the other hand, we do not necessarily have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) + S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) = S E _ { \\pi _ { d } \\cup \\pi _ { i } } ( c ^ { + } , c ^ { - } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This implies π , π , π π ,that there might not be a linear connection between direct and indirect discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                224,
+                478,
+                390
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "According to Definition 3 and Theorem 1, it is guaranteed that the recanting witness criterion for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect πis not satisfied since there is no intermediate node in the direct path "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C  E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { d } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "only, and direct disπcrimination can always be measured from the observational data. Thus, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be computed as follows. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                391,
+                478,
+                476
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l}S E _ {\\pi_ {d}} \\left(c ^ {+}, c ^ {-}\\right) = \\sum_ {\\mathbf {V} \\backslash \\{C, E \\}} \\left(P \\left(e ^ {+} \\mid c ^ {+}, P a (E) \\backslash \\{C \\}\\right) \\right.\\\\\\prod_ {V \\in \\mathbf {V} \\backslash \\{C, E \\}} P (v | P a (V)) \\delta_ {C = c ^ {-}}\\left. \\right) - P \\left(e ^ {+} \\mid c ^ {-}\\right).\\end{array}\\tag {3}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/ae3e7a7f99dd47b7c3ab063fa309921ff34646a343056a5ab4aed219969ec937.jpg"
+                }
+            },
+            "bbox": [
+                94,
+                482,
+                478,
+                555
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For indirect discrimination, we divide "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s children into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Different from above, the recanting witness criπ πterion for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect might be satisfied or not. πWhen the recanting witness criterion is not satisfied, we have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } } \\cap \\bar { \\mathbf { S } } _ { \\pi _ { i } } = \\varnothing"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Then, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be computed as follows. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                561,
+                480,
+                632
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} S E _ {\\pi_ {i}} \\left(c ^ {+}, c ^ {-}\\right) = \\sum_ {\\mathbf {V} \\backslash \\{C \\}} \\left(\\prod_ {G \\in \\mathbf {S} _ {\\pi_ {i}}} P (g | c ^ {+}, P a (G) \\backslash \\{C \\}) \\right. \\\\ \\prod_ {H \\in \\mathbf {S} _ {\\pi_ {i}}} P (h | c ^ {-}, P a (H) \\backslash \\{C \\}) \\prod_ {O \\in \\mathbf {V} \\backslash (\\{C \\} \\cup C h (C))} P (o | P a (O)) \\delta_ {C = c ^ {-}}) \\tag {4} \\\\ - P (e ^ {+} | c ^ {-}). \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/508ddf11d1237f917af73beaae45360dd1b83dd143612bebfe87c97602a7ca30.jpg"
+                }
+            },
+            "bbox": [
+                99,
+                638,
+                478,
+                734
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "How to deal with the opposite situation will be discussed later in the next section. "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                739,
+                478,
+                768
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination Discovery and Removal "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                114,
+                781,
+                447,
+                797
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination Discovery "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                800,
+                282,
+                816
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We propose a Path-Specific based Discrimination Discovery (PSE-DD) algorithm based on Theorem 2. It first builds the causal network from the historical dataset, and then computes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "according to Equations (3) and (4). The π πprocedure of the algorithm is shown in Algorithm 1. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                818,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "algorithm",
+            "content": {
+                "algorithm_caption": [
+                    {
+                        "type": "text",
+                        "content": "Algorithm 1: PSE-DD "
+                    }
+                ],
+                "algorithm_content": [
+                    {
+                        "type": "text",
+                        "content": "Input: Historical dataset  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal{D}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " protected attribute  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": " ,decision attribute  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": " ,user-defined parameter  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": "   \nOutput: Judgment of direct and indirect discrimination. judge, judgei.   \n1  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal{G} ="
+                    },
+                    {
+                        "type": "text",
+                        "content": " buildCausalNetwork(D);   \n2 judge  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "^d ="
+                    },
+                    {
+                        "type": "text",
+                        "content": " judge  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i ="
+                    },
+                    {
+                        "type": "text",
+                        "content": " false;   \n3 Compute  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E_{\\pi_d}(\\cdot)"
+                    },
+                    {
+                        "type": "text",
+                        "content": " according to Equation (3);   \n4 if  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E_{\\pi_d}(c^+,c^-) > \\tau || S E_{\\pi_d}(c^-,c^+) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": " then   \n5  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lfloor"
+                    },
+                    {
+                        "type": "text",
+                        "content": " judge  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "^d ="
+                    },
+                    {
+                        "type": "text",
+                        "content": " true;   \n6 Compute  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E_{\\pi_i}(\\cdot)"
+                    },
+                    {
+                        "type": "text",
+                        "content": " according to Equation (4);   \n7 if  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E_{\\pi_i}(c^+,c^-) > \\tau || S E_{\\pi_i}(c^-,c^+) > \\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": " then   \n8  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lfloor"
+                    },
+                    {
+                        "type": "text",
+                        "content": " judge  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "^i ="
+                    },
+                    {
+                        "type": "text",
+                        "content": " true;   \n9 return [judge, judge]; "
+                    }
+                ]
+            },
+            "bbox": [
+                526,
+                88,
+                911,
+                266
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The computational complexity of PSE-DD depends on the complexities of building the causal network and computing the path-specific effect according to Equation (3) or (4). Many researches have been devoted to improving the performance of network construction (Kalisch and Buhlmann¨ 2007; Tsamardinos et al. 2003; Aliferis et al. 2010) and probabilistic inference in causal networks (Heckerman and Breese 1994; 1996). These topics are beyond the scope of this paper. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                279,
+                913,
+                404
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For indirect discrimination (line 7), the complexity further depends on how to identify "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". A straightforward method of finding all paths in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πmay have an exponenπtial complexity. On the other hand, it can be easily observed that, a node S belongs to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if and only if there exists a path from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πpassing through R (a path from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "passing through R also includes the path where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "itself belongs to R). Similarly, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "belongs to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if and only if there does not exist a path from S to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πpassing through R. It is relatively easy to check the existence of a path between two nodes. In our algorithm, we examine the existence of a path from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "passing through R by checking whether there exists a node "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R \\in \\mathbf { R }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "so that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s decedent and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s decedent. The subroutine of finding "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbf { S } } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is presented in the pseudo-code below, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D e ( \\cdot )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π π denotes the decedents of a node. Since the decedents of all the nodes involved in the algorithm can be obtained by traversing the network starting from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "within the time of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ( | \\mathbf { A } | )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the computational complexity of this procedure is given by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ( | \\mathbf { V } | ^ { 2 } + | \\mathbf { A } | )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                405,
+                913,
+                670
+            ]
+        },
+        {
+            "type": "algorithm",
+            "content": {
+                "algorithm_caption": [],
+                "algorithm_content": [
+                    {
+                        "type": "text",
+                        "content": "1  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf{S}_{\\pi_i} = \\emptyset"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar{\\mathbf{S}}_{\\pi_i} = \\emptyset"
+                    },
+                    {
+                        "type": "text",
+                        "content": "   \n2 foreach  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S\\in Ch(C)\\backslash \\{E\\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " do   \n3 foreach  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R\\in \\mathbb{R}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " do   \n4 if  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R\\in De(S)\\cup \\{S\\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " &&  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E\\in De(R)"
+                    },
+                    {
+                        "type": "text",
+                        "content": " then   \n5  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf{S}_{\\pi_i} = \\mathbf{S}_{\\pi_i}\\cup \\{S\\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " .   \n6 else   \n7  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array}{r}\\mathbf{\\bar{S}}_{\\pi_i} = \\mathbf{\\bar{S}}_{\\pi_i}\\cup \\{S\\} ; \\end{array}"
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                686,
+                823,
+                790
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination Removal "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                813,
+                707,
+                828
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "When direct or indirect discrimination is claimed for a dataset, the discriminatory effects need to be removed before the dataset is released for predictive analysis (e.g., building a classifier). A naive approach would be simply not using "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                832,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "the protected attribute when building the predictive model, which often incur significant utility loss. In addition, this approach can eliminate direct discrimination, but indirect discrimination still presents. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                68,
+                477,
+                125
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We propose a Path-Specific Effect based Discrimination Removal (PSE-DR) algorithm to remove both direct and indirect discrimination. The general idea is to modify the causal network and then use it to generate a new dataset. Specifically, we modify the CPT of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( e | P a ( E ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", to obtain a new CPT "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ^ { \\prime } ( e | P a ( E ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so that the direct and indirect discriminatory effects are below the threshold "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". To τmaximize the utility of the modified dataset, we minimize the Euclidean distance between the joint distribution of the original causal network (denoted by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\mathbf { v } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") and the joint distribution of the modified causal network (denoted by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ^ { \\prime } ( { \\bf { v } } ) _ { , } ^ { \\prime }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). As a result, we obtain the following quadratic programming problem. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                125,
+                477,
+                304
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "minimize "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                311,
+                310,
+                344
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "subject to "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                347,
+                426,
+                364
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "S E _ {\\pi_ {1}} \\left(c ^ {+}, c ^ {-}\\right) \\leq \\tau , \\quad S E _ {\\pi_ {1}} \\left(c ^ {-}, c ^ {+}\\right) \\leq \\tau ,",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/8848eb0b43f443912036186c0f24fe6351f79670727186976ee2f69a116940d1.jpg"
+                }
+            },
+            "bbox": [
+                181,
+                366,
+                424,
+                382
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\forall P a (E), \\quad P ^ {\\prime} (e ^ {-} | P a (E)) + P ^ {\\prime} (e ^ {+} | P a (E)) = 1,",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/a8e8c54102f73b8de9267b47667e60fc5f58c7ae7e9e5303ef3a937d178a92bd.jpg"
+                }
+            },
+            "bbox": [
+                181,
+                385,
+                475,
+                401
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\forall P a (E), e, \\quad P r ^ {\\prime} (e | P a (E)) \\geq 0,",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9d22fe1eeb0c5f7ea821e439b26c2fbfa12e51f0a857a75f11e2f803da94c769.jpg"
+                }
+            },
+            "bbox": [
+                181,
+                402,
+                387,
+                417
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ^ { \\prime } ( { \\mathbf { v } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\mathbf { v } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are computed according to Equation (1) using "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ^ { \\prime } ( e | P a ( E ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( e | P a ( E ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "respectively, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( \\cdot )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( \\cdot )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are computed according to Equations (3) π πand (4) respectively using "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ^ { \\prime } ( e | P a ( E ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The optimal solution is obtained by solving the quadratic programming problem. After that, the joint distribution of the modified causal network is computed using Equation (1), and the new dataset is generated based on the joint distribution. The procedure of PSE-DR is shown in Algorithm 2. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                425,
+                478,
+                551
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Algorithm 2: PSE-DR "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                93,
+                569,
+                245,
+                583
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Input : Historical dataset "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { D }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", protected attribute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", decision attribute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", use-defined redlining attributes R, user-defined parameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                98,
+                585,
+                460,
+                625
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Output: Modified dataset "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { D } ^ { * }"
+                    }
+                ]
+            },
+            "bbox": [
+                101,
+                626,
+                279,
+                637
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1 Obtain the modified CPT of "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "E"
+                            },
+                            {
+                                "type": "text",
+                                "content": "by solving the quadratic programming problem; "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2 Calculate "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "P ^ { * } ( \\mathbf { v } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "according to Equation (1) using the modified CPTs; "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3 Generate "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\mathcal { D } ^ { * }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "based on "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "P ^ { * } ( \\mathbf { v } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": "; "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "4 return "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\mathcal { D } ^ { * }"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                638,
+                460,
+                712
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For discrimination removal, it is crucial to ensure that not only the modified data does not contain discrimination, but also the predictive models built on it will not incur biased decision. The goal of a predictive model is to learn from data the computational relationship between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and all the other attributes, which is captured by the CPT of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the causal network. In our approach, we modify only the CPT of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to remove discrimination. Therefore, we can ensure that the predictive models can learn these modifications and will not incur discrimination in decision making. We will evaluate this result in the experiments. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                734,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The computational complexity of PSE-DR depends on the complexity of solving the quadratic programming problem. It can be easily shown that, the coefficients of the quadratic terms in the objective function form a positive definite matrix. According to (Kozlov, Tarasov, and Khachiyan 1980), the quadratic programming can be solved in polynomial time. Finally, it is also worth noting that our approach can be easily extended to handle the situation where either direct or indirect discrimination needs to be removed. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                68,
+                911,
+                193
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Dealing with Unidentifiable Situation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                210,
+                805,
+                226
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As stated in Theorem 1, when the recanting witness criterion is satisfied, the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-specific effect cannot be estimated from πthe observational data. However, the structure of the recanting witness criterion implies indirect discrimination as there exist causal paths from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "passing through the redlining attributes. From the data owners’ perspective, they may want to ensure non-discrimination even though the discriminatory effect cannot be accurately measured. In this case, we remove discrimination by adapting Algorithm 2 as follows. Recall that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } } \\cap \\bar { \\mathbf { S } } _ { \\pi _ { i } } \\neq \\boldsymbol { \\varnothing }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if and only if the recanting witness π πcriterion is satisfied. For each node "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S \\in { \\bf S } _ { \\pi _ { i } } \\cap \\bar { \\bf S } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we cut off all the causal paths from S to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π πthat pass through R, so that S would not belong to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "any more. Then, we must have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { S } _ { \\pi _ { i } } \\cap \\bar { \\mathbf { S } } _ { \\pi _ { i } } = \\varnothing"
+                    },
+                    {
+                        "type": "text",
+                        "content": "πafter the modification. To cut off the paths, we π πfocus on the arc from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "’s each parent "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Q"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Q  E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". If these exists a path from S to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Q"
+                    },
+                    {
+                        "type": "text",
+                        "content": "passing through R, then arc "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Q  E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is removed from the network. The pseudo-code of this procedure is shown below, which can be added before line 1 in Algorithm 2 to deal with this situation. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                234,
+                913,
+                500
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/7f624230fc80f66bb655e2510de3f838d1c55cb167ae5accd26d70d875bd7f51.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                519,
+                521,
+                841,
+                636
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Experiments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                658,
+                667,
+                769,
+                685
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we conduct experiments using two real datasets: the Adult dataset (Lichman 2013) and the Dutch Census of 2001 (Netherlands 2001). We compare our algorithms with the local massaging (LMSG) and local preferential sampling (LPS) algorithms proposed in (Zliobaitˇ e,˙ Kamiran, and Calders 2011) and disparate impact removal algorithm (DI) proposed in (Feldman et al. 2015; Adler et al. 2016). The causal networks are constructed and presented by utilizing an open-source software TETRAD (Glymour and others 2004). We employ the original PC algorithm (Spirtes, Glymour, and Scheines 2000) and set the significance threshold 0 01 for conditional independence testing in .causal network construction. The quadratic programming is solved using CVXOPT (Dahl and Vandenberghe 2006). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                691,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f0fcd7700d35537834f5ffc41a76839c1290e8c5db8efc574063857126ef020d.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Causal network for Adult dataset: the green path represents the direct path, and the blue paths represent the indirect paths passing through marital status. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                194,
+                88,
+                802,
+                300
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination Discovery "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                388,
+                282,
+                405
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The Adult dataset consists of 65123 tuples with 11 attributes such as age, education, sex, occupation, income, marital status etc. Since the computational complexity of the PC algorithm is an exponential function of the number of attributes and their domain sizes, for computational feasibility we binarize each attribute’s domain values into two classes to reduce the domain sizes. We use three tiers in the partial order for temporal priority: sex, age, native country, race are defined in the first tier, edu level and marital status are defined in the second tier, and all other attributes are defined in the third tier. The causal network is shown in Figure 3. We treat sex as the protected attribute, income as the decision, and marital status as the redlining attribute. The green path represents the direct path from sex to income, and the blue paths represent the indirect paths passing through marital status. We set the discrimination threshold "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as τ0.05. By computing the path-specific effects, we obtain that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) = 0 . 0 2 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) = 0 . 1 7 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which indiπ , . π , .cate no direct discrimination but significant indirect discrimination against females according to our criterion. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                414,
+                478,
+                705
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The Dutch dataset consists of 60421 tuples with 12 attributes. Similarly, we binarize the domain values of attribute age due to its large domain size. Three tiers are used in the partial order for temporal priority: sex, age, country birth are defined in the first tire, edu level and marital status are defined in the second tire, and all other attributes are defined in the third tire. The causal graph is shown in Figure 4. Similarly we treat sex as the protected attribute, occupation as the decision, and marital status as the redlining attribute. For this dataset, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) ="
+                    },
+                    {
+                        "type": "text",
+                        "content": "0 220 and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) ~ = ~ 0 . 0 0 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π ,, indicating significant di-. π , .rect discrimination but no indirect discrimination against females. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                708,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination Removal "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                517,
+                388,
+                707,
+                402
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We run the removal algorithm PSE-DR to remove discrimination from the Adult and Dutch datasets. Then, we run the discovery algorithm PSE-DD to further examine whether discrimination is truly removed in the modified datasets. For the modified Adult dataset we have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) = 0 . 0 1 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) ~ = ~ 0 . 0 4 9"
+                    },
+                    {
+                        "type": "text",
+                        "content": "π , ., and for the modified Dutch π ,dataset we have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { d } } ( c ^ { + } , c ^ { - } ) ~ = ~ 0 . 0 5 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "S E _ { \\pi _ { i } } ( c ^ { + } , c ^ { - } ) ="
+                    },
+                    {
+                        "type": "text",
+                        "content": "π , . π ,0 001. The results show that the modified datasets contain .no direct and indirect discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                412,
+                911,
+                537
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Discrimination in predictive models. We aim to examine whether the predictive models built from the modified dataset incur discrimination in decision making. We use the Adult dataset where indirect discrimination is detected, and divide the original dataset into the training and testing datasets. First, we remove discrimination from the training dataset to obtain the modified training dataset. Then, we build the predictive models from the modified training dataset, and use them to make predictive decisions over the testing data. Two classifiers, SVM and Decision Tree, are used for prediction with five-fold cross-validation. Finally, we run PSE-DD to examine whether the predictions for the testing data contain discrimination. We also examine the data utility "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\chi ^ { 2 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the prediction accuracy. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                540,
+                913,
+                734
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "χThe results are shown in Table 1. As shown in the column “PSE-DD”, both the modified training data and the predictions for the testing data contain no direct and indirect discrimination. In addition, PSE-DD produces relatively small data utility loss in term of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\chi ^ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and good prediction accuχracy. For comparison, we include algorithms from previous works: LMSG, LPS and DI. For LMSG and LPS, discrimination is not removed even from the training data, and hence also exists in the predictions. The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D I"
+                    },
+                    {
+                        "type": "text",
+                        "content": "algorithm provides a parameter  to indicate the amount of discrimination to be λremoved, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents no modification and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda = 1"
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                736,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/dab683929419eebb254926a30b05c6fd56a58971fb9e39f24cea5475f9844f97.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4: Causal network for Dutch dataset: the green path represents the direct path, and the blue paths represent the indirect paths passing through marital status. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                166,
+                80,
+                831,
+                340
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/fdd1004c513835da188353f3f94f92476f68856a2ce4d146ecfe558bdc171fea.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Direct/indirect discriminatory effects in the modified training data and predictions for the testing data. Values violating the discrimination criterion are marked in bold. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td colspan=\"3\"></td><td>PSE-DD</td><td>DI</td><td>LMSG</td><td>LPS</td></tr><tr><td rowspan=\"3\" colspan=\"2\">Train</td><td>Direct</td><td>0.013</td><td>0.001</td><td>-0.142</td><td>-0.142</td></tr><tr><td>Indirect</td><td>0.049</td><td>0.050</td><td>0.288</td><td>0.174</td></tr><tr><td>\\( \\chi^2(×10^4) \\)</td><td>1.620</td><td>7.031</td><td>1.924</td><td>1.292</td></tr><tr><td rowspan=\"6\">Predict</td><td rowspan=\"3\">SVM</td><td>Direct</td><td>0.023</td><td>0.005</td><td>-0.124</td><td>-0.051</td></tr><tr><td>Indirect</td><td>0.041</td><td>0.167</td><td>0.271</td><td>0.192</td></tr><tr><td>Accu.(%)</td><td>80.54</td><td>81.47</td><td>76.81</td><td>76.63</td></tr><tr><td rowspan=\"3\">DTree</td><td>Direct</td><td>0.023</td><td>0.004</td><td>-0.124</td><td>-0.051</td></tr><tr><td>Indirect</td><td>0.042</td><td>0.168</td><td>0.271</td><td>0.192</td></tr><tr><td>Accu.(%)</td><td>80.55</td><td>81.38</td><td>76.81</td><td>76.64</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                93,
+                476,
+                470,
+                621
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "represents full discrimination removal. However,  has no λdirect connection with the threshold . In our experiments, we execute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D I"
+                    },
+                    {
+                        "type": "text",
+                        "content": "τmultiple times with different s and report the one that is closest to achieve "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tau \\ : = \\ : 0 . 0 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "λ. As shown in τ .the column “DI”, it indeed removes direct and indirect discrimination from the training data. However, as indicated by the bold values 0.167/0.168, significant amount of indirect discrimination exists in the predictions of both classifiers. In addition, its data utility is far more worse than PSE-DR, implying that it removes many information unrelated to discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                630,
+                480,
+                782
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                220,
+                797,
+                341,
+                813
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "A number of techniques have been proposed to discover discrimination in the literature. Classification rule-based methods such as elift (Pedreshi, Ruggieri, and Turini 2008) and belift (Mancuhan and Clifton 2014) were proposed to represent certain discrimination patterns. (Luong, Ruggieri, and "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                818,
+                480,
+                891
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Turini 2011; Zhang, Wu, and Wu 2016b) dealt with the individual discrimination by finding a group of similar individuals. (Zliobait ˇ e, Kamiran, and Calders 2011) proposed ˙ conditional discrimination which considers some part of the discrimination may be explainable by certain attributes. None of these work explicitly identifies direct discrimination, indirect discrimination, and explainable effects. In (Bonchi et al. 2015), the authors proposed a framework based on the Suppes-Bayes causal network and developed several random-walk-based methods to detect different types of discrimination. However, the construction of the Suppes-Bayes causal network is impractical with the large number of attribute-value pairs. In addition, it is unclear how the number of random walks is related to practical discrimination metrics, e.g., the difference in positive decision rates. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                422,
+                913,
+                635
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposed methods for discrimination removal are either based on data preprocessing (Kamiran and Calders 2012; Zliobait ˇ e, Kamiran, and Calders 2011) or algorithm tweak- ˙ ing (Kamiran, Calders, and Pechenizkiy 2010; Calders and Verwer 2010; Kamishima, Akaho, and Sakuma 2011). In a recent work (Feldman et al. 2015), the authors first ensure no direct discrimination by completely removing the protected attribute "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from data, and then modify all the non-protected attributes to ensure that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "cannot be predicted from the nonprotected attributes. As a result, indirect discrimination is removed since the decision "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has no connection with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "via the non-protected attributes. However, as shown in our experiment results, this approach cannot ensure that predictions made by the classifier built on the modified data do not contain discrimination. In addition, it suffers significant utility loss as it removes all the connections between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                664,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Conclusions "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                228,
+                66,
+                334,
+                82
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we studied the problem of discovering both direct and indirect discrimination from the historical data, and removing the discriminatory effects before performing predictive analysis. We made use of the causal network to capture the causal structure of the data, and modeled direct and indirect discrimination as different path-specific effects. Based on that, we proposed the discovery algorithm PSE-"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to discover both direct and indirect discrimination, and the removal algorithm PSE-DR to remove them. The experiments using real datasets show that, only our approach can ensure that the predictive models built from the modified data are not subject to any type of discrimination. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                85,
+                480,
+                253
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                233,
+                263,
+                330,
+                279
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Adler, P.; Falk, C.; Friedler, S. A.; Rybeck, G.; Scheidegger, C.; Smith, B.; and Venkatasubramanian, S. 2016. Auditing Black-box Models by Obscuring Features. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Aliferis, C. F.; Statnikov, A.; Tsamardinos, I.; Mani, S.; and Koutsoukos, X. D. 2010. Local causal and markov blanket induction for causal discovery and feature selection for classification part i: Algorithms and empirical evaluation. Journal of Machine Learning Research 11(Jan):171–234. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Avin, C.; Shpitser, I.; and Pearl, J. 2005. Identifiability of path-specific effects. In IJCAI’05, 357–363. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bonchi, F.; Hajian, S.; Mishra, B.; and Ramazzotti, D. 2015. Exposing the probabilistic causal structure of discrimination. CoRR abs/1510.00552. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Calders, T., and Verwer, S. 2010. Three naive bayes approaches for discrimination-free classification. Data Mining and Knowledge Discovery 21(2):277–292. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Colombo, D., and Maathuis, M. H. 2014. Orderindependent constraint-based causal structure learning. JMLR 15(1):3741–3782. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Dahl, J., and Vandenberghe, L. 2006. Cvxopt: A python package for convex optimization. In Proc. eur. conf. op. res. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Feldman, M.; Friedler, S. A.; Moeller, J.; Scheidegger, C.; and Venkatasubramanian, S. 2015. Certifying and removing disparate impact. In KDD, 259–268. ACM. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Glymour, C., et al. 2004. The TETRAD project. http: //www.phil.cmu.edu/tetrad. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hajian, S., and Domingo-Ferrer, J. 2013. A methodology for direct and indirect discrimination prevention in data mining. JKDE 25(7):1445–1459. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Heckerman, D., and Breese, J. S. 1994. A new look at causal independence. In Proceedings of the Tenth international conference on Uncertainty in artificial intelligence, 286–292. Morgan Kaufmann Publishers Inc. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Heckerman, D., and Breese, J. S. 1996. Causal independence for probability assessment and inference using bayesian networks. IEEE Transactions on Systems, Man, and Cybernetics-Part A: Systems and Humans 26(6):826– 831. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kalisch, M., and Buhlmann, P. 2007. Estimating high- ¨ dimensional directed acyclic graphs with the pc-algorithm. The Journal of Machine Learning Research 8:613–636. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                282,
+                480,
+                888
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kamiran, F., and Calders, T. 2012. Data preprocessing techniques for classification without discrimination. KAIS 33(1):1–33. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kamiran, F.; Calders, T.; and Pechenizkiy, M. 2010. Discrimination aware decision tree learning. In ICDM, 869– 874. IEEE. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kamishima, T.; Akaho, S.; and Sakuma, J. 2011. Fairnessaware learning through regularization approach. In ICDMW, 643–650. IEEE. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Koller, D., and Friedman, N. 2009. Probabilistic graphical models: principles and techniques. MIT press. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kozlov, M. K.; Tarasov, S. P.; and Khachiyan, L. G. 1980. The polynomial solvability of convex quadratic programming. USSR Computational Mathematics and Mathematical Physics 20(5):223–228. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Lichman, M. 2013. UCI machine learning repository. http: //archive.ics.uci.edu/ml. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Luong, B. T.; Ruggieri, S.; and Turini, F. 2011. k-nn as an implementation of situation testing for discrimination discovery and prevention. In KDD, 502–510. ACM. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Mancuhan, K., and Clifton, C. 2014. Combating discrimination using bayesian networks. Artificial intelligence and law 22(2):211–238. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Neapolitan, R. E., et al. 2004. Learning bayesian networks, volume 38. Prentice Hall Upper Saddle River. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Netherlands, S. 2001. Volkstelling. https://sites. google.com/site/faisalkamiran/. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Pearl, J. 2009. Causality: models, reasoning and inference. Cambridge university press. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Pedreshi, D.; Ruggieri, S.; and Turini, F. 2008. Discrimination-aware data mining. In KDD, 560–568. ACM. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Romei, A., and Ruggieri, S. 2014. A multidisciplinary survey on discrimination analysis. The Knowledge Engineering Review 29(05):582–638. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ruggieri, S.; Pedreschi, D.; and Turini, F. 2010. Data mining for discrimination discovery. TKDD 4(2):9. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Shpitser, I. 2013. Counterfactual graphical models for longitudinal mediation analysis with unobserved confounding. Cognitive science 37(6):1011–1035. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Spirtes, P.; Glymour, C. N.; and Scheines, R. 2000. Causation, prediction, and search, volume 81. MIT press. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tsamardinos, I.; Aliferis, C. F.; Statnikov, A.; and Brown, L. E. 2003. Scaling-up bayesian network learning to thousands of variables using local learning techniques. Vanderbilt University DSL TR-03-02. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zliobait ˇ e, I.; Kamiran, F.; and Calders, T. 2011. Handling ˙ conditional discrimination. In ICDM, 992–1001. IEEE. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhang, L.; Wu, Y.; and Wu, X. 2016a. On discrimination discovery using causal networks. In Proceedings of SBP-BRiMS 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhang, L.; Wu, Y.; and Wu, X. 2016b. Situation testingbased discrimination discovery: a causal inference approach. In Proceedings of IJCAI 2016. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                68,
+                913,
+                880
+            ]
+        }
+    ]
+]

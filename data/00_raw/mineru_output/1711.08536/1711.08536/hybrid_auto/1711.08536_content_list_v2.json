@@ -1,0 +1,1036 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "No Classification without Representation: Assessing Geodiversity Issues in Open Data Sets for the Developing World "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                205,
+                121,
+                789,
+                199
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Shreya Shankar, Yoni Halpern, Eric Breck, James Atwood, Jimbo Wilson, D. Sculley {shankarshreya, yhalpern, ebreck, atwoodj, jimbo, dsculley}@google.com Google Brain Team "
+                    }
+                ]
+            },
+            "bbox": [
+                197,
+                250,
+                799,
+                292
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                459,
+                328,
+                537,
+                344
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Modern machine learning systems such as image classifiers rely heavily on large scale data sets for training. Such data sets are costly to create, thus in practice a small number of freely available, open source data sets are widely used. We suggest that examining the geo-diversity of open data sets is critical before adopting a data set for use cases in the developing world. We analyze two large, publicly available image data sets to assess geo-diversity and find that these data sets appear to exhibit an observable amerocentric and eurocentric representation bias. Further, we analyze classifiers trained on these data sets to assess the impact of these training distributions and find strong differences in the relative performance on images from different locales. These results emphasize the need to ensure geo-representation when constructing data sets for use in the developing world. "
+                    }
+                ]
+            },
+            "bbox": [
+                228,
+                358,
+                767,
+                512
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction: Data and the Developing World "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                534,
+                586,
+                551
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Creating large data sets from scratch can be costly. As such, it is common for practitioners to use freely available open source data sets such as ImageNet [4] and Open Images [3] to train vision models. This is particularly desirable when using ML for the developing world, where resources for creating new data sets may be limited. However, if these data sets are not representative of the locations of interest, predictive performance of models may suffer. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                564,
+                823,
+                633
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we assess the geo-diversity of large data sets and the differences that models trained on them exhibit when classifying images from varying geographical locations. We find an observable amerocentric and eurocentric bias shown in both forms of assessement. This is the case despite these data sets’ creators efforts to encourage diversity. We present these findings not as a criticism but as a case study in the difficulties in creating a geographically balanced data set. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                638,
+                823,
+                709
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Background: ImageNet and Open Images "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                728,
+                553,
+                744
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this work, we analyze two popular public data sets: ImageNet [4] and Open Images [3]. These two data sets are generally considered academic benchmarks and are not necessarily constructed to cover every possible use case. However, in the absence of a robust data source for a particular application, it is quite common to fall back to these standard data sets. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                758,
+                823,
+                814
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The first version of the ImageNet data set was released in 2009 by Deng et al. [2]. An updated 2012 release [4], used to train the model in this paper, consisted of approximately 1.2 million image thumbnails and URLs from 1000 categories. Each image in the data set is associated with a humanverified single label. The Open Images data set, released in 2016 by Krasin et al. [3], contains about 9 million URLs to Creative Commons licensed images. There are 6012 image-level human-verified labels, and each image can be associated with multiple labels. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                820,
+                823,
+                904
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1711.08536v1 [stat.ML] 22 Nov 2017 "
+                    }
+                ]
+            },
+            "bbox": [
+                19,
+                253,
+                55,
+                719
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "31st Conference on Neural Information Processing Systems (NIPS 2017), Long Beach, CA, USA. "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                922,
+                750,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8543c79f2601c1da8f7c89f18ad601988ad4c8580cfe43f944854e911f412441.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                183,
+                85,
+                493,
+                227
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/421a2a87d0753d281b40937613b712abcb027b1d53a7db4d91578ee53f45cfe2.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                504,
+                85,
+                816,
+                227
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/aec1156a2f0d015a0bec9f8c938e9a33337d7558182f9d8c7f04822ef7b90879.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Fraction of Open Images and ImageNet images from each country. In both data sets, top represented locations include the US and Great Britain. Countries are represented by their two-letter ISO country codes. "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Distribution of the geographically identifiable images in the Open Images data set, by country. Almost a third of the data in our sample was US-based, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "60 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the data was from the six most represented countries across North America and Europe. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                263,
+                280,
+                740,
+                502
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Pretrained image classification models trained on both ImageNet and Open Images are publicly available on the Tensorflow [1] "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { S l i m } ^ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and Open Images Github2 pages, respectively. For each data set, we use publicly released pretrained models with the Inception V3 [6] architecture, which gives competitive performance across standard benchmarks. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                577,
+                823,
+                633
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Analyzing Geo-Diversity "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                652,
+                410,
+                671
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our first goal was to assess the geo-diversity of the images in the open source data sets. It is naturally difficult to identify the geo-location of every image in previously released open source image data sets. However, proxy information such as textual / contextual information and URL metadata provided by a service allowed us to recover reasonably reliable location information at the country level for a large number of images in each data set. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                684,
+                823,
+                753
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the purposes of this study, we take this country identification, accepting the possibility of noise in the coverage and accuracy of the country-level geo-location as unlikely to qualitatively impact the larger trends shown. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                760,
+                823,
+                801
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Geo-Diversity of Open Images. Of the 9 million images in the Open Images data set, we were able to acquire country-level geo-location for roughly 2 million. This is a large (but potentially non-uniform) subset of the overall data. Geo-location data is shown in Figures 1 and 2. Overall, more than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "32 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the sample data was US-based and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "60 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the data was from the six most represented "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                816,
+                823,
+                875
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1https://github.com/tensorflow/models/tree/master/research/slim "
+                    }
+                ]
+            },
+            "bbox": [
+                189,
+                883,
+                679,
+                897
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2https://github.com/openimages/dataset "
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                898,
+                486,
+                911
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": []
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/191f0d2ec7b6c82a063d9a786b473eae3ef0ab1e9d017d9d6ddac25791d3d251.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                181,
+                78,
+                380,
+                234
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/62a677113c237ca4ebae7dda467eb9551f86d8a7a863d3b345dfa6acee8b6c3e.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                401,
+                78,
+                606,
+                237
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/de0aa910b8bca2f6195cb14829e4de43ea0d4e87709b71f4eeca46e7e3aae606.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Density plots of log-likelihood attributed for groom, bridegroom images crowdsourced by raters in Hyderabad, India, as scored by a model trained on ImageNet (left) and Open Images (center), as compared to images in the standard test sets. In both cases, the images provided by Hyderabad-located crowdsourcing are dramatically less likely to be recognized correctly by these models. The plot on right shows a similar trend for the woman class in OpenImages which has no corresponding class in ImageNet. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                612,
+                78,
+                816,
+                237
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "countries across North America and Europe. Meanwhile, China and India – the two most populous countries in the world – were represented with only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the images, respectively. Despite our expectation that there would be some skew, we were surprised to find this level of imbalance. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                352,
+                823,
+                396
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Geo-Diversity of ImageNet. For the 14 million images in the fall 2011 release of the ImageNet data set,3 we similarly acquired country-level geo-location data. We had lower coverage for ImageNet, but the distribution was similarly dominated by a small number of countries, as shown in Figure 1. Around "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "45 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the data in our sample was US-based. Here, China and India were represented with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 . 1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the images, respectively. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                410,
+                826,
+                481
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Analyzing Classification Behavior Based on Geo-Location "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                501,
+                686,
+                518
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We examined how lack of geo-diversity in training data impacts classification performance on images drawn from a broader set of locations. We collected image data for specific geographical regions using two separate methods. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                532,
+                823,
+                575
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Crowdsourced Data. Our first method of collecting stress-test data was to ask crowdsourced raters located in Hyderabad to find and return URLs of images on the internet that matched particular labels, specifically from a community that they identified with in an effort to avoid amerocentric or eurocentric bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                590,
+                823,
+                647
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Spot checking the results of this collection showed that images for labels such as groom, bridegroom did appear to represent traditions commonly associated with India. In other cases the human raters found it difficult to find an image from a community that they belonged to. Some of these cases were for US-centric classes, (e.g., an “infielder” baseball player or “Captain America”). "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                652,
+                826,
+                710
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Geo-located web images. While the raters in Hyderabad gave us one source of location-specific image data, we needed another approach to find data from a wider range of countries. To this end, we first identified 15 countries to target and joined the per-country location proxy described above with inferred labels from a classifier similar to Google Cloud Vision API, across a large data store of images from the web. For analysis, we focused on labels related to “people”, such as bridegroom, police officer, and greengrocer. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                724,
+                826,
+                810
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "One limitation of this work is that even our geographically diverse images were collected from the internet using tools that rely (at least partially) on image classifiers themselves. The human raters used web search to find images that depicted people from their communities. Similarly, when building a data set from underrepresented countries using geo-located web images to stress-test a classifier, an image classifier was used to filter for relevant images. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                814,
+                823,
+                886
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3http://image-net.org/imagenet_data/urls/imagenet_fall11_urls.tgz "
+                    }
+                ]
+            },
+            "bbox": [
+                189,
+                896,
+                696,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "3 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/384f623d4fb78c98527c011e795934a7782aba11855cf8331dce4ce14e529074.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                187,
+                88,
+                377,
+                237
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/ef74d67dcb273902c0d71ab368675dcf50d294fe5cae71f4d3fc42ca7e140d49.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                405,
+                88,
+                591,
+                237
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/d44c8a79041acf08cbbdd00c48e374be999b3315c08f97464401d9e983bf8b7c.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4: Density plots of log-likelihood attributed by the models trained on Open Images for images drawn from the groom, bridegroom, butcher, greengrocer, and police officer categories. Groom images with non-US location tags tend to have lower likelihoods than the groom images from the US. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                617,
+                88,
+                805,
+                237
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Geo-Dependent Mis-Classifications. Looking over groom, bridegroom images supplied by the Hyderabad raters, we found that the classifier trained on ImageNet data was likely to misclassify these images as chain mail, a kind of armor. Other images were misclassified as focusing on cloth, academic gown, or vestment. Using a method similar to SmoothGrad [5], we looked at saliency maps to determine which parts of the images were most depended on by the model when making these classifications. Surprisingly, in all cases that we looked at, the human face in the image was highlighted rather than the attire, despite the fact that the majority of misclassifications assigned an attire-based label. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                329,
+                826,
+                441
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Classifier performance on localized data. We use two pretrained models, one trained on ImageNet and another trained on Open Images to test the difference in classifiers’ performances between data drawn from the standard evaluation data split in ImageNet and Open Images and rater-supplied images. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                472,
+                826,
+                529
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3 shows some categories that showed noticeable differences in performance. These differences appear in both classifiers, suggesting that this problem is not particular to a single data set. Using the geolocated images from the web, we compare performance between countries (Figure 4). Some classes of images have similar distributions of predictions across countries, indicating that the training data set is better-represented in such classes. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                535,
+                823,
+                604
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5 plots images of groom, bridegroom images from different countries by log likelihood. The US-based images are clustered to the far right, showing high confidence, while images from Ethiopia and Pakistan are much more uniformly distributed, showing poorer classifier performance. We confirmed this trend across several other countries in different regions of the world. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                609,
+                826,
+                667
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We focused on labels relating to humans in this work, but noticeable distributional differences between developed and developing countries can occur other areas as well, including sports, transportation, and wildlife. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                672,
+                826,
+                715
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                752,
+                294,
+                767
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It is clear that standard open source data sets such as ImageNet or Open Images may not have sufficient geo-diversity for broad representation across the developing world. This is not too surprising, as these data sets were designed for specific purposes, and it is only the practice of later adoption for other purposes that may introduce problems. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                792,
+                823,
+                851
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This study highlights the importance of assessing the appropriateness of a given data set before using it to learn models for use in the developing world. Equally, this work emphasizes the importance of creating new data sets that prioritize broad geo-representation as first class goals, in order to aid ML in the developing world. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                854,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "4 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/fef17fc41431ae6208ad03b06cd9d30f4a582a724f1c8476034c2a0aa88a1600.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5: Photos of bridegrooms from different countries aligned by the log-likelihood that the classifier trained on Open Images assigns to the bridegroom class. Images from Ethiopia and Pakistan are not classified as consistently as images from the United States and Australia. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                305,
+                85,
+                694,
+                372
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                173,
+                435,
+                267,
+                450
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[1] M. Abadi, A. Agarwal, P. Barham, E. Brevdo, Z. Chen, C. Citro, G. Corrado, A. Davis, J. Dean, M. Devin, S. Ghemawat, I. Goodfellow, A. Harp, G. Irving, M. Isard, Y. Jia, R. Jozefowicz, L. Kaiser, M. Kudlur, J. Levenberg, D. Mané, R. Monga, S. Moore, D. Murray, C. Olah, M. Schuster, J. Shlens, B. Steiner, I. Sutskever, K. Talwar, P. Tucker, V. Vanhoucke, V. Vasudevan, F. Viégas, O. Vinyals, P. Warden, M. Wattenberg, M. Wicke, Y. Yu, and X. Zheng. Tensorflow: Large-scale machine learning on heterogeneous distributed systems, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[2] J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei. ImageNet: A Large-Scale Hierarchical Image Database. In CVPR09, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[3] I. Krasin, T. Duerig, N. Alldrin, V. Ferrari, S. Abu-El-Haija, A. Kuznetsova, H. Rom, J. Uijlings, S. Popov, A. Veit, S. Belongie, V. Gomes, A. Gupta, C. Sun, G. Chechik, D. Cai, Z. Feng, D. Narayanan, and K. Murphy. Openimages: A public dataset for large-scale multi-label and multi-class image classification. Dataset available from https://github.com/openimages, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[4] O. Russakovsky, J. Deng, H. Su, J. Krause, S. Satheesh, S. Ma, Z. Huang, A. Karpathy, A. Khosla, M. Bernstein, A. C. Berg, and L. Fei-Fei. ImageNet Large Scale Visual Recognition Challenge. International Journal of Computer Vision (IJCV), 115(3):211–252, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[5] D. Smilkov, N. Thorat, B. Kim, F. B. Viégas, and M. Wattenberg. Smoothgrad: removing noise by adding noise. CoRR, abs/1706.03825, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[6] C. Szegedy, V. Vanhoucke, S. Ioffe, J. Shlens, and Z. Wojna. Rethinking the inception architecture for computer vision. CoRR, abs/1512.00567, 2015. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                173,
+                458,
+                826,
+                771
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "5 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ]
+]

@@ -1,0 +1,87 @@
+$$
+\mathbb {E} [ d (X) \mid g (X) ] = \mathbb {E} [ d (X) ]. \tag {1}
+$$
+
+$$
+\mathbb {E} [ d (X) \mid \ell (X), g (X) ] = \mathbb {E} [ d (X) \mid \ell (X) ]. \tag {2}
+$$
+
+$$
+\mathbb {E} [ d (X) \mid Y = 0, g (X) ] = \mathbb {E} [ d (X) \mid Y = 0 ]. \tag {3}
+$$
+
+$$
+\Pr (Y = 1 \mid s (X), g (X)) = \Pr (Y = 1 \mid s (X)). \tag {4}
+$$
+
+$$
+\begin{array}{l} u (d, c) = \mathbb {E} [ Y d (X) - c d (X) ] \\ = \mathbb {E} [ Y d (X) ] - c \mathbb {E} [ d (X) ]. \tag {5} \\ \end{array}
+$$
+
+$$
+\begin{array}{l} u (d, c) = \mathbb {E} \left[ \mathbb {E} \left[ Y d (X) - c d (X) \mid X \right] \right] \\ = \mathbb {E} \left[ p _ {Y | X} d (X) - c d (X) \right] \\ = \mathbb {E} [ d (X) \left(p _ {Y \mid X} - c\right) ] \tag {6} \\ \end{array}
+$$
+
+$$
+d ^ {*} (X) = \left\{ \begin{array}{l l} 1 & p _ {Y | X} \geq c \\ 0 & \text {o t h e r w i s e} \end{array} \right.
+$$
+
+$$
+d ^ {*} (X) = \left\{ \begin{array}{l l} 1 & p _ {Y | X} \geq t _ {g (X)} \\ 0 & \text {o t h e r w i s e} \end{array} \right.
+$$
+
+$$
+d ^ {*} (X) = \left\{ \begin{array}{l l} 1 & p _ {Y | X} \geq t _ {\mathcal {G} (X), \ell (X)} \\ 0 & \text {o t h e r w i s e} \end{array} \right.
+$$
+
+$$
+\mathbb {E} \left[ d (X) \mid g (X) = a \right] = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y | X} \geq t _ {a} \right\} \mid g (X) = a \right].
+$$
+
+$$
+\begin{array}{l} \beta = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y | X} \geq t _ {a ^ {*}} \right\} (1 - d (X)) \mid g (X) = a ^ {*} \right] \\ = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y \mid X} <   t _ {a ^ {*}} \right\} d (X) \mid g (X) = a ^ {*} \right] \\ > 0, \\ \end{array}
+$$
+
+$$
+d _ {t _ {1}, t _ {2}} ^ {\prime} (X) = \left\{ \begin{array}{l l} 1 & p _ {Y | X} \geq t _ {2},   g (X) = a ^ {*} \\ 0 & p _ {Y | X} <   t _ {1},   g (X) = a ^ {*} \\ d (X) & \text {o t h e r w i s e} \end{array} \right..
+$$
+
+$$
+\beta_ {2} \left(t _ {1}, t _ {2}\right) = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y \mid X} \geq t _ {2} \right\} (1 - d (X)) \mid g (X) = a ^ {*} \right]
+$$
+
+$$
+\begin{array}{l} \gamma_ {2} \left(t _ {1}, t _ {2}\right) = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y \mid X} \geq t _ {2} \right\} (1 - d (X)) (1 - p _ {Y \mid X}) \mid g (X) = a ^ {*} \right] \\ \leq (1 - t _ {2}) \beta_ {2} (t _ {1}, t _ {2}) \\ \end{array}
+$$
+
+$$
+\beta_ {1} \left(t _ {1}, t _ {2}\right) = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y | X} <   t _ {1} \right\} d (X) \mid g (X) = a ^ {*} \right]
+$$
+
+$$
+\begin{array}{l} \gamma_ {1} \left(t _ {1}, t _ {2}\right) = \mathbb {E} \left[ \mathbb {1} \left\{p _ {Y \mid X} <   t _ {1} \right\} d (X) \left(1 - p _ {Y \mid X}\right) \mid g (X) = a ^ {*} \right] \\ \geq (1 - t _ {1}) \beta_ {1} (t _ {1}, t _ {2}) \\ \end{array}
+$$
+
+$$
+\begin{array}{l} u \left(d _ {t _ {1} ^ {\prime}, t _ {2}} ^ {\prime}, c\right) - u (d, c) = \mathbb {E} \left[ d _ {t _ {1} ^ {\prime}, t _ {2}} ^ {\prime} (X) \left(p _ {Y \mid X} - c\right) \right] - \mathbb {E} \left[ d (X) \left(p _ {Y \mid X} - c\right) \right] \\ = \mathbb {E} \left[ d _ {t _ {1} ^ {\prime}, t _ {2}} ^ {\prime} (X) (1 - c) \right] - \mathbb {E} \left[ d _ {t _ {1} ^ {\prime}, t _ {2}} ^ {\prime} (X) (1 - p _ {Y | X}) \right] \\ - \mathbb {E} [ d (X) (1 - c) ] + \mathbb {E} [ d (X) (1 - p _ {Y | X}) ] \\ = (1 - c) \left(\mathbb {E} \left[ d _ {t _ {1} ^ {\prime}, t _ {2}} ^ {\prime} (X) \right] - \mathbb {E} [ d (X) ]\right) \\ = (1 - c) \left[ \beta_ {2} \left(t _ {1} ^ {\prime}, t _ {2}\right) - \beta_ {1} \left(t _ {1} ^ {\prime}, t _ {2}\right) \right] \\ > 0. \\ \end{array}
+$$
+
+$$
+\mathbb {E} \left[ d _ {t _ {1} ^ {\prime}, t _ {2}} ^ {\prime} (X) (1 - p _ {Y | X}) \right] = \mathbb {E} \left[ d (X) (1 - p _ {Y | X}) \right].
+$$
+
+$$
+\begin{array}{l} f (\alpha) = u (d _ {\alpha}, c) \\ = \mathbb {E} \left[ d _ {\alpha} (X) p _ {Y | X} \right] - c \alpha . \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \arg \max  \mathbb {E} [ Y d (X) - c d (X) ] = \arg \max  \mathbb {E} [ Y d (X) ] \tag {7} \\ \begin{array}{c} d \in D \\ \hskip 1 4. 2 2 6 3 7 8 p t d \in D \\ \mathbb {E} [ d (X) ] = f (c) \end{array} \\ \end{array}
+$$
+
+$$
+\begin{array}{l} g ^ {\prime} (\alpha) = \frac {\mathrm {d}}{\mathrm {d} \alpha} \mathbb {E} [ Y d _ {\alpha} (X) - c d _ {\alpha} (X) ] \\ = \frac {\mathrm {d}}{\mathrm {d} \alpha} \left(\mathbb {E} \left[ Y d _ {\alpha} (X) \right] - c \alpha\right) \\ \end{array}
+$$
+
+$$
+\frac {\mathrm {d}}{\mathrm {d} \alpha} \mathbb {E} [ Y d _ {\alpha} (X) ] = c
+$$

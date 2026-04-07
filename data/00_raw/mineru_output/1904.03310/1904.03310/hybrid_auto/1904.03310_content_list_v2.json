@@ -1,0 +1,1526 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Gender Bias in Contextualized Word Embeddings "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                240,
+                79,
+                759,
+                101
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Jieyu Zhao§ "
+                    }
+                ]
+            },
+            "bbox": [
+                277,
+                114,
+                386,
+                131
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Ryan Cotterellℵ "
+                    }
+                ]
+            },
+            "bbox": [
+                242,
+                131,
+                381,
+                148
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Tianlu Wang† "
+                    }
+                ]
+            },
+            "bbox": [
+                428,
+                115,
+                549,
+                131
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Vicente Ordonez† "
+                    }
+                ]
+            },
+            "bbox": [
+                423,
+                131,
+                576,
+                147
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Mark Yatskar‡ "
+                    }
+                ]
+            },
+            "bbox": [
+                591,
+                115,
+                724,
+                130
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Kai-Wei Chang§ "
+                    }
+                ]
+            },
+            "bbox": [
+                620,
+                131,
+                761,
+                148
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "§University of California, Los Angeles "
+                    }
+                ]
+            },
+            "bbox": [
+                191,
+                148,
+                505,
+                165
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{jyzhao, kwchang}@cs.ucla.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                547,
+                149,
+                813,
+                165
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "†University of Virginia {tw8bc, vicente}@virginia.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                260,
+                166,
+                744,
+                181
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "‡Allen Institute for Artificial Intelligence marky@allenai.org "
+                    }
+                ]
+            },
+            "bbox": [
+                236,
+                181,
+                769,
+                199
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ℵUniversity of Cambridge rdc42@cam.ac.uk "
+                    }
+                ]
+            },
+            "bbox": [
+                300,
+                199,
+                704,
+                215
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                262,
+                242,
+                342,
+                256
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we quantify, analyze and mitigate gender bias exhibited in ELMo’s contextualized word vectors. First, we conduct several intrinsic analyses and find that (1) training data for ELMo contains significantly more male than female entities, (2) the trained ELMo embeddings systematically encode gender information and (3) ELMo unequally encodes gender information about male and female entities. Then, we show that a state-of-the-art coreference system that depends on ELMo inherits its bias and demonstrates significant bias on the WinoBias probing corpus. Finally, we explore two methods to mitigate such gender bias and show that the bias demonstrated on WinoBias can be eliminated. "
+                    }
+                ]
+            },
+            "bbox": [
+                142,
+                269,
+                460,
+                495
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                508,
+                260,
+                524
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Distributed representations of words in the form of word embeddings (Mikolov et al., 2013; Pennington et al., 2014) and contextualized word embeddings (Peters et al., 2018; Devlin et al., 2018; Radford et al., 2018; McCann et al., 2017; Radford et al., 2019) have led to huge performance improvement on many NLP tasks. However, several recent studies show that training word embeddings in large corpora could lead to encoding societal biases present in these human-produced data (Bolukbasi et al., 2016; Caliskan et al., 2017). In this work, we extend these analyses to the ELMo contextualized word embeddings. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                535,
+                490,
+                743
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our work provides a new intrinsic analysis of how ELMo represents gender in biased ways. First, the corpus used for training ELMo has a significant gender skew: male entities are nearly three times more common than female entities, which leads to gender bias in the downloadable pre-trained contextualized embeddings. Then, we apply principal component analysis (PCA) to show that after training on such biased corpora, there exists a lowdimensional subspace that captures much of the "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                745,
+                489,
+                904
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "gender information in the contextualized embeddings. Finally, we evaluate how faithfully ELMo preserves gender information in sentences by measuring how predictable gender is from ELMo representations of occupation words that co-occur with gender revealing pronouns. Our results show that ELMo embeddings perform unequally on male and female pronouns: male entities can be predicted from occupation words "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "14 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "more accurately than female entities. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                243,
+                885,
+                401
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In addition, we examine how gender bias in ELMo propagates to the downstream applications. Specifically, we evaluate a state-of-the-art coreference resolution system (Lee et al., 2018) that makes use of ELMo’s contextual embeddings on WinoBias (Zhao et al., 2018a), a coreference diagnostic dataset that evaluates whether systems behave differently on decisions involving male and female entities of stereotyped or anti-stereotyped occupations. We find that in the most challenging setting, the ELMo-based system has a disparity in accuracy between pro- and anti-stereotypical predictions, which is nearly "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "30 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "higher than a similar system based on GloVe (Lee et al., 2017). "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                404,
+                885,
+                627
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Finally, we investigate approaches for mitigating the bias which propagates from the contextualized word embeddings to a coreference resolution system. We explore two different strategies: (1) a training-time data augmentation technique (Zhao et al., 2018a), where we augment the corpus for training the coreference system with its genderswapped variant (female entities are swapped to male entities and vice versa) and, afterwards, retrain the coreference system; and (2) a test-time embedding neutralization technique, where input contextualized word representations are averaged with word representations of a sentence with entities of the opposite gender. Results show that testtime embedding neutralization is only partially effective, while data augmentation largely mitigates bias demonstrated on WinoBias by the coreference "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                629,
+                885,
+                902
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1904.03310v1 [cs.CL] 5 Apr 2019 "
+                    }
+                ]
+            },
+            "bbox": [
+                21,
+                312,
+                63,
+                717
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "system. "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                76,
+                174,
+                90
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                102,
+                272,
+                118
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Gender bias has been shown to affect several realworld applications relying on automatic language analysis, including online news (Ross and Carter, 2011), advertisements (Sweeney, 2013), abusive language detection (Park et al., 2018), machine translation (Font and Costa-jussa`, 2019; Vanmassenhove et al., 2018), and web search (Kay et al., 2015). In many cases, a model not only replicates bias in the training data but also amplifies it (Zhao et al., 2017). "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                128,
+                490,
+                287
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For word representations, Bolukbasi et al. (2016) and Caliskan et al. (2017) show that word embeddings encode societal biases about gender roles and occupations, e.g. engineers are stereotypically men, and nurses are stereotypically women. As a consequence, downstream applications that use these pretrained word embeddings also reflect this bias. For example, Zhao et al. (2018a) and Rudinger et al. (2018) show that coreference resolution systems relying on word embeddings encode such occupational stereotypes. In concurrent work, May et al. (2019) measure gender bias in sentence embeddings, but their evaluation is on the aggregation of word representations. In contrast, we analyze bias in contextualized word representations and its effect on a downstream task. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                288,
+                490,
+                545
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To mitigate bias from word embeddings, Bolukbasi et al. (2016) propose a post-processing method to project out the bias subspace from the pre-trained embeddings. Their method is shown to reduce the gender information from the embeddings of gender-neutral words, and, remarkably, maintains the same level of performance on different downstream NLP tasks. Zhao et al. (2018b) further propose a training mechanism to separate gender information from other factors. However, Gonen and Goldberg (2019) argue that entirely removing bias is difficult, if not impossible, and the gender bias information can be often recovered. This paper investigates a natural follow-up question: What are effective bias mitigation techniques for contextualized embeddings? "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                546,
+                489,
+                803
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Gender Bias in ELMo "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                815,
+                341,
+                829
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section we describe three intrinsic analyses highlighting gender bias in trained ELMo contextual word embeddings (Peters et al., 2018). We show that (1) training data for ELMo contains sig-"
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                841,
+                490,
+                904
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/d9e634804c3cea7f267cb762cf258ea413a97ebb5fbbb53afbe575ac7a066ae6.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Training corpus for ELMo. We show total counts for male (M) and female (F) pronouns in the corpus, and counts corresponding to their cooccurrence with occupation words where the occupations are stereotypically male (M-biased) or female (Fbiased). "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>#occurrence</td><td>#M-biased occs.</td><td>#F-biased occs.</td></tr><tr><td>M</td><td>5,300,000</td><td>170,000</td><td>81,000</td></tr><tr><td>F</td><td>1,600,000</td><td>33,000</td><td>36,000</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                512,
+                71,
+                884,
+                112
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "nificantly more male entities compared to female entities leading to gender bias in the pre-trained contextual word embeddings (2) the geometry of trained ELMo embeddings systematically encodes gender information and (3) ELMo propagates gender information about male and female entities unequally. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                219,
+                885,
+                332
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1 Training Data Bias "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                343,
+                705,
+                357
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 1 lists the data analysis on the One Billion Word Benchmark (Chelba et al., 2013) corpus, the training corpus for ELMo. We show counts for the number of occurrences of male pronouns (he, his and him) and female pronouns (she and her) in the corpus as well as the co-occurrence of occupation words with those pronouns. We use the set of occupation words defined in the WinoBias corpus and their assignments as prototypically male or female (Zhao et al., 2018a). The analysis shows that the Billion Word corpus contains a significant skew with respect to gender: (1) male pronouns occur three times more than female pronouns and (2) male pronouns co-occur more frequently with occupation words, irrespective of whether they are prototypically male or female. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                363,
+                885,
+                621
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2 Geometry of Gender "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                631,
+                721,
+                646
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Next, we analyze the gender subspace in ELMo. We first sample 400 sentences with at least one gendered word (e.g., he or she from the OntoNotes 5.0 dataset (Weischedel et al., 2012) and generate the corresponding gender-swapped variants (changing he to she and vice-versa). We then calculate the difference of ELMo embeddings between occupation words in corresponding sentences and conduct principal component analysis for all pairs of sentences. Figure 1 shows there are two principal components for gender in ELMo, in contrast to GloVe which only has one (Bolukbasi et al., 2016). The two principal components in ELMo seem to represent the gender from the contextual information (Contextual Gender) as well as the gender embedded in the word itself (Occupational Gender). "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                652,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f4cee05b53cbac283b3643c2be3548fedd09854cb2080a1c8b5003fcdf267842.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                184,
+                87,
+                489,
+                230
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/0101c1bd5691b15441ee3b99424061bcbd4b949d4762330b8b4fb3a94e79cd92.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Left: Percentage of explained variance in PCA in the embedding differences. Right: Selected words projecting to the first two principle components where the blue dots are the sentences with male context and the orange dots are from the sentences with female context. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                495,
+                89,
+                806,
+                237
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To visualize the gender subspace, we pick a few sentence pairs from WinoBias (Zhao et al., 2018a). Each sentence in the corpus contains one gendered pronoun and two occupation words, such as “The developer corrected the secretary because she made a mistake” and also the same sentence with the opposite pronoun (he). In Figure 1 on the right, we project the ELMo embeddings of occupation words that are co-referent with the pronoun (e.g. secretary in the above example) for when the pronoun is male (blue dots) and female (orange dots) on the two principal components from the PCA analysis. Qualitatively, we can see the first component separates male and female contexts while the second component groups male related words such as lawyer and developer and female related words such as cashier and nurse. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                309,
+                492,
+                583
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3 Unequal Treatment of Gender "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                593,
+                401,
+                608
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To test how ELMo embeds gender information in contextualized word embeddings, we train a classifier to predict the gender of entities from occupation words in the same sentence. We collect sentences containing gendered words (e.g., he-she, father-mother) and occupation words (e.g., doctor)1 from the OntoNotes 5.0 corpus (Weischedel et al., 2012), where we treat occupation words as a mention to an entity, and the gender of that entity is taken to the gender of a co-referring gendered word, if one exists. For example, in the sentence “the engineer went back to her home,” we take engineer to be a female mention. Then we split all such instances into training and test, with 539 and 62 instances, respectively and augment these sentences by swapping all the gendered words with words of the opposite gender such that the numbers of male "
+                    }
+                ]
+            },
+            "bbox": [
+                112,
+                613,
+                492,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and female entities are balanced. "
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                309,
+                756,
+                323
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We first test if ELMo embedding vectors carry gender information. We train an SVM classifier with an RBF kernel2 to predict the gender of a mention (i.e., an occupation word) based on its ELMo embedding. On development data, this classifier achieves "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 . 1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 0 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "accuracy on sentences where the true gender was male and female respectively. For both male and female contexts, the accuracy is much larger than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "50 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", demonstrating that ELMo does propagate gender information to other words. However, male information is more than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "14 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "more accurately represented in ELMo than female information, showing that ELMo propagates the information unequally for male and female entities. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                325,
+                887,
+                565
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Bias in Coreference Resolution "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                577,
+                811,
+                593
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we establish that coreference systems that depend on ELMo embeddings exhibit significant gender bias. Then we evaluate two simple methods for removing the bias from the systems and show that the bias can largely be reduced. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                604,
+                885,
+                684
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.1 Setup"
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                695,
+                603,
+                709
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We evaluate bias with respect to the WinoBias dataset (Zhao et al., 2018a), a benchmark of paired male and female coreference resolution examples following the Winograd format (Hirst, 1981; Rahman and Ng, 2012; Peng et al., 2015). It contains two different subsets, pro-stereotype, where pronouns are associated with occupations predominately associated with the gender of the pronoun, or anti-stereotype, when the opposite relation is true. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                715,
+                885,
+                860
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2We use the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\nu"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-SVC formulation and tune the hyperparameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\nu"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Chang and Lin, 2011) in the range of [0.1, 1] with a step 0.1. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                868,
+                885,
+                906
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1We use the list collected in (Zhao et al., 2018a) "
+                    }
+                ]
+            },
+            "bbox": [
+                137,
+                894,
+                431,
+                908
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/b3633ea263a13f4d75425ba567cdd360fc825bd621488b6f085121953d4ae5a3.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: F1 on OntoNotes and WinoBias development sets. WinoBias dataset is split Semantics Only and w/ Syntactic Cues subsets. ELMo improves the performance on the OntoNotes dataset by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "but shows stronger bias on the WinoBias dataset. Avg. stands for averaged F1 score on the pro- and anti-stereotype subsets while “Diff.” is the absolute difference between these two subsets. * indicates the difference between pro/anti stereotypical conditions is significant "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( p < . 0 5 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "under an approximate randomized test (Graham et al., 2014). Mitigating bias by data augmentation reduces all the bias from the coreference model to a neglect level. However, the neutralizing ELMo approach only mitigates bias when there are other strong learning signals for the task. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td rowspan=\"2\">Embeddings</td><td rowspan=\"2\">Data Augmentation</td><td colspan=\"2\">Neutralization</td><td rowspan=\"2\">OntoNotes</td><td colspan=\"5\">Semantics Only</td><td colspan=\"4\">w/ Syntactic Cues</td></tr><tr><td>GloVe</td><td>ELMo</td><td>Pro.</td><td>Anti.</td><td>Avg.</td><td>| Diff |</td><td>Pro.</td><td>Anti.</td><td>Avg.</td><td>| Diff |</td><td></td></tr><tr><td>GloVe</td><td rowspan=\"2\">✓</td><td></td><td></td><td>67.7</td><td>76.0</td><td>49.4</td><td>62.7</td><td>26.6*</td><td>88.7</td><td>75.2</td><td>82.0</td><td>13.5*</td><td></td></tr><tr><td>GloVe</td><td></td><td></td><td>65.8</td><td>63.9</td><td>62.8</td><td>63.4</td><td>1.1</td><td>81.3</td><td>83.4</td><td>82.4</td><td>2.1</td><td></td></tr><tr><td>GloVe+ELMo</td><td rowspan=\"2\">✓</td><td></td><td></td><td>72.7</td><td>79.1</td><td>49.5</td><td>64.3</td><td>29.6*</td><td>93.0</td><td>85.9</td><td>89.5</td><td>7.1*</td><td></td></tr><tr><td>GloVe+ELMo</td><td></td><td></td><td>71.0</td><td>65.9</td><td>64.9</td><td>65.4</td><td>1.0</td><td>87.8</td><td>88.9</td><td>88.4</td><td>1.2</td><td></td></tr><tr><td>GloVe+ELMo</td><td>✓</td><td></td><td></td><td>71.0</td><td>72.6</td><td>57.8</td><td>64.9</td><td>14.3*</td><td>90.2</td><td>88.6</td><td>89.4</td><td>1.6</td><td></td></tr><tr><td>GloVe+ELMo</td><td></td><td>✓</td><td>✓</td><td>71.1</td><td>71.7</td><td>60.6</td><td>66.2</td><td>11.1*</td><td>90.3</td><td>89.2</td><td>89.8</td><td>1.1</td><td></td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                117,
+                72,
+                882,
+                162
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Each subset consists of two types of sentences: one that requires semantic understanding of the sentence to make coreference resolution (Semantics Only) and another that relies on syntactic cues (w/ Syntactic Cues). Gender bias is measured by taking the difference of the performance in pro- and antistereotypical subsets. Previous work (Zhao et al., 2018a) evaluated the systems based on GloVe embeddings but here we evaluate a state-of-the-art system that trained on the OntoNotes corpus with ELMo embeddings (Lee et al., 2018). "
+                    }
+                ]
+            },
+            "bbox": [
+                112,
+                286,
+                490,
+                464
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.2 Bias Mitigation Methods "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                473,
+                356,
+                488
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Next, we describe two methods for mitigating bias in ELMo for the purpose of coreference resolution: (1) a train-time data augmentation approach and (2) a test-time neutralization approach. "
+                    }
+                ]
+            },
+            "bbox": [
+                112,
+                494,
+                489,
+                558
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Data Augmentation Zhao et al. (2018a) propose a method to reduce gender bias in coreference resolution by augmenting the training corpus for this task. Data augmentation is performed by replacing gender revealing entities in the OntoNotes dataset with words indicating the opposite gender and then training on the union of the original data and this swapped data. In addition, they find it useful to also mitigate bias in supporting resources and therefore replace standard GloVe embeddings with bias mitigated word embeddings from Bolukbasi et al. (2016). We evaluate the performance of both aspects of this approach. "
+                    }
+                ]
+            },
+            "bbox": [
+                112,
+                567,
+                490,
+                778
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Neutralization We also investigate an approach to mitigate bias induced by ELMo embeddings without retraining the coreference model. Instead of augmenting training corpus by swapping gender words, we generate a gender-swapped version of the test instances. We then apply ELMo to obtain contextualized word representations of the original "
+                    }
+                ]
+            },
+            "bbox": [
+                112,
+                785,
+                490,
+                898
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and the gender-swapped sentences and use their average as the final representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                286,
+                884,
+                318
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.3 Results "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                329,
+                616,
+                343
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 2 summarizes our results on WinoBias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                349,
+                847,
+                363
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ELMo Bias Transfers to Coreference Row 3 in Table 2 summarizes performance of the ELMo based coreference system on WinoBias. While ELMo helps to boost the coreference resolution F1 score (OntoNotes) it also propagates bias to the task. It exhibits large differences between pro- and anti-stereotyped sets (|Diff|) on both semantic and syntactic examples in WinoBias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                374,
+                884,
+                502
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Bias Mitigation Rows 4-6 in Table 2 summarize the effectiveness of the two bias mitigation approaches we consider. Data augmentation is largely effective at mitigating bias in the coreference resolution system with ELMo (reducing |Diff | to insignificant levels) but requires retraining the system. Neutralization is less effective than augmentation and cannot fully remove gender bias on the Semantics Only portion of WinoBias, indicating it is effective only for simpler cases. This observation is consistent with Gonen and Goldberg (2019), where they show that entirely removing bias from an embedding is difficult and depends on the manner, by which one measures the bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                512,
+                885,
+                737
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Conclusion and Future Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                747,
+                798,
+                764
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Like word embedding models, contextualized word embeddings inherit implicit gender bias. We analyzed gender bias in ELMo, showing that the corpus it is trained on has significant gender skew and that ELMo is sensitive to gender, but unequally so for male and female entities. We also showed this bias transfers to downstream tasks, such as coreference resolution, and explored two bias mitigation "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                774,
+                885,
+                903
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "strategies: 1) data augmentation and 2) neutralizing embeddings, effectively eliminating the bias from ELMo in a state-of-the-art system. With increasing adoption of contextualized embeddings to get better results on core NLP tasks, e.g. BERT (Devlin et al., 2018), we must be careful how such unsupervised methods perpetuate bias to downstream applications and our work forms the basis of evaluating and mitigating such bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                74,
+                492,
+                219
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgement "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                230,
+                282,
+                247
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This work was supported in part by National Science Foundation Grant IIS-1760523. RC was supported by a Facebook Fellowship. We also acknowledge partial support from the Institute of the the Humanities and Global Cultures at the University of Virginia. We thank all reviewers for their comments. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                255,
+                490,
+                367
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                393,
+                215,
+                409
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tolga Bolukbasi, Kai-Wei Chang, James Zou, Venkatesh Saligrama, and Adam Kalai. 2016. Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In NeurIPS. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Aylin Caliskan, Joanna J Bryson, and Arvind Narayanan. 2017. Semantics derived automatically from language corpora contain human-like biases. Science, 356(6334):183–186. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chih-Chung Chang and Chih-Jen Lin. 2011. Libsvm: a library for support vector machines. ACM transactions on intelligent systems and technology (TIST), 2(3):27. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ciprian Chelba, Tomas Mikolov, Mike Schuster, Qi Ge, Thorsten Brants, Phillipp Koehn, and Tony Robinson. 2013. One billion word benchmark for measuring progress in statistical language modeling. arXiv preprint arXiv:1312.3005. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2018. BERT: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Joel Escude Font and Marta R. Costa-juss´ a. 2019.` Equalizing gender biases in neural machine translation with word embeddings techniques. arXiv preprint arXiv:1901.03116. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hila Gonen and Yoav Goldberg. 2019. Lipstick on a pig: Debiasing methods cover up systematic gender biases in word embeddings but do not remove them. CoRR, abs/1903.03862. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Yvette Graham, Nitika Mathur, and Timothy Baldwin. 2014. Randomized significance tests in machine translation. In WMT@ ACL. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                414,
+                490,
+                908
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Graeme Hirst. 1981. Anaphora in natural language understanding. Berlin Springer Verlag. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Matthew Kay, Cynthia Matuszek, and Sean A. Munson. 2015. Unequal representation and gender stereotypes in image search results for occupations. In Human Factors in Computing Systems. ACM. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kenton Lee, Luheng He, Mike Lewis, and Luke Zettlemoyer. 2017. End-to-end neural coreference resolution. In EMNLP. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kenton Lee, Luheng He, and Luke S. Zettlemoyer. 2018. Higher-order coreference resolution with coarse-to-fine inference. In NAACL. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chandler May, Alex Wang, Shikha Bordia, Samuel R. Bowman, and Rachel Rudinger. 2019. On measuring social biases in sentence encoders. arXiv preprint arXiv:1903.10561. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bryan McCann, James Bradbury, Caiming Xiong, and Richard Socher. 2017. Learned in translation: Contextualized word vectors. In NeurIPS. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg S Corrado, and Jeff Dean. 2013. Distributed representations of words and phrases and their compositionality. In NeurIPS. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ji Ho Park, Jamin Shin, and Pascale Fung. 2018. Reducing gender bias in abusive language detection. In EMNLP. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Haoruo Peng, Daniel Khashabi, and Dan Roth. 2015. Solving hard coreference problems. In NAACL. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jeffrey Pennington, Richard Socher, and Christopher Manning. 2014. Glove: Global vectors for word representation. In EMNLP. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Matthew E. Peters, Mark Neumann, Mohit Iyyer, Matt Gardner, Christopher Clark, Kenton Lee, and Luke Zettlemoyer. 2018. Deep contextualized word representations. In NAACL. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Alec Radford, Karthik Narasimhan, Tim Salimans, and Ilya Sutskever. 2018. Improving language understanding by generative pre-training. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. 2019. Language models are unsupervised multitask learners. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Altaf Rahman and Vincent Ng. 2012. Resolving complex cases of definite pronouns: The winograd schema challenge. In EMNLP. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Karen Ross and Cynthia Carter. 2011. Women and news: A long and winding road. Media, Culture & Society, 33(8). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Rachel Rudinger, Jason Naradowsky, Brian Leonard, and Benjamin Van Durme. 2018. Gender bias in coreference resolution. In NAACL. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                512,
+                76,
+                885,
+                887
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Latanya Sweeney. 2013. Discrimination in online ad delivery. Queue, 11(3):10. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Eva Vanmassenhove, Christian Hardmeier, and Andy Way. 2018. Getting Gender Right in Neural Machine Translation. In EMNLP. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ralph Weischedel, Sameer Pradhan, Lance Ramshaw, Jeff Kaufman, Michelle Franchini, Mohammed El-Bachouti, Nianwen Xue, Martha Palmer, Jena D Hwang, Claire Bonial, et al. 2012. Ontonotes release 5.0. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jieyu Zhao, Tianlu Wang, Mark Yatskar, Vicente Ordonez, and Kai-Wei Chang. 2017. Men also like shopping: Reducing gender bias amplification using corpus-level constraints. In EMNLP. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jieyu Zhao, Tianlu Wang, Mark Yatskar, Vicente Ordonez, and Kai-Wei Chang. 2018a. Gender bias in coreference resolution: Evaluation and debiasing methods. In NAACL. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jieyu Zhao, Yichao Zhou, Zeyu Li, Wei Wang, and Kai-Wei Chang. 2018b. Learning gender-neutral word embeddings. In EMNLP. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                76,
+                490,
+                404
+            ]
+        }
+    ]
+]

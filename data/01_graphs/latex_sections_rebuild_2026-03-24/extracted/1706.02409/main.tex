@@ -1,0 +1,144 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[margin=0.3in]{caption}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}    
+\usepackage{hyperref}       
+\usepackage{url}            
+\usepackage{booktabs} 
+\usepackage{amsfonts} 
+\usepackage{nicefrac}   
+\usepackage{microtype}
+\usepackage{amssymb,amsmath,amsthm,amsfonts}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{color-edits}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{caption}
+\usepackage{xspace}
+\usepackage{esvect}
+\usepackage{bbm}
+\usepackage{etoolbox}
+\newtoggle{submit}
+\togglefalse{submit}
+\usepackage[numbers, sort,compress]{natbib}
+
+\graphicspath{ {Figures/} }
+
+
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\vs}{\mathbf{s}}
+\newcommand{\va}{\mathbf{a}}
+\newcommand{\vf}{\mathbf{f}}
+\newcommand{\vw}{\mathbf{w}}
+\newcommand{\vy}{\mathbf{y}}
+\newcommand{\vx}{\mathbf{x}}
+\newcommand{\Exp}[2]{\mathbb{E}_{#1}\lbrack #2 \rbrack}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\vX}{\mathbf{X}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\uhat}{\hat{u}}
+\newcommand{\er}{\text{Error}}
+\newcommand{\fa}{\text{Fairness}}
+
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Sc}{\mathcal{S}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cP}{\mathcal{P}}
+\renewcommand{\P}{\mathcal{P}}
+\DeclareMathOperator*{\err}{err}
+\DeclareMathOperator*{\fair}{fair}
+
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{observation}{Observation}
+\newtheorem{question}{Question}
+
+\newcommand{\tbd}{\textbf{TBD: }}
+\newcommand{\tba}{\textbf{TBA: }}
+\newcommand{\ar}[1]{{\color{brown}[Aaron: {#1}]}}
+\newcommand{\jm}[1]{\iftoggle{submit}{}{{\color{red}[Jamie: {#1}]}}}
+\newcommand{\mj}[1]{\iftoggle{submit}{}{\color{magenta}[Matthew: {#1}]}}
+\newcommand{\mk}[1]{\iftoggle{submit}{}{\color{green}[Michael: {#1}]}}
+\newcommand{\sj}[1]{\iftoggle{submit}{}{{\color{blue}[Shahin: {#1}]}}}
+\newcommand{\hh}[1]{\iftoggle{submit}{{\color{cyan}[Hoda: {#1}]}}}
+\newcommand{\sn}[1]{\iftoggle{submit}{}{\color{blue}[Seth: {#1}]}}
+\renewcommand{\l}{\ell\xspace}
+\newcommand{\pof}{\textrm{PoF}\xspace}
+
+\newcommand{\x}[1]{\ensuremath{{\bf x}}_{#1}}
+\renewcommand{\xi}{\x{i}}
+\newcommand{\xj}{\x{j}}
+\newcommand{\y}[1]{\ensuremath{y}_{#1}}
+\newcommand{\yi}{\y{i}}
+\newcommand{\yj}{\y{j}}
+\newcommand{\n}[1]{\ensuremath{n}_{#1}}
+\newcommand{\tsum}{\ensuremath{ \sum_{\substack{\xi\in \X_1\\ \xj\in \X_2}} }}
+\newcommand{\mse}{\ensuremath{\textrm{MSE}\xspace}}
+
+\newcommand{\ind}{individual fairness\xspace}
+\newcommand{\grp}{group fairness\xspace}
+\newcommand{\hybrid}{hybrid fairness\xspace}
+
+\newcommand*{\affaddr}[1]{#1} % No op here. Customize it for different styles.
+\newcommand*{\affmark}[1][*]{\textsuperscript{#1}}
+\newcommand*{\email}[1]{\texttt{#1}}
+
+
+\begin{document}
+\title{\Large\bfseries A Convex Framework for Fair Regression}
+\author{
+Richard Berk\affmark[1,2], Hoda Heidari\affmark[3], Shahin Jabbari\affmark[3], Matthew Joseph\affmark[3], Michael Kearns\affmark[3], \\
+Jamie Morgenstern\affmark[3], Seth Neel\affmark[1], and Aaron Roth\affmark[3]\\
+\affaddr{\affmark[1]Department of Statistics}\\
+\affaddr{\affmark[2]Department of Criminology}\\
+\affaddr{\affmark[3]Department of Computer and Information Science}\\
+\affaddr{University of Pennsylvania}\\
+}
+
+\maketitle
+
+\begin{abstract}
+  We introduce a flexible family of fairness regularizers for (linear
+  and logistic) regression problems. These regularizers all enjoy
+  convexity, permitting fast optimization, and they span the range
+  from notions of group fairness to strong individual
+  fairness. By varying the weight on the fairness regularizer, we can
+  compute the efficient frontier of the accuracy-fairness trade-off on
+  any given dataset, and we measure the severity of this trade-off via
+  a numerical quantity we call the Price of Fairness (PoF). The
+  centerpiece of our results is an extensive comparative study of the
+  PoF across six different datasets in which fairness is a primary
+  consideration.
+\end{abstract}
+
+\input{intro}
+\input{setting}
+\input{fairness}
+\input{related}
+\input{exp}
+\input{pareto}
+\input{onevstwo}
+\input{comparison}
+\input{conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{bib}
+
+\appendix
+\input{exp-details}
+\end{document}

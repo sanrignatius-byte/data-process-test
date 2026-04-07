@@ -1,0 +1,5004 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                133,
+                109,
+                841,
+                131
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Tobias Schnabel, Adith Swaminathan, Ashudeep Singh, Navin Chandak, Thorsten Joachims "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                175,
+                732,
+                191
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Cornell University, Ithaca, NY, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                193,
+                330,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{TBS49, FA234, AS3354, NC475, TJ36}@CORNELL.EDU "
+                    }
+                ]
+            },
+            "bbox": [
+                491,
+                193,
+                885,
+                209
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                241,
+                244,
+                320,
+                258
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Most data for evaluating and training recommender systems is subject to selection biases, either through self-selection by the users or through the actions of the recommendation system itself. In this paper, we provide a principled approach to handle selection biases by adapting models and estimation techniques from causal inference. The approach leads to unbiased performance estimators despite biased data, and to a matrix factorization method that provides substantially improved prediction performance on real-world data. We theoretically and empirically characterize the robustness of the approach, and find that it is highly practical and scalable. "
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                268,
+                442,
+                479
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1. Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                86,
+                511,
+                217,
+                526
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Virtually all data for training recommender systems is subject to selection biases. For example, in a movie recommendation system users typically watch and rate those movies that they like, and rarely rate movies that they do not like (Pradel et al., 2012). Similarly, when an adplacement system recommends ads, it shows ads that it believes to be of interest to the user, but will less frequently display other ads. Having observations be conditioned on the effect we would like to optimize (e.g. the star rating, the probability of a click, etc.) leads to data that is Missing Not At Random (MNAR) (Little & Rubin, 2002). This creates a widely-recognized challenge for evaluating recommender systems (Marlin & Zemel, 2009; Myttenaere et al., 2014). "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                537,
+                475,
+                734
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We develop an approach to evaluate and train recommender systems that remedies selection biases in a principled, practical, and highly effective way. Viewing recommendation from a causal inference perspective, we argue that exposing a user to an item in a recommendation system is an intervention analogous to exposing a patient to a treatment in a medical study. In both cases, the goal is to accurately esti-"
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                741,
+                473,
+                848
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "mate the effect of new interventions (e.g. a new treatment policy or a new set of recommendations) despite incomplete and biased data due to self-selection or experimenterbias. By connecting recommendation to causal inference from experimental and observational data, we derive a principled framework for unbiased evaluation and learning of recommender systems under selection biases. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                244,
+                885,
+                351
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The main contribution of this paper is four-fold. First, we show how estimating the quality of a recommendation system can be approached with propensity-weighting techniques commonly used in causal inference (Imbens & Rubin, 2015), complete-cases analysis (Little & Rubin, 2002), and other problems (Cortes et al., 2008; Bickel et al., 2009; Sugiyama & Kawanabe, 2012). In particular, we derive unbiased estimators for a wide range of performance measures (e.g. MSE, MAE, DCG). Second, with these estimators in hand, we propose an Empirical Risk Minimization (ERM) framework for learning recommendation systems under selection bias, for which we derive generalization error bounds. Third, we use the ERM framework to derive a matrix factorization method that can account for selection bias while remaining conceptually simple and highly scalable. Fourth, we explore methods to estimate propensities in observational settings where selection bias is due to selfselection by the users, and we characterize the robustness of the framework against mis-specified propensities. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                358,
+                885,
+                647
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our conceptual and theoretical contributions are validated in an extensive empirical evaluation. For the task of evaluating recommender systems, we show that our performance estimators can be orders-of-magnitude more accurate than standard estimators commonly used in the past (Bell et al., 2007). For the task of learning recommender systems, we show that our new matrix factorization method substantially outperforms methods that ignore selection bias, as well as existing state-of-the-art methods that perform jointlikelihood inference under MNAR data (Hernandez-Lobato ´ et al., 2014). This is especially promising given the conceptual simplicity and scalability of our approach compared to joint-likelihood inference. We provide an implemention of our method, as well as a new benchmark dataset, online1. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                652,
+                885,
+                864
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "Proceedings of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\mathcal { B } } { \\mathcal { B } } ^ { r d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "International Conference on Machine Learning, New York, NY, USA, 2016. JMLR: W&CP volume 48. Copyright 2016 by the author(s). "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                859,
+                478,
+                898
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1https://www.cs.cornell.edu/∼schnabts/mnar/ "
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                872,
+                790,
+                887
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1602.05352v2 [cs.LG] 27 May 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                255,
+                58,
+                707
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2. Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                83,
+                227,
+                99
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Past work that explicitly dealt with the MNAR nature of recommendation data approached the problem as missingdata imputation based on the joint likelihood of the missing data model and the rating model (Marlin et al., 2007; Marlin & Zemel, 2009; Hernandez-Lobato et al. ´ , 2014). This has led to sophisticated and highly complex methods. We take a fundamentally different approach that treats both models separately, making our approach modular and scalable. Furthermore, our approach is robust to mis-specification of the rating model, and we characterize how the overall learning process degrades gracefully under a mis-specified missing-data model. We empirically compare against the state-of-the-art joint likelihood model (Hernandez-Lobato et al. ´ , 2014) in this paper. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                109,
+                475,
+                321
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Related but different from the problem we consider is recommendation from positive feedback alone (Hu et al., 2008; Liang et al., 2016). Related to this setting are also alternative approaches to learning with MNAR data (Steck, 2010; 2011; Lim et al., 2015), which aim to avoid the problem by considering performance measures less affected by selection bias under mild assumptions. Of these works, the approach of Steck (2011) is most closely related to ours, since it defines a recall estimator that uses item popularity as a proxy for propensity. Similar to our work, Steck (2010; 2011) and Hu et al. (2008) also derive weighted matrix factorization methods, but with weighting schemes that are either heuristic or need to be tuned via cross validation. In contrast, our weighted matrix factorization method enjoys rigorous learning guarantees in an ERM framework. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                328,
+                473,
+                555
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Propensity-based approaches have been widely used in causal inference from observational studies (Imbens & Rubin, 2015), as well as in complete-case analysis for missing data (Little & Rubin, 2002; Seaman & White, 2013) and in survey sampling (Thompson, 2012). However, their use in matrix completion is new to our knowledge. Weighting approaches are also widely used in domain adaptation and covariate shift, where data from one source is used to train for a different problem (e.g., Huang et al., 2006; Bickel et al., 2009; Sugiyama & Kawanabe, 2012). We will draw upon this work, especially the learning theory of weighting approaches in (Cortes et al., 2008; 2010). "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                561,
+                475,
+                743
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3. Unbiased Performance Estimation for Recommendation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                762,
+                426,
+                796
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Consider a toy example adapted from Steck (2010) to illustrate the disastrous effect that selection bias can have on conventional evaluation using a test set of held-out ratings. Denote with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u ~ \\in ~ \\{ 1 , . . . , U \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "the users and with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i \\in \\{ 1 , . . . , I \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "the movies. Figure 1 shows the matrix of true ratings "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\dot { Y } \\in \\mathfrak { R } ^ { U \\times I }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for our toy example, where a sub-"
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                806,
+                475,
+                897
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/23cc8c442878cda536d5f812755ba23462877c19cdab02fda7f69a882f9950fb.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                496,
+                87,
+                627,
+                222
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/9cd4f3999ceed14a2b805cfe6d892348b7e7a08bbd9ac278a70ef2fbf491ee8e.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                633,
+                88,
+                754,
+                220
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f378fbe8d05bb4fc9849daf02f305084c69d996eca064d85120db108f31ea236.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1. Movie-Lovers toy example. Top row: true rating matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", propensity matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", observation indicator matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Bottom row: two rating prediction matrices "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and intervention indicator matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 3 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                759,
+                88,
+                885,
+                220
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "set of users are “horror lovers” who rate all horror movies 5 and all romance movies 1. Similarly, there is a subset of “romance lovers” who rate just the opposite way. However, both groups rate dramas as 3. The binary matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\cal O } \\in \\{ 0 , 1 \\} ^ { \\bar { U } \\times \\bar { I } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Figure 1 shows for which movies the users provided their rating to the system, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left[ O _ { u , i } \\right. = 1 ] \\Leftrightarrow"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "observed]. Our toy example shows a strong correlation between liking and rating a movie, and the matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": "describes the marginal probabilities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i } = P ( O _ { u , i } = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with which each rating is revealed. For this data, consider the following two evaluation tasks. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                301,
+                885,
+                468
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1. Task 1: Estimating Rating Prediction Accuracy "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                484,
+                861,
+                501
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the first task, we want to evaluate how well a predicted rating matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "reflects the true ratings in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Standard evaluation measures like Mean Absolute Error (MAE) or Mean Squared Error (MSE) can be written as: "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                508,
+                885,
+                570
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "R (\\hat {Y}) = \\frac {1}{U \\cdot I} \\sum_ {u = 1} ^ {U} \\sum_ {i = 1} ^ {I} \\delta_ {u, i} (Y, \\hat {Y}), \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/56fa2836e7a97c2b9aedbc02e645474ae29d74c834fe440050b62953533d9fcc.jpg"
+                }
+            },
+            "bbox": [
+                562,
+                577,
+                885,
+                619
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "for an appropriately chosen "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta _ { u , i } ( Y , \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                628,
+                756,
+                645
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "MAE: (2) "
+                    }
+                ]
+            },
+            "bbox": [
+                555,
+                648,
+                883,
+                666
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "MSE: (3) "
+                    }
+                ]
+            },
+            "bbox": [
+                558,
+                669,
+                883,
+                686
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Accuracy: (4) "
+                    }
+                ]
+            },
+            "bbox": [
+                531,
+                689,
+                883,
+                708
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Since "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is only partially known, the conventional practice is to estimate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\dot { R ( Y ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "using the average over only the observed entries, "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                715,
+                885,
+                760
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\hat {R} _ {n a i v e} (\\hat {Y}) = \\frac {1}{| \\{(u , i) : O _ {u , i} = 1 \\} |} \\sum_ {(u, i): O _ {u, i} = 1} \\delta_ {u, i} (Y, \\hat {Y}). \\tag {5}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/6602485f3abce425f9fd25eb7f5a473f936132099601004616f9544f4bf2895e.jpg"
+                }
+            },
+            "bbox": [
+                501,
+                768,
+                885,
+                806
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We call this the naive estimator, and its naivety leads to a gross misjudgment for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given in Figure 1. Even though "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is clearly better than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by any reasonable measure of performance, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { R } _ { n a i v e } ( \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "will reliably claim that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has better MAE than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This error is due to selection bias, since 1-star ratings are under-represented in the "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                814,
+                885,
+                906
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                709,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "observed data and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta _ { u , i } ( Y , \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". More generally, under selection bias, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { R } _ { n a i v e } ( \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is not an unbiased estimate of the true performance "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ( { \\hat { Y } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Steck, 2013): "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                84,
+                473,
+                132
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} _ {O} \\left[ \\hat {R} _ {\\text {n a i v e}} (\\hat {Y}) \\right] \\neq R (\\hat {Y}). \\tag {6}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/13083f831cd7b1ebe8fc30fcc2a2adc836b0b74d8b0ecf118760d86a4350dde9.jpg"
+                }
+            },
+            "bbox": [
+                171,
+                142,
+                473,
+                167
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Before we design an improved estimator to replace "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { R } _ { n a i v e } ( \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", let’s turn to a related evaluation task. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                176,
+                473,
+                208
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2. Task 2: Estimating Recommendation Quality "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                224,
+                433,
+                239
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Instead of evaluating the accuracy of predicted ratings, we may want to more directly evaluate the quality of a particular recommendation. To this effect, let’s redefine "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to now encode recommendations as a binary matrix analogous to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ \\hat { Y } _ { u , i } = 1 ] \\Leftrightarrow [ i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is recommended to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", limited to a budget of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "recommendations per user. An example is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { 3 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Figure 1. A reasonable way to measure the quality of a recommendation is the Cumulative Gain (CG) that the user derives from the recommended movies, which we define as the average star-rating of the recommended movies in our toy example2. CG can again be written in the form of Eq. (1) with "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                248,
+                475,
+                429
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathrm {C G}: \\quad \\delta_ {u, i} (Y, \\hat {Y}) = (I / k) \\hat {Y} _ {u, i} \\cdot Y _ {u, i}. \\tag {7}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7374958eaaf6230a3ee10df440e95254bc5b23e9c1c44f212f260c41cad1564c.jpg"
+                }
+            },
+            "bbox": [
+                142,
+                439,
+                473,
+                455
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "However, unless users have watched all movies in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we cannot compute CG directly via Eq. (1). Hence, we are faced with the counterfactual question: how well would our users have enjoyed themselves (in terms of CG), if they had followed our recommendations "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "instead of watching the movies indicated in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ?"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Note that rankings of recommendations are similar to the set-based recommendation described above, and measures like Discounted Cumulative Gain (DCG), DCG@k, Precision at k (PREC "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "@ \\mathbf { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "), and others (Aslam et al., 2006; Yilmaz et al., 2008) also fit in this setting. For those, let the values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in each row define the predicted ranking, then "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                468,
+                475,
+                650
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathrm {D C G}: \\delta_ {u, i} (Y, \\hat {Y}) = \\left(I / \\log \\left(\\operatorname {r a n k} \\left(\\hat {Y} _ {u, i}\\right)\\right)\\right) Y _ {u, i}, \\tag {8}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/3f191ba556d3e4be4f2a79624376da0cdedd38060dcdb58f905b76f6a0748c76.jpg"
+                }
+            },
+            "bbox": [
+                114,
+                661,
+                472,
+                679
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname {P R E C} @ k: \\delta_ {u, i} (Y, \\hat {Y}) = (I / k) Y _ {u, i} \\cdot \\mathbf {1} \\left\\{\\operatorname {r a n k} (\\hat {Y} _ {u, i}) \\leq k \\right\\}. \\tag {9}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2ef2feaf70bc2fa018b972db3292b05a2257f47edb4ead14758308d1bb4bf2bc.jpg"
+                }
+            },
+            "bbox": [
+                84,
+                683,
+                472,
+                700
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "One approach, similar in spirit to condensed DCG (Sakai, 2007), is to again use the naive estimator from Eq. (5). However, this and similar estimators are generally biased for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ( { \\hat { Y } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Pradel et al., 2012; Steck, 2013). "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                710,
+                473,
+                771
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To get unbiased estimates of recommendation quality despite missing observations, consider the following connection to estimating average treatment effects of a given policy in causal inference, that was already explored in the contextual bandit setting (Li et al., 2011; Dud´ık et al., 2011). If we think of a recommendation as an intervention "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                779,
+                473,
+                869
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "analogous to treating a patient with a specific drug, in both settings we want to estimate the effect of a new treatment policy (e.g. give drug A to women and drug B to men, or new recommendations "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). The challenge in both cases is that we have only partial knowledge of how much certain patients (users) benefited from certain treatments (movies) (i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O _ { u , i } = 1 "
+                    },
+                    {
+                        "type": "text",
+                        "content": "), while the vast majority of potential outcomes in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is unobserved. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                84,
+                885,
+                205
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3. Propensity-Scored Performance Estimators"
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                222,
+                833,
+                237
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The key to handling selection bias in both of the abovementioned evaluation tasks lies in understanding the process that generates the observation pattern in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This process is typically called the Assignment Mechanism in causal inference (Imbens & Rubin, 2015) or the Missing Data Mechanism in missing data analysis (Little & Rubin, 2002). We differentiate the following two settings: "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                244,
+                885,
+                351
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Experimental Setting. In this setting, the assignment mechanism is under the control of the recommendation system. An example is an ad-placement system that controls which ads to show to which user. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                359,
+                885,
+                417
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Observational Setting. In this setting, the users are part of the assignment mechanism that generates "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". An example is an online streaming service for movies, where users self-select the movies they watch and rate. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                419,
+                885,
+                479
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we assume that the assignment mechanism is probabilistic, meaning that the marginal probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i } ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O _ { u , i } = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of observing an entry "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is non-zero for all user/item pairs. This ensures that, in principle, every element of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "could be observed, even though any particular "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": "reveals only a small subset. We refer to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the propensity of observing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In the experimental setting, we know the matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of all propensities, since we have implemented the assignment mechanism. In the observational setting, we will need to estimate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the observed matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We defer the discussion of propensity estimation to Section 5, and focus on the experimental setting first. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                487,
+                885,
+                669
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "IPS Estimator The Inverse-Propensity-Scoring (IPS) estimator (Thompson, 2012; Little & Rubin, 2002; Imbens & Rubin, 2015), which applies equally to the task of rating prediction evaluation as to the task of recommendation quality estimation, is defined as, "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                685,
+                885,
+                761
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\hat {R} _ {I P S} (\\hat {Y} | P) = \\frac {1}{U \\cdot I} \\sum_ {(u, i): O _ {u, i} = 1} \\frac {\\delta_ {u , i} (Y , \\hat {Y})}{P _ {u , i}}. \\tag {10}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4995ec0299d0d9d05ea379ff36e793395b7f96a6f448d0885719f2b5eed1fefe.jpg"
+                }
+            },
+            "bbox": [
+                539,
+                773,
+                883,
+                815
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Unlike the naive estimator "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { R } _ { n a i v e } ( \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the IPS estimator is unbiased for any probabilistic assignment mechanism. Note that the IPS estimator only requires the marginal probabilities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and unbiased-ness is not affected by dependencies within "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": ": "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                828,
+                885,
+                904
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2More realistically, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "would contain quality scores derived from indicators like “clicked” and “watched to the end”. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                877,
+                473,
+                904
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/6a23148d20bdf053655c55091ed67546c43bc3309a9ba0257852a4f6561e3706.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1. Mean and standard deviation of the Naive, IPS, and SNIPS estimators compared to true MAE and DCG@50 on ML100K. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td rowspan=\"2\"></td><td colspan=\"4\">MAE</td><td colspan=\"4\">DCG@50</td></tr><tr><td>True</td><td>IPS</td><td>SNIPS</td><td>Naive</td><td>True</td><td>IPS</td><td>SNIPS</td><td>Naive</td></tr><tr><td>REC.ONES</td><td>0.102</td><td>0.102 ± 0.007</td><td>0.102 ± 0.007</td><td>0.011 ± 0.001</td><td>30.76</td><td>30.64 ± 0.75</td><td>30.66 ± 0.74</td><td>153.07 ± 2.13</td></tr><tr><td>REC.FOURS</td><td>0.026</td><td>0.026 ± 0.000</td><td>0.026 ± 0.000</td><td>0.173 ± 0.001</td><td>52.00</td><td>51.98 ± 0.41</td><td>52.08 ± 0.58</td><td>313.48 ± 2.36</td></tr><tr><td>ROTATE</td><td>2.579</td><td>2.581 ± 0.031</td><td>2.579 ± 0.012</td><td>1.168 ± 0.003</td><td>12.90</td><td>13.00 ± 0.85</td><td>12.99 ± 0.83</td><td>1.38 ± 0.09</td></tr><tr><td>SKEWED</td><td>1.306</td><td>1.304 ± 0.012</td><td>1.304 ± 0.009</td><td>0.912 ± 0.002</td><td>24.59</td><td>24.55 ± 0.92</td><td>24.58 ± 0.93</td><td>54.87 ± 1.03</td></tr><tr><td>COARSEND</td><td>1.320</td><td>1.314 ± 0.015</td><td>1.318 ± 0.005</td><td>0.387 ± 0.002</td><td>46.45</td><td>46.45 ± 0.53</td><td>46.44 ± 0.70</td><td>293.27 ± 1.99</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                91,
+                79,
+                880,
+                191
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\mathbb {E} _ {O} \\Big [ \\hat {R} _ {I P S} (\\hat {Y} | P) \\Big ] = \\frac {1}{U \\cdot I} \\sum_ {u} \\sum_ {i} \\mathbb {E} _ {O _ {u, i}} \\bigg [ \\frac {\\delta_ {u , i} (Y , \\hat {Y})}{P _ {u , i}} O _ {u, i} \\bigg ] \\\\ = \\frac {1}{U \\cdot I} \\sum_ {u} \\sum_ {i} \\delta_ {u, i} (Y, \\hat {Y}) = R (\\hat {Y}). \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/bf996a5c5c0d1eb71dc6a942d750849afec096318f8623435903470aebae1ad7.jpg"
+                }
+            },
+            "bbox": [
+                84,
+                229,
+                468,
+                309
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To characterize the variability of the IPS estimator, however, we assume that observations are independent given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which corresponds to a multivariate Bernoulli model where each "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a biased coin flip with probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The following proposition (proof in appendix) provides some intuition about how the accuracy of the IPS estimator changes as the propensities become more “non-uniform”. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                314,
+                473,
+                420
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 3.1 (Tail Bound for IPS Estimator). Let P be the independent Bernoulli probabilities of observing each entry. For any given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", with probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 - \\eta ,"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the IPS estimator "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\check { \\hat { R } } _ { I P S } ( \\hat { Y } | P )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "does not deviate from the true "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ( { \\hat { Y } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by more than: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                422,
+                473,
+                500
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\left| \\hat {R} _ {I P S} (\\hat {Y} | P) - R (\\hat {Y}) \\right| \\leq \\frac {1}{U \\cdot I} \\sqrt {\\frac {\\log \\frac {2}{\\eta}}{2} \\sum_ {u , i} \\rho_ {u , i} ^ {2}},",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9931949455d647f3176149e3b944cc058c4b78018dcb93b0382a6f1474d31849.jpg"
+                }
+            },
+            "bbox": [
+                114,
+                506,
+                447,
+                553
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\rho _ { u , i } = \\frac { \\delta _ { u , i } ( Y , \\hat { Y } ) } { P _ { u , i } } \\ : i f P _ { u , i } < 1 _ { \\mathrm { ~ } } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Pu,i , and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\rho _ { u , i } = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "otherwise. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                554,
+                472,
+                577
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To illustrate this bound, consider the case of uniform propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i } = p"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This means that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n = p U I"
+                    },
+                    {
+                        "type": "text",
+                        "content": "elements of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are revealed in expectation. In this case, the bound is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O ( 1 / ( p \\sqrt { U } I ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". If the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are non-uniform, the bound can be much larger even if the expected number of revealed elements, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sum P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We are paying for the unbiased-ness of IPS in terms of variability, and we will evaluate whether this price is well spent throughout the paper. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                585,
+                473,
+                705
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "SNIPS Estimator. One technique that can reduce variability is the use of control variates (Owen, 2013). Applied to the IPS estimator, we know that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\mathbb { E } _ { O } \\left[ \\sum _ { ( u , i ) : O _ { u , i } = 1 } \\frac { 1 } { P _ { u , i } } \\right] \\ = \\ U \\cdot I } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "hP(u,i):Ou,i=1 1Pu,i i . This yields the Self-Normalized Inverse Propensity Scoring (SNIPS) estimator (Trotter & Tukey, 1956; Swaminathan & Joachims, 2015) "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                720,
+                473,
+                819
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\hat {R} _ {S N I P S} (\\hat {Y} | P) = \\frac {\\sum_ {(u , i) : O _ {u , i} = 1} \\frac {\\delta_ {u , i} (Y , \\hat {Y})}{P _ {u , i}}}{\\sum_ {(u , i) : O _ {u , i} = 1} \\frac {1}{P _ {u , i}}} \\tag {11}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/331bf26ebde63a1bcccc7fc99dce5ed8a1e42440ca33d92ffd5638d239a40a93.jpg"
+                }
+            },
+            "bbox": [
+                117,
+                825,
+                473,
+                869
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The SNIPS estimator often has lower variance than the IPS estimator but has a small bias (Hesterberg, 1995). "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                875,
+                473,
+                905
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.4. Empirical Illustration of Estimators "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                233,
+                781,
+                248
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To illustrate the effectiveness of the proposed estimators we conducted an experiment on the semi-synthetic ML100K dataset described in Section 6.2. For this dataset, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is completely known so that we can compute true performance via Eq. (1). The probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of observing a rating "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "was chosen to mimic the observed marginal rating distribution in the original ML100K dataset (see Section 6.2) such that, on average, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "matrix was revealed. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                256,
+                885,
+                378
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 1 shows the results for estimating rating prediction accuracy via MAE and recommendation quality via "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\operatorname { D C G } @ 5 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the following five prediction matrices "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "| Y = r |"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the number of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-star ratings in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                385,
+                885,
+                446
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "REC ONES: The prediction matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is identical to the true rating matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", except that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left| \\left\\{ \\left( u , i \\right) : Y _ { u , i } = 5 \\right\\} \\right|"
+                    },
+                    {
+                        "type": "text",
+                        "content": "randomly selected true ratings of 1 are flipped to 5. This means half of the predicted fives are true fives, and half are true ones. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                452,
+                885,
+                527
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "REC FOURS: Same as REC ONES, but flipping 4-star ratings instead. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                529,
+                885,
+                558
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ROTATE: For each predicted rating "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { u , i } = Y _ { u , i } - 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i } \\geq 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { u , i } = 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i } = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                559,
+                883,
+                590
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "SKEWED: Predictions Yˆu,i "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are sampled from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\mathcal { N } ( \\hat { Y } _ { u , i } ^ { r a w } | \\mu ~ = ~ Y _ { u , i } , \\sigma ~ = ~ \\frac { 6 - Y _ { u , i } } { 2 } ) } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "6−Yu,i2 ) and clipped to 2 the interval "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ 0 , 6 ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                592,
+                883,
+                638
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "COARSENED: If the true rating "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i } \\le 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { u , i } = 3"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Otherwise "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { u , i } = 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                638,
+                883,
+                672
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Rankings for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\operatorname { D C G } @ 5 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "were created by sorting items according to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for each user. In Table 1, we report the average and standard deviation of estimates over 50 samples of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We see that the mean IPS estimate perfectly matches the true performance for both MAE and DCG as expected. The bias of SNIPS is negligible as well. The naive estimator is severely biased and its estimated MAE incorrectly ranks the prediction matrices "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g. it ranks the performance of REC ONES higher than REC FOURS). The standard deviation of IPS and SNIPS is substantially smaller than the bias that Naive incurs. Furthermore, SNIPS manages to reduce the standard deviation of IPS for MAE but not for DCG. We will empirically study these estimators more comprehensively in Section 6. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                679,
+                885,
+                891
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4. Propensity-Scored Recommendation Learning "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                83,
+                415,
+                118
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We will now use the unbiased estimators from the previous section in an Empirical Risk Minimization (ERM) framework for learning, prove generalization error bounds, and derive a matrix factorization method for rating prediction. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                126,
+                473,
+                188
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.1. ERM for Recommendation with Propensities "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                204,
+                431,
+                219
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Empirical Risk Minimization underlies many successful learning algorithms like SVMs (Cortes & Vapnik, 1995), Boosting (Schapire, 1990), and Deep Networks (Bengio, 2009). Weighted ERM approaches have been effective for cost-sensitive classification, domain adaptation and covariate shift (Zadrozny et al., 2003; Bickel et al., 2009; Sugiyama & Kawanabe, 2012). We adapt ERM to our setting by realizing that Eq. (1) corresponds to an expected loss (i.e. risk) over the data generating process "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O | P )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Given a sample from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O | P )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we can think of the IPS estimator from Eq. (10) as the Empirical Risk "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { R } ( \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that estimates "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ( { \\hat { Y } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for any "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                227,
+                475,
+                409
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 4.1 (Propensity-Scored ERM for Recommendation). Given training observations O from Y with marginal propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", given a hypothesis space "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of predictions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and given a loss function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta _ { u , i } ( \\bar { Y } , \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", ERM selects the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } \\in \\mathcal { H }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that optimizes: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                412,
+                473,
+                491
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\hat {Y} ^ {E R M} = \\underset {\\hat {Y} \\in \\mathcal {H}} {\\operatorname {a r g m i n}} \\left\\{\\hat {R} _ {I P S} (\\hat {Y} | P) \\right\\}. \\tag {12}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/e8227bdbf500253041699bdafab87cb29a49dc48d09cde33c2f73aeb658e16a1.jpg"
+                }
+            },
+            "bbox": [
+                143,
+                493,
+                472,
+                523
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Using the SNIPS estimator does not change the argmax. To illustrate the validity of the propensity-scored ERM approach, we state the following generalization error bound (proof in appendix) similar to Cortes et al. (2010). We consider only finite "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the sake of conciseness. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                527,
+                473,
+                602
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Theorem 4.2 (Propensity-Scored ERM Generalization Error Bound). For any finite hypothesis space of predictions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H } = \\{ \\hat { Y } _ { 1 } , . . . , \\hat { Y } _ { | \\mathcal { H } | } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and loss "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\dot { 0 } \\le \\delta _ { u , i } ( \\dot { Y } , \\hat { Y } ) \\le \\mathrm { \\hat { \\Delta } } "
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the true risk "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "R ( { \\hat { Y } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the empirical risk minimizer "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } ^ { E R M }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "using the IPS estimator, given training observations O from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with independent Bernoulli propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is bounded with probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 - \\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                607,
+                475,
+                715
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} R (\\hat {Y} ^ {E R M}) \\leq \\hat {R} _ {I P S} (\\hat {Y} ^ {E R M} | P) + \\\\ \\frac {\\Delta}{U \\cdot I} \\sqrt {\\frac {\\log (2 | \\mathcal {H} | / \\eta)}{2}} \\sqrt {\\sum_ {u , i} \\frac {1}{P _ {u , i} ^ {2}}} \\tag {13} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/641e3633999a41eef5fca85056e6bfb34b3a3a05e00d7ebce624c2458bda8b19.jpg"
+                }
+            },
+            "bbox": [
+                96,
+                724,
+                473,
+                789
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.2. Propensity-Scored Matrix Factorization "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                806,
+                397,
+                821
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We now use propensity-scored ERM to derive a matrix factorization method for the problem of rating prediction. Assume a standard rank- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-restricted and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-regularized matrix factorization model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\hat { Y } _ { u , i } = v _ { u } ^ { T } w _ { i } + a _ { u } + b _ { i } + c } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with user, item, and global offsets as our hypothesis space "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Under "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                829,
+                475,
+                906
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "this model, propensity-scored ERM leads to the following training objective: "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                84,
+                883,
+                114
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\underset {V, W, A} {\\operatorname {a r g m i n}} \\left[ \\sum_ {O _ {u, i} = 1} \\frac {\\delta_ {u , i} (Y , V ^ {T} W + A)}{P _ {u , i}} + \\lambda \\left(\\left| \\left| V \\right| \\right| _ {F} ^ {2} + \\left| \\left| W \\right| \\right| _ {F} ^ {2}\\right) \\right] \\tag {14}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/d6ac8a52e269961c1db472a6b3fd3b4757542794048289b62db6dfcdd3196a02.jpg"
+                }
+            },
+            "bbox": [
+                500,
+                119,
+                883,
+                162
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A"
+                    },
+                    {
+                        "type": "text",
+                        "content": "encodes the offset terms and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } ^ { E R M } = V ^ { T } W + A"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Except for the propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that act like weights for each loss term, the training objective is identical to the standard incomplete matrix factorization objective (Koren, 2008; Steck, 2010; Hu et al., 2008) with MSE (using Eq. (3)) or MAE (using Eq. (2)). So, we can readily draw upon existing optimization algorithms (i.e., Gemulla et al., 2011; Yu et al., 2012) that can efficiently solve the training problem at scale. For the experiments reported in this paper, we use Limited-memory BFGS (Byrd et al., 1995). Our implementation is available online3. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                169,
+                885,
+                338
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Conventional incomplete matrix factorization is a special case of Eq. (14) for MCAR (Missing Completely At Random) data, i.e., all propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are equal. Solving this training objective for other "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta _ { u , i } ( Y , \\hat { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that are nondifferentiable is more challenging, but possible avenues exist (Joachims, 2005; Chapelle & Wu, 2010). Finally, note that other recommendation methods (e.g., Weimer et al., 2007; Lin, 2007) can in principle be adapted to propensity scoring as well. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                345,
+                885,
+                484
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5. Propensity Estimation for Observational Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                502,
+                861,
+                535
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We now turn to the Observational Setting where propensities need to be estimated. One might be worried that we need to perfectly reconstruct all propensities for effective learning. However, as we will show, we merely need estimated propensities that are “better” than the naive assumption of observations being revealed uniformly, i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P = | \\{ ( u , i ) : O _ { u , i } = 1 \\} | / ( U \\cdot I )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for all users and items. The following characterizes “better” propensities in terms of the bias they induce and their effect on the variability of the learning process. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                545,
+                885,
+                696
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Lemma 5.1 (Bias of IPS Estimator under Inaccurate Propensities). Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the marginal probabilities of observing an entry of the rating matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { P }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the estimated propensities such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { P } _ { u , i } > 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u , i"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The bias of the IPS estimator Eq. (10) using "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { P }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is: "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                699,
+                885,
+                777
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname {b i a s} \\left(\\hat {R} _ {I P S} (\\hat {Y} | \\hat {P})\\right) = \\sum_ {u, i} \\frac {\\delta_ {u , i} (Y , \\hat {Y})}{U \\cdot I} \\left[ 1 - \\frac {P _ {u , i}}{\\hat {P} _ {u , i}} \\right]. \\tag {15}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/61783bee8c6fa93d603aec7adb2a192fcbbf6874599e48fb32d92a42c12a52ba.jpg"
+                }
+            },
+            "bbox": [
+                508,
+                781,
+                883,
+                823
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In addition to bias, the following generalization error bound (proof in appendix) characterizes the overall impact of the estimated propensities on the learning process. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                835,
+                883,
+                882
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3https://www.cs.cornell.edu/∼schnabts/mnar/ "
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                890,
+                790,
+                905
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Theorem 5.2 (Propensity-Scored ERM Generalization Error Bound under Inaccurate Propensities). For any finite hypothesis space of predictions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H } = \\{ \\hat { Y } _ { 1 } , . . . , \\hat { Y } _ { | \\mathcal { H } | } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the transductive prediction error of the empirical risk minimizer "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } ^ { E R \\hat { M } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", using the IPS estimator with estimated propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { P } ( \\hat { P } _ { u , i } > 0 )"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { P }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") and given training observations "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with independent Bernoulli propensities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is bounded by: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                84,
+                473,
+                205
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} R (\\hat {Y} ^ {E R M}) \\leq \\hat {R} _ {I P S} (\\hat {Y} ^ {E R M} | \\hat {P}) + \\frac {\\Delta}{U \\cdot I} \\sum_ {u, i} \\left| 1 - \\frac {P _ {u , i}}{\\hat {P} _ {u , i}} \\right| \\\\ + \\frac {\\Delta}{U \\cdot I} \\sqrt {\\frac {\\log (2 | \\mathcal {H} | / \\eta)}{2}} \\sqrt {\\sum_ {u , i} \\frac {1}{\\hat {P} _ {u , i} ^ {2}}} \\tag {16} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/8f6c8e774fe7479bf0384e22253ee6719a57f91d31eead0e7626a8e26cd41315.jpg"
+                }
+            },
+            "bbox": [
+                89,
+                207,
+                473,
+                296
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The bound shows a bias-variance trade-off that does not occur in conventional ERM. In particular, the bound suggests that it may be beneficial to overestimate small propensities, if this reduces the variability more than it increases the bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                311,
+                473,
+                372
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1. Propensity Estimation Models. "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                388,
+                333,
+                404
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Recall that our goal is to estimate the probabilities "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with which ratings for user "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and item "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "will be observed. In general, the propensities "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                412,
+                473,
+                458
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "P _ {u, i} = P \\left(O _ {u, i} = 1 \\mid X, X ^ {h i d}, Y\\right) \\tag {17}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/e990664d15c3596b077f5cb0394b0d3b86b90793f876043e881c20f2b19998af.jpg"
+                }
+            },
+            "bbox": [
+                165,
+                463,
+                473,
+                482
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "can depend on some observable features "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g., the predicted rating displayed to the user), unobservable features "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X ^ { h i d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g., whether the item was recommended by a friend), and the ratings "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". It is reasonable to assume that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is independent of the new predictions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(and therefore independent of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta _ { u , i } ( Y , \\hat { Y } ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "once the observable features are taken into account. The following outlines two simple propensity estimation methods, but there is a wide range of other techniques available (e.g., McCaffrey et al., 2004) that can cater to domain-specific needs. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                494,
+                473,
+                647
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Propensity Estimation via Naive Bayes. The first approach estimates "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O _ { u , i } | X , X ^ { h i d } , Y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by assuming that dependencies between covariates "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X ^ { h i d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and other ratings are negligible. Eq. (17) then reduces to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O _ { u , i } | Y _ { u , i } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "similar to Marlin & Zemel (2009). We can treat "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as observed, since we only need the propensities for observed entries to compute IPS and SNIPS. This yields the Naive Bayes propensity estimator: "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                654,
+                473,
+                775
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "P \\left(O _ {u, i} = 1 \\mid Y _ {u, i} = r\\right) = \\frac {P (Y = r \\mid O = 1) P (O = 1)}{P (Y = r)}. \\tag {18}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/ef50eac137c35622f41d60ee35a4549a36a596ac580d70f567b2d8ffbfd45d7e.jpg"
+                }
+            },
+            "bbox": [
+                84,
+                779,
+                473,
+                825
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We dropped the subscripts to reflect that parameters are tied across all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Maximum likelihood estimates for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( Y = r \\mid O = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be obtained by counting observed ratings in MNAR data. However, to estimate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\boldsymbol { Y } = \\boldsymbol { r } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we need a small sample of MCAR data. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                825,
+                473,
+                902
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Propensity Estimation via Logistic Regression The second propensity estimation approach we explore (which does not require a sample of MCAR data) is based on logistic regression and is commonly used in causal inference (Rosenbaum, 2002). It also starts from Eq. (17), but aims to find model parameters "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\phi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "O"
+                    },
+                    {
+                        "type": "text",
+                        "content": "becomes independent of unobserved "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X ^ { h i d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( O _ { u , i } | X , X ^ { h i d } , Y ) = P ( O _ { u , i } | X , \\phi )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The main modeling assumption is that there exists a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\phi ~ = ~ ( w , \\beta , \\gamma )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { u , i } \\stackrel { - } { = } \\sigma \\left( w ^ { T } X _ { u , i } + \\beta _ { i } + \\gamma _ { u } \\right)"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Here, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X _ { u , i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a vector encoding all observable information about a user-item pair (e.g., user demographics, whether an item was promoted, etc.), and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma ( \\cdot )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the sigmoid function. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma _ { u }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are peritem and per-user offsets. "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                84,
+                885,
+                297
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6. Empirical Evaluation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                315,
+                702,
+                333
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We conduct semi-synthetic experiments to explore the empirical performance and robustness of the proposed methods in both the experimental and the observational setting. Furthermore, we compare against the state-of-theart joint-likelihood method for MNAR data (Hernandez- ´ Lobato et al., 2014) on real-world datasets. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                340,
+                885,
+                431
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.1. Experiment Setup "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                449,
+                660,
+                465
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In all experiments, we perform model selection for the regularization parameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and/or the rank of the factorization "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": "via cross-validation as follows. We randomly split the observed MNAR ratings into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "folds "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k = 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in all experiments), training on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k - 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and evaluating on the remaining one using the IPS estimator. Reflecting this additional split requires scaling the propensities in the training folds by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\textstyle { \\frac { k - 1 } { k } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and those in the validation fold by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\frac { 1 } { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The parameters with the best validation set performance are then used to retrain on all MNAR data. We finally report performance on the MCAR test set for the real-world datasets, or using Eq. (1) for our semi-synthetic dataset. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                472,
+                885,
+                654
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.2. How does sampling bias severity affect evaluation? "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                670,
+                883,
+                686
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "First, we evaluate how different observation models impact the accuracy of performance estimates. We compare the Naive estimator of Eq. (5) for MSE, MAE and DCG with their propensity-weighted analogues, IPS using Eq. (10) and SNIPS using Eq. (11) respectively. Since this experiment requires experimental control of sampling bias, we created a semi-synthetic dataset and observation model. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                693,
+                885,
+                799
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ML100K Dataset. The ML100K dataset4 provides 100K MNAR ratings for 1683 movies by 944 users. To allow ground-truth evaluation against a fully known rating matrix, we complete these partial ratings using standard matrix factorization. The completed matrix, however, gives "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                806,
+                885,
+                881
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "4http://grouplens.org/datasets/movielens/ "
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                890,
+                764,
+                905
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/b6d9fb33808449b3bc57161a9a1b5f345639802785fd7faf668a1c13f12e9c56.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2. RMSE of the estimators in the experimental setting as the observed ratings exhibit varying degrees of selection bias. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                79,
+                477,
+                190
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "unrealistically high ratings to almost all movies. We therefore adjust ratings for the final "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to match a more realistic rating distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ p _ { 1 } , p _ { 2 } , p _ { 3 } , p _ { 4 } , p _ { 5 } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for ratings 1 to 5 as given in Marlin & Zemel (2009) as follows: we assign the bottom "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "fraction of the entries by value in the completed matrix a rating of 1, and the next "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "fraction of entries by value a rating of 2, and so on. Hyper-parameters (rank "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and L2 regularization "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") were chosen by using a 90-10 train-test split of the 100K ratings, and maximizing the 0/1 accuracy of the completed matrix on the test set. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                250,
+                473,
+                400
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ML100K Observation Model. If the underlying rating is 4 or 5, the propensity for observing the rating is equal to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For ratings "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r \\ < \\ 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the corresponding propensity is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k \\alpha ^ { 4 - r }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For each "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is set so that the expected number of ratings we observe is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the entire matrix. By varying "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\ > \\ 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we vary the MNAR effect: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\ = \\ 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is missing uniformly at random (MCAR), while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha  0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "only reveals 4 and 5 rated items. Note that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\ = \\ 0 . 2 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "gives a marginal distribution of observed ratings that reasonably matches the observed MNAR rating marginals on ML100K ([0.06, 0.11, 0.27, 0.35, 0.21] in the real data vs. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ 0 . 0 6 , 0 . 1 0 , 0 . 2 5 , 0 . 4 2 , 0 . 1 7 ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in our model). "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                407,
+                473,
+                589
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Results. Table 1, described in Section 3.4, shows the estimated MAE and DCG@50 when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 0 . 2 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Next, we vary the severity of the sampling bias by changing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\in ( 0 , 1 ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 2 reports how accurately (in terms of root mean squared estimation error (RMSE)) each estimator predicts the true MSE and DCG respectively. These results are for the Experimental Setting where propensities are known. They are averages over the five prediction matrices "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y _ { i } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given in Section 3.4 and across 50 trials. Shaded regions indicate a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "confidence interval. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                595,
+                473,
+                746
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Over most of the range of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", in particular for the realistic value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 0 . 2 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the IPS and SNIPS estimators are orders-of-magnitude more accurate than the Naive estimator. Even for severely low choices of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the gain due to bias reduction of IPS and SNIPS still outweighs the added variability compared to Naive. When "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(MCAR), SNIPS is algebraically equivalent to Naive, while IPS pays a small penalty due to increased variability from propensity weighting. For MSE, SNIPS consistently reduces estimation error over IPS while both are tied for DCG. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                753,
+                473,
+                905
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e6acab8bed117d12c753e79e21d8d5a60cc2cfd79db6b6b2a6dd47cb2645115a.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                496,
+                77,
+                694,
+                189
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2817b33d55270768ffd54c9b35f44995a10e2bcc5ecffcee908f99b2325777e1.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3. Prediction error (MSE) of matrix factorization methods as the observed ratings exhibit varying degrees of selection bias (left) and as propensity estimation quality degrades (right). "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                694,
+                79,
+                888,
+                189
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.3. How does sampling bias severity affect learning? "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                253,
+                867,
+                268
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Now we explore whether these gains in risk estimation accuracy translate into improved learning via ERM, again in the Experimental Setting. Using the same semi-synthetic ML100K dataset and observation model as above, we compare our matrix factorization MF-IPS with the traditional unweighted matrix factorization MF-Naive. Both methods use the same factorization model with separate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda"
+                    },
+                    {
+                        "type": "text",
+                        "content": "selected via cross-validation and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d = 2 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The results are plotted in Figure 3 (left), where shaded regions indicate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "confidence intervals over 30 trials. The propensity-weighted matrix factorization MF-IPS consistently outperforms conventional matrix factorization in terms of MSE. We also conducted experiments for MAE, with similar results. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                276,
+                885,
+                472
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.4. How robust is evaluation and learning to inaccurately learned propensities? "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                489,
+                815,
+                520
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We now switch from the Experimental Setting to the Observational Setting, where propensities need to be estimated. To explore robustness to propensity estimates of varying accuracy, we use the ML100K data and observation model with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 0 . 2 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". To generate increasingly bad propensity estimates, we use the Naive Bayes model from Section 5.1, but vary the size of the MCAR sample for estimating the marginal ratings "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( Y = r )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "via the Laplace estimator. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                527,
+                885,
+                650
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4 shows how the quality of the propensity estimates impacts evaluation using the same setup as in Section 6.2. Under no condition do the IPS and SNIPS estimator perform worse than Naive. Interestingly, IPS-NB with estimated propensities can perform even better than IPS-KNOWN with known propensities, as can be seen for MSE. This is a known effect, partly because the estimated propensities can provide an effect akin to stratification (Hirano et al., 2003; Wooldridge, 2007). "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                656,
+                885,
+                792
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3 (right) shows how learning performance is affected by inaccurate propensities using the same setup as in Section 6.3. We compare the MSE prediction error of MF-IPS-NB with estimated propensities to that of MF-Naive and MF-IPS with known propensities. The shaded area shows the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "confidence interval over 30 trials. Again, we see that MF-IPS-NB outperforms MF-Naive even for "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                799,
+                885,
+                905
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/84ee5e5a922c96019d37df3d18df2c3f4136a11723120796968c4808997fc1c0.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                80,
+                282,
+                191
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/905b587faf8e326386ccc6554ac8c349b2c550ffb5e2e80d913bab4ee5ec8a74.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4. RMSE of IPS and SNIPS as propensity estimates degrade. IPS with true propensities and Naive are given as reference. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                282,
+                80,
+                478,
+                191
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "severely degraded propensity estimates, demonstrating the robustness of the approach. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                244,
+                473,
+                275
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.5. Performance on Real-World Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                84,
+                291,
+                354,
+                305
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our final experiment studies performance on real-world datasets. We use the following two datasets, which both have a separate test set where users were asked to rate a uniformly drawn sample of items. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                314,
+                473,
+                375
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Yahoo! R3 Dataset. This dataset5 (Marlin & Zemel, 2009) contains user-song ratings. The MNAR training set provides over 300K ratings for songs that were selfselected by 15400 users. The test set contains ratings by a subset of 5400 users who were asked to rate 10 randomly chosen songs. For this data, we estimate propensities via Naive Bayes. As a MCAR sample for eliciting the marginal rating distribution, we set aside "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the test set and only report results on the remaining "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the test set. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                383,
+                473,
+                518
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Coat Shopping Dataset. We collected a new dataset6 simulating MNAR data of customers shopping for a coat in an online store. The training data was generated by giving Amazon Mechanical Turkers a simple web-shop interface with facets and paging. They were asked to find the coat in the store that they wanted to buy the most. Afterwards, they had to rate 24 of the coats they explored (self-selected) and 16 randomly picked ones on a five-point scale. The dataset contains ratings from 290 Turkers on an inventory of 300 items. The self-selected ratings are the training set and the uniformly selected ratings are the test set. We learn propensities via logistic regression based on user covariates (gender, age group, location, and fashion-awareness) and item covariates (gender, coat type, color, and was it promoted). A standard regularized logistic regression (Pedregosa et al., 2011) was trained using all pairs of user and item covariates as features and cross-validated to optimize log-likelihood of the self-selected observations. "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                527,
+                473,
+                800
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Results. Table 2 shows that our propensity-scored matrix factorization MF-IPS with learnt propensities substantially and significantly outperforms the conventional matrix factorization approach, as well as the Bayesian imputation "
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                806,
+                473,
+                868
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/1efd2efeef564cec02953da4278f2598f1363cd1c27830c6d717517d9b0322e9.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2. Test set MAE and MSE on the Yahoo and Coat datasets. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td colspan=\"2\">YAHOO</td><td colspan=\"2\">COAT</td></tr><tr><td></td><td>MAE</td><td>MSE</td><td>MAE</td><td>MSE</td></tr><tr><td>MF-IPS</td><td>0.810</td><td>0.989</td><td>0.860</td><td>1.093</td></tr><tr><td>MF-Naive</td><td>1.154</td><td>1.891</td><td>0.920</td><td>1.202</td></tr><tr><td>HL MNAR</td><td>1.177</td><td>2.175</td><td>0.884</td><td>1.214</td></tr><tr><td>HL MAR</td><td>1.179</td><td>2.166</td><td>0.892</td><td>1.220</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                521,
+                80,
+                867,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "models from (Hernandez-Lobato et al. ´ , 2014), abbreviated as HL-MNAR and HL-MAR (paired t-test, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p < 0 . 0 0 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for all). This holds for both MAE and MSE. Furthermore, the performance of MF-IPS beats the best published results for Yahoo in terms of MSE (1.115) and is close in terms of MAE (0.770) (the CTP-v model of (Marlin & Zemel, 2009) as reported in the supplementary material of Hernandez- ´ Lobato et al. (2014)). For MF-IPS and MF-Naive all hyperparameters (i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda \\in \\{ 1 0 ^ { - 6 } , . . . , 1 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d \\in \\{ 5 , 1 0 , 2 0 , 4 0 \\} )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "were chosen by cross-validation. For the HL baselines, we explored "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d \\in \\{ 5 , 1 0 , 2 0 , 4 0 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "using software provided by the authors7 and report the best performance on the test set for efficiency reasons. Note that our performance numbers for HL on Yahoo closely match the values reported in (Hernandez-Lobato et al.´ , 2014). "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                239,
+                885,
+                467
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Compared to the complex generative HL models, we conclude that our discriminative MF-IPS performs robustly and efficiently on real-world data. We conjecture that this strength is a result of not requiring any generative assumptions about the validity of the rating model. Furthermore, note that there are several promising directions for further improving performance, like propensity clipping (Strehl et al., 2010), doubly-robust estimation (Dud´ık et al., 2011), and the use of improved methods for propensity estimation (McCaffrey et al., 2004). "
+                    }
+                ]
+            },
+            "bbox": [
+                496,
+                473,
+                885,
+                625
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7. Conclusions "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                496,
+                643,
+                624,
+                659
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We proposed an effective and robust approach to handle selection bias in the evaluation and training of recommender systems based on propensity scoring. The approach is a discriminative alternative to existing joint-likelihood methods which are generative. It therefore inherits many of the advantages (e.g., efficiency, predictive performance, no need for latent variables, fewer modeling assumptions) of discriminative methods. The modularity of the approach— separating the estimation of the assignment model from the rating model—also makes it very practical. In particular, any conditional probability estimation method can be plugged in as the propensity estimator, and we conjecture that many existing rating models can be retrofit with propensity weighting without sacrificing scalability. "
+                    }
+                ]
+            },
+            "bbox": [
+                495,
+                670,
+                885,
+                883
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                709,
+                70
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "5http://webscope.sandbox.yahoo.com/ "
+                    }
+                ]
+            },
+            "bbox": [
+                104,
+                876,
+                338,
+                891
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "6https://www.cs.cornell.edu/∼schnabts/mnar/ "
+                    }
+                ]
+            },
+            "bbox": [
+                107,
+                891,
+                379,
+                905
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "7https://bitbucket.org/jmh233/missingdataicml2014 "
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                888,
+                823,
+                905
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                86,
+                83,
+                243,
+                99
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "This research was funded in part under NSF Awards IIS-1247637, IIS-1217686, and IIS-1513692, and a gift from Bloomberg. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                109,
+                473,
+                154
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                86,
+                172,
+                181,
+                189
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Aslam, J. A., Pavlu, V., and Yilmaz, E. A statistical method for system evaluation using incomplete judgments. In SIGIR, pp. 541–548, 2006. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bell, R., Koren, Y., and Volinsky, C. Chasing "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\$ 1,000,000"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". how we won the netflix progress prize. Statistical Computing and Graphics, 18(2):4–12, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bengio, Y. Learning deep architectures for ai. Foundations and Trends in Machine Learning, 2(1):1–127, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bickel, S., Bruckner, M., and Scheffer, T. Discrimina- ¨ tive learning under covariate shift. Journal of Machine Learning Research, 10:2137–2155, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Byrd, R. H., Lu, P., Nocedal, J., and Zhu, C. A limited memory algorithm for bound constrained optimization. SIAM Journal on Scientific Computing, 16(5): 1190–1208, 1995. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chapelle, O. and Wu, M. Gradient descent optimization of smoothed information retrieval metrics. Information retrieval, 13(3):216–235, 2010. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Cortes, C. and Vapnik, V. N. Support–vector networks. Machine Learning, 20:273–297, 1995. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Cortes, C., Mohri, M., Riley, M., and Rostamizadeh, A. Sample selection bias correction theory. In ALT, pp. 38– 53, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Cortes, C., Mansour, Y., and Mohri, M. Learning bounds for importance weighting. In NIPS, pp. 442–450, 2010. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Dud´ık, M., Langford, J., and Li, L. Doubly robust policy evaluation and learning. In ICML, pp. 1097–1104, 2011. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Gemulla, R., Nijkamp, E., Haas, P. J., and Sismanis, Y. Large-scale matrix factorization with distributed stochastic gradient descent. In KDD, pp. 69–77, 2011. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hernandez-Lobato, J. M., Houlsby, N., and Ghahramani, ´ Z. Probabilistic matrix factorization with non-random missing data. In ICML, pp. 1512–1520, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hesterberg, T. Weighted average importance sampling and defensive mixture distributions. Technometrics, 37:185– 194, 1995. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hirano, K., Imbens, G., and Ridder, G. Efficient estimation of average treatment effects using the estimated propensity score. Econometrica, 71(4):1161–1189, 2003. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                196,
+                473,
+                905
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hu, Y., Koren, Y., and Volinsky, C. Collaborative filtering for implicit feedback datasets. In ICDM, pp. 263–272, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Huang, J., Smola, A. J., Gretton, A., Borgwardt, K. M., and Scholkopf, B. Correcting sample selection bias by ¨ unlabeled data. In NIPS, pp. 601–608, 2006. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Imbens, G. and Rubin, D. Causal Inference for Statistics, Social, and Biomedical Sciences. Cambridge University Press, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Joachims, T. A support vector method for multivariate performance measures. In ICML, pp. 377–384, 2005. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Koren, Y. Factorization meets the neighborhood: A multifaceted collaborative filtering model. In KDD, pp. 426– 434, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Li, L., Chu, W., Langford, J., and Wang, X. Unbiased offline evaluation of contextual-bandit-based news article recommendation algorithms. In WSDM, pp. 297–306, 2011. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Liang, D., Charlin, L., McInerney, J., and Blei, D. Modeling user exposure in recommendation. In WWW, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Lim, D., McAuley, J., and Lanckriet, G. Top-n recommendation with missing implicit feedback. In RecSys, pp. 309–312, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Lin, C. Projected gradient methods for nonnegative matrix factorization. Neural computation, 19(10):2756–2779, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Little, R. J. A. and Rubin, D. B. Statistical Analysis with Missing Data. John Wiley, 2002. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Marlin, B. M. and Zemel, R. S. Collaborative prediction and ranking with non-random missing data. In RecSys, pp. 5–12, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Marlin, B. M., Zemel, R. S., Roweis, S., and Slaney, M. Collaborative filtering and the missing at random assumption. In UAI, pp. 267–275, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "McCaffrey, D. F., Ridgeway, G., and Morral, A. R. Propensity score estimation with boosted regression for evaluating causal effects in observational studies. Psychological Methods, 9:403–425, 2004. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Myttenaere, A. D., Grand, B. L., Golden, B., and Rossi, F. Reducing offline evaluation bias in recommendation systems. In Benelearn, pp. 55–62, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Owen, Art B. Monte Carlo theory, methods and examples. 2013. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                84,
+                883,
+                904
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., and Duchesnay, E. Scikit-learn: Machine learning in Python. Journal of Machine Learning Research, 12:2825–2830, 2011. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Pradel, B., Usunier, N., and Gallinari, P. Ranking with non-random missing ratings: influence of popularity and positivity on evaluation metrics. In RecSys, pp. 147–154, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Rosenbaum, P. R. Observational Studies. Springer New York, 2002. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Sakai, T. Alternatives to bpref. In SIGIR, pp. 71–78, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Schapire, R. E. The strength of weak learnability. Machine Learning, 5(2):197–227, 1990. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Seaman, S. R. and White, I. R. Review of inverse probability weighting for dealing with missing data. Statistical methods in medical research, 22(3):278–295, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Steck, H. Training and testing of recommender systems on data missing not at random. In KDD, pp. 713–722, 2010. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Steck, H. Item popularity and recommendation accuracy. In RecSys, pp. 125–132, 2011. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Steck, Harald. Evaluation of recommendations: ratingprediction and ranking. In RecSys, pp. 213–220, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Strehl, A. L., Langford, J., Li, L., and Kakade, S. Learning from logged implicit exploration data. In NIPS, pp. 2217–2225, 2010. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                84,
+                475,
+                582
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Sugiyama, M. and Kawanabe, M. Machine Learning in Non-Stationary Environments - Introduction to Covariate Shift Adaptation. MIT Press, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Swaminathan, A. and Joachims, T. The self-normalized estimator for counterfactual learning. In NIPS, pp. 3231– 3239, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Thompson, S. K. Sampling. John Wiley & Sons, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Trotter, H. F. and Tukey, J. W. Conditional monte carlo for normal samples. In Symposium on Monte Carlo Methods, pp. 64–79, 1956. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Weimer, M., Karatzoglou, A., Le, Q. V., and Smola, A. COFI RANK - maximum margin matrix factorization for collaborative ranking. In NIPS, pp. 1593–1600, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Wooldridge, J. Inverse probability weighted estimation for general missing data problems. Journal of Econometrics, 141(2):1281–1301, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Yilmaz, E., Kanoulas, E., and Aslam, J.A. A simple and efficient sampling method for estimating AP and NDCG. In SIGIR, pp. 603–610, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Yu, H., Hsieh, C., Si, S., and Dhillon, I. Scalable coordinate descent approaches to parallel matrix factorization for recommender systems. In ICDM, pp. 765–774, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zadrozny, B., Langford, J., and Abe, N. Cost-sensitive learning by cost-proportionate example weighting. In ICDM, pp. 435–, 2003. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                500,
+                84,
+                883,
+                542
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Recommendations as Treatments: Debiasing Learning and Evaluation "
+                    }
+                ]
+            },
+            "bbox": [
+                264,
+                56,
+                707,
+                70
+            ]
+        }
+    ]
+]

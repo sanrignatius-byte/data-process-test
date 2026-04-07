@@ -1,0 +1,71 @@
+$$
+\begin{array}{ccc}(\boldsymbol {x},s) & \longrightarrow & f_{s}(\boldsymbol {x})\\ \underset {\text{Algothm}}{\text{Any}}\Big{\downarrow}\\ (\boldsymbol {x},g(\boldsymbol {x})) & \stackrel {\text{Fair MTL}}{\longrightarrow} & f_{g(\boldsymbol {x})}(\boldsymbol {x}) \end{array} \checkmark
+$$
+
+$$
+L (f) = \frac {1}{k} \sum_ {t \in \mathcal {S}} L _ {t} (f), \quad L _ {t} (f) = \mathbb {E} [ \ell (f (\boldsymbol {x}, s, y) \mid s = t ], t \in \mathcal {S},
+$$
+
+$$
+\widehat {L} (f) = \frac {1}{k} \sum_ {t \in \mathcal {S}} \widehat {L} _ {t} (f), \quad \widehat {L} _ {t} (f) = \frac {1}{n _ {t}} \sum_ {(\boldsymbol {x}, s, y) \in \mathcal {D} _ {t}} \ell (f (\boldsymbol {x}, s), y), t \in \mathcal {S}.
+$$
+
+$$
+\mathbb {P} \{f (\boldsymbol {x}, s) > 0 \mid s = 1, y = \diamond 1 \} = \dots = \mathbb {P} \{f (\boldsymbol {x}, s) > 0 \mid s = k, y = \diamond 1 \}, \tag {1}
+$$
+
+$$
+\mathbb {P} \{f (\boldsymbol {x}, s) > 0 \mid s = 1, y = \diamond 1 \} = \dots = \mathbb {P} \{f (\boldsymbol {x}, s) > 0 \mid s = k, y = \diamond 1 \}. \tag {2}
+$$
+
+$$
+\mathrm {D E O p} ^ {\diamond} = \sum_ {t \in S} \left| \mathbb {P} \{\hat {y} = y | s = t, y = \diamond 1 \} - \frac {1}{| S |} \sum_ {t ^ {\prime} \in S} \mathbb {P} \{\hat {y} = y | s = t ^ {\prime}, y = \diamond 1 \} \right|,
+$$
+
+$$
+\mathrm {D E O d} = \frac {\mathrm {D E O p} ^ {+} + \mathrm {D E O p} ^ {-}}{2}.
+$$
+
+$$
+f (\boldsymbol {x}, s) = \boldsymbol {w} \cdot \boldsymbol {x} + b _ {s}, \quad \boldsymbol {w} \in \mathbb {R} ^ {d}, b _ {s} \in \mathbb {R},
+$$
+
+$$
+f (\boldsymbol {x}, s) = \boldsymbol {w} _ {s} \cdot \boldsymbol {x} + b _ {s}, \quad \boldsymbol {w} _ {s} \in \mathbb {R} ^ {d}, b _ {s} \in \mathbb {R}. \tag {3}
+$$
+
+$$
+f (\boldsymbol {x}, s) = \boldsymbol {w} \cdot \phi (\boldsymbol {x}, s), \quad (\boldsymbol {x}, s) \in \mathcal {X} \times \mathcal {S}, \tag {4}
+$$
+
+$$
+\min  _ {\boldsymbol {w} _ {0} \in \mathbb {H}} \quad \hat {L} (\boldsymbol {w} _ {0}) + \rho \| \boldsymbol {w} _ {0} \| ^ {2}, \tag {5}
+$$
+
+$$
+\min  _ {\boldsymbol {w} _ {s} \in \mathbb {H}} \quad \hat {L} _ {s} \left(\boldsymbol {w} _ {s}\right) + \rho \| \boldsymbol {w} _ {s} \| ^ {2}. \tag {6}
+$$
+
+$$
+\begin{array}{l} \min  _ {\boldsymbol {w} _ {0}, \boldsymbol {w} _ {1}, \dots , \boldsymbol {w} _ {S} \in \mathbb {H}} \theta \hat {L} (\boldsymbol {w} _ {0}) + (1 - \theta) \frac {1}{k} \sum_ {s = 1} ^ {k} \hat {L} _ {s} (\boldsymbol {w} _ {s}) \\ + \rho \left[ \lambda \| \boldsymbol {w} _ {0} \| ^ {2} + (1 - \lambda) \frac {1}{k} \sum_ {s = 1} ^ {k} \| \boldsymbol {w} _ {s} \| ^ {2} \right], \tag {7} \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \mathbb {P} \{f (x, s) > 0 \mid s = t, y = \diamond 1 \} \\ = 1 - \mathbb {E} \left\{\ell_ {h} (f (\boldsymbol {x}, s), y) \mid s = t, y = \diamond 1 \right\} \\ = 1 - L _ {t} (f), \quad t \in \mathcal {S}, \tag {8} \\ \end{array}
+$$
+
+$$
+\frac {1}{n _ {1} ^ {\diamond}} \sum_ {(\boldsymbol {x}, s, y) \in \mathcal {D} _ {1} ^ {\diamond}} f (\boldsymbol {x}, s) = \dots = \frac {1}{n _ {k} ^ {\diamond}} \sum_ {(\boldsymbol {x}, s, y) \in \mathcal {D} _ {k} ^ {\diamond}} f (\boldsymbol {x}, s), \tag {9}
+$$
+
+$$
+\boldsymbol {u} _ {t} ^ {\diamond} = \frac {1}{n _ {t} ^ {\diamond}} \sum_ {(\boldsymbol {x}, s) \in \mathcal {D} _ {t} ^ {\diamond}} \boldsymbol {\varphi} (\boldsymbol {x}), \quad t \in \mathcal {S}, \diamond \in \{-, + \}. \tag {10}
+$$
+
+$$
+\boldsymbol {w} _ {0} \cdot (\boldsymbol {u} _ {1} ^ {\diamond} - \boldsymbol {u} _ {2} ^ {\diamond}) = 0 \wedge \dots \wedge \boldsymbol {w} _ {0} \cdot (\boldsymbol {u} _ {1} ^ {\diamond} - \boldsymbol {u} _ {k} ^ {\diamond}) = 0. \tag {11}
+$$
+
+$$
+\boldsymbol {w} _ {1} \cdot \boldsymbol {u} _ {1} ^ {\diamond} = \boldsymbol {w} _ {2} \cdot \boldsymbol {u} _ {2} ^ {\diamond} \wedge \dots \wedge \boldsymbol {w} _ {1} \cdot \boldsymbol {u} _ {1} ^ {\diamond} = \boldsymbol {w} _ {k} \cdot \boldsymbol {u} _ {k} ^ {\diamond}, \tag {12}
+$$

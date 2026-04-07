@@ -1,0 +1,34 @@
+%\paragraph{Fairness in Machine Learning}
+Machine learning methods are designed to generalize from observation but if algorithms inadvertently learn to make predictions based on stereotyped associations they risk amplifying existing social problems.
+%
+%Machine learning models are often built so that they generalize observations from the data they are trained on. 
+%For example, a model learns to identify a cat in an image by looking at the common characteristics of the subject. 
+%Generalization allows models to make predictions on unseen instances at test time. 
+%However, when such generalization ability is applied to variables such as gender, age, or race, there is a risk of making biased decisions based on general impressions of a demographic group.
+Several problematic instances have been demonstrated, for example, word embeddings can encode sexist stereotypes~\cite{BCWS16,CBN17}.
+%For instance, when an embedding model is used to solve an analogy puzzle such as ``man is to woman as surgeon to who'', the model responds with ``nurse'', as it learns that male is more associated with surgeon and female is more closely associated with nurse.
+Similar observations have been made in vision and language models~\cite{ZWYOC17}, online news~\cite{ross2011women}, web search~\cite{kay2015unequal} and advertisements~\cite{sweeney2013discrimination}. %also show issues with gender bias.
+In our work, we add a unique focus on co-reference, and propose simple general purpose methods for reducing bias.
+
+Implicit human bias can come from imbalanced datasets.
+When making decisions on such datasets, it is usual that under-represented samples in the data are neglected since they do not influence the overall accuracy as much.
+For binary classification~\citet{kamishima2012fairness,kamishima2011fairness} add a regularization term to their objective that penalizes biased predictions. 
+Various other approaches have been proposed to produce ``fair'' classifiers~\cite{calders2009building,feldman2015certifying,misra2016seeing}. 
+For structured prediction, the work of~\citet{ZWYOC17} reduces bias by using corpus level constraints, but is only practical for models with specialized structure.
+\citet{kusner2017counterfactual} propose the method based on  causal inference to achieve the model fairness where they do the data augmentation under specific cases, however,  to the best of our knowledge, we are the first to propose data augmentation based on gender swapping in order to reduce gender bias. 
+
+Concurrent work~\cite{Rachel18} also studied gender bias in coreference resolution systems, and created a similar job title based, winograd-style, co-reference dataset to demonstrate bias~\footnote{Their dataset also includes gender neutral pronouns and examples containing one job title instead of two.}. 
+Their work corroborates our findings of bias and expands the set of systems shown to be biased while we add a focus on debiasing methods.
+Future work can evaluate on both datasets.
+%that such examples can be used to demonstrate current co-reference systems are biased.
+
+%data based on job title using winograd scheme.
+
+% \paragraph{Coreference Resolution Models \jy{not sure if we should keep this part}}
+% Here we provide a brief description of the coreference systems and the corpus we analyze. We consider three systems with different types of techniques, rule-based, feature-based, and neural network-based. 
+
+% The Stanford Deterministic Coref System is one rule-based system which uses several layers of rules for making coreference decisions on an article. The decisions are based on a set of syntactic and semantic rules that generated in an unsupervised fashion. Despite the model is simple and only based on rules, it is the winner for the CoNLL shared task 2011 on the coreference resolution task.
+% The Berkeley coref system is a learning-based system~\cite{DurrettKlein2013} which aims at solving the coreference resolution using features extracted from the input. The model captures both linguistic features as well as underlying data patterns which are not easily predefined by rules.
+% The UW coref system is an end-to-end coreference resolution model which employs a neural network that directly learns a representation of entities and mentions from text. Different from the feature-based approaches, the model does not require hand-designed features and syntactic parse trees. Instead, the mention boundaries and the coreference decisions can be directly learned from the data. This end-to-end neural-based model currently achieves the best performance on the OntoNotes 5.0 corpus.
+
+% The analyses in this paper are based on the English portion of OntoNotes 5.0 corpus~\cite{pradhan2012conll} which is used in the CoNLL-2012 shared task. To evaluate the performance of the aforementioned models,  we follow the evaluation metrics used in CoNLL-2012 shared task\footnote{\url{http://conll.cemantix.org/2012/software.html}} and use the official scorer provided~\cite{luo2014extension,pradhan2014scoring}.

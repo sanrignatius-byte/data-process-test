@@ -1,0 +1,2019 @@
+[
+    {
+        "type": "text",
+        "text": "Fairness-aware Classification: Criterion, Convexity, and Bounds ",
+        "text_level": 1,
+        "bbox": [
+            176,
+            119,
+            821,
+            141
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Lu Zhang, Yongkai Wu, and Xintao Wu ",
+        "bbox": [
+            328,
+            170,
+            666,
+            186
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "University of Arkansas {lz006,yw009,xintaowu}@uark.edu ",
+        "bbox": [
+            379,
+            188,
+            620,
+            215
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            250,
+            273,
+            313,
+            286
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Fairness-aware classification is receiving increasing attention in the machine learning fields. Recently research proposes to formulate the fairness-aware classification as constrained optimization problems. However, several limitations exist in previous works due to the lack of a theoretical framework for guiding the formulation. In this paper, we propose a general framework for learning fair classifiers which addresses previous limitations. The framework formulates various commonlyused fairness metrics as convex constraints that can be directly incorporated into classic classification models. Within the framework, we propose a constraint-free criterion on the training data which ensures that any classifier learned from the data is fair. We also derive the constraints which ensure that the real fairness metric is satisfied when surrogate functions are used to achieve convexity. Our framework can be used to for formulating fairness-aware classification with fairness guarantee and computational efficiency. The experiments using real-world datasets demonstrate our theoretical results and show the effectiveness of proposed framework and methods. ",
+        "bbox": [
+            99,
+            299,
+            464,
+            539
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Introduction ",
+        "text_level": 1,
+        "bbox": [
+            227,
+            563,
+            336,
+            579
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Fairness-aware classification is receiving increasing attention in the machine learning fields. Since the classification models seek to maximize the predictive accuracy, some individuals may get unwanted digital bias when the models are deployed for making predictions. As fairness becomes a more and more important requirement in machine learning, it is imperative to ensure that the learned classification models can strike a balance between accurate predictions and fair predictions. Previous works on this topic can be mainly categorized into two groups: the in-processing methods which incorporate the fairness constraints into the classic classification models (e.g., (Kamishima, Akaho, and Sakuma 2011; Goh et al. 2016; Krishna and Williamson 2018; Zafar et al. 2017a; Zafar et al. 2017b)), and the pre/post-processing methods which modify the training data and/or derive fair predictions based on the potentially unfair predictions made by the classifier (e.g., (Feldman et al. 2015; Hardt et al. 2016; Zhang and Wu 2017; Zhang, Wu, and Wu 2017a; Zhang, Wu, and Wu 2018)). In this work, we focus on the in-processing methods. ",
+        "bbox": [
+            86,
+            585,
+            478,
+            849
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Very recently, several works have been proposed for formulating the fairness-aware classification as constrained optimization problems (Goh et al. 2016; Zafar et al. 2017a; Zafar et al. 2017b). Generally, they aim to minimize a loss function subject to certain fairness constraints. Although the idea is reasonable and rather straightforward, there still exist a number of challenges. As a result, several limitations exist in the previous works. One challenge is how to formulate the classic fairness notions (such as demographic parity) as convex constraints in the optimization, which is not welladdressed in previous works. In (Zafar et al. 2017b), the authors propose the decision boundary fairness, which is a linear constraint for margin-based classifiers. However, the authors fail to explicitly show the connection between the decision boundary fairness and classic fairness notions, where the latter is the one people really care about. Another work (Zafar et al. 2017a) suffers a similar issue. In addition, its formulated optimization problem is non-convex and difficult to solve efficiently. In (Goh et al. 2016), a convex constraint is derived from the risk ratio, a classic fairness measure. However, the constraint is enforced from one direction only, i.e., it cannot avoid reverse bias. Another challenge is that, when surrogate functions are used to convert non-convex functions to convex functions, which is a widely-used strategy to achieve convexity in optimization and adopted in many related works, estimation errors must exist due to the difference between the surrogate function and the original non-convex function. Thus, achieving the constraints represented by surrogate functions does not necessarily mean achieving the real fairness criterion. To the best of our knowledge, no work has considered this gap produced by the estimation errors due to the use of the surrogate function. ",
+        "bbox": [
+            517,
+            273,
+            913,
+            715
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we propose a general framework for fairnessaware classification which addresses all above issues. The framework formulates various commonly-used fairness metrics (risk difference, risk ratio, equal odds, etc.) as convex constraints that are then directly incorporated into classic classification models. Within the framework, we present a constraint-free criterion on the training data which ensures that any classifier learned from the data will be fair. Thus, when the criterion is satisfied, there is no need to add any fairness constraint into optimization for learning fair classifiers. When the criterion is not satisfied, we need to learn fair classifiers by solving the constrained optimization prob-",
+        "bbox": [
+            517,
+            720,
+            913,
+            888
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "Copyright $^ ©$ 2019, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved. ",
+        "bbox": [
+            81,
+            861,
+            478,
+            888
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1809.04737v1 [cs.LG] 13 Sep 2018 ",
+        "bbox": [
+            22,
+            265,
+            60,
+            705
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "lems. To connect the surrogate function represented fairness constraints to the real fairness metric, we further derive the lower and upper bounds of the real fairness measure based on the surrogate function, and develop the refined fairness constraints. This means that, if the refined constraints are satisfied, then it is guaranteed that the real fairness measure is also bounded within the given interval. The bounds work for any surrogate function that is convex and differentiable at zero with the derivative larger than zero. In the experiments, we evaluate our method and compare with previous works using the real-world datasets. The results demonstrate the correctness of the constraint-free criterion. For learning fair classifiers, the results show that our method achieves better fairness performance than previous methods. In addition, for the same fairness performance level, our method also consistently outperforms previous methods in terms of the predictive accuracy. ",
+        "bbox": [
+            81,
+            68,
+            480,
+            305
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The Fairness-aware Classification Framework ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            316,
+            475,
+            333
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In this section we present our fairness-aware classification framework. We first introduce the unconstrained optimization formulation for the classic classification models as proposed in (Bartlett, Jordan, and McAuliffe 2006), and then present our constrained optimization formulation for fairness-aware classification. Throughout the paper, we use the vector of variables $\\mathbf { X } \\in { \\mathcal { X } }$ to denote the features used in classification, and the binary variable $Y \\in \\mathcal { V } = \\{ - 1 , 1 \\}$ to denote the binary label. The training data $\\mathbb { D } = \\{ ( \\mathbf { x } _ { i } , y _ { i } ) \\} _ { i = 1 } ^ { N }$ is a sample drawn from an unknown but fixed distribution. ",
+        "bbox": [
+            81,
+            335,
+            480,
+            474
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Classification Problem ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            486,
+            261,
+            500
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The learning goal of classification is to find a classifier: $f \\colon \\mathcal X \\mapsto \\mathcal y$ that minimizes the average of the classification loss (a.k.a the empirical loss): ",
+        "bbox": [
+            83,
+            503,
+            480,
+            547
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {L} (f) = \\mathbb {E} _ {\\mathbf {X}, Y} [ \\mathbb {1} _ {f (\\mathbf {x}) \\neq y} ],\n$$",
+        "text_format": "latex",
+        "bbox": [
+            197,
+            554,
+            364,
+            571
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "where $\\mathbb { 1 } _ { [ \\cdot ] }$ is an indicator function and we let $\\mathbb { 1 } _ { \\mathrm { t r u e } } \\ =$ $1 , \\mathbb { 1 } _ { \\mathrm { f a l s e } } \\stackrel { \\sim } { = } 0$ . Thus, the classification problem can be formulated as an optimization problem: ",
+        "bbox": [
+            83,
+            578,
+            482,
+            621
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {f \\in \\mathcal {F}} \\mathbb {L} (f) = \\min  _ {f \\in \\mathcal {F}} \\mathbb {E} _ {\\mathbf {X}, Y} [ \\mathbb {1} _ {f (\\mathbf {x}) \\neq y} ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            166,
+            628,
+            393,
+            651
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Directly solving this optimization problem is intractable since the objective function is non-convex (Bartlett, Jordan, and McAuliffe 2006). For efficient computation, another predictive function $h$ is adopted which is performed in real number domain $\\mathcal { R }$ , i.e., $h \\colon \\mathcal { X } \\mapsto \\mathcal { R }$ , and let $f = \\mathrm { s i g n } ( h )$ once $h$ is learned. Thus, the empirical loss is reformulated as ",
+        "bbox": [
+            81,
+            657,
+            480,
+            742
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {L} (f) = \\mathbb {E} _ {\\mathbf {X}, Y} \\left[ \\mathbb {1} _ {\\operatorname {s i g n} (h (\\mathbf {x})) \\neq y} \\right] \\\\ = \\mathbb {E} _ {\\mathbf {X}} \\big [ P r (Y = 1 | \\mathbf {x}) \\mathbb {1} _ {h (\\mathbf {x}) <   0} + P r (Y = - 1 | \\mathbf {x}) \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\big ]. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            84,
+            748,
+            473,
+            794
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Then, the indicator function (a.k.a 0-1 loss function) is replaced with a convex surrogate function $\\phi ( \\cdot )$ . As a result, the empirical loss is written as ",
+        "bbox": [
+            81,
+            799,
+            480,
+            842
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {L} _ {\\phi} (h) = \\mathbb {E} _ {\\mathbf {X}} \\left[ P r (Y = 1 | \\mathbf {x}) \\phi (h (\\mathbf {x})) \\right. \\\\ \\left. + \\big (1 - P r (Y = 1 | \\mathbf {x}) \\big) \\phi \\big (- h (\\mathbf {x}) \\big) \\right], \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            135,
+            848,
+            424,
+            887
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "which is also known as the $\\phi$ -loss, and the optimization problem is reformulated as ",
+        "bbox": [
+            514,
+            68,
+            915,
+            95
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {h \\in \\mathcal {H}} \\mathbb {L} _ {\\phi} (h). \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            656,
+            99,
+            911,
+            119
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In the past decades, a number of surrogate loss functions have been proposed and well studied, such as the hinges loss, the square loss, the logistic loss, and the exponential loss. ",
+        "bbox": [
+            514,
+            122,
+            913,
+            164
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Fairness-aware Classification ",
+        "text_level": 1,
+        "bbox": [
+            516,
+            174,
+            746,
+            188
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The fairness-aware classification aims to find a classifier that minimizes the empirical loss while satisfying certain fairness constraints. Several fairness notions or definitions are proposed in the literature, such as demographic parity (Pedreshi, Ruggieri, and Turini 2008), mistreatment parity (Zafar et al. 2017a), calibration (Pleiss et al. 2017), etc., and research shows that different fairness notions are generally incomparable with each other and cannot be satisfied simultaneously (Kleinberg, Mullainathan, and Raghavan 2016). Our framework is not limited to a specific fairness notion. In this paper, we present our framework based on the demographic parity. In the appendix, we show how the framework can be easily generalized to other fairness notions. ",
+        "bbox": [
+            514,
+            191,
+            913,
+            371
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Demographic parity is the most widely-used fairness notion in the fairness-aware learning field. It requires the decision made by the classifier is independent to certain sensitive attribute, such as sex or race. We denote the sensitive attribute by $S$ , assuming that it is associated with two values: sensitive group $s ^ { - }$ and non-sensitive group $s ^ { + }$ . Usually, demographic parity is quantified with regard to risk difference, i.e., the difference of the positive predictions between the sensitive group and non-sensitive group. For example, in hiring, risk difference can be given by the probability difference of being classified as hired between male applicants and female applicants. Using the same language as that in the previous subsection, the risk difference produced by a classifier $f$ is expressed as ",
+        "bbox": [
+            514,
+            371,
+            913,
+            565
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} (f) = \\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}} [ \\mathbb {1} _ {f (\\mathbf {x}) = 1} ] - \\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}} [ \\mathbb {1} _ {f (\\mathbf {x}) = 1} ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            542,
+            566,
+            883,
+            584
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "As a quantitative metric, we say that classifier $f$ is considered as fair if $| \\mathbb { R } \\mathbb { D } ( f ) | \\le \\tau$ , where $\\tau$ is the user-defined threshold. For instance, the 1975 British legislation for sex discrimination sets $\\tau = 0 . 0 5$ . ",
+        "bbox": [
+            514,
+            584,
+            913,
+            638
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "By directly incorporating the risk difference into the optimization problem, we obtain ",
+        "bbox": [
+            516,
+            640,
+            913,
+            667
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {h \\in \\mathcal {H}} \\quad \\mathbb {L} _ {\\phi} (h) \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            614,
+            670,
+            911,
+            691
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "subject to $\\mathbb { R D } ( f ) \\leq \\tau , \\quad - \\mathbb { R D } ( f ) \\leq \\tau .$ ",
+        "bbox": [
+            573,
+            694,
+            854,
+            710
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Obviously, the above optimization problem is non-convex. Similar to the loss function, we adopt surrogate functions to convert the risk difference to convex constraints. By using predictive function $h$ and the indicator function, we can rewrite the risk difference as ",
+        "bbox": [
+            514,
+            710,
+            913,
+            781
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {R} \\mathbb {D} (f) = \\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}} \\left[ \\mathbb {1} \\left[ \\operatorname {s i g n} (h (\\mathbf {x})) = 1 \\right] \\right] \\\\ - \\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}} \\left[ \\mathbb {1} \\left[ \\operatorname {s i g n} (h (\\mathbf {x})) = 1 \\right] \\right] \\\\ = \\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}} [ \\mathbb {1} _ {h (\\mathbf {x}) > 0} ] - \\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}} [ \\mathbb {1} _ {h (\\mathbf {x}) > 0} ] \\\\ = \\mathbb {E} _ {\\mathbf {X} | S = s +} [ \\mathbb {1} _ {h (\\mathbf {x}) > 0} ] + \\mathbb {E} _ {\\mathbf {X} | S = s -} [ \\mathbb {1} _ {h (\\mathbf {x}) <   0} ] - 1. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            529,
+            794,
+            898,
+            886
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "image",
+        "img_path": "images/90662f3821761d50441294d668571469e1475fb205f856236bdbf03e3e92a8e7.jpg",
+        "image_caption": [
+            "Figure 1: Examples of $\\kappa ( \\cdot )$ and $\\delta ( \\cdot )$ . "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            127,
+            68,
+            436,
+            218
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "It follows that ",
+        "bbox": [
+            99,
+            270,
+            197,
+            282
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {R D} (f) = \\mathbb {E} _ {\\mathbf {X}} \\left[ \\frac {P (S = s ^ {+} | \\mathbf {x})}{P (S = s ^ {+})} \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right. \\tag {3} \\\\ + \\frac {P (S = s ^ {-} | \\mathbf {x})}{P (S = s ^ {-})} \\mathbb {1} _ {h (\\mathbf {x}) <   0} - 1 ]. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            142,
+            286,
+            478,
+            356
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "For simplicity, we may want to denote $P ( S = s ^ { + } | \\mathbf { x } )$ by $\\eta ( \\mathbf { x } )$ and $P ( \\bar { S } = s ^ { + } )$ by $p$ . Similarly, the indicator function in above equation can be replaced with the surrogate function. The issue here is, two constraints $\\mathbb { R D } ( f ) \\leq \\tau$ and $- \\mathbb { R } \\mathbb { D } ( f ) \\leq \\tau$ are opposite to each other. Thus, replacing all indicator functions with a single surrogate function will result in a convex-concave problem, where only heuristic solutions for finding local optima are known to exist. Therefore, we adopt two surrogate functions, a convex one $\\kappa ( \\cdot )$ and a concave one $\\delta ( \\cdot )$ , each of which replaces the indicator function for one constraint. As a result, the formulated constrained optimization problem is convex and can be efficiently solved. We call the risk difference represented by $\\kappa ( \\cdot )$ and $\\delta ( \\cdot )$ as the $\\kappa , \\delta$ -risk difference, denoted by $\\mathbb { R D } _ { \\kappa } ( h )$ and $\\mathbb { R D } _ { \\delta } ( h )$ . Almost all commonly-used surrogate functions can be adopted for $\\kappa ( \\cdot )$ and $\\delta ( \\cdot )$ , by performing some shift or flip. Examples of $\\kappa ( \\cdot )$ and $\\delta ( \\cdot )$ are shown in Figure 1. ",
+        "bbox": [
+            81,
+            359,
+            480,
+            598
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "table",
+        "img_path": "images/495d8c4fb2630144c0e955d73ff0f6d19dbd2a0330ae67b2fb3e834cf0b8f831.jpg",
+        "table_caption": [
+            "Table 1: An example of admitting students. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td rowspan=\"2\">Sex</td><td colspan=\"2\">GPA</td></tr><tr><td>High</td><td>Low</td></tr><tr><td>Male</td><td>51</td><td>49</td></tr><tr><td>Female</td><td>48</td><td>52</td></tr></table>",
+        "bbox": [
+            187,
+            609,
+            377,
+            669
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "To sum up, we obtain the following convex optimization formulation for learning fair classifiers. ",
+        "bbox": [
+            83,
+            708,
+            478,
+            737
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Problem Formulation 1. The goal of the fairness-aware classification is to find a classifier $f$ which minimizes the empirical loss $\\mathbb { L } ( f )$ while satisfying fairness constraint $| \\mathbb { R } \\mathbb { D } ( f ) | \\leq \\tau$ . It can be approached by solving the following constrained optimization problem ",
+        "bbox": [
+            81,
+            739,
+            480,
+            810
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {h \\in \\mathcal {H}} \\quad \\mathbb {L} _ {\\phi} (h)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            166,
+            815,
+            259,
+            837
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "subject to $\\mathbb { R } \\mathbb { D } _ { \\kappa } ( h ) \\leq c _ { 1 } , \\quad - \\mathbb { R } \\mathbb { D } _ { \\delta } ( h ) \\leq c _ { 2 } ,$ ",
+        "bbox": [
+            127,
+            839,
+            437,
+            856
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $f = s i g n ( h )$ , $\\kappa ( \\cdot )$ is a convex surrogate function, $\\delta ( \\cdot )$ is a concave surrogate function, $\\eta ( \\mathbf { x } ) ~ = ~ P ( S ~ = ~ s ^ { + } | \\mathbf { x } ) ,$ , ",
+        "bbox": [
+            81,
+            859,
+            480,
+            890
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "$p = P ( S = s ^ { + } )$ , $c _ { 1 } , c _ { 2 }$ are the thresholds of the $\\kappa , \\delta$ -risk difference, and ",
+        "bbox": [
+            514,
+            68,
+            913,
+            97
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {L} _ {\\phi} (h) = \\mathbb {E} _ {\\mathbf {X}} \\left[ P r (Y = 1 | \\mathbf {x}) \\phi (h (\\mathbf {x})) \\right. \\\\ \\left. + \\left(1 - P r (Y = 1 | \\mathbf {x})\\right) \\phi \\big (- h (\\mathbf {x}) \\big) \\right], \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            514,
+            101,
+            828,
+            140
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} _ {\\kappa} (h) = \\mathbb {E} _ {\\mathbf {X}} \\big [ \\frac {\\eta (\\mathbf {x})}{p} \\kappa \\big (h (\\mathbf {x}) \\big) + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\kappa \\big (- h (\\mathbf {x}) \\big) - 1 \\big ],\n$$",
+        "text_format": "latex",
+        "bbox": [
+            517,
+            142,
+            916,
+            174
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} _ {\\delta} (h) = \\mathbb {E} _ {\\mathbf {X}} \\big [ \\frac {\\eta (\\mathbf {x})}{p} \\delta \\big (h (\\mathbf {x}) \\big) + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\delta \\big (- h (\\mathbf {x}) \\big) - 1 \\big ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            517,
+            176,
+            911,
+            209
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Next, we will present two important results within the framework, namely a constraint-free criterion on the training data that ensures fairness for any classifier learned from it, as well as the lower and upper bounds of the risk difference using the $\\kappa , \\delta$ -risk difference. ",
+        "bbox": [
+            514,
+            212,
+            913,
+            282
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The Constraint-free Criterion ",
+        "text_level": 1,
+        "bbox": [
+            586,
+            294,
+            841,
+            310
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Adding constraints into the classification models increases the computational complexity and also decreases the predictive accuracy. It is desired not to incorporate any fairness constraint if it is guaranteed that the classifier learned will be fair. This situation is possible. Consider an example of admitting students. The application profile contains two attributes, a sensitive attribute $\\operatorname { S e x }$ and a non-sensitive attribute GPA. The statistics of the dataset is shown in Table 1. Assume that classifiers used for making decisions are based on GPA (as the use of sensitive attributes is usually prohibited), then there are a total of four possible deterministic classifiers: accepting all students, accepting all the students with $\\begin{array} { r l } { \\mathrm { \\sf G P A } } & { { } = } \\end{array}$ High, accepting all the students whose $\\mathrm { G P A } \\ = \\ \\mathrm { L o w }$ , and accepting none. The corresponding risk differences of the four classifiers are 0, 0.02, -0.03, and 0 respectively, which are all considered to be fair based on a $\\tau = 0 . 0 5$ threshold. In this case, no matter which classifier is learned, the predictions will always be fair. ",
+        "bbox": [
+            514,
+            313,
+            913,
+            561
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In this section, we propose a constraint-free criterion of ensuring fairness. We first define two special classifiers, and then show in Theorem 1 that they provide the maximum and minimum of risk difference that any classifier can have. Here we skip the proof of Theorem 1 which is included in the appendix. ",
+        "bbox": [
+            514,
+            563,
+            913,
+            646
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 1. The maximal risk difference classifier $f _ { \\mathrm { m a x } }$ and the minimal risk difference classifier $f _ { \\mathrm { m i n } }$ are defined as: ",
+        "bbox": [
+            516,
+            648,
+            913,
+            679
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} f _ {\\max } (\\mathbf {x}) = \\left\\{ \\begin{array}{l l} 1 & \\text {i f} \\eta (\\mathbf {x}) \\geq p, \\\\ - 1 & \\text {o t h e r w i s e}, \\end{array} \\right. \\\\ f _ {\\min } (\\mathbf {x}) = \\left\\{ \\begin{array}{c l} - 1 & i f \\eta (\\mathbf {x}) \\geq p, \\\\ 1 & o t h e r w i s e. \\end{array} \\right. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            604,
+            684,
+            821,
+            770
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Theorem 1. For any classifier $f \\colon \\mathcal X \\mapsto \\mathcal y _ { \\mathrm { : } }$ , it always holds that $\\mathbb { R } \\mathbb { D } ^ { - } \\le \\mathbb { R } \\mathbb { D } ( f ) \\le \\mathbb { R } \\mathbb { D } ^ { + }$ , where $\\mathbb { R D } ^ { - } = \\mathbb { R D } ( f _ { \\operatorname* { m i n } } )$ and $\\mathbb { R D } ^ { + } = \\mathbb { R D } ( f _ { \\operatorname* { m a x } } )$ . ",
+        "bbox": [
+            514,
+            780,
+            913,
+            825
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "From Theorem 1, we directly obtain Corollary 2. ",
+        "bbox": [
+            532,
+            828,
+            856,
+            843
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Corollary 2. Given threshold $\\tau$ , for a training data if we have $\\mathbb { R } \\mathbb { D } ^ { + } \\leq \\tau$ and $\\mathbb { R D } ^ { - } \\geq - \\tau$ , then any classifier learned from this dataset is fair. ",
+        "bbox": [
+            514,
+            845,
+            913,
+            888
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Bounding Fairness Constraints with Surrogate Functions ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            66,
+            478,
+            99
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "When the constraint-free criterion is not satisfied, the next step will be learning fair classifiers based on Problem Formulation 1. However, the use of the surrogate function will inevitably produce estimation errors. This means that satisfying constraints for the $\\kappa , \\delta$ -risk difference, i.e., $\\mathbb { R D } _ { \\kappa } ( h ) \\leq \\bar { \\tau }$ and $- \\mathbb { R } \\mathbb { D } _ { \\delta } ( h ) \\leq \\tau$ does not mean that the constraint for the risk difference is also satisfied, i.e., $| \\mathbb { R } \\mathbb { D } ( f ) | \\le \\tau$ . Consequently, solving the the constrained optimization problem does not necessarily result in a fair classifier based on the real risk difference. In fact, there is even no any fairness guarantee on the produced classifier. We use an example to show this. Consider two margin-based classifiers where the surrogate functions are linear functions of the margin from the data point to the decision boundary. Therefore, the risk difference is computed by counting the number of data points above and below the decision boundary, and the $\\kappa , \\delta$ -risk difference is computed by measuring the average signed distance from the data points to the decision boundary. In the dataset shown in Figure 2a, we obtain that the κ, δ-risk difference is 0 but the real risk difference is 0.25. This means that a classier obtained by solving the constrained optimization problem actually can be very unfair. In the dataset shown in Figure 2b, the risk difference is 0 but the κ, δ-risk difference is 0.5, meaning that some fair classifiers cannot be obtained by solving the constrained optimization problem. ",
+        "bbox": [
+            81,
+            103,
+            480,
+            449
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In this section, we present the method for deriving the lower and upper bounds for the risk difference using the $\\kappa , \\delta$ - risk difference, which provide a fairness guarantee for our framework. The method works for various types of surrogate functions (e.g., hinge, square, logistic, exponential, etc.). We begin with defining the conditional risk difference $C ^ { \\eta } \\big ( h ( \\mathbf { x } ) \\big )$ : ",
+        "bbox": [
+            81,
+            450,
+            480,
+            534
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nC ^ {\\eta} \\big (h (\\mathbf {x}) \\big) = \\frac {\\eta (\\mathbf {x})}{p} \\mathbb {1} _ {h (\\mathbf {x}) > 0} + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\mathbb {1} _ {h (\\mathbf {x}) <   0} - 1.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            104,
+            541,
+            455,
+            574
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Then, according to Eq. (3), we have $\\begin{array} { r l } { \\mathbb { R } \\mathbb { D } ( f ) } & { { } = } \\end{array}$ $\\mathbb { E } _ { \\mathbf { X } } [ C ^ { \\eta } \\big ( h ( \\mathbf { x } ) \\big ) ]$ . When surrogate function $\\kappa ( \\cdot )$ (resp. $\\delta ( \\cdot ) )$ is adopted, we similarly define the conditional $\\kappa$ -risk difference ",
+        "bbox": [
+            81,
+            579,
+            478,
+            625
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nC _ {\\kappa} ^ {\\eta} \\big (h (\\mathbf {x}) \\big) = \\frac {\\eta (\\mathbf {x})}{p} \\kappa \\big (h (\\mathbf {x}) \\big) + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\kappa \\big (- h (\\mathbf {x}) \\big) - 1,\n$$",
+        "text_format": "latex",
+        "bbox": [
+            89,
+            628,
+            470,
+            662
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "and we have $\\mathbb { R } \\mathbb { D } _ { \\kappa } ( h ) = \\mathbb { E } _ { \\mathbf { X } } { \\left[ C _ { \\kappa } ^ { \\eta } \\big ( h ( \\mathbf { x } ) \\big ) \\right] }$ . ",
+        "bbox": [
+            83,
+            666,
+            356,
+            684
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Note that the values of $C ^ { \\eta } \\big ( h ( { \\bf x } ) \\big )$ and $C _ { \\kappa } ^ { \\eta } \\big ( h ( { \\bf x } ) \\big )$ depend on $\\eta ( \\mathbf { x } )$ and $h ( \\mathbf { x } )$ , which are determined by the subpopulation of the data specified by $\\mathbf { x }$ , as well as predictive function $h$ . In order to study the general situations for any specific subpopulation and any possible predictive function, we define the generic conditional risk difference $C ^ { \\eta } ( \\alpha )$ and the generic conditional $\\kappa$ -risk difference $C _ { \\kappa } ^ { \\eta } ( \\alpha )$ : ",
+        "bbox": [
+            81,
+            684,
+            480,
+            785
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nC ^ {\\eta} (\\alpha) = \\frac {\\eta}{p} \\mathbb {1} _ {\\alpha > 0} + \\frac {1 - \\eta}{1 - p} \\mathbb {1} _ {\\alpha <   0} - 1,\n$$",
+        "text_format": "latex",
+        "bbox": [
+            155,
+            789,
+            406,
+            821
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nC _ {\\kappa} ^ {\\eta} (\\alpha) = \\frac {\\eta}{p} \\kappa (\\alpha) + \\frac {1 - \\eta}{1 - p} \\kappa (- \\alpha) - 1,\n$$",
+        "text_format": "latex",
+        "bbox": [
+            153,
+            825,
+            408,
+            858
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "for any $\\eta \\in [ 0 , 1 ]$ and $\\alpha \\in \\mathcal { R }$ . Then, the minimal conditional risk difference $\\bar { H } ^ { - } ( \\eta )$ and the minimal conditional $\\kappa$ -risk ",
+        "bbox": [
+            81,
+            859,
+            478,
+            888
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "difference $H _ { \\kappa } ^ { - } ( \\eta )$ for any specific subpopulation and any possible predictive function are given by ",
+        "bbox": [
+            514,
+            68,
+            913,
+            98
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nH ^ {-} (\\eta) = \\min  _ {\\alpha \\in R} C ^ {\\eta} (\\alpha) = \\min  _ {\\alpha \\in R} \\left[ \\frac {\\eta}{p} \\mathbb {1} _ {\\alpha > 0} + \\frac {1 - \\eta}{1 - p} \\mathbb {1} _ {\\alpha <   0} - 1 \\right],\n$$",
+        "text_format": "latex",
+        "bbox": [
+            517,
+            102,
+            908,
+            135
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nH _ {\\kappa} ^ {-} (\\eta) = \\min  _ {\\alpha \\in R} C _ {\\kappa} ^ {\\eta} (\\alpha) = \\min  _ {\\alpha \\in R} \\left[ \\frac {\\eta}{p} \\kappa (\\alpha) + \\frac {1 - \\eta}{1 - p} \\kappa (- \\alpha) - 1 \\right]. \\tag {4}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            517,
+            138,
+            911,
+            181
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "As a result, it is straightforward that the minimal risk difference achieved by any predictive function (i.e., $\\mathbb { R } \\mathbb { D } ^ { - } .$ ) is also the expectation of $H ^ { - } ( \\eta ( \\mathbf { x } ) )$ since for any possible input $\\mathfrak { c } \\ H ^ { - } \\bar { ( \\eta ( \\mathbf { x } ) ) }$ provides the minimal conditional risk difference. Similarly, the minimal $\\kappa$ -risk difference achieved by any predictive function (denoted by $\\mathbb { R } \\mathbb { D } _ { \\kappa } ^ { - }$ ) is the expectation of $\\bar { H } _ { \\kappa } ^ { - } ( \\eta ( \\mathbf { x } ) )$ , as given by ",
+        "bbox": [
+            514,
+            181,
+            913,
+            280
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} _ {\\kappa} ^ {-} = \\mathbb {E} _ {\\mathbf {X}} \\left[ H _ {\\kappa} ^ {-} (\\eta (\\mathbf {x})) \\right].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            627,
+            285,
+            799,
+            304
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Finally, we define the minimal conditional $\\kappa$ -risk difference within interval $\\alpha$ s.t. $\\alpha ( \\eta _ { S } - p ) \\ge 0$ : ",
+        "bbox": [
+            514,
+            306,
+            913,
+            338
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nH _ {\\kappa} ^ {\\circ} (\\eta) = \\min  _ {\\alpha : \\alpha (\\eta - p) \\geq 0} C _ {\\kappa} ^ {\\eta} (\\alpha). \\tag {5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            601,
+            342,
+            911,
+            367
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We similarly define $H ^ { + } ( \\eta )$ the maximal conditional risk difference, $H _ { \\delta } ^ { + } ( \\eta )$ the maximal conditional $\\delta$ -risk difference, $\\mathbb { R } \\mathbb { D } _ { \\delta } ^ { + }$ the maximal $\\delta$ -risk difference, as well as $H _ { \\delta } ^ { \\circ } ( \\eta )$ the minimal conditional $\\delta$ -risk difference within interval $\\alpha$ s.t. $\\alpha ( \\eta _ { S } - p ) \\ge 0$ . ",
+        "bbox": [
+            514,
+            373,
+            913,
+            446
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Now, we are able to present our results, which are given in Theorem 3 and Corollary 4. The proof is skipped here and can be found in the appendix. ",
+        "bbox": [
+            514,
+            446,
+            913,
+            489
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Theorem 3. If $\\kappa ( \\cdot )$ is convex and differentiable at zero with $\\kappa ^ { \\prime } ( 0 ) > 0 , \\delta ( \\cdot )$ is concave and differentiable at zero with $\\delta ^ { \\prime } ( 0 ) > 0$ , then for any predictive function $h$ , we have ",
+        "bbox": [
+            516,
+            492,
+            913,
+            536
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\psi_ {\\kappa} \\left(\\mathbb {R D} (h) - \\mathbb {R D} ^ {-}\\right) \\leq \\mathbb {R D} _ {\\kappa} (h) - \\mathbb {R D} _ {\\kappa} ^ {-},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            560,
+            542,
+            833,
+            559
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\psi_ {\\delta} \\left(\\mathbb {R D} ^ {+} - \\mathbb {R D} (h)\\right) \\leq \\mathbb {R D} _ {\\kappa} ^ {+} - \\mathbb {R D} _ {\\kappa} (h),\n$$",
+        "text_format": "latex",
+        "bbox": [
+            566,
+            561,
+            834,
+            579
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where ",
+        "bbox": [
+            517,
+            584,
+            563,
+            595
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\psi_ {\\kappa} (\\mu) = H _ {\\kappa} ^ {\\circ} \\big (p (1 - p) \\mu + p \\big) - H _ {\\kappa} ^ {-} \\big (p (1 - p) \\mu + p \\big),\n$$",
+        "text_format": "latex",
+        "bbox": [
+            517,
+            603,
+            877,
+            622
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\psi_ {\\delta} (\\mu) = H _ {\\delta} ^ {+} (p (1 - p) \\mu + p) - H _ {\\delta} ^ {\\circ} (p (1 - p) \\mu + p).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            521,
+            625,
+            879,
+            642
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Corollary 4. For any predictive function $h _ { ; }$ , let classifier $f = s i g n ( h )$ , if $\\kappa ( \\cdot )$ is convex and differentiable at zero with $\\kappa ^ { \\prime } { ( 0 ) } > 0$ , δ(·) is concave and differentiable at zero with $\\delta ^ { \\prime } ( 0 ) > 0$ , and $H _ { \\kappa } ^ { - } ( \\eta ) \\ < \\ H _ { \\kappa } ^ { \\circ } ( \\eta )$ and $H _ { \\delta } ^ { + } ( \\eta ) ~ > ~ H _ { \\delta } ^ { \\circ } ( \\eta )$ hold for all $\\eta \\in [ 0 , 1 ] , \\eta \\neq p$ , then risk difference $\\mathbb { R D } ( f )$ is bounded by following inequalities1: ",
+        "bbox": [
+            514,
+            646,
+            913,
+            733
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} (f) \\leq \\mathbb {R D} ^ {-} + \\psi_ {\\kappa} ^ {- 1} \\left(\\mathbb {R D} _ {\\kappa} (h) - \\mathbb {R D} _ {\\kappa} ^ {-}\\right),\n$$",
+        "text_format": "latex",
+        "bbox": [
+            549,
+            737,
+            841,
+            756
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} (f) \\geq \\mathbb {R D} ^ {+} - \\psi_ {\\delta} ^ {- 1} \\big (\\mathbb {R D} _ {\\delta} ^ {+} - \\mathbb {R D} _ {\\delta} (h) \\big).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            557,
+            757,
+            844,
+            777
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Based on the upper and lower bounds of $\\mathbb { R D } ( f )$ , we modify Problem Formulation 1 to obtain Problem Formulation 2 with refined fairness constraints which guarantee the real fairness requirement. ",
+        "bbox": [
+            514,
+            782,
+            913,
+            839
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_footnote",
+        "text": "1Based on Scott et al. (Scott 2012), $\\psi _ { \\kappa } ( \\cdot )$ and $\\psi _ { \\delta } ( \\cdot )$ are invertible if $H _ { \\kappa } ^ { \\circ } ( \\eta ) \\ > \\ H _ { \\kappa } ^ { - } ( \\eta )$ and $H _ { \\delta } ^ { \\circ } ( \\eta ) \\ < \\ H _ { \\delta } ^ { + } ( \\eta )$ for all $\\eta \\in$ $[ 0 , 1 ] , \\eta \\neq p$ . ",
+        "bbox": [
+            514,
+            847,
+            913,
+            888
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/b5a5fe5d5a92d5247699f4bb85dcff8a9284674b1acfef326dc8554edd4ca1c7.jpg",
+        "image_caption": [
+            "(a) A classifier that meets the κ, δ-risk difference constraint makes unfair predictions. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            187,
+            70,
+            442,
+            217
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/9bc3901ba9cb2a4bfc416855b34159c3261d16726159088b481159e37d86f12e.jpg",
+        "image_caption": [
+            "(b) A classifier that doesn’t meet the $\\kappa , \\delta$ -risk difference constraint makes fair predictions. ",
+            "Figure 2: Two classifiers and their predictions. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            558,
+            69,
+            813,
+            210
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Problem Formulation 2. A fair classifier $f = s i g n ( h )$ that achieves fairness constraint $- c _ { 2 } \\leq \\mathbb { R D } ( f ) \\leq c _ { 1 }$ can be obtained by solving the following constrained optimization ",
+        "bbox": [
+            81,
+            313,
+            478,
+            357
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {h \\in \\mathcal {H}} \\quad \\mathbb {L} _ {\\phi} (h) \\tag {6}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            151,
+            364,
+            477,
+            388
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "subject to $\\mathbb { R } \\mathbb { D } _ { \\kappa } ( h ) \\leq \\psi _ { \\kappa } \\big ( c _ { 1 } - \\mathbb { R } \\mathbb { D } ^ { - } \\big ) + \\mathbb { R } \\mathbb { D } _ { \\kappa } ^ { - } ,$ ",
+        "bbox": [
+            112,
+            391,
+            434,
+            407
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n- \\mathbb {R} \\mathbb {D} _ {\\delta} (h) \\leq \\psi_ {\\delta} \\left(c _ {2} + \\mathbb {R} \\mathbb {D} ^ {+}\\right) + \\mathbb {R} \\mathbb {D} _ {\\delta} ^ {+}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            200,
+            411,
+            452,
+            429
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Note that the RHS of above two inequalities are constants for a given dataset. Therefore, the constrained optimization problem is still convex. As stated, we can adopt almost any type of surrogate function for $\\kappa ( \\cdot )$ and $\\delta ( \\cdot )$ . Some commonlyused surrogate functions are listed in Tables 2. Their corresponding $\\psi _ { \\kappa } ( \\cdot )$ and $\\psi _ { \\delta } ( \\cdot )$ are derived and shown in the last column where the derivation details are skipped. ",
+        "bbox": [
+            81,
+            438,
+            480,
+            536
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Experiments ",
+        "text_level": 1,
+        "bbox": [
+            225,
+            551,
+            336,
+            569
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Experimental Setup ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            574,
+            240,
+            590
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Dataset. In the experiments we use two datasets: Adult and Dutch. The Adult dataset (Lichman 2013) contains a total of 48,842 instances, each of which is characterized by 14 attributes (e.g., sex, age, work_class, education, income, etc.). We consider sex as the sensitive attribute with two values, male and female. Then, we binarize income and use it as the class label, i.e., $Y ~ = ~ 1$ if an individual’s income is above $\\$ 50\\mathrm { K }$ and $Y = - 1$ if it is below $\\$ 50\\mathbf { k }$ . The Dutch dataset (Zliobaite, Kamiran, and Calders 2011) contains a total of 60,420 instances, each of which is characterized by 12 attributes. Similarly, we use sex as the sensitive attribute, and binarize occupation into the high-income group and the low-income group which are used as the class label. ",
+        "bbox": [
+            81,
+            595,
+            478,
+            789
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Baseline. We compare our method with two related works, referred to as Zafar-1 (Zafar et al. 2017b) and Zafar-2 (Zafar et al. 2017a), both of which formulate the fairness-aware classification problem as constrained optimization problems. In (Zafar et al. 2017b), the authors quantify fairness using the covariance between the users’ sensitive attribute and the signed distance between the feature vectors and the decision ",
+        "bbox": [
+            81,
+            791,
+            480,
+            888
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "boundary. The fairness constraint is formulated as covariance $\\leq m c$ , where $c$ is the measured fairness of the unconstrained optimal classifier and $m$ is a multiplication factor $\\in [ 0 , 1 ]$ . In (Zafar et al. 2017a), the fairness is quantified similarly with the distance function being replaced with a convex non-linear function. As a result, the obtained problem is a convex-concave optimization problem. In the experiments, we adopt the Disciplined Convex-Concave Programming (DCCP) (Shen et al. 2016) as proposed in (Zafar et al. 2017a) for solving the convex-concave optimization problem. For our method and Zafar-1, the convex optimization problem is solved using CVXPY (Diamond and Boyd 2016). ",
+        "bbox": [
+            514,
+            313,
+            915,
+            481
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Constraint-free Criterion of Ensuring Fairness ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            491,
+            877,
+            508
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "To demonstrate the sufficiency criterion of learning fair classifiers, we build the maximal/minimal risk difference classifiers $f _ { \\mathrm { m i n } }$ , $f _ { \\mathrm { m a x } }$ for both Adult and Dutch datasets, and measure the risk differences they produce, i.e., $\\mathbb { R D } ^ { - } , \\mathbb { R D } ^ { + }$ . The results are shown in the first two rows in Table 3. As can be seen, in both datasets we have large maximal and minimal risk differences. In order to evaluate a situation with small a risk difference, we also create a variant of Adult, referred to as Adult*, where all attributes are binarized and the sensitive attribute sex is shuffled to incur a small risk difference. Then, we build a number of classifiers including Linear Regression (LR), Support Vector Machine (SVM) with linear kernel, Decision Tree (DT), and Naive Bayes (NB), using the three datasets as the training data with with 5-fold crossvalidation. After that, their risk differences are quantified on the testing data, as shown in the last four rows in Table 3. We can see that all values are within $\\mathbb { R D } ^ { - }$ , $\\mathbb { R } \\mathbb { D } ^ { + }$ which are consistent with our criterion. ",
+        "bbox": [
+            514,
+            511,
+            913,
+            760
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Learning Fair Classifiers ",
+        "text_level": 1,
+        "bbox": [
+            516,
+            772,
+            712,
+            787
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We build our fair classifiers on both Adult and Dutch datasets by solving the optimization problem defined in Problem Formulation 2. For surrogate functions, we use the logistic function for $\\phi ( \\cdot )$ , and the hinge function for $\\kappa ( \\cdot )$ and $\\delta ( \\cdot )$ . We also compare our methods with Zafar-1 and Zafar-2. The results are shown in Figure 3, which depict the relationship between the obtained risk difference and empirical loss. For our ",
+        "bbox": [
+            514,
+            790,
+            913,
+            888
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "table",
+        "img_path": "images/ce1a8e6f3a4c75d9a39bdd187ecc517a09c48930ce7027fb7374c13cfb7dc2c7.jpg",
+        "table_caption": [
+            "Table 2: Some common surrogate functions for κ-δ and the corresponding $\\psi _ { \\kappa } ( \\mu )$ and $\\psi _ { \\delta } ( \\mu )$ "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Name of κ-δ</td><td>κ(α) for α ∈ R</td><td>δ(α) for α ∈ R</td><td>ψκ(μ) or ψδ(μ) for μ ∈ (0,1/p]</td></tr><tr><td>Hinge</td><td>max{α+1,0}</td><td>min{α,1}</td><td>μ</td></tr><tr><td>Square</td><td>(α+1)2</td><td>1-(1-α)2</td><td>μ2</td></tr><tr><td>Exponential</td><td>exp(α)</td><td>1-exp(-α)</td><td>(√(1-p)μ+1-√1-pμ)2</td></tr></table>",
+        "bbox": [
+            207,
+            65,
+            787,
+            157
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/416b4300281aa216c7877ffb7241ba34397ef4b70530a245bbb593ea2e710056.jpg",
+        "image_caption": [
+            "(a) Adult "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            169,
+            200,
+            491,
+            402
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/7f4baf3077ffcaab370052e824ac4f08120cd3147dfc9a6feb6faca957034bd0.jpg",
+        "image_caption": [
+            "(b) Dutch ",
+            "Figure 3: Comparison of fair classifiers. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            503,
+            200,
+            823,
+            402
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "table",
+        "img_path": "images/e08f9fa96b5b3a9318ae8ec916d1bf7bd9f9ba769b1936b0ffe54b0e9f630944.jpg",
+        "table_caption": [
+            "Table $3 \\colon \\mathbb { R D } ^ { + } , \\mathbb { R D } ^ { - }$ $\\mathbb { R } \\mathbb { D } ^ { - }$ and risk differences of Linear Regression (LR), Support Vector Machine (SVM), Decision Tree (DT), and Naive Bayes (NB). "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>RD(·)</td><td>Adult</td><td>Dutch</td><td>Adult*</td></tr><tr><td>RD+</td><td>0.967</td><td>0.516</td><td>0.046</td></tr><tr><td>RD-</td><td>-0.967</td><td>-0.516</td><td>-0.046</td></tr><tr><td>LR</td><td>0.371</td><td>0.185</td><td>0.000</td></tr><tr><td>SVM</td><td>0.434</td><td>0.156</td><td>0.001</td></tr><tr><td>DT</td><td>0.316</td><td>0.184</td><td>0.001</td></tr><tr><td>NB</td><td>0.447</td><td>0.144</td><td>0.001</td></tr></table>",
+        "bbox": [
+            155,
+            489,
+            408,
+            595
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "method, different risk differences are obtained by adjusting relax terms $c _ { 1 }$ and $c _ { 2 }$ , while for Zafar-1 and Zafar-2 different risk differences are obtained by adjusting the multiplication factor $m$ . As can be seen, our method can achieve much smaller risk difference than Zafar-1 and Zafar-2. This may be because Zafar-1 linear functions to formulate the fairness constraints, which may incur large estimation errors; while Zafar-2 formulates a convex-concave optimization problem, where only local optima can be reached. For the same reason, we can observe that our method produces better empirical loss than Zafar-2 given any same risk difference. ",
+        "bbox": [
+            81,
+            674,
+            480,
+            829
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Related Work ",
+        "text_level": 1,
+        "bbox": [
+            220,
+            840,
+            341,
+            854
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Many methods have been proposed for constructing fairnessaware classifiers, which can be broadly classified into ",
+        "bbox": [
+            81,
+            859,
+            480,
+            888
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "pre/post-processing and in-processing methods. The pre/postprocessing methods propose to modify the training data and/or tweak the predictions to obtain fair predictions. Data mining techniques have been proposed to remove bias from a dataset since 2008 (Pedreshi, Ruggieri, and Turini 2008). After that, a number of techniques have been proposed either based on correlations between the sensitive attribute and the decision (Dwork et al. 2012; Feldman et al. 2015; Wu and Wu 2016; Zliobaite, Kamiran, and Calders 2011) or the causal relationship among all attributes (Kilbertus et al. 2017; Zhang and Bareinboim 2018; Zhang and Wu 2017; Zhang, Wu, and Wu 2017b). In (Hardt et al. 2016), the authors proposed to tweak the output of the classifier after the classifier makes predictions. As suggested by a recent work (Zhang, Wu, and Wu 2018), both the pre-processing and post-processing phases are necessary in achieving fair predictions. Another category of methods are in-processing methods which adjust the learning process of the classifier (Kamishima, Akaho, and Sakuma 2011; Agarwal et al. 2017; Menon and Williamson 2018). In recent years, a number of methods are proposed to incorporate fairness as constraints in the optimization, e.g., (Kamishima, Akaho, and Sakuma 2011; Goh et al. 2016; Krishna and Williamson 2018; Zafar et al. 2017a; Zafar et al. 2017b; Woodworth et al. 2017; Olfat and Aswani 2018). As discussed in the paper, there lacks a theoretical framework for guiding the formulation of the constrained optimization problem. This paper proposes a general framework for fairness-aware classification. ",
+        "bbox": [
+            514,
+            493,
+            915,
+            882
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Conclusions ",
+        "text_level": 1,
+        "bbox": [
+            228,
+            66,
+            334,
+            82
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we studied the fairness-aware classification problem and formulated it as the constrained optimization problem. We proposed a general framework which addresses all limitations of previous works in terms of: (1) various fairness metrics can be incorporated into classic classification models as constraints; (2) the formulated constrained optimization problem is convex and can be solved efficiently; and (3) the lower and upper bounds of real fairness measures are established using surrogate functions, which provide a fairness guarantee for our framework. Within the framework, we proposed a constraint-free criterion under which the learned classifier is guaranteed to be fair, as well as developed the method for learning fair classifiers if the constraint-free criterion fails to satisfy. The experimental results using real-world datasets show that our method achieved better fairness performance than previous methods, and also consistently achieved better predictive accuracy under the same fairness performance level. ",
+        "bbox": [
+            81,
+            87,
+            480,
+            335
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 1 ",
+        "text_level": 1,
+        "bbox": [
+            197,
+            351,
+            364,
+            367
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Proof. Following Eq. (3), the risk difference of the maximum risk difference classifier $f _ { \\mathrm { m a x } }$ is given by: ",
+        "bbox": [
+            81,
+            372,
+            478,
+            402
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R D} (f _ {\\max }) = \\mathbb {E} _ {\\mathbf {X}} \\left[ \\frac {\\eta (\\mathbf {x})}{p} \\mathbb {1} _ {f _ {\\max } (\\mathbf {X}) = 1} + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\mathbb {1} _ {f _ {\\max } (\\mathbf {X}) = - 1} \\right] - 1.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            83,
+            409,
+            529,
+            441
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "The difference between $\\mathbb { R D } ( f _ { \\operatorname* { m a x } } )$ and any deterministic classifier $\\mathbb { R D } ( f )$ is given as: ",
+        "bbox": [
+            83,
+            450,
+            478,
+            479
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {R D} (f _ {\\max }) - \\mathbb {R D} (f) = \\mathbb {E} _ {\\mathbf {X}} \\left[ \\frac {\\eta (\\mathbf {x})}{p} \\left[ \\mathbb {1} _ {f _ {\\max } (\\mathbf {X}) = 1} - \\mathbb {1} _ {f (\\mathbf {x}) = 1} \\right] \\right. \\\\ + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\left[ \\mathbb {1} _ {f _ {\\max } (\\mathbf {X}) = - 1} - \\mathbb {1} _ {f (\\mathbf {x}) = - 1} \\right]. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            83,
+            488,
+            500,
+            554
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Let’s consider the difference of the conditional risk difference: ",
+        "bbox": [
+            81,
+            561,
+            480,
+            588
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} D C (\\mathbf {x}) = \\frac {\\eta (\\mathbf {x})}{p} \\left[ \\mathbb {1} _ {f _ {\\max } (\\mathbf {X}) = 1} - \\mathbb {1} _ {f (\\mathbf {x}) = 1} \\right] \\\\ + \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\left[ \\mathbb {1} _ {f _ {\\max } (\\mathbf {X}) = - 1} - \\mathbb {1} _ {f (\\mathbf {x}) = - 1} \\right], \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            119,
+            595,
+            442,
+            662
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "1. if $\\eta ( \\mathbf { x } ) \\geq p$ ",
+        "bbox": [
+            84,
+            670,
+            187,
+            685
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• if $f ( \\mathbf { x } ) = 1$ , $D C ( \\mathbf { x } ) = 0$ ; ",
+            "• if f (x) = −1, DC(x) = η(x) − 1−η(x) $\\begin{array} { r } { f ( \\mathbf { x } ) = - 1 , D C ( \\mathbf { x } ) = \\frac { \\eta ( \\mathbf { x } ) } { p } - \\frac { 1 - \\eta ( \\mathbf { x } ) } { 1 - p } \\propto \\eta ( \\mathbf { x } ) - p \\ge } \\end{array}$ 0; "
+        ],
+        "bbox": [
+            101,
+            686,
+            477,
+            737
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "2. if $\\eta ( \\mathbf { x } ) < p$ , $f _ { \\mathrm { m a x } } ( \\mathbf { x } ) = - 1$ ",
+        "bbox": [
+            83,
+            739,
+            294,
+            756
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• if f (x) = 1, DC(x) = − η(x) + 1−η(x) $\\begin{array} { r } { f ( \\mathbf { x } ) = 1 , D C ( \\mathbf { x } ) = - \\frac { \\eta ( \\mathbf { x } ) } { p } + \\frac { 1 - \\eta ( \\mathbf { x } ) } { 1 - p } \\propto - \\eta ( \\mathbf { x } ) + p > } \\end{array}$ 0; ",
+            "• if $f ( \\mathbf { x } ) = - 1 , D C ( \\mathbf { x } ) = 0 .$ "
+        ],
+        "bbox": [
+            101,
+            758,
+            477,
+            809
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We can find the difference of the conditional risk difference $D C ( \\mathbf { x } )$ is always non-negative. Thus, the difference $\\mathbb { R D } ( f _ { \\mathrm { m a x } } ) - \\mathbb { R D } ( f )$ , the weighted average of $D C ( \\mathbf { x } )$ , is also non-negative. So $\\mathbb { R } \\mathbb { D } ( f _ { \\mathrm { m a x } } ) \\geq \\mathbb { R } \\mathbb { D } ( f )$ is proved. Similarly, we can readily prove that $\\mathbb { R D } ( f _ { \\operatorname* { m i n } } ) \\leq \\mathbb { R D } ( f )$ . □ ",
+        "bbox": [
+            81,
+            818,
+            480,
+            890
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 3 ",
+        "text_level": 1,
+        "bbox": [
+            630,
+            66,
+            799,
+            82
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Proof. Let’s firstly verify that $\\psi _ { \\kappa }$ is convex. ",
+        "bbox": [
+            516,
+            85,
+            808,
+            99
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Because $\\kappa$ is convex and $\\kappa ^ { \\prime } ( 0 ) > 0$ , we have ",
+        "bbox": [
+            532,
+            99,
+            828,
+            113
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} H _ {\\kappa} ^ {\\circ} (\\eta) = \\min  _ {\\alpha : \\alpha (\\eta - p) \\geq 0} \\frac {\\eta}{p} \\kappa (\\alpha) + \\frac {1 - \\eta}{1 - p} \\kappa (- \\alpha) \\\\ = \\min  _ {\\alpha : \\alpha (\\eta - p) \\geq 0} \\left(\\frac {\\eta}{p} + \\frac {1 - \\eta}{1 - p}\\right) \\\\ \\left[ \\frac {\\frac {\\eta}{p}}{\\frac {\\eta}{p} + \\frac {1 - \\eta}{1 - p}} \\kappa (\\alpha) + \\frac {\\frac {1 - \\eta}{1 - p}}{\\frac {\\eta}{p} + \\frac {1 - \\eta}{1 - p}} \\kappa (- \\alpha) \\right]. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            566,
+            119,
+            861,
+            231
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Let $\\begin{array} { r } { \\nu = \\frac { \\eta } { p } + \\frac { 1 - \\eta } { 1 - p } } \\end{array}$ , the above can be reformulated as ",
+        "bbox": [
+            532,
+            236,
+            877,
+            256
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\nH _ {\\kappa} ^ {\\circ} (\\eta) = \\min  _ {\\alpha : \\alpha (\\eta - p) \\geq 0} \\nu \\times \\left[ \\frac {\\eta}{p \\nu} \\kappa (\\alpha) + \\frac {1 - \\eta}{(1 - p) \\nu} \\kappa (- \\alpha) \\right].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            527,
+            262,
+            901,
+            294
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Since $\\kappa$ is convex and according to Jensen’s inequality, we can derive ",
+        "bbox": [
+            514,
+            299,
+            911,
+            325
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} H _ {\\phi} ^ {\\circ} (\\eta) \\geq \\min  _ {\\alpha : \\alpha (\\eta - p) \\geq 0} \\nu \\times \\kappa \\left(\\frac {\\eta}{p \\nu} \\alpha - \\frac {1 - \\eta}{(1 - p) \\nu} \\alpha\\right) \\\\ = \\min _ {\\alpha : \\alpha (\\eta - p) \\geq 0} \\nu \\times \\kappa \\left(\\frac {\\alpha (\\eta - p)}{\\nu * p (1 - p)}\\right) \\geq \\nu \\kappa (0). \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            539,
+            330,
+            888,
+            398
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "The equality is achieved when $\\alpha ( \\eta - p ) = 0$ , so that ",
+        "bbox": [
+            532,
+            404,
+            880,
+            419
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\nH _ {\\kappa} ^ {\\circ} (\\eta) = \\left(\\frac {\\eta}{p} + \\frac {1 - \\eta}{1 - p}\\right) \\kappa (0).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            617,
+            425,
+            810,
+            455
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "So it follows that ",
+        "bbox": [
+            532,
+            460,
+            651,
+            474
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\nH _ {\\kappa} ^ {\\circ} (p (1 - p) \\mu + p) = (\\mu - 2 p \\mu + 2) \\kappa (0).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            568,
+            481,
+            859,
+            500
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Since $H _ { \\phi } ^ { \\circ }$ and ${ H } _ { \\phi } ^ { - }$ are convex ${ [ H _ { \\kappa } ^ { - } }$ is a point-wise minimum over linear functions and $H _ { \\kappa } ^ { \\circ }$ is a linear function of $\\mu$ ), we conclude that $\\psi _ { \\kappa } ( \\mu ) = H _ { \\kappa } ^ { \\circ } ( p ( { \\dot { 1 } } - p ) \\mu + p ) - H _ { \\kappa } ^ { - } ( p ( 1 -$ $p ) \\mu + p )$ is convex. ",
+        "bbox": [
+            514,
+            506,
+            913,
+            564
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Let’s move back to Eq. (6) whose argument could be rewrite as ",
+        "bbox": [
+            514,
+            564,
+            911,
+            590
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {R D} (h) - \\mathbb {R D} ^ {-} = \\mathbb {E} _ {\\mathbf {x}} \\left[ C ^ {\\eta} (h, \\mathbf {x}) \\right] - \\min  _ {h \\in \\mathcal {H}} \\mathbb {E} _ {\\mathbf {x}} \\left[ C ^ {\\eta} (h, \\mathbf {x}) \\right] \\\\ = \\mathbb {E} _ {\\mathbf {x}} \\left[ C ^ {\\eta} (h, \\mathbf {x}) - \\min  _ {h \\in \\mathcal {H}} C ^ {\\eta} (h, \\mathbf {x}) \\right] \\\\ = \\mathbb {E} _ {\\mathbf {x}} \\left[ \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) <   0} \\times \\left[ \\frac {| \\eta - p |}{p (1 - p)} \\right] \\right] = \\mathbb {E} _ {\\mathbf {x}} \\left[ g (\\mathbf {x}) \\right]. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            524,
+            595,
+            903,
+            681
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "By Jensen’s inequality, if $\\psi _ { \\kappa }$ is convex, then we have ",
+        "bbox": [
+            532,
+            686,
+            883,
+            703
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\psi_ {\\kappa} \\left(\\mathbb {R} \\mathbb {D} (h) - R D ^ {-}\\right) = \\psi_ {\\kappa} \\left(\\mathbb {E} _ {\\mathbf {x}} [ g (\\mathbf {x}) ]\\right) \\leq \\mathbb {E} _ {\\mathbf {x}} \\left[ \\psi_ {\\kappa} (g (\\mathbf {x})) \\right] \\\\ \\leq \\mathbb {E} _ {\\mathbf {x}} \\left[ \\psi_ {\\kappa} \\left(\\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) > 0} \\left[ \\frac {| \\eta - p |}{p (1 - p)} \\right]\\right) \\right] \\\\ = \\mathbb {E} _ {\\mathbf {x}} \\left[ \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) > 0} \\times \\psi_ {\\kappa} \\left(\\frac {| \\eta - p |}{p (1 - p)}\\right) \\right] \\\\ = \\mathbb {E} _ {\\mathbf {x}} \\left[ \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) > 0} \\times \\left[ H _ {\\kappa} ^ {\\circ} (\\eta) - H _ {\\kappa} ^ {-} (\\eta) \\right] \\right] \\\\ = \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) > 0} \\times \\mathbb {E} _ {\\mathbf {x}} \\big [ H _ {\\kappa} ^ {\\circ} (\\eta) - H _ {\\kappa} ^ {-} (\\eta) \\big ]. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            519,
+            708,
+            906,
+            852
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Note that if $( \\eta - p ) h ( \\mathbf { x } ) \\geq 0$ , we always have $C _ { \\kappa } ^ { \\eta } \\big ( h ( { \\bf x } ) \\big ) \\geq$ $H _ { \\kappa } ^ { \\circ } ( \\eta )$ because of the definition of $H _ { \\kappa } ^ { \\circ }$ . Otherwise, we always ",
+        "bbox": [
+            517,
+            858,
+            911,
+            890
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "have $C _ { \\kappa } ^ { \\eta } { \\left( h ( \\mathbf { x } ) \\right) } \\geq H _ { \\kappa } ^ { - } ( \\eta )$ because of the definition of ${ H } _ { \\phi } ^ { - }$ . Thus, ",
+        "bbox": [
+            81,
+            66,
+            480,
+            98
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\psi_ {\\kappa} \\left(\\mathbb {R D} (h) - \\mathbb {R D} ^ {-}\\right) \\leq \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) > 0} \\\\ \\times \\mathbb {E} _ {\\mathbf {x}} \\left[ H _ {\\kappa} ^ {\\circ} (\\eta) - H _ {\\kappa} ^ {-} (\\eta) \\right] + \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) \\leq 0} \\times 0 \\\\ \\leq \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) > 0} \\times \\mathbb {E} _ {\\mathbf {x}} \\left[ C _ {\\kappa} ^ {\\eta} (h (\\mathbf {x})) - H _ {\\kappa} ^ {-} (\\eta) \\right] \\\\ + \\mathbb {1} _ {(\\eta - p) h (\\mathbf {x}) \\leq 0} \\times \\mathbb {E} _ {\\mathbf {x}} \\left[ C _ {\\kappa} ^ {\\eta} (h (\\mathbf {x})) - H _ {\\kappa} ^ {-} (\\eta) \\right] \\\\ = \\mathbb {E} _ {\\mathbf {x}} \\left[ C _ {\\kappa} ^ {\\eta} (h (\\mathbf {x})) - H _ {\\kappa} ^ {-} (\\eta) \\right] = \\mathbb {R D} _ {\\kappa} (h) - \\mathbb {R D} _ {\\kappa} ^ {-}. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            107,
+            108,
+            455,
+            229
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Similarly, we can prove $\\psi _ { \\delta } \\left( \\mathbb { R } \\mathbb { D } ^ { + } - \\mathbb { R } \\mathbb { D } ( h ) \\right) \\leq \\mathbb { R } \\mathbb { D } _ { \\delta } ^ { + } -$ $\\mathbb { R D } _ { \\delta } ( h )$ . Thus, Theorem 3 is proved. □ ",
+        "bbox": [
+            81,
+            238,
+            478,
+            271
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Other Fairness Notions ",
+        "text_level": 1,
+        "bbox": [
+            181,
+            286,
+            380,
+            301
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Risk ratio is a common fairness notion (Pedreschi, Ruggieri, and Turini 2009; Romei and Ruggieri 2014). It also requires the decision is independent with the protected attribute. Different with the risk difference, the unfairness is quantified by the ratio of the positive decisions between the non-protected group and the protected group. Let’s formalize the risk ratio $\\mathbb { \\ R R } ( \\bar { h } )$ of the classifier $h$ : ",
+        "bbox": [
+            81,
+            308,
+            480,
+            406
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R R} (h) = \\frac {\\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}} \\left[ \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right]}{\\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}} \\left[ \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right]}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            174,
+            415,
+            385,
+            454
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "The fairness constraints with regards to risk ratio could be expressed as ",
+        "bbox": [
+            81,
+            462,
+            478,
+            491
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {R R} (h) = \\frac {\\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}} \\left[ \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right]}{\\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}} \\left[ \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right]} \\leq \\tau .\n$$",
+        "text_format": "latex",
+        "bbox": [
+            161,
+            500,
+            400,
+            539
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Similar to Eq. (3), we express the constraints as ",
+        "bbox": [
+            99,
+            547,
+            415,
+            561
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} _ {\\mathbf {X}} \\left[ \\frac {\\eta}{p} \\mathbb {1} _ {h (\\mathbf {x}) > 0} + \\tau \\frac {1 - \\eta (\\mathbf {x})}{1 - p} \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right] - \\tau \\leq 0. \\tag {7}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            120,
+            571,
+            478,
+            604
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Equalized odds and equalized opportunity are proposed by Hardt et al. (Hardt et al. 2016). Equalized odds requires the protected attribute and the predicted label are independent conditional on the truth label. To quantify the strength of equalized odds, we simply propose the prediction difference between two groups conditional on the truth label. So, the equalized odds is ",
+        "bbox": [
+            81,
+            612,
+            480,
+            710
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} \\mathbb {O} (h) = \\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}, Y} [ \\mathbb {1} _ {h (\\mathbf {x}) > 0} ] - \\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}, Y} [ \\mathbb {1} _ {h (\\mathbf {x}) > 0} ].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            94,
+            719,
+            465,
+            738
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Similarly, a classifier $h$ is considered as fair with regard to equalized odds if $\\mathbb { E } \\mathbb { O } ( h ) \\leq \\tau$ . ",
+        "bbox": [
+            81,
+            744,
+            478,
+            773
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Let’s reformulate the equalized odds constraints: ",
+        "bbox": [
+            98,
+            773,
+            421,
+            789
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {E} \\mathbb {O} (h) = \\mathbb {E} _ {\\mathbf {X} | S = s ^ {+}, Y} [ \\mathbb {1} _ {h (\\mathbf {x}) > 0} ] + \\mathbb {E} _ {\\mathbf {X} | S = s ^ {-}, Y} [ \\mathbb {1} _ {h (\\mathbf {x}) <   0} ] - 1 \\\\ = \\mathbb {E} _ {\\mathbf {X} | Y} \\left[ \\frac {P (S = s ^ {+} | \\mathbf {x} , y)}{P (S = s ^ {+} | y)} \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right. \\\\ \\left. + \\frac {1 - P (S = s ^ {+} | \\mathbf {x} , y)}{1 - P (S = s ^ {+} | y)} \\mathbb {1} _ {h (\\mathbf {x}) <   0} \\right] - 1 \\leq \\tau . \\tag {8} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            86,
+            797,
+            477,
+            886
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Equalized opportunity is a relaxation of equalized odds where only the positive group ( $Y = 1$ ) is taken into account: ",
+        "bbox": [
+            514,
+            69,
+            913,
+            98
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\mathbb {E} \\mathbb {O P} (h) = \\mathbb {E} _ {\\mathbf {X} | Y = 1} \\left[ \\frac {P (S = s ^ {+} | \\mathbf {x} , Y = 1)}{P (S = s ^ {+} | Y = 1)} \\mathbb {1} _ {h (\\mathbf {x}) > 0} \\right. \\\\ \\left. + \\frac {1 - P (S = s ^ {+} | \\mathbf {x} , Y = 1)}{1 - P (S = s ^ {+} | Y = 1)} \\mathbb {1} _ {h (\\mathbf {x}) <   0} \\right] - 1 \\leq \\tau . \\tag {9} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            545,
+            102,
+            911,
+            167
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "By simply replacing the indicator functions with surrogate functions, we can readily extend our framework to the constraints (7), (8), (9) with regard to the three notions. Our criterion and bounds are also extensible to the three notions. ",
+        "bbox": [
+            514,
+            171,
+            913,
+            227
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Acknowledgments ",
+        "text_level": 1,
+        "bbox": [
+            635,
+            239,
+            795,
+            256
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "This work was supported in part by NSF 1646654. ",
+        "bbox": [
+            516,
+            258,
+            849,
+            273
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            666,
+            285,
+            763,
+            300
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[Agarwal et al. 2017] Agarwal, A.; Beygelzimer, A.; Dudík, M.; and Langford, J. 2017. A reductions approach to fair classification. In Conference on Fairness, Accountability, and Transparency in Machine Learning. ",
+            "[Bartlett, Jordan, and McAuliffe 2006] Bartlett, P. L.; Jordan, M. I.; and McAuliffe, J. D. 2006. Convexity, Classification, and Risk Bounds. Journal of the American Statistical Association 101(473):138–156. ",
+            "[Diamond and Boyd 2016] Diamond, S., and Boyd, S. 2016. CVXPY: A Python-Embedded Modeling Language for Convex Optimization. Journal of Machine Learning Research 17(83):1–5. ",
+            "[Dwork et al. 2012] Dwork, C.; Hardt, M.; Pitassi, T.; Reingold, O.; and Zemel, R. 2012. Fairness through awareness. In Proceedings of ITCS ’12, 214–226. ",
+            "[Feldman et al. 2015] Feldman, M.; Friedler, S. A.; Moeller, J.; Scheidegger, C.; and Venkatasubramanian, S. 2015. Certifying and Removing Disparate Impact. In KDD ’15. ACM Press. ",
+            "[Goh et al. 2016] Goh, G.; Cotter, A.; Gupta, M.; and Friedlander, M. P. 2016. Satisfying real-world goals with dataset constraints. In NIPS’16, 2415–2423. ",
+            "[Hardt et al. 2016] Hardt, M.; Price, E.; Srebro, N.; et al. 2016. Equality of opportunity in supervised learning. In Advances in neural information processing systems, 3315– 3323. ",
+            "[Kamishima, Akaho, and Sakuma 2011] Kamishima, T.; Akaho, S.; and Sakuma, J. 2011. Fairness-aware Learning through Regularization Approach. In ICDMW’11, 643–650. IEEE. ",
+            "[Kilbertus et al. 2017] Kilbertus, N.; Carulla, M. R.; Parascandolo, G.; Hardt, M.; Janzing, D.; and Schölkopf, B. 2017. Avoiding discrimination through causal reasoning. In Advances in Neural Information Processing Systems, 656–666. ",
+            "[Kleinberg, Mullainathan, and Raghavan 2016] Kleinberg, J.; Mullainathan, S.; and Raghavan, M. 2016. Inherent Trade-Offs in the Fair Determination of Risk Scores. 1–23. ",
+            "[Krishna and Williamson 2018] Krishna, A., and Williamson, R. C. 2018. The Cost of Fairness in Binary Classification. Proceedings of Machine Learning Research 81:1–12. "
+        ],
+        "bbox": [
+            511,
+            303,
+            913,
+            888
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[Lichman 2013] Lichman, M. 2013. UCI Machine Learning Repository. ",
+            "[Menon and Williamson 2018] Menon, A. K., and Williamson, R. C. 2018. The cost of fairness in binary classification. In Conference on Fairness, Accountability and Transparency, 107–118. ",
+            "[Olfat and Aswani 2018] Olfat, M., and Aswani, A. 2018. Spectral algorithms for computing fair support vector machines. In International Conference on Artificial Intelligence and Statistics, 1933–1942. ",
+            "[Pedreschi, Ruggieri, and Turini 2009] Pedreschi, D.; Ruggieri, S.; and Turini, F. 2009. Measuring Discrimination in Socially-Sensitive Decision Records. In Proceedings of the 2009 SIAM International Conference on Data Mining. Philadelphia, PA: Society for Industrial and Applied Mathematics. 581–592. ",
+            "[Pedreshi, Ruggieri, and Turini 2008] Pedreshi, D.; Ruggieri, S.; and Turini, F. 2008. Discrimination-aware data mining. In KDD 08, 560. New York, New York, USA: ACM Press. ",
+            "[Pleiss et al. 2017] Pleiss, G.; Raghavan, M.; Wu, F.; Kleinberg, J.; and Weinberger, K. Q. 2017. On fairness and calibration. In NIPS’17. ",
+            "[Romei and Ruggieri 2014] Romei, A., and Ruggieri, S. 2014. A multidisciplinary survey on discrimination analysis. The Knowledge Engineering Review 29(05):582–638. ",
+            "[Scott 2012] Scott, C. 2012. Calibrated asymmetric surrogate losses. Electronic Journal of Statistics 958–992. ",
+            "[Shen et al. 2016] Shen, X.; Diamond, S.; Gu, Y.; and Boyd, S. 2016. Disciplined Convex-Concave Programming. (Cdc):1009–1014. ",
+            "[Woodworth et al. 2017] Woodworth, B.; Gunasekar, S.; Ohannessian, M. I.; and Srebro, N. 2017. Learning nondiscriminatory predictors. In Conference on Learning Theory, 1920–1953. ",
+            "[Wu and Wu 2016] Wu, Y., and Wu, X. 2016. Using Loglinear Model for Discrimination Discovery and Prevention. In DSAA ’16, 110–119. IEEE. ",
+            "[Zafar et al. 2017a] Zafar, M. B.; Valera, I.; Gomez Rodriguez, M.; and Gummadi, K. P. 2017a. Fairness Beyond Disparate Treatment & Disparate Impact. In WWW ’17, 1171– 1180. New York, NY, USA: ACM Press. ",
+            "[Zafar et al. 2017b] Zafar, M. B.; Valera, I.; Rodriguez, M. G.; and Gummadi, K. P. 2017b. Fairness Constraints: Mechanisms for Fair Classification. In Artificial Intelligence and Statistics. ",
+            "[Zhang and Bareinboim 2018] Zhang, J., and Bareinboim, E. 2018. Fairness in decision-making âC” the causal explanation formula. In AAAI Conference on Artificial Intelligence. ",
+            "[Zhang and Wu 2017] Zhang, L., and Wu, X. 2017. Antidiscrimination learning: a causal modeling-based framework. International Journal of Data Science and Analytics 4(1):1– 16. ",
+            "[Zhang, Wu, and Wu 2017a] Zhang, L.; Wu, Y.; and Wu, X. 2017a. A Causal Framework for Discovering and Removing Direct and Indirect Discrimination. In IJCAI ’17, 3929–3935. "
+        ],
+        "bbox": [
+            76,
+            68,
+            480,
+            888
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[Zhang, Wu, and Wu 2017b] Zhang, L.; Wu, Y.; and Wu, X. 2017b. Achieving Non-Discrimination in Data Release. In KDD ’17, 1335–1344. New York, New York, USA: ACM Press. ",
+            "[Zhang, Wu, and Wu 2018] Zhang, L.; Wu, Y.; and Wu, X. 2018. Achieving Non-Discrimination in Prediction. In IJCAI ’18. ",
+            "[Zliobaite, Kamiran, and Calders 2011] Zliobaite, I.; Kamiran, F.; and Calders, T. 2011. Handling Conditional Discrimination. In 2011 IEEE 11th International Conference on Data Mining, number 1, 992–1001. IEEE. "
+        ],
+        "bbox": [
+            509,
+            68,
+            913,
+            228
+        ],
+        "page_idx": 8
+    }
+]

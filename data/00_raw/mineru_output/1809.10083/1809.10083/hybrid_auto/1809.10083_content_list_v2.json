@@ -1,0 +1,4437 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Unsupervised Adversarial Invariance "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                272,
+                122,
+                725,
+                147
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Ayush Jaiswal, Yue Wu, Wael AbdAlmageed, Premkumar Natarajan "
+                    }
+                ]
+            },
+            "bbox": [
+                259,
+                200,
+                743,
+                215
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "USC Information Sciences Institute "
+                    }
+                ]
+            },
+            "bbox": [
+                380,
+                217,
+                614,
+                229
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Marina del Rey, CA, USA "
+                    }
+                ]
+            },
+            "bbox": [
+                411,
+                231,
+                584,
+                244
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{ajaiswal, yue_wu, wamageed, pnataraj}@isi.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                320,
+                247,
+                676,
+                261
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                459,
+                296,
+                537,
+                313
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Data representations that contain all the information about target variables but are invariant to nuisance factors benefit supervised learning algorithms by preventing them from learning associations between these factors and the targets, thus reducing overfitting. We present a novel unsupervised invariance induction framework for neural networks that learns a split representation of data through competitive training between the prediction task and a reconstruction task coupled with disentanglement, without needing any labeled information about nuisance factors or domain knowledge. We describe an adversarial instantiation of this framework and provide analysis of its working. Our unsupervised model outperforms state-of-the-art methods, which are supervised, at inducing invariance to inherent nuisance factors, effectively using synthetic data augmentation to learn invariance, and domain adaptation. Our method can be applied to any prediction task, eg., binary/multi-class classification or regression, without loss of generality. "
+                    }
+                ]
+            },
+            "bbox": [
+                228,
+                327,
+                767,
+                508
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                532,
+                313,
+                547
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Supervised learning, arguably the most popular branch of machine learning, involves estimating a mapping from data samples "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to target variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". A common formulation of this task is the estimation of the conditional probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( y | x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from data through learning associations between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and underlying factors of variation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". However, data often contains nuisance factors "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that are irrelevant to the prediction of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and estimation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( y | x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in such cases leads to overfitting when the model incorrectly learns to associate some "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Thus, when applied to new data containing unseen variations of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", trained models perform poorly. For example, a nuisance factor in the case of face recognition in images is the lighting condition the photograph was captured in, and a recognition model that associates lighting with subject identity is expected to perform poorly. Developing machine learning methods that are invariant to nuisance factors has been a long-standing problem in machine learning; studied under various names such as “feature selection”, “robustness through data augmentation” and “invariance induction”. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                563,
+                826,
+                731
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "While deep neural networks (DNNs) have outperformed traditional methods at highly sophisticated and challenging supervised learning tasks, providing better estimates of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( y | x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", they are prone to the same problem of incorrectly learning associations between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". An architectural solution to this problem is the development of neural network units that capture specific forms of information, and thus are inherently invariant to certain nuisance factors [3, 19]. For example, convolutional operations coupled with pooling strategies capture shift-invariant spatial information while recurrent operations robustly capture high-level trends in sequential data. However, this approach requires significant effort for engineering custom network modules and layers to achieve invariance to specific nuisance factors, making it inflexible [19]. A different but popularly adopted solution to the problem of nuisance factors is the use of data augmentation where synthetic versions of real data samples are generated, during training, with specific forms of variation [3]. For example, rotation, translation and additive noise are typical methods of augmentation used in computer vision, especially for "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                734,
+                826,
+                902
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1809.10083v1 [cs.LG] 26 Sep 2018 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                263,
+                60,
+                707
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "32nd Conference on Neural Information Processing Systems (NIPS 2018), Montréal, Canada. "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                922,
+                725,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "classification and detection tasks. However, models trained naïvely on the augmented dataset become robust to limited forms of nuisance by learning to associate every seen variation of such factors to the target variables. Consequently, such models perform poorly when applied to data exhibiting unseen nuisance variations, such as face images at previously unseen pose angles. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                90,
+                823,
+                148
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "A related but more systematic solution to this problem is the approach of invariance-induction by guiding neural networks through specialized training mechanisms to discard known nuisance factors from the learned latent representation of data that is used for prediction. Models trained in this fashion become robust by exclusion rather than inclusion and are, therefore, expected to perform well even on data containing variations of specific nuisance factors that were not seen during training. For example, a face recognition model trained explicitly to not associate lighting conditions with the identity of the person is expected to be more robust to lighting conditions than a similar model trained naïvely on images of subjects under certain different lighting conditions [19]. This research area has, therefore, garnered tremendous interest recently [6, 13, 14, 19]. However, a shortcoming of this approach, is the requirement of domain knowledge of possible nuisance factors and their variations, which is often hard to find [3]. Additionally, this solution to invariance applies only to cases where annotated data is available for each nuisance factor, such as labeled information about the lighting condition of each image in the face recognition example, which is often not the case. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                152,
+                826,
+                333
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We present a novel unsupervised framework for invariance induction that overcomes the drawbacks of previous methods. Our framework promotes invariance through separating the underlying factors of variation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into two latent embeddings: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which contains all the information required for predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which contains other information irrelevant to the prediction task. While "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is used for predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", a noisy version of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", denoted as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { e } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are used to reconstruct "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This creates a competitive scenario where the reconstruction module tries to pull information into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { e } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is unreliable) while the prediction module tries to pull information into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The training objective is augmented with a disentanglement term that ensures that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "do not contain redundant information. In our adversarial instantiation of this generalized framework, disentanglement is achieved between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in a novel way through two adversarial disentanglers — one that aims to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and another that does the inverse. The parameters of the combined model are learned through adversarial training between (a) the encoder, the predictor and the decoder, and (b) the disentanglers. The framework makes no assumptions about the data, so it can be applied to any prediction task without loss of generality, be it binary/multi-class classification or regression. Unlike existing methods, the proposed method does not require annotation of nuisance factors or specialized domain knowledge. We provide results on three tasks involving a diverse collection of datasets — (1) invariance to inherent nuisance factors, (2) effective use of synthetic data augmentation for learning invariance and (3) domain adaptation. Our unsupervised framework outperforms existing approaches for invariance induction, which are supervised, on all of them. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                339,
+                826,
+                602
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                623,
+                323,
+                638
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Methods for preventing supervised learning algorithms from learning false associations between target variables and nuisance factors have been studied from various perspectives including “feature selection” [16], “robustness through data augmentation” [10, 11] and “invariance induction” [3, 14, 19]. Feature selection has typically been employed when data is available as a set of conceptual features, some of which are irrelevant to the prediction tasks. Our approach can be interpreted as an implicit feature selection mechanism for neural networks, which can work on both raw data (such as images) and feature-sets (e.g., frequency features computed from raw text). Popular feature selection methods [16] incorporate information-theoretic measures or use supervised methods to score features with their importance for the prediction task and prune the low-scoring ones. Our framework performs this task implicitly on latent features that the model learns by itself from the provided data. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                656,
+                826,
+                794
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Deep neural networks (DNNs) have outperformed traditional methods at several supervised learning tasks. However, they have a large number of parameters that need to be estimated from data, which makes them especially vulnerable to learning relationships between target variables and nuisance factors and, thus, overfitting. The most popular approach to expand the data size and prevent overfitting in deep learning has been synthetic data augmentation [3, 5, 9–11], where multiple copies of data samples are created by altering variations of certain known nuisance factors. DNNs trained with data augmentation have been shown to generalize better and be more robust compared to those trained without in many domains including vision, speech and natural language. This approach "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                800,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "2 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "works on the principle of inclusion. More specifically, the model learns to associate multiple seen variations of those nuisance factors to each target value. In contrast, our method encourages exclusion of information about nuisance factors from latent features used for predicting the target, thus creating more robust features. Furthermore, combining our method with data augmentation further helps our framework remove information about nuisance factors used to synthesize additional data, without the need to explicitly quantify or annotate the generated variations. This is especially helpful in cases where augmentation is performed using sophisticated analytical or composite techniques. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                90,
+                823,
+                188
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Several supervised methods for invariance induction and invariant feature learning have been developed recently, such as Controllable Adversarial Invariance (CAI) [19], Variational Fair Autoencoder (VFAE) [14], and a maximum mean discrepancy based model (NN+MMD) [13]. These methods use annotated information about variations of specific nuisance factors to force their exclusion from the learned latent representation. They have also been applied to learn “fair” representations based on domain knowledge, such as making predictions about the savings of a person invariant to age, where making the prediction task invariant to such factors is of higher priority than the prediction performance itself [19]. Our method induces invariance to nuisance factors with respect to a supervised task in an unsupervised way. However, it is not guaranteed to work in “fairness” settings because it does not incorporate any external knowledge about factors to induce invariance to. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                194,
+                826,
+                333
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Disentangled representation learning is closely related to our work since disentanglement is one of the pillars of invariance induction in our framework as the model learns two embeddings (for any given data sample) that are expected to be uncorrelated to each other. Our method shares some properties with multi-task learning (MTL) [17] in the sense that the model is trained with multiple objectives. However, a fundamental difference between our framework and MTL is that the latter promotes a shared representation across tasks whereas the only information shared loosely between the tasks of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and reconstructing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in our framework is a noisy version of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to help reconstruct "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "when combined with a separate encoding "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "itself is used directly to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                339,
+                823,
+                450
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Unsupervised Adversarial Invariance "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                470,
+                517,
+                488
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we describe a generalized framework for unsupervised induction of invariance to nuisance factors by disentangling information required for predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from other unrelated information contained in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "through the incorporation of data reconstruction as a competing task for the primary prediction task and a disentanglement term in the training objective. This is achieved by learning a split representation of data as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\boldsymbol { e } = \\left[ e _ { 1 } e _ { 2 } \\right]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", such that information essential for the prediction task is pulled into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "while all other information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "migrates to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We present an adversarial instantiation of this framework, which we call Unsupervised Adversarial Invariance. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                503,
+                823,
+                599
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1 Unsupervised Invariance Induction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                618,
+                459,
+                633
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Data samples "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be abstractly represented as a set of underlying factors of variation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F = \\{ f _ { i } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This can be as simple as a collection of numbers denoting the position of a point in space or as complicated as information pertaining to various facial attributes that combine non-trivially to form the image of someone’s face. Understanding and modeling the interactions between factors of variation of data is an open problem. However, supervised learning of the mapping of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to target "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "involves a relatively simpler (yet challenging) problem of finding those factors of variation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( F _ { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that contain all the information required for predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and discarding all the others "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\overline { { F } } _ { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Thus, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "form a partition of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where we are more interested in the former than the latter. Since "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is independent of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\boldsymbol { y } \\perp \\overline { { \\boldsymbol { F } } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we get "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( y | x ) = p ( y | F _ { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Estimating "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( y | x )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( y | F _ { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from data is beneficial because the nuisance factors, which comprise "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", are never presented to the estimator, thus avoiding inaccurate learning of associations between nuisance factors and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This forms the basis for “feature selection”, a research area that has been well-studied. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                643,
+                826,
+                820
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We incorporate the idea of splitting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in our framework in a more relaxed sense as learning a disentangled latent representation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the form of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\boldsymbol { e } = \\left[ e _ { 1 } e _ { 2 } \\right]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "aims to capture all the information in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Once trained, the model can be used to infer "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "followed by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". More formally, our general framework for unsupervised invariance induction comprises four core modules: (1) an encoder "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E n c"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that embeds "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\boldsymbol { e } = \\left[ e _ { 1 } e _ { 2 } \\right]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", (2) a predictor P red that infers "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", (3) a noisy-transformer "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that converts "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into its noisy version "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { e } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                825,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "3 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6a6ebb38e8cea1c37e294563493d3f317075e9e57fb9822c855b16c50a92981d.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                171,
+                108,
+                496,
+                196
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/56c47f77ed30f44892b6eadfc708f21ce58fd4b58f819a59127252e066fb48f4.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 1: (a) Unsupervised Invariance Induction Framework and (b) Adversarial Model Design "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                501,
+                95,
+                826,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(4) a decoder Dec that reconstructs "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { e } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Additionally, the training objective contains a loss-term that enforces disentanglement between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E n c ( x ) _ { 1 } = e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E n c ( x ) _ { 2 } \\stackrel { - } { = } e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 1a shows our generalized framework. The training objective for this system can be written as Equation 1. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                244,
+                823,
+                289
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} L = \\alpha L _ {p r e d} (y, P r e d (e _ {1})) + \\beta L _ {d e c} (x, D e c (\\psi (e _ {1}), e _ {2})) + \\gamma L _ {d i s} ((e _ {1}, e _ {2})) \\\\ = \\alpha L _ {p r e d} (y, P r e d (E n c (x) _ {1})) + \\beta L _ {d e c} (x, D e c (\\psi (E n c (x) _ {1}), E n c (x) _ {2})) + \\gamma L _ {d i s} (E n c (x)) \\tag {1} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/1f6cd9501dbe0dc4cd35d2a22e8b4522241b079a0127225e24ca638d3775af38.jpg"
+                }
+            },
+            "bbox": [
+                179,
+                299,
+                823,
+                335
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The predictor and the decoder are designed to enter into a competition, where P red tries to pull information relevant to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D e c"
+                    },
+                    {
+                        "type": "text",
+                        "content": "tries to extract all the information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This is made possible by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which makes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { e } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "an unreliable source of information for reconstructing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Moreover, a version of this framework without "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can converge to a degenerate solution where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains all the information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains nothing (noise), because absence of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "allows "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to be readily available to Dec. The competitive pulling of information into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "induces information separation such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "tends to contain more information relevant for predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "more information irrelevant to the prediction task. However, this competition is not sufficient to completely partition information of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Without the disentanglement term "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( L _ { d i s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the objective, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can contain redundant information such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has information relevant to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and, more importantly, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains nuisance factors. The disentanglement term in the training objective encourages the desired clean partition. Thus, essential factors required for predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "concentrate into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and all other factors migrate to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                344,
+                826,
+                525
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2 Adversarial Model Design and Optimization "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                539,
+                522,
+                554
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "While there are numerous ways to implement the proposed unsupervised invariance induction framework, we adopt an adversarial model design, introducing a novel approach to disentanglement in the process. Enc, P red and Dec are modeled as neural networks. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be modeled as a parametric noisy-channel, where the parameters of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can also be learned during training. However, we model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as dropout [18] (multiplicative Bernoulli noise) because it provides an easy and straightforward method for noisy-transformation of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { e } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "without complicating the training process. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                565,
+                823,
+                648
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We augment these core modules with two adversarial disentanglers "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D i s _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D i s _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". While "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D i s _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "aims to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D i s _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "aims to do the inverse. Hence, their objectives are in direct opposition to the desired disentanglement, forming the basis for adversarial minimax optimization. Thus, Enc, P red and Dec can be thought of as a composite model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( M _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that is pit against another composite model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( M _ { 2 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "containing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D i s _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D i s _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 1b shows our complete model design with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represented by the color blue and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with orange. The model is trained end-to-end through backpropagation by playing the minimax game described in Equation 2. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                654,
+                826,
+                752
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\min  _ {E n c, P r e d, D e c} \\max  _ {D i s _ {1}, D i s _ {2}} J (E n c, P r e d, D e c, D i s _ {1}, D i s _ {2}); \\text {w h e r e :} \\\\ J (E n c, P r e d, D e c, D i s _ {1}, D i s _ {2}) \\\\ = \\alpha L _ {p r e d} (y, P r e d (e _ {1})) + \\beta L _ {d e c} (x, D e c (\\psi (e _ {1}), e _ {2})) + \\gamma \\tilde {L} _ {d i s} ((e _ {1}, e _ {2})) \\\\ = \\alpha L _ {p r e d} \\left(y, P r e d \\left(E n c (x) _ {1}\\right)\\right) + \\beta L _ {d e c} \\left(x, D e c \\left(\\psi \\left(E n c (x) _ {1}\\right), E n c (x) _ {2}\\right)\\right) \\\\ + \\gamma \\left\\{\\tilde {L} _ {d i s _ {1}} \\left(E n c (x) _ {2}, D i s _ {1} \\left(E n c (x) _ {1}\\right)\\right) + \\tilde {L} _ {d i s _ {2}} \\left(E n c (x) _ {1}, D i s _ {2} \\left(E n c (x) _ {2}\\right)\\right) \\right\\} \\tag {2} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4b92d85e6a60930bb1a4a322442ad8a2cff9dbdcdfc09341d5ccac9efbe9f32e.jpg"
+                }
+            },
+            "bbox": [
+                194,
+                763,
+                823,
+                869
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We use mean squared error for the disentanglement losses "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { L } _ { d i s _ { 1 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { L } _ { d i s _ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We optimize the proposed adversarial model using a scheduled update scheme where we freeze the weights of a composite "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                882,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "4 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/376892aa650edc34a908909a1d1fb986876238d52212645f26ceec328acb4fcd.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Results on Extended Yale-B dataset "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Metric</td><td>NN + MMD [13]</td><td>VFAE [14]</td><td>CAI [19]</td><td>Ours</td></tr><tr><td>Accuracy of predicting y from e1 (Ay)</td><td>0.82</td><td>0.85</td><td>0.89</td><td>0.95</td></tr><tr><td>Accuracy of predicting z from e1 (Az)</td><td>-</td><td>0.57</td><td>0.57</td><td>0.24</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                199,
+                88,
+                794,
+                136
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "player model ( "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") when we update the weights of the other. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "should ideally be trained to convergence before updating "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in each training epoch to backpropagate accurate and stable disentanglement-inducing gradients to Enc. However, this is not scalable in practice. We update "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the frequency ratio of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 : k"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We found "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k = 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to perform well in our experiments. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                188,
+                823,
+                246
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Analysis "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                263,
+                277,
+                282
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Competition between prediction and reconstruction. The prediction and reconstruction tasks in our framework are designed to compete with each other. Thus, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\eta = \\frac { \\alpha } { \\beta } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "influences which task has higher priority in the overall objective. We analyze the affect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on the behavior of our framework at optimality, considering perfect disentanglement of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". There are two asymptotic scenarios with respect to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ": (1) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta  \\infty"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and (2) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta  0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In case (1), our framework reduces to a predictor model, where the reconstruction task is completely disregarded. Only the branch "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x  e _ { 1 }  y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "remains functional. Consequently, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f \\in F ^ { \\prime }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "at optimality, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F _ { y } \\subseteq F ^ { \\prime } \\subseteq F"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In contrast, case (2) reduces the framework to an autoencoder, where the prediction task is completely disregarded, and only the branch "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x  e _ { 2 }  x ^ { \\prime }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "remains functional because the other input to Dec, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\dot { \\psi } ( e _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is noisy. Thus, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains all "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f \\in F"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains nothing at optimality, under perfect disentanglement. In transition from case (1) to case (2), by keeping "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": "fixed and increasing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the reconstruction loss starts contributing more to the overall objective, thus inducing more competition between the two tasks. As "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is gradually decreased, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f \\in ( F ^ { \\prime } \\setminus F _ { y } ) \\subseteq \\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "migrate from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f \\in \\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are irrelevant to the prediction task but can improve reconstruction by being more readily available to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D e c"
+                    },
+                    {
+                        "type": "text",
+                        "content": "through "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "instead of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi ( e _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". After a point, further decreasing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is, however, detrimental to the prediction task as the reconstruction task starts dominating the overall objective and pulling "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f \\in F _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                295,
+                826,
+                521
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Equilibrium analysis of adversarial instantiation. The disentanglement and prediction objectives in our adversarial model design can simultaneously reach an optimum where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "F _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\overline { { F } } _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Hence, the minimax objective in our method has a win-win equilibrium. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                526,
+                826,
+                571
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Selecting loss weights. Using the above analyses, any "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that successfully disentangles "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "should be sufficient. On the other hand, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be selected by starting with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\gg \\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and gradually increasing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as long as the performance of the prediction task improves. We found "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 1 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta = 0 . 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to work well for all datasets on which we evaluated the proposed model. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                577,
+                825,
+                633
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Experimental Evaluation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                652,
+                416,
+                669
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We provide experimental results on three tasks relevant to invariant feature learning for improved prediction of target variables: (1) invariance to inherent nuisance factors, (2) effective use of synthetic data augmentation for learning invariance, and (3) domain adaptation through learning invariance to “domain” information. We evaluate the performance of our model and prior works on two metrics – accuracy of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( A _ { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and accuracy of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( A _ { z } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The goal of the model is to achieve high "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "close to random chance. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                681,
+                826,
+                767
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1 Invariance to inherent nuisance factors "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                782,
+                485,
+                796
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We provide results of our framework at the task of learning invariance to inherent nuisance factors on two datasets – Extended Yale-B [7] and Chairs [2]. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                806,
+                823,
+                837
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Extended Yale-B. This dataset contains face-images of 38 subjects under various lighting conditions. The target "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the subject identity whereas the inherent nuisance factor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the lighting condition. We compare our framework to existing state-of-the-art supervised invariance induction methods, CAI [19], VFAE [14], and NN+MMD [13]. We use the prior works’ version of the dataset, which has lighting conditions classified into five groups – front, upper-left, upper-right, lower-left "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                840,
+                826,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "5 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/89190577132b91067e8d22b174022b953c7aae0cc8c433c5309814011fd7696f.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                223,
+                94,
+                483,
+                287
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e6ebe59c2923b569396294e918defb3c49f3b83c4cdd4d41dbaaf8fffe64e0ac.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                513,
+                94,
+                771,
+                287
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/04e4c4e8b77965f1a08a41faeaf69920afd68d017772c22d2af520a351206b53.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                223,
+                303,
+                483,
+                497
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/57cbe68381bfe131e62ed9514f5b9fb85f99d9862a8ec55e2b4cc21381c01515.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(d) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                514,
+                303,
+                772,
+                497
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/9e50cfd911775b470a2cbde239563cf6ad65987e8e28f710f803ca92b204f4a4.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Extended Yale-B – t-SNE visualization of (a) raw data, (b) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "labeled by lighting condition, (c) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "labeled by lighting condition, and (d) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "labeled by subject-ID (numerical markers, not colors). "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                222,
+                558,
+                333,
+                703
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/b2b3f2965f1cc2efecf8cec3e57a7cde41efb29de6ffdb66bf507b4a7e001c9f.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                333,
+                559,
+                442,
+                703
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a998b9e5ee9e840d24f5993fc63ef01bfc5b3fd9cc2bf7cf45ca32acb7a0d2ff.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                442,
+                559,
+                553,
+                703
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/0534d86f3094e944cea2df4f8c84f9e0380e49bb2706b16cb4c9409a6a559b0e.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                553,
+                559,
+                663,
+                703
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6eaefa55286dc8903dcd437a2c43166c8b9ea93ddc9b405d63478c150e54aae6.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                663,
+                559,
+                774,
+                703
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/05ed250ec2d12f86b4a878dbbf9dd5c85f2ce5b7ff9911743d489433b55bffcf.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                220,
+                715,
+                359,
+                859
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/049bbb8064d780747ab2214ff2428f699b45c4a631a126be6007dbef935993d2.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                359,
+                715,
+                488,
+                859
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a14de3b027f6a4a0905e55e4328ca03d8759a96c44ea2fa0182ab82a581fcee9.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                488,
+                715,
+                637,
+                859
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2fcb1366f05486f508fa409140bd27b824e76d5e44cf82e1afc024a169ddf184.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Reconstruction from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for (a) Extended Yale B and (b) Chairs. Columns in each block reflect (left to right): real, reconstruction from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and that from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                637,
+                715,
+                776,
+                859
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "6 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                936,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and lower-right, with the same split as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 8 \\times 5 = 1 9 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "samples used for training and the rest used for testing [13, 14, 19]. We use the same architecture for the predictor and the encoder as CAI (as presented in [19]), i.e., single-layer neural networks, except that our encoder produces two encodings instead of one. We also model the decoder and the disentanglers as single-layer neural networks. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                90,
+                823,
+                148
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Table 1 summarizes the results. The proposed unsupervised method outperforms existing state-of-theart (supervised) invariance induction methods on both "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "metrics, providing a significant boost on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and complete removal of lighting information from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "reflected by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Furthermore, the accuracy of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is 0.89, which validates its automatic migration to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 2 shows t-SNE [15] visualization of raw data and embeddings "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for our model. While raw data is clustered by lighting conditions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "exhibits clustering by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with no grouping based on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "exhibits near-perfect clustering by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 3a shows reconstructions from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Dedicated decoder networks were trained (with weights of Enc frozen) to generate these visualizations. As evident, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "captures identity-related information but not lighting while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "captures the inverse. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                152,
+                826,
+                280
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/64e0112c0ae4104c900fa2976b328d23015058cce13ad552e74dc8b1eda2646e.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                212,
+                284,
+                380,
+                406
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/581e1cce452b465fa73039a8f3c69c7a74f14edc431a77e1f555ca21aedb5f95.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                436,
+                284,
+                602,
+                406
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/be3e8354bab5d176a172943ce17c9b4687da273e098cf39992d9da03e1695c2b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Results on Chairs. High "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and low "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are desired. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Metric</td><td>CAI</td><td>Ours</td></tr><tr><td>Ay</td><td>0.68</td><td>0.74</td></tr><tr><td>Az</td><td>0.69</td><td>0.34</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                648,
+                313,
+                820,
+                362
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/a3330e5d803caa9a6c2f37e45474e6f24c7e2ff8ea7f6c255a98c71e97a74751.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4: MNIST-ROT – t-SNE visualization of (a) raw data and (b) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                176,
+                444,
+                331,
+                563
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/1743a62c26e0c508f4c89f053ab8ee6ff7ce83bea72085e1e5d7397ffdb7b99b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                341,
+                448,
+                493,
+                561
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/de8ee963405891bff54f739a89ce173440bdf31b8774a06ff981c5cddda25585.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                504,
+                448,
+                656,
+                561
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/642cb542c860a3377e498805521895aa4993760bf036c9f4ca4f899611cb60fb.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5: t-SNE visualization of MNIST-ROT "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "embedding for the proposed Unsupervised Adversarial Invariance model (a) & (c), and baseline model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(b) & (d). Models trained on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Theta = \\{ 0 , \\pm 2 2 . 5 , \\pm 4 5 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Visualization generated for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Theta = \\{ \\pm 5 5 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                666,
+                448,
+                818,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Chairs. This dataset consists of 1393 different chair types rendered at 31 yaw angles and two pitch angles using a computer aided design model. We treat the chair identity as the target "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the yaw angle "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We split the data into training and testing sets by picking alternate yaw angles. Therefore, there is no overlap of θ between the two sets. We compare the performance of our model to CAI. In order to train the CAI model, we group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "into four categories – front, left, right and back, and provide it this information as a one-hot encoded vector. We model the encoder and the predictor as two-layer neural networks for both CAI and our model. We also model the decoder as a two-layer network and the disentanglers as single-layer networks. Table 2 summarizes the results, showing that our model outperforms CAI on both "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Moreover, the accuracy of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is 0.73, which shows that this information migrates to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 3b shows results of reconstructing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "generated in the same way as for Extended Yale-B above. The figure shows that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains identity information but nothing about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with limited identity information. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                648,
+                826,
+                815
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.2 Effective use of synthetic data augmentation for learning invariance "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                830,
+                684,
+                845
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Data is often not available for all possible variations of nuisance factors. A popular approach to learn models robust to such expected yet unobserved or infrequently seen (during training) variations is data augmentation through synthetic generation using methods ranging from simple operations [10] like rotation and translation to Generative Adversarial Networks [1, 8] for synthesis of more realistic "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                854,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "7 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/9cb5fff679498486028f84d122596e45b1de605343dfa64031021f243018915e.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3: Results on MNIST-ROT. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Theta \\ : = \\ :"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ 0 , \\pm 2 2 . 5 ^ { \\circ } , \\pm 4 5 ^ { \\circ } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "was used for training. High "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and low "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are desired. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Metric</td><td>Angle</td><td>CAI</td><td>Ours</td><td>B0</td><td>B1</td></tr><tr><td rowspan=\"3\">Ay</td><td>Θ</td><td>0.958</td><td>0.977</td><td>0.974</td><td>0.972</td></tr><tr><td>±55°</td><td>0.826</td><td>0.856</td><td>0.826</td><td>0.829</td></tr><tr><td>±65°</td><td>0.662</td><td>0.696</td><td>0.674</td><td>0.682</td></tr><tr><td>Az</td><td>-</td><td>0.384</td><td>0.338</td><td>0.586</td><td>0.409</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                173,
+                88,
+                514,
+                167
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/2b4755848ea72b2ca99f765cf8df8f273712577fce37300b75b247392d1eaf08.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 4: MNIST-DIL – Accuracy of predicting y "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( A _ { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k = - 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents erosion with kernel-size of 2. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>k</td><td>CAI</td><td>Ours</td><td>B0</td><td>B1</td></tr><tr><td>-2</td><td>0.816</td><td>0.880</td><td>0.872</td><td>0.870</td></tr><tr><td>2</td><td>0.933</td><td>0.958</td><td>0.942</td><td>0.940</td></tr><tr><td>3</td><td>0.795</td><td>0.874</td><td>0.847</td><td>0.853</td></tr><tr><td>4</td><td>0.519</td><td>0.606</td><td>0.534</td><td>0.550</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                553,
+                90,
+                803,
+                166
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8d106cfc90e325947555d4c5787487495346f1a94a995bffcb979f6fb8f3668f.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 6: MNIST-ROT – reconstruction from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", (c) e. Columns in each block reflect (left to right): real, reconstruction from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and that from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                173,
+                237,
+                823,
+                292
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "variations. The prediction model is then trained on the expanded dataset. The resulting model, thus, becomes robust to specific forms of variations of certain nuisance factors that it has seen during training. Invariance induction, on the other hand, aims to completely prevent prediction models from using information about nuisance factors. Data augmentation methods can be more effectively used for improving the prediction of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by using the expanded dataset for inducing invariance by exclusion rather than inclusion. We use two variants of the MNIST [12] dataset of handwritten digits to (1) show the advantage of unsupervised invariance induction at this task over its supervised variant through comparison with CAI, and (2) perform ablation experiments for our model to justify our framework design. We use the same two-layer architectures for the encoder and the predictor in both our model and CAI, except that our encoder generates two encodings instead of one. We model the decoder as a three-layer neural network and the disentanglers as single-layer neural networks. We train two baseline versions of our model for our ablation experiments – "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "composed of Enc and P red, i.e., a single feed-forward network "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x  h  y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which is the same as the composite model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., the proposed model trained non-adversarially without the disentanglers. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is used to validate the phenomenon that invariance by exclusion is a better approach than robustness through inclusion whereas "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "helps evaluate the importance of disentanglement in our framework. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                345,
+                826,
+                566
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "MNIST-ROT. We create this variant of the MNIST dataset by randomly rotating each image by an angle "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta \\in \\{ - 4 5 ^ { \\circ } , - 2 2 . 5 ^ { \\circ } , 0 ^ { \\circ } , 2 2 . 5 ^ { \\circ } , 4 5 ^ { \\circ } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "about the Y-axis. We denote this set of angles as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The angle information is used as a one-hot encoding while training the CAI model. We evaluate all the models on the same metrics "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "we previously used. We additionally test all the models on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta \\not \\in \\Theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to gauge the performance of these models on unseen variations of the rotation nuisance factor. Table 3 summarizes the results, showing that our unsupervised adversarial model not only performs better than the baseline ablation versions but also outperforms CAI, which uses supervised information about the rotation angle. The difference in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is especially notable for the cases where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta \\not \\in \\Theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Results on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "show that our model discards more information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "than CAI even though CAI uses "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "information during training. The information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "migrates to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", indicated by the accuracy of predicting it from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "being 0.77. Figure 4 shows t-SNE visualization of raw MNIST-ROT images and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "learned by our model. While raw data tends to cluster by the rotation angle, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "shows near-perfect grouping based on the digit-class. We further visualize the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "embedding learned by the proposed model and the baseline "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which models the classifier "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x  h  y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", to investigate the effectiveness of invariance induction by exclusion versus inclusion, respectively. Both the models were trained on digits rotated by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta \\in \\Theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and t-SNE visualizations were generated for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta \\in \\{ \\pm 5 5 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Figure 5 shows the results. As evident, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "learned by the proposed model shows no clustering by the rotation angle, while that learned by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "does, with encodings of some digit classes forming multiple clusters corresponding to rotation angles. Figure 6 shows results of reconstructing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "generated in the same way as Extended Yale-B above. The figures show that reconstructions from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "reflect the digit class but contain no information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", while those from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "exhibit the inverse. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                571,
+                826,
+                864
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "MNIST-DIL. We create this variant of MNIST by eroding or dilating MNIST digits using various kernel-sizes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( k )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We use models trained on MNIST-ROT to report evaluation results on this dataset, to show the advantage of unsupervised invariance induction in cases where certain "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are not annotated "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                869,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "8 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/e5ff4b31639748861b3e76c258fe19abd26f73e6a328e70e08e82e3524f6c1e6.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 5: Results on Amazon Reviews dataset – Accuracy of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Ay) "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Source - Target</td><td>DANN [6]</td><td>VFAE [14]</td><td>Ours</td></tr><tr><td>books -DVD</td><td>0.784</td><td>0.799</td><td>0.820</td></tr><tr><td>books - electronics</td><td>0.733</td><td>0.792</td><td>0.764</td></tr><tr><td>books - kitchen</td><td>0.779</td><td>0.816</td><td>0.791</td></tr><tr><td>dvd - books</td><td>0.723</td><td>0.755</td><td>0.798</td></tr><tr><td>dvd - electronics</td><td>0.754</td><td>0.786</td><td>0.790</td></tr><tr><td>dvd - kitchen</td><td>0.783</td><td>0.822</td><td>0.826</td></tr><tr><td>electronics - books</td><td>0.713</td><td>0.727</td><td>0.734</td></tr><tr><td>electronics -DVD</td><td>0.738</td><td>0.765</td><td>0.740</td></tr><tr><td>electronics - kitchen</td><td>0.854</td><td>0.850</td><td>0.890</td></tr><tr><td>kitchen - books</td><td>0.709</td><td>0.720</td><td>0.724</td></tr><tr><td>kitchen -DVD</td><td>0.740</td><td>0.733</td><td>0.745</td></tr><tr><td>kitchen - electronics</td><td>0.843</td><td>0.838</td><td>0.859</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                313,
+                88,
+                679,
+                275
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "in the training data. Thus, information about these "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "cannot be used to train supervised invariance induction models. We also provide ablation results on this dataset using the same baselines "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Table 4 summarizes the results of this experiment. The results show significantly better performance of our model compared to CAI and the baselines. More notably, CAI performs significantly worse than our baseline models, indicating that the supervised approach of invariance induction can worsen performance with respect to nuisance factors not accounted for during training. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                305,
+                826,
+                388
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.3 Domain Adaptation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                407,
+                352,
+                422
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Domain adaptation has been treated as an invariance induction task in recent literature [6, 14] where the goal is to make the prediction task invariant to the “domain” information. We evaluate the performance of our model at domain adaptation on the Amazon Reviews dataset [4] using the same preprocessing as [14]. The dataset contains text reviews on products in four domains – “books”, “dvd”, “electronics”, and “kitchen”. Each review is represented as a feature vector of unigram and bigram counts. The target "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the sentiment of the review – either positive or negative. We use the same experimental setup as [6, 14] where the model is trained on one domain and tested on another, thus creating 12 source-target combinations. We design the architectures of the encoder and the decoder in our model to be similar to those of VFAE, as presented in [14]. Table 5 shows the results of the proposed unsupervised adversarial model and supervised state-of-the-art methods VFAE and Domain Adversarial Neural Network (DANN) [6]. The results of the prior works are quoted directly from [14]. The results show that our model outperforms both VFAE and DANN at nine out of the twelve tasks. Thus, our model can also be used effectively for domain adaptation. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                434,
+                826,
+                614
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 Conclusion And Future Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                637,
+                455,
+                652
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we have presented a novel unsupervised framework for invariance induction in neural networks. Our method models invariance as an information separation task achieved by competitive training between a predictor and a decoder coupled with disentanglement. We described an adversarial instantiation of this framework and provided analysis of its working. Experimental evaluation shows that our unsupervised adversarial invariance induction model outperforms state-of-the-art methods, which are supervised, on learning invariance to inherent nuisance factors, effectively using synthetic data augmentation for learning invariance, and domain adaptation. Furthermore, the fact that our framework requires no annotations for variations of nuisance factors, or even knowledge of such factors, shows the conceptual superiority of our approach compared to previous methods. Since our model does not make any assumptions about the data, it can be applied to any supervised learning task, eg., binary/multi-class classification or regression, without loss of generality. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                669,
+                826,
+                823
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The proposed approach is not designed to learn “fair representations” of data, e.g., making predictions about the savings of a person invariant to age, when such bias exists in data and making the prediction task invariant to such biasing factors is of higher priority than the prediction performance [19]. In future work, we will augment our model with the capability to additionally use supervised information (when available) about known nuisance factors for learning invariance to them, which will, consequently, help our model learn fair representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                827,
+                826,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "9 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgements "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                173,
+                89,
+                339,
+                108
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This work is based on research sponsored by the Defense Advanced Research Projects Agency under agreement number FA8750-16-2-0204. The U.S. Government is authorized to reproduce and distribute reprints for governmental purposes notwithstanding any copyright notation thereon. The views and conclusions contained herein are those of the authors and should not be interpreted as necessarily representing the official policies or endorsements, either expressed or implied, of the Defense Advanced Research Projects Agency or the U.S. Government. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                119,
+                826,
+                204
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                173,
+                222,
+                267,
+                238
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[1] Antreas Antoniou, Amos Storkey, and Harrison Edwards. Data augmentation generative adversarial networks. arXiv preprint arXiv:1711.04340, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[2] Mathieu Aubry, Daniel Maturana, Alexei Efros, Bryan C. Russell, and Josef Sivic. Seeing 3d chairs: Exemplar part-based 2d-3d alignment using a large dataset of cad models. In Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, 06 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[3] Yoshua Bengio, Aaron Courville, and Pascal Vincent. Representation learning: A review and new perspectives. IEEE transactions on pattern analysis and machine intelligence, 35(8):1798–1828, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[4] Minmin Chen, Zhixiang Xu, Kilian Q. Weinberger, and Fei Sha. Marginalized denoising autoencoders for domain adaptation. In Proceedings of the 29th International Conference on Machine Learning, ICML’12, pages 1627–1634, USA, 2012. Omnipress. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[5] Iacopo Masi et al. Learning pose-aware models for pose-invariant face recognition in the wild. IEEE Transactions on Pattern Analysis and Machine Intelligence, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[6] Yaroslav Ganin, Evgeniya Ustinova, Hana Ajakan, Pascal Germain, Hugo Larochelle, François Laviolette, Mario Marchand, and Victor Lempitsky. Domain-adversarial training of neural networks. The Journal of Machine Learning Research, 17(1):2096–2030, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[7] A. S. Georghiades, P. N. Belhumeur, and D. J. Kriegman. From few to many: illumination cone models for face recognition under variable lighting and pose. IEEE Transactions on Pattern Analysis and Machine Intelligence, 23(6):643–660, Jun 2001. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[8] Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and Yoshua Bengio. Generative Adversarial Nets. In Advances in neural information processing systems, pages 2672–2680, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[9] Ayush Jaiswal, Dong Guo, Cauligi S Raghavendra, and Paul Thompson. Large-scale unsupervised deep representation learning for brain structure. arXiv preprint arXiv:1805.01049, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[10] Tom Ko, Vijayaditya Peddinti, Daniel Povey, and Sanjeev Khudanpur. Audio augmentation for speech recognition. In Sixteenth Annual Conference of the International Speech Communication Association, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[11] Alex Krizhevsky, Ilya Sutskever, and Geoffrey E Hinton. Imagenet classification with deep convolutional neural networks. In Advances in neural information processing systems, pages 1097–1105, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[12] Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner. Gradient-based Learning Applied to Document Recognition. Proceedings of the IEEE, 86(11):2278–2324, 1998. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[13] Yujia Li, Kevin Swersky, and Richard Zemel. Learning unbiased features. arXiv preprint arXiv:1412.5244, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[14] Christos Louizos, Kevin Swersky, Yujia Li, Max Welling, and Richard Zeme. The variational fair autoencoder. In Proceedings of International Conference on Learning Representations, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[15] Laurens van der Maaten and Geoffrey Hinton. Visualizing data using t-sne. Journal of machine learning research, 9(Nov):2579–2605, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[16] Jianyu Miao and Lingfeng Niu. A survey on feature selection. Procedia Computer Science, 91:919 – 926, 2016. Promoting Business Analytics and Quantitative Management of Technology: 4th International Conference on Information Technology and Quantitative Management (ITQM 2016). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[17] Sebastian Ruder. An overview of multi-task learning in deep neural networks. arXiv preprint arXiv:1706.05098, 2017. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                173,
+                243,
+                826,
+                910
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "10 "
+                    }
+                ]
+            },
+            "bbox": [
+                490,
+                935,
+                509,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[18] Nitish Srivastava, Geoffrey Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov. Dropout: A simple way to prevent neural networks from overfitting. The Journal of Machine Learning Research, 15(1):1929–1958, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[19] Qizhe Xie, Zihang Dai, Yulun Du, Eduard Hovy, and Graham Neubig. Controllable invariance through adversarial feature learning. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30, pages 585–596. Curran Associates, Inc., 2017. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                90,
+                825,
+                191
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": []
+            },
+            "bbox": [
+                490,
+                935,
+                506,
+                946
+            ]
+        }
+    ]
+]

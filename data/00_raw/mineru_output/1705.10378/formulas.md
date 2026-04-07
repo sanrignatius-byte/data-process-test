@@ -1,0 +1,75 @@
+$$
+\sum_ {\mathbf {C}, M} \left(\mathbb {E} [ Y | a, M, \mathbf {C} ] - \mathbb {E} [ Y | a ^ {\prime}, M, \mathbf {C} ]\right) p (M \mid a ^ {\prime}, \mathbf {C}) p (\mathbf {C}), \tag {1}
+$$
+
+$$
+\mathbb {E} \left[ Y \left(a ^ {\prime}, W \left(M \left(a ^ {\prime}\right), a\right), M \left(a ^ {\prime}\right)\right) \right] - \mathbb {E} \left[ Y \left(a ^ {\prime}\right) \right] \tag {2}
+$$
+
+$$
+\sum_ {\mathbf {C}, M, W} \mathbb {E} [ Y | a ^ {\prime}, W, M, \mathbf {C} ] p (W | a, M, \mathbf {C}) p (M | a ^ {\prime}, \mathbf {C}) p (\mathbf {C}), \tag {3}
+$$
+
+$$
+p (H = 1 | C = 1) = 0. 0 5 9 5 \approx 0. 0 5 1 5 = p (H = 1 | C = 0).
+$$
+
+$$
+\hat {\boldsymbol {\alpha}} = \operatorname * {a r g   m a x} _ {\boldsymbol {\alpha}} \mathcal {L} _ {Y, \mathbf {X}} (\mathcal {D}; \boldsymbol {\alpha})
+$$
+
+$$
+\frac {1}{n} \sum_ {i, m} \left(\mathbb {E} [ Y | a, m, \mathbf {c} ^ {i} ] - \mathbb {E} [ Y | a ^ {\prime}, m, \mathbf {c} ^ {i} ]\right) p (m | a ^ {\prime}, \mathbf {c} ^ {i}). \tag {5}
+$$
+
+$$
+\frac {1}{n} \sum_ {i} \left(\frac {a ^ {i} p \left(m ^ {i} \mid a ^ {\prime} , \mathbf {c} ^ {i}\right) \left\{y _ {i} - \mathbb {E} [ Y \mid a , m ^ {i} , \mathbf {c} ^ {i} ] \right\}}{p \left(a \mid \mathbf {c} ^ {i}\right) p \left(m ^ {i} \mid a , \mathbf {c} ^ {i}\right)} \right.
+$$
+
+$$
+\begin{array}{l} + \frac {\left(1 - a ^ {i}\right) \left\{\mathbb {E} \left[ Y \mid a , m ^ {i} , \mathbf {c} ^ {i} \right] - \eta (1 , 0 , \mathbf {c} ^ {i}) \right\}}{p \left(a ^ {\prime} \mid \mathbf {c} ^ {i}\right)} + \eta (1, 0, \mathbf {c} ^ {i}) \\ - \frac {\left(1 - a ^ {i}\right) \left\{y ^ {i} - \eta \left(0 , 0 , \mathbf {c} ^ {i}\right) \right\}}{p \left(a ^ {\prime} \mid \mathbf {c} ^ {i}\right)} + \eta \left(0, 0, \mathbf {c} ^ {i}\right)), \tag {6} \\ \end{array}
+$$
+
+$$
+\frac {1}{n} \sum_ {i} \left(\frac {a ^ {i} y ^ {i} p (m ^ {i} | A = 0 , \mathbf {c} ^ {i})}{p (A = 1 | \mathbf {c} ^ {i}) p (m ^ {i} | A = 1 , \mathbf {c} ^ {i})} - \frac {(1 - a ^ {i}) y ^ {i}}{p (A = 0 | \mathbf {c} ^ {i})}\right). \tag {7}
+$$
+
+$$
+\mathbb {E} [ Y | \mathbf {C} ] = \sum_ {A, M} \mathbb {E} [ Y | A, M, \mathbf {C} ] p (M | A, \mathbf {C}) p (A | \mathbf {C}). \tag {8}
+$$
+
+$$
+\begin{array}{l} \frac {1}{n} \sum_ {i = 1} ^ {n} \sum_ {w, m} \mathbb {E} [ Y | 0, w ^ {i}, m ^ {i}, \mathbf {c} ^ {i} ] p (m ^ {i} | 0, \mathbf {c} ^ {i}) \times \\ \left\{p \left(w ^ {i} \mid 1, m ^ {i}, \mathbf {c} ^ {i}\right) - p \left(w ^ {i} \mid 0, m ^ {i}, \mathbf {c} ^ {i}\right) \right\} \tag {9} \\ \end{array}
+$$
+
+$$
+\mathrm {N D E} = \frac {P (Y (1 , M (0)) = 1) | C) / P (Y (1 , M (0)) = 0) | C)}{P (Y (0 , M (0)) = 1) | C) / P (Y (0 , M (0)) = 0) | C)}.
+$$
+
+$$
+\begin{array}{l} \sum_ {\mathbf {V} \setminus A} \{p (Y | a, m, l, \mathbf {r}, \mathbf {c}) \prod_ {i = 1} ^ {3} p (r _ {i} | a ^ {\prime}, m, l, \mathbf {c}) p (l | a ^ {\prime}, m, \mathbf {c}) \\ p (m | a, \mathbf {c})   p (\mathbf {c}) \}, \text {w h e r e} \mathbf {V} \text {a r e a l o s s e r d v a r i a b l e s}. \end{array}
+$$
+
+$$
+A \sim \operatorname {B e r n o u l l i} (p = 0. 5)
+$$
+
+$$
+C _ {1}, C _ {2} \sim \mathcal {N} \left(\mu = (0, 0), \Sigma = \left( \begin{array}{c c} 2 & 1 \\ 1 & 2 \end{array} \right)\right)
+$$
+
+$$
+\begin{array}{l} \operatorname {l o g i t} (p (M)) \sim - 3 + 0. 8 C _ {1} + 0. 7 C _ {2} + 0. 3 A + 0. 3 A C _ {1} + \\ - 0. 3 A C _ {2} \\ \end{array}
+$$
+
+$$
+\begin{array}{l} Y = 5 + 3 A + C _ {1} + 0. 3 C _ {2} + 0. 8 M + 0. 5 A \left(C _ {1} + C _ {2} + M\right) \\ + 0. 4 C _ {1} C _ {2} + 0. 2 M \left(C _ {1} + C _ {2}\right) + \mathcal {N} (0, 2). \tag {10} \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \mathbb {E} [ Y \mid \mathbf {D} ] = 5. 1 + 2. 8 6 A + 1. 2 C _ {1} + 0. 5 C _ {2} + 0. 3 9 C _ {1} C _ {2} + \\ 0. 1 5 M + 1. 7 4 A M + 0. 2 9 M C _ {1} + 0. 0 2 M C _ {2}, \\ \end{array}
+$$
+
+$$
+\mathbb {E} [ Y \mid \mathbf {D} ] = \theta_ {0} + \theta_ {a} A + \sum_ {i} \theta_ {i} C _ {i} + \theta_ {m} M + \theta_ {a c} (A C _ {1}) ^ {2},
+$$

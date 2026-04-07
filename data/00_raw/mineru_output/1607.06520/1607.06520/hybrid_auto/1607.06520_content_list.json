@@ -1,0 +1,4430 @@
+[
+    {
+        "type": "text",
+        "text": "Man is to Computer Programmer as Woman is to Homemaker? Debiasing Word Embeddings ",
+        "text_level": 1,
+        "bbox": [
+            130,
+            135,
+            869,
+            189
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Tolga Bolukbasi1, Kai-Wei Chang2, James Zou2, Venkatesh Saligrama $^ { 1 , 2 }$ , Adam Kalai2 1Boston University, 8 Saint Mary’s Street, Boston, MA ",
+        "bbox": [
+            179,
+            205,
+            815,
+            241
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "$^ 2$ Microsoft Research New England, 1 Memorial Drive, Cambridge, MA tolgab@bu.edu, kw@kwchang.net, jamesyzou@gmail.com, srv@bu.edu, adam.kalai@microsoft.com ",
+        "bbox": [
+            176,
+            242,
+            823,
+            277
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            462,
+            287,
+            532,
+            301
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "The blind application of machine learning runs the risk of amplifying biases present in data. Such a danger is facing us with word embedding, a popular framework to represent text data as vectors which has been used in many machine learning and natural language processing tasks. We show that even word embeddings trained on Google News articles exhibit female/male gender stereotypes to a disturbing extent. This raises concerns because their widespread use, as we describe, often tends to amplify these biases. Geometrically, gender bias is first shown to be captured by a direction in the word embedding. Second, gender neutral words are shown to be linearly separable from gender definition words in the word embedding. Using these properties, we provide a methodology for modifying an embedding to remove gender stereotypes, such as the association between between the words receptionist and female, while maintaining desired associations such as between the words queen and female. We define metrics to quantify both direct and indirect gender biases in embeddings, and develop algorithms to “debias” the embedding. Using crowd-worker evaluation as well as standard benchmarks, we empirically demonstrate that our algorithms significantly reduce gender bias in embeddings while preserving the its useful properties such as the ability to cluster related concepts and to solve analogy tasks. The resulting embeddings can be used in applications without amplifying gender bias. ",
+        "bbox": [
+            151,
+            306,
+            844,
+            515
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            535,
+            299,
+            553
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "There have been hundreds or thousands of papers written about word embeddings and their applications, from Web search [27] to parsing Curriculum Vitae [16]. However, none of these papers have recognized how blatantly sexist the embeddings are and hence risk introducing biases of various types into real-world systems. ",
+        "bbox": [
+            109,
+            566,
+            883,
+            612
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "A word embedding that represent each word (or common phrase) $w$ as a $d$ -dimensional word vector $\\vec { w } \\in \\mathbb R ^ { d }$ . Word embeddings, trained only on word co-occurrence in text corpora, serve as a dictionary of sorts for computer programs that would like to use word meaning. First, words with similar semantic meanings tend to have vectors that are close together. Second, the vector differences between words in embeddings have been shown to represent relationships between words [32, 26]. For example given an analogy puzzle, “man is to king as woman is to $x$ ” (denoted as man:king :: woman:x), simple arithmetic of the embedding vectors finds that $x { = } q u e e n$ is the best answer because: ",
+        "bbox": [
+            109,
+            612,
+            883,
+            715
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\overrightarrow {\\mathrm {m a n}} - \\overrightarrow {\\mathrm {w o m a n}} \\approx \\overrightarrow {\\mathrm {k i n g}} - \\overrightarrow {\\mathrm {q u e e n}}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            390,
+            726,
+            607,
+            746
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Similarly, x=Japan is returned for Paris:France :: Tokyo:x. It is surprising that a simple vector arithmetic can simultaneously capture a variety of relationships. It has also excited practitioners because such a tool could be useful across applications involving natural language. Indeed, they are being studied and used in a variety of downstream applications (e.g., document ranking [27], sentiment analysis [18], and question retrieval [22]). ",
+        "bbox": [
+            109,
+            755,
+            883,
+            830
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "However, the embeddings also pinpoint sexism implicit in text. For instance, it is also the case that: ",
+        "bbox": [
+            135,
+            830,
+            854,
+            845
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\overrightarrow {\\mathrm {m a n}} - \\overrightarrow {\\mathrm {w o m a n}} \\approx \\overrightarrow {\\mathrm {c o m p u t e r p r o g r a m m e r}} - \\overrightarrow {\\mathrm {h o m e m a k e r}}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            303,
+            854,
+            692,
+            875
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1607.06520v1 [cs.CL] 21 Jul 2016 ",
+        "bbox": [
+            22,
+            273,
+            58,
+            708
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_number",
+        "text": "1 ",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Extreme she occupations ",
+        "text_level": 1,
+        "bbox": [
+            393,
+            93,
+            602,
+            107
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "1. homemaker ",
+        "bbox": [
+            267,
+            109,
+            370,
+            121
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2. nurse ",
+        "bbox": [
+            401,
+            109,
+            460,
+            121
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3. receptionist ",
+        "bbox": [
+            563,
+            109,
+            668,
+            122
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "4. librarian ",
+        "bbox": [
+            267,
+            125,
+            351,
+            136
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "5. socialite ",
+        "bbox": [
+            401,
+            125,
+            480,
+            136
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "6. hairdresser ",
+        "bbox": [
+            563,
+            125,
+            663,
+            136
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "7. nanny ",
+        "bbox": [
+            267,
+            138,
+            334,
+            152
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "8. bookkeeper ",
+        "bbox": [
+            401,
+            138,
+            504,
+            152
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "9. stylist ",
+        "bbox": [
+            563,
+            138,
+            629,
+            152
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "10. housekeeper ",
+        "bbox": [
+            267,
+            154,
+            383,
+            167
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "11. interior designer ",
+        "bbox": [
+            401,
+            154,
+            547,
+            167
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "12. guidance counselor ",
+        "bbox": [
+            565,
+            154,
+            728,
+            167
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Extreme he occupations ",
+        "text_level": 1,
+        "bbox": [
+            397,
+            179,
+            599,
+            193
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "1. maestro ",
+        "bbox": [
+            267,
+            195,
+            346,
+            208
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2. skipper ",
+        "bbox": [
+            401,
+            196,
+            473,
+            209
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3. protege ",
+        "bbox": [
+            563,
+            196,
+            638,
+            209
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "4. philosopher ",
+        "bbox": [
+            267,
+            210,
+            372,
+            224
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "5. captain ",
+        "bbox": [
+            401,
+            210,
+            475,
+            223
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "6. architect ",
+        "bbox": [
+            563,
+            210,
+            648,
+            223
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "7. financier ",
+        "bbox": [
+            267,
+            224,
+            351,
+            237
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "8. warrior ",
+        "bbox": [
+            401,
+            224,
+            473,
+            237
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "9. broadcaster ",
+        "bbox": [
+            563,
+            224,
+            668,
+            237
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "10. magician ",
+        "bbox": [
+            267,
+            239,
+            361,
+            253
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "11. figher pilot ",
+        "bbox": [
+            401,
+            239,
+            509,
+            253
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "12. boss ",
+        "bbox": [
+            565,
+            239,
+            625,
+            253
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Figure 1: The most extreme occupations as projected on to the $s h e { \\mathrm { - } } h e$ gender direction on g2vNEWS. Occupations such as businesswoman, where gender is suggested by the orthography, were excluded. ",
+        "bbox": [
+            111,
+            280,
+            883,
+            311
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Gender stereotype she-he analogies. ",
+        "text_level": 1,
+        "bbox": [
+            348,
+            325,
+            647,
+            340
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/73201de53a180a40f2a4b737f38ce57de01d90e2984ac750aae271ceb82d08ab.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>sewing-carpentry</td></tr><tr><td>nurse-surgeon</td></tr><tr><td>blond-burly</td></tr><tr><td>giggle-chuckle</td></tr><tr><td>sassy-snappy</td></tr><tr><td>volleyball-footbal</td></tr></table>",
+        "bbox": [
+            209,
+            342,
+            336,
+            431
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/2657e3c68f696abbf01560aefe4d344ce56cf79d7501b1ad0f5136820db4aef7.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>register-nurse-physician</td></tr><tr><td>interior designer-architect</td></tr><tr><td>feminism-conservatism</td></tr><tr><td>vocalist-guitarist</td></tr><tr><td>diva-superstar</td></tr><tr><td>cupcakes-pizzas</td></tr></table>",
+        "bbox": [
+            357,
+            342,
+            545,
+            431
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/b757bebef4a20484076babc1d710d6c11eeb4ae993d310eade366e85ecf1afd9.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>housewife-shopkeeper</td></tr><tr><td>softball-baseball</td></tr><tr><td>cosmetics-pharmaceuticals</td></tr><tr><td>petite-lanky</td></tr><tr><td>charming-affable</td></tr><tr><td>hairdresser-barber</td></tr></table>",
+        "bbox": [
+            593,
+            342,
+            785,
+            431
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Gender appropriate she-he analogies. ",
+        "text_level": 1,
+        "bbox": [
+            343,
+            443,
+            651,
+            457
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/08ebf58898020ff95c18eb88dc69b04f31e483365a57efcc40dacff89d988369.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>queen-king</td></tr><tr><td>waitress-waiter</td></tr></table>",
+        "bbox": [
+            210,
+            459,
+            321,
+            486
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/6112f43719c95fe80f86ab5008a3b2c2cae246c530b64ada54d2cf752e5560c2.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>sister-brother</td></tr><tr><td>ovarian cancer-prostate cancer</td></tr></table>",
+        "bbox": [
+            357,
+            459,
+            576,
+            488
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/f365bedd7564b5067599ca4d77ed38d39d47d80017ea69ccd64bbc1b408422ec.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>mother-father</td></tr><tr><td>convent-monastery</td></tr></table>",
+        "bbox": [
+            593,
+            459,
+            730,
+            488
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Figure 2: Analogy examples. Examples of automatically generated analogies for the pair she-he using the procedure described in text. For example, the first analogy is interpreted as she:sewing :: he:carpentry in the original w2vNEWS embedding. Each automatically generated analogy is evaluated by 10 crowd-workers are to whether or not it reflects gender stereotype. Top: illustrative gender stereotypic analogies automatically generated from w2vNEWS, as rated by at least 5 of the 10 crowd-workers. Bottom: illustrative generated gender-appropriate analogies. ",
+        "bbox": [
+            109,
+            513,
+            883,
+            604
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "table",
+        "img_path": "images/33ba740c5edb7f9d35a6b31ab6427400f5f95f36328c81cdb7bb98e01f8860b3.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>softball extreme</td><td>gender portion</td><td>after debiasing</td></tr><tr><td>1. pitcher</td><td>-1%</td><td>1. pitcher</td></tr><tr><td>2. bookkeeper</td><td>20%</td><td>2. infielder</td></tr><tr><td>3. receptionist</td><td>67%</td><td>3. major leaguer</td></tr><tr><td>4. registered nurse</td><td>29%</td><td>4. bookkeeper</td></tr><tr><td>5. waitress</td><td>35%</td><td>5. investigator</td></tr><tr><td>football extreme</td><td>gender portion</td><td>after debiasing</td></tr><tr><td>1. footballer</td><td>2%</td><td>1. footballer</td></tr><tr><td>2. businessman</td><td>31%</td><td>2. cleric</td></tr><tr><td>3. pundits</td><td>10%</td><td>3. vice chancellor</td></tr><tr><td>4. maestro</td><td>42%</td><td>4. lecturer</td></tr><tr><td>5. cleric</td><td>2%</td><td>5. midfielder</td></tr></table>",
+        "bbox": [
+            287,
+            619,
+            705,
+            811
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Figure 3: Example of indirect bias. The five most extreme occupations on the softball-football axis, which indirectly captures gender bias. For each occupation, the degree to which the association represents a gender bias is shown, as described in Section 5.3. ",
+        "bbox": [
+            109,
+            821,
+            883,
+            867
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In other words, the same system that solved the above reasonable analogies will offensively answer “man is to computer programmer as woman is to $x$ ” with $_ { x }$ =homemaker. Similarly, it outputs that a father is to a doctor as a mother is to a nurse. The primary embedding studied in this paper is the popular publicly-available word2vec [24, 25] embedding trained on a corpus of Google News texts consisting of 3 million English words and terms into 300 dimensions, which we refer to here as the w2vNEWS. One might have hoped that the Google News embedding would exhibit little gender bias because many of its authors are professional journalists. We also analyze other publicly available embeddings trained via other algorithms and find similar biases. ",
+        "bbox": [
+            109,
+            90,
+            883,
+            210
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we will quantitatively demonstrate that word-embeddings contain biases in their geometry that reflect gender stereotypes present in broader society. Due to their wide-spread usage as basic features, word embeddings not only reflect such stereotypes but can also amplify them. This poses a significant risk and challenge for machine learning and its applications. ",
+        "bbox": [
+            109,
+            210,
+            883,
+            272
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "To illustrate bias amplification, consider bias present in the task of retrieving relevant web pages for a given query. In web search, one recent project has shown that, when carefully combined with existing approaches, word vectors have the potential to improve web page relevance results [27]. As an example, suppose the search query is cmu computer science phd student for a computer science Ph.D. student at Carnegie Mellon University. Now, the directory1 offers 127 nearly identical web pages for students — these pages differ only in the names of the students. A word embedding’s semantic knowledge can improve relevance by identifying, for examples, that the terms graduate research assistant and phd student are related. However, word embeddings also rank terms related to computer science closer to male names than female names (e.g., the embeddings give John:computer programmer :: Mary:homemaker). The consequence is that, between two pages that differ only in the names Mary and John, the word embedding would influence the search engine to rank John’s web page higher than Mary. In this hypothetical example, the usage of word embedding makes it even harder for women to be recognized as computer scientists and would contribute to widening the existing gender gap in computer science. While we focus on gender bias, specifically Female-Male (F-M) bias, the approach may be applied to other types of bias. ",
+        "bbox": [
+            109,
+            273,
+            883,
+            483
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Uncovering gender stereotypes from text may seem like a trivial matter of counting pairs of words that occur together. However, such counts are often misleading [14]. For instance, the term male nurse is several times more frequent than female nurse (similarly female quarterback is many times more frequent than male quarterback). Hence, extracting associations from text, F-M or otherwise, is not simple, and “first-order” approaches would predict that the word nurse is more male than quarterback. More generally, Gordon and Van Durme show how reporting bias [14], including the fact that common assumptions are often left unsaid, poses a challenge to extracting knowledge from raw text. Nonetheless, −−−→ nurse is closer to  female than male, suggesting that word embeddings may be capable of circumventing reporting bias in some cases. This happens because word embeddings are trained using second-order methods which require large amounts of data to extract associations and relationships about words. ",
+        "bbox": [
+            109,
+            484,
+            883,
+            636
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The analogies generated from these embeddings spell out the bias implicit in the data on which they were trained. Hence, word embeddings may serve as a means to extract implicit gender associations from a large text corpus similar to how Implicit Association Tests [15] detect automatic gender associations possessed by people, which often do not align with self reports. ",
+        "bbox": [
+            109,
+            637,
+            880,
+            696
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "To quantify bias, we compare a word embedding to the embeddings of a pair of gender-specific words. For instance, the fact that  nurse is close to  woman is not in itself necessarily biased (it is also somewhat close to man – all are humans), but the fact that these distances are unequal suggests bias. To make this rigorous, consider the distinction between gender specific words that are associated with a gender by definition, and the remaining gender neutral words. Standard examples of gender specific words include brother, sister, businessman and businesswoman. The fact that  brother is closer to −−→man than to −−−−→ woman is expected since they share the definitive feature of relating to males. We will use the gender specific words to learn a gender subspace in the embedding, and our debiasing algorithm removes the bias only from the gender neutral words while respecting the definitions of these gender specific words. ",
+        "bbox": [
+            109,
+            698,
+            883,
+            834
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We refer to this type of bias, where there is an association between a gender neutral word and a clear ",
+        "bbox": [
+            135,
+            835,
+            880,
+            849
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "1Graduate Research Assistants listed at http://cs.cmu.edu/directory/csd. ",
+        "bbox": [
+            130,
+            858,
+            599,
+            871
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "gender pair as direct bias. We also consider a notion of indirect bias,2 which manifests as associations between gender neutral words that are clearly arising from gender. For instance, the fact that the word receptionist is much closer to softball than football may arise from female associations with both receptionist and softball. Note that many pairs of male-biased (or female-biased) words have legitimate associations having nothing to do with gender. For instance, while the words mathematician and geometry both have a strong male bias, their similarity is justified by factors other than gender. More often than not, associations are combinations of gender and other factors that can be difficult to disentangle. Nonetheless, we can use the geometry of the word embedding to determine the degree to which those associations are based on gender. ",
+        "bbox": [
+            109,
+            90,
+            887,
+            212
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Aligning biases with stereotypes. Stereotypes are biases that are widely held among a group of people. We show that the biases in the word embedding are in fact closely aligned with social conception of gender stereotype, as evaluated by U.S.-based crowd workers on Amazon’s Mechanical Turk.3 The crowd agreed that the biases reflected both in the location of vectors (e.g.  doctor closer to −−→man than to −−−−→ woman) as well as in analogies (e.g., he:coward :: she:whore) exhibit common gender stereotypes. ",
+        "bbox": [
+            109,
+            215,
+            883,
+            294
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Debiasing. Our goal is to reduce gender biases in the word embedding while preserving the useful properties of the embedding. Surprisingly, not only does the embedding capture bias, but it also contains sufficient information to reduce this bias, as illustrated in 7. We will leverage the fact that there exists a low dimensional subspace in the embedding that empirically captures much of the gender bias. The goals of debiasing are: ",
+        "bbox": [
+            109,
+            296,
+            883,
+            358
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "1. Reduce bias: ",
+        "bbox": [
+            132,
+            367,
+            250,
+            382
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "(a) Ensure that gender neutral words such as nurse are equidistant between gender pairs such as he and she. ",
+            "(b) Reduce gender associations that pervade the embedding even among gender neutral words. "
+        ],
+        "bbox": [
+            158,
+            392,
+            879,
+            444
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "2. Maintain embedding utility: ",
+        "bbox": [
+            132,
+            452,
+            359,
+            468
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "(a) Maintain meaningful non-gender-related associations between gender neutral words, including associations within stereotypical categories of words such as fashion-related words or words associated with football. ",
+            "(b) Correctly maintain definitional gender associations such as between man and father. "
+        ],
+        "bbox": [
+            158,
+            478,
+            879,
+            544
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Paper outline. After discussing related literature, we give preliminaries necessary for understanding the paper in Section 3. Next we propose methods to identify the gender bias of an embedding and show that w2vNEWS exhibits bias which is aligned with common gender stereotypes (Section 4). In Section 5, we define several simple geometric properties associated with bias, and in particular discuss how to identify the gender subspace. Using these geometric properties, we introduce debiasing algorithms (Section 6) and demonstrate their performance (Section 8). Finally we conclude with additional discussions of related literature, other types of biases in the embedding and future works. ",
+        "bbox": [
+            109,
+            561,
+            885,
+            667
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "2 Related work ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            689,
+            308,
+            708
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Related work can be divided into relevant literature on bias in language and bias in algorithms. ",
+        "bbox": [
+            111,
+            720,
+            799,
+            736
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_footnote",
+        "text": "2The terminology indirect bias follows Pedreshi et al. [29] who distinguish direct versus indirect discrimination in rules of fair classifiers. Direct discrimination involves directly using sensitive features such as gender or race, whereas indirect discrimination involves using correlates that are not inherently based on sensitive features but that, intentionally or unintentionally, lead to disproportionate treatment nonetheless. ",
+        "bbox": [
+            111,
+            744,
+            883,
+            792
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_footnote",
+        "text": "3http://mturk.com ",
+        "bbox": [
+            133,
+            792,
+            254,
+            806
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_number",
+        "text": "4 ",
+        "bbox": [
+            493,
+            898,
+            504,
+            909
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "2.1 Gender bias and stereotype in English ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            89,
+            537,
+            108
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "It is important to quantify and understand bias in languages as such biases can reinforce the psychological status of different groups [33]. Gender bias in language has been studied over a number of decades in a variety of contexts (see, e.g., [17]) and we only highlight some of the findings here. Biases differ across people though commonalities can be detected. Implicit Association Tests [15] have uncovered gender-word biases that people do not self-report and may not even be aware of. Common biases link female terms with liberal arts and family and male terms with science and careers [28]. Bias is seen in word morphology, i.e., the fact that words such as actor are, by default, associated with the dominant class [19], and female versions of these words, e.g., actress, are marked. There is also an imbalance in the number of words with F-M with various associations. For instance, while there are more words referring to males, there are many more words that sexualize females than males [35]. ",
+        "bbox": [
+            109,
+            114,
+            883,
+            265
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Glick and Fiske [13] introduce the notion of benevolent sexism in which women are perceived with positive traits such as helpful or intimacy-seeking. Despite its seemingly positive nature, benevolent sexism can be harmful, insulting, and discriminatory. In terms of words, female gender associations with any word, even a subjectively positive word such as attractive, can cause discrimination against women if it reduces their association with other words, such as professional. ",
+        "bbox": [
+            109,
+            265,
+            883,
+            340
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Stereotypes, as mentioned, are biases that are widely held within a group. While gender bias of any kind is concerning, stereotypes are often easier to study due to their consistent nature. Stereotypes have commonalities across cultures, though there is some variation between cultures [5]. Complimentary stereotypes are common between females and males, in which each gender is associated with strengths that are perceived to offset its own weaknesses and compliment the strengths of the other gender [20]. These and compensatory stereotypes are used by people to justify the status quo. ",
+        "bbox": [
+            109,
+            340,
+            882,
+            431
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Consistent biases have been studied within online contexts and specifically related to the contexts we study such as online news (e.g., [31]), Web search (e.g., [21]), and Wikipedia (e.g., [39]). In Wikipedia, Wager et al. [39] found that, as suggested by prior work on gender bias in language [2], articles about women more often emphasize their gender, their husbands and their husbands’ jobs, and other topics discussed consistently less often than in articles about men. Regarding individual words, they find that certain words are predictive of gender, e.g., husband appears significantly more often in articles about women while baseball occurs more often in articles about men. ",
+        "bbox": [
+            109,
+            431,
+            883,
+            536
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "2.2 Bias within algorithms ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            556,
+            387,
+            573
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "A number of online systems have been shown to exhibit various biases, such as racial discrimination and gender bias in the ads presented to users [36, 6]. A recent study found that algorithms used to predict repeat offenders exhibit indirect racial biases [1]. Different demographic and geographic groups also use different dialects and word-choices in social media [8]. An implication of this effect is that language used by minority group might not be able to be processed by natural language tools that are trained on “standard” data-sets. Biases in the curation of machine learning data-sets have explored in [37, 4]. ",
+        "bbox": [
+            109,
+            580,
+            883,
+            671
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Independent from our work, Schmidt [34] identified the bias present in word embeddings and proposed debiasing by entirely removing multiple gender dimensions, one for each gender pair. His goal and approach, similar but simpler than ours, was to entirely remove gender from the embedding. There is also an intense research agenda focused on improving the quality of word embeddings from different angles (e.g., [23, 30, 40, 9]), and the difficulty of evaluating embedding quality (as compared to supervised learning) parallels the difficulty of defining bias in an embedding. ",
+        "bbox": [
+            109,
+            671,
+            883,
+            761
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Within machine learning, a body of notable work has focused on “fair” binary classification in particular. A definition of fairness based on legal traditions is presented by Barocas and Selbst [3]. Approaches to modify classification algorithms to define and achieve various notions of fairness have been described in a number of works, see, e.g., [3, 7, 10] and a recent survey [41]. ",
+        "bbox": [
+            109,
+            761,
+            883,
+            821
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Feldman et al. [10] distinguish classification algorithms that achieve fairness by modifying the underlying data from those that achieve fairness by modifying the classification algorithm. Our approach is more similar to the former. However, it is unclear how to apply any of these previous approaches without a clear ",
+        "bbox": [
+            109,
+            821,
+            882,
+            868
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_number",
+        "text": "5 ",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "classification task in hand, and the problem is exacerbated by indirect bias. ",
+        "bbox": [
+            109,
+            90,
+            656,
+            104
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "This prior work on algorithmic fairness is largely for supervised learning. Fair classification is defined based on the fact that algorithms were classifying a set of individuals using a set of features with a distinguished sensitive feature. In word embeddings, there are no clear individuals and no a priori defined classification problem. However, similar issues arise, such as direct and indirect bias [29]. ",
+        "bbox": [
+            109,
+            106,
+            883,
+            167
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "3 Preliminaries ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            188,
+            307,
+            208
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We first very briefly define an embedding and some terminology. An embedding consists of a unit vector $\\vec { w } \\in \\mathbb R ^ { d }$ , with $\\| \\vec { w } \\| = 1$ , for each word (or term) $w \\in W$ . We assume there is a set of gender neutral words $N \\subset W$ , such as flight attendant or shoes, which, by definition, are not specific to any gender. We denote the size of a set $S$ by $| S |$ . We also assume we are given a set of F-M gender pairs $P \\subset W \\times W$ , such as she-he or mother-father whose definitions differ mainly in gender. Section 7 discusses how $N$ and $P$ can be found within the embedding itself, but until then we take them as given. ",
+        "bbox": [
+            109,
+            220,
+            883,
+            310
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "As is common, similarity between words $w _ { 1 }$ and $w _ { 2 }$ is measured by their inner product, $\\vec { w } _ { 1 } \\cdot \\vec { w } _ { 2 }$ . Finally, we will abuse terminology and refer to the embedding of a word and the word interchangeably. For example, the statement cat is more similar to dog than to cow means ${ \\overrightarrow { \\mathrm { c a t } } } \\cdot { \\overrightarrow { \\mathrm { d o g } } } \\geq { \\overrightarrow { \\mathrm { c a t } } } \\cdot { \\overrightarrow { \\mathrm { c o w } } }$ . For arbitrary vectors $u$ and $v$ , define: ",
+        "bbox": [
+            109,
+            311,
+            883,
+            371
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\cos (u, v) = \\frac {u \\cdot v}{| | u | | | | v | |}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            428,
+            372,
+            571,
+            401
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "This normalized similarity between vectors $u$ and $v$ is written as cos because it is the cosine of the angle between the two vectors. Since words are normalized $\\cos ( \\vec { w } _ { 1 } , \\vec { w } _ { 2 } ) = \\vec { w } _ { 1 } \\cdot \\vec { w } _ { 2 }$ . ",
+        "bbox": [
+            109,
+            405,
+            883,
+            436
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Embedding. Unless otherwise stated, the embedding we refer to in this paper is the aforementioned w2vNEWS embedding, a $d = 3 0 0$ -dimensional word2vec [24, 25] embedding, which has proven to be immensely useful since it is high quality, publicly available, and easy to incorporate into any application. In particular, we downloaded the pre-trained embedding on the Google News corpus,4 and normalized each word to unit length as is common. Starting with the 50,000 most frequent words, we selected only lower-case words and phrases consisting of fewer than 20 lower-case characters (words with upper-case letters, digits, or punctuation were discarded). After this filtering, 26,377 words remained. While we focus on w2vNEWS, we show later that gender stereotypes are also present in other embedding data-sets. ",
+        "bbox": [
+            109,
+            439,
+            883,
+            559
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Crowd experiments. All human experiments were performed on the Amazon Mechanical Turk crowdsourcing platform. We selected for U.S.-based workers to maintain homogeneity and reproducibility to the extent possible with crowdsourcing. Two types of experiments were performed: ones where we solicited words from the crowd (to see if the embedding biases contain those of the crowd) and ones where we solicited ratings on words or analogies generated from our embedding (to see if the crowd’s biases contain those from the embedding). These two types of experiments are analogous to experiments performed in rating results in information retrieval to evaluate precision and recall. When we speak of the majority of 10 crowd judgments, we mean those annotations made by 5 or more independent workers. ",
+        "bbox": [
+            109,
+            564,
+            883,
+            684
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Since gender associations vary by culture and person, we ask for ratings of stereotypes rather than bias. In addition to possessing greater consistency than biases, people may feel more comfortable rating the stereotypes of their culture than discussing their own gender biases. The Appendix contains the questionnaires that were given to the crowd-workers to perform these tasks. ",
+        "bbox": [
+            109,
+            685,
+            883,
+            746
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "4 Gender stereotypes in word embeddings ",
+        "text_level": 1,
+        "bbox": [
+            109,
+            768,
+            609,
+            789
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Our first task is to understand the biases present in the word-embedding (i.e. which words are closer to she than to he, etc.) and the extent to which these geometric biases agree with human notion of gender stereotypes. We use two simple methods to approach this problem: 1) evaluate whether the embedding has ",
+        "bbox": [
+            109,
+            799,
+            883,
+            845
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_footnote",
+        "text": "4https://code.google.com/archive/p/word2vec/ ",
+        "bbox": [
+            130,
+            853,
+            441,
+            867
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/43e186efc87de95eae7c32856bace56e2714015f4ae9c4bb06236662d3a6ceae.jpg",
+        "image_caption": [
+            "Figure 4: Comparing the bias of two different embeddings–the w2vNEWS and the GloVe web-crawl embedding. In each embedding, the occupation words are projected onto the she-he direction. Each dot corresponds to one occupation word; the gender bias of occupations is highly consistent across embeddings (Spearman $\\rho = 0 . 8 1$ ). "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            344,
+            99,
+            647,
+            301
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "stereotypes on occupation words and 2) evaluate whether the embedding produces analogies that are judged to reflect stereotypes by humans. The exploratory analysis of this section will motivate the more rigorous metrics used in the next two sections. ",
+        "bbox": [
+            109,
+            398,
+            883,
+            444
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Occupational stereotypes. Figure 1 lists the occupations that are closest to she and to he in the w2vNEWS embeddings. We asked the crowdworkers to evaluate whether an occupation is considered femalestereotypic, male-stereotypic, or neutral. Each occupation word was evaluated by ten crowd-workers as to whether or not it reflects gender stereotype. Hence, for each word we had a integer rating, on a scale of 0-10, of stereotypicality. The projection of the occupation words onto the she-he axis is strongly correlated with the stereotypicality estimates of these words (Spearman $\\rho = 0 . 5 1$ ), suggesting that the geometric biases of embedding vectors is aligned with crowd judgment of gender stereotypes. We used occupation words here because they are easily interpretable by humans and often capture common gender stereotypes. Other word sets could be used for this task. Also note that we could have used other words, e.g. woman and man, as the gender-pair in the task. We chose she and he because they are frequent and do not have fewer alternative word senses (e.g., man can also refer to mankind). ",
+        "bbox": [
+            109,
+            462,
+            883,
+            628
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We projected each of the occupations onto the she-he direction in the w2vNEWS embedding as well as a different embedding generated by the GloVe algorithm on a web-crawl corpus [30]. The results are highly consistent (Figure 4), suggesting that gender stereotypes is prevalent across different embeddings and is not an artifact of the particular training corpus or methodology of word2vec. ",
+        "bbox": [
+            109,
+            628,
+            882,
+            690
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Analogies exhibiting stereotypes. Analogies are a useful way to both evaluate the quality of a word embedding and also its stereotypes. We first briefly describe how the embedding generate analogies and then discuss how we use analogies to quantify gender stereotype in the embedding. A more detailed discussion of our algorithm and prior analogy solvers is given in Appendix A. ",
+        "bbox": [
+            109,
+            705,
+            883,
+            767
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In the standard analogy tasks, we are given three words, for example he, she, king, and look for the 4th word to solve he to king is as she to $x$ . Here we modify the analogy task so that given two words, e.g. he, she, we want to generate a pair of words, $x$ and $y$ , such that $h e$ to $x$ as she to $y$ is a good analogy. This modification allows us to systematically generate pairs of words that the embedding believes it analogous to he, she (or any other pair of seed words). ",
+        "bbox": [
+            109,
+            767,
+            883,
+            843
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "The input into our analogy generator is a seed pair of words $( a , b )$ determining a seed direction ${ \\vec { a } } - { \\vec { b } }$ corresponding to the normalized difference between the two seed words. In the task below, we use $( a , b ) =$ ",
+        "bbox": [
+            109,
+            843,
+            883,
+            875
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "(she, he). We then score all pairs of words $x , y$ by the following metric: ",
+        "bbox": [
+            109,
+            90,
+            622,
+            107
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathrm {S} _ {(a, b)} (x, y) = \\left\\{ \\begin{array}{l l} \\cos (\\vec {a} - \\vec {b}, \\vec {x} - \\vec {y}) & \\text {i f} \\| \\vec {x} - \\vec {y} \\| \\leq \\delta \\\\ 0 & \\text {o t h e r w i s e} \\end{array} \\right. \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            321,
+            119,
+            883,
+            160
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "where $\\delta$ is a threshold for similarity. The intuition of the scoring metric is that we want a good analogy pair to be close to parallel to the seed direction while the two words are not too far apart in order to be semantically coherent. The parameter $\\delta$ sets the threshold for semantic similarity. In all the experiments, we take $\\delta = 1$ as we find that this choice often works well in practice. Since all embeddings are normalized, this threshold corresponds to an angle $\\leq \\pi / 3$ , indicating that the two words are closer to each other than they are to the origin. In practice, it means that the two words forming the analogy are significantly closer together than two random embedding vectors. Given the embedding and seed words, we output the top analogous pairs with the largest positive $S _ { ( a , b ) }$ scores. To reduce redundancy, we do not output multiple analogies sharing the same word $x$ . ",
+        "bbox": [
+            109,
+            171,
+            883,
+            306
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Since analogies, stereotypes, and biases are heavily influenced by culture, we employed U.S. based crowdworkers to evaluate the analogies output by the analogy generating algorithm described above. For each analogy, we asked the workers two yes/no questions: (a) whether the pairing makes sense as an analogy, and (b) whether it reflects a gender stereotype. Every analogy is judged by 10 workers, and we used the number of workers that rated this pair as stereotyped to quantify the degree of bias of this analogy. Overall, 72 out of 150 analogies were rated as gender-appropriate by five or more crowd-workers, and 29 analogies were rated as exhibiting gender stereotype by five or more crowd-workers (Figure 8). Examples of analogies generated from w2vNEWS that were rated as stereotypical are shown at the top of Figure 2, and examples of analogies that make sense and are rated as gender-appropriate are shown at the bottom of Figure 2. The full list of analogies and crowd ratings are in Appendix G. ",
+        "bbox": [
+            109,
+            306,
+            885,
+            460
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Indirect gender bias. The direct bias analyzed above manifests in the relative similarities between genderspecific words and gender neutral words. Gender bias could also affect the relative geometry between gender neutral words themselves. To test this indirect gender bias, we take pairs of words that are gender-neutral, for example softball and football. We project all the occupation words onto the  softball − football direction and looked at the extremes words, which are listed in Figure 3. For instance, the fact that the words bookkeeper and receptionist are much closer to softball than football may result indirectly from female associations with bookkeeper, receptionist and softball. It’s important to point out that that many pairs of male-biased (or female-biased) words have legitimate associations having nothing to do with gender. For example, while both footballer and football have strong male biases, their similarity is justified by factors other than gender. In Section 5, we define a metric to more rigorously quantify these indirect effects of gender bias. ",
+        "bbox": [
+            109,
+            476,
+            885,
+            630
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "5 Geometry of Gender and Bias ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            651,
+            500,
+            672
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "In this section, we study the bias present in the embedding geometrically, identifying the gender direction and quantifying the bias independent of the extent to which it is aligned with the crowd bias. We develop metrics of direct and indirect bias that more rigorously quantify the observations of the previous section. ",
+        "bbox": [
+            109,
+            681,
+            883,
+            729
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "5.1 Identifying the gender subspace ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            746,
+            475,
+            763
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Language use is “messy” and therefore individual word pairs do not always behave as expected. For instance, the word man has several different usages: it may be used as an exclamation as in oh man! or to refer to people of either gender or as a verb, e.g., man the station. To more robustly estimate bias, we shall aggregate across multiple paired comparisons. By combining several directions, such as $\\overrightarrow { \\mathrm { s h e } } - \\overrightarrow { \\mathrm { h e } }$ and $\\overrightarrow { \\mathrm { w o m a n } } - \\overrightarrow { \\mathrm { m a n } }$ , we identify a gender direction $g \\in \\mathbb { R } ^ { d }$ that largely captures gender in the embedding. This direction helps us to quantify direct and indirect biases in words and associations. ",
+        "bbox": [
+            109,
+            771,
+            883,
+            864
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_number",
+        "text": "8 ",
+        "bbox": [
+            493,
+            898,
+            504,
+            909
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "table",
+        "img_path": "images/5fffe11f54319b8a82e5fe3d6445383995804ada42456ee8c791e3d41e8d0b63.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>def.</td><td>stereo.</td><td></td><td>def.</td><td>stereo.</td></tr><tr><td>\\( \\overrightarrow{\\mathrm{{she}}} -\\overrightarrow{\\mathrm{{he}}} \\)</td><td>92%</td><td>89%</td><td>\\( \\overrightarrow{\\text{daughter}} -\\overrightarrow{\\text{son}} \\)</td><td>93%</td><td>91%</td></tr><tr><td>\\( \\overrightarrow{\\mathrm{{her}}} -\\overrightarrow{\\mathrm{{his}}} \\)</td><td>84%</td><td>87%</td><td>\\( \\overrightarrow{\\text{mother}} -\\overrightarrow{\\text{father}} \\)</td><td>91%</td><td>85%</td></tr><tr><td>\\( \\overrightarrow{\\mathrm{{woman}}} -\\overrightarrow{\\mathrm{{man}}} \\)</td><td>90%</td><td>83%</td><td>\\( \\overrightarrow{\\text{gal}} -\\overrightarrow{\\text{guy}} \\)</td><td>85%</td><td>85%</td></tr><tr><td>\\( \\overrightarrow{\\mathrm{{Mary}}} -\\overrightarrow{\\mathrm{{John}}} \\)</td><td>75%</td><td>87%</td><td>\\( \\overrightarrow{\\text{girl}} -\\overrightarrow{\\text{boy}} \\)</td><td>90%</td><td>86%</td></tr><tr><td>\\( \\overrightarrow{\\mathrm{{herself}}} -\\overrightarrow{\\mathrm{{himself}}} \\)</td><td>93%</td><td>89%</td><td>\\( \\overrightarrow{\\text{female}} -\\overrightarrow{\\text{male}} \\)</td><td>84%</td><td>75%</td></tr></table>",
+        "bbox": [
+            254,
+            88,
+            743,
+            194
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Figure 5: Ten possible word pairs to define gender, ordered by word frequency, along with agreement with two sets of 100 words solicited from the crowd, one with definitional and and one with stereotypical gender associations. For each set of words, comprised of the most frequent 50 female and 50 male crowd suggestions, the accuracy is shown for the corresponding gender classifier based on which word is closer to a target word, e.g., the she-he classifier predicts a word is female if it is closer to she than he. With roughly 80-90% accuracy, the gender pairs predict the gender of both stereotypes and definitionally gendered words solicited from the crowd. ",
+        "bbox": [
+            109,
+            204,
+            885,
+            309
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "In English as in many languages, there are numerous gender pair terms, and for each we can consider the difference between their embeddings. Before looking at the data, one might imagine that they all had roughly the same vector differences, as in the following caricature: ",
+        "bbox": [
+            109,
+            332,
+            883,
+            380
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\overrightarrow {\\mathrm {g r a n d m o t h e r}} = \\overrightarrow {\\mathrm {w i s e}} + \\overrightarrow {\\mathrm {g a l}}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            431,
+            387,
+            645,
+            407
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\overrightarrow {\\text {g r a n d f a t h e r}} = \\overrightarrow {\\text {w i s e}} + \\overrightarrow {\\text {g u y}}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            441,
+            407,
+            647,
+            426
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\overrightarrow {\\mathrm {g r a n d m o t h e r}} - \\overrightarrow {\\mathrm {g r a n d f a t h e r}} = \\overrightarrow {\\mathrm {g a l}} - \\overrightarrow {\\mathrm {g u y}} = g\n$$",
+        "text_format": "latex",
+        "bbox": [
+            330,
+            429,
+            666,
+            450
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "However, gender pair differences are not parallel in practice, for multiple reasons. First, there are different biases associated with with different gender pairs. Second is polysemy, as mentioned, which in this case occurs due to the other use of grandfather as in to grandfather a regulation. Finally, randomness in the word counts in any finite sample will also lead to differences. Figure 5 illustrates ten possible gender pairs, $\\left\\{ \\left( x _ { i } , y _ { i } \\right) \\right\\} _ { i = 1 } ^ { 1 0 }$ ",
+        "bbox": [
+            109,
+            460,
+            883,
+            525
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "We experimentally verified that the pairs of vectors corresponding to these words do agree with the crowd concept of gender. On Amazon Mechanical Turk, we asked crowdworkers to generate two lists of words: one list corresponding to words that they think are gendered by definition (waitress, menswear) and a separate list corresponding to words that they believe captures gender stereotypes (e.g., sewing, football). From this we generated the most frequently suggested 50 male and 50 female words for each list to be used for a classification task. For each candidate pair, for example she, he, we say that it accurately classifies a crowd suggested female definition (or stereotype) word if that word vector is closer to she than to he. Table 5 reports the classification accuracy for definition and stereotype words for each gender pair. The accuracies are high, indicating that these pairs capture the intuitive notion of gender. ",
+        "bbox": [
+            109,
+            525,
+            883,
+            662
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "To identify the gender subspace, we took the ten gender pair difference vectors and computed its principal components (PCs). As Figure 6 shows, there is a single direction that explains the majority of variance in these vectors. The first eigenvalue is significantly larger than the rest. Note that, from the randomness in a finite sample of ten noisy vectors, one expects a decrease in eigenvalues. However, as also illustrated in 6, the decrease one observes due to random sampling is much more gradual and uniform. Therefore we hypothesize that the top PC, denoted by the unit vector $g$ , captures the gender subspace. In general, the gender subspace could be higher dimensional and all of our analysis and algorithms (described below) work with general subspaces. ",
+        "bbox": [
+            109,
+            662,
+            883,
+            784
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "5.2 Direct bias ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            801,
+            272,
+            816
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "To measure direct bias, we first identify words that should be gender-neutral for the application in question. How to generate this set of gender-neutral words is described in Section 7. Given the gender neutral words, denoted by $N$ , and the gender direction learned from above, $g$ , we define the direct gender bias of an ",
+        "bbox": [
+            109,
+            827,
+            883,
+            875
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            493,
+            898,
+            503,
+            909
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/df66909847d445c54a59f49b1b1772340e118e321cc621f7db35a0a1f8b5d4c6.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            253,
+            89,
+            488,
+            213
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "image",
+        "img_path": "images/db82cffe4616e7e6050f2f1c436a5ec01abbd868640fdebe20885713f9d60b02.jpg",
+        "image_caption": [
+            "Figure 6: Left: the percentage of variance explained in the PCA of these vector differences (each difference normalized to be a unit vector). The top component explains significantly more variance than any other. Right: for comparison, the corresponding percentages for random unit vectors (figure created by averaging over 1,000 draws of ten random unit vectors in 300 dimensions). "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            504,
+            90,
+            743,
+            213
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "embedding to be ",
+        "bbox": [
+            112,
+            314,
+            240,
+            329
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\operatorname {D i r e c t B i a s} _ {c} = \\frac {1}{| N |} \\sum_ {w \\in N} | \\cos (\\vec {w}, g) | ^ {c}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            372,
+            325,
+            625,
+            362
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "where $c$ is a parameter that determines how strict do we want to in measuring bias. If $c$ is $0$ , then $| \\mathrm { c o s } ( \\vec { w } - g ) | ^ { c } = 0$ only if $\\vec { w }$ has no overlap with $g$ and otherwise it is 1. Such strict measurement of bias might be desirable in settings such as the college admissions example from the Introduction, where it would be unacceptable for the embedding to introduce a slight preference for one candidate over another by gender. A more gradual bias would be setting $c = 1$ . The presentation we have chosen favors simplicity – it would be natural to extend our definitions to weight words by frequency. For example, in w2vNEWS, if we take $N$ to be the set of 327 occupations, then DirectBias1 = 0.08, which confirms that many occupation words have substantial component along the gender direction. ",
+        "bbox": [
+            109,
+            368,
+            887,
+            491
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "5.3 Indirect bias ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            506,
+            290,
+            522
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Unfortunately, the above definitions still do not capture indirect bias. To see this, imagine completely removing from the embedding both words in gender pairs (as well as words such as beard or uterus that are arguably gender-specific but which cannot be paired). There would still be indirect gender association in that a word that should be gender neutral, such as receptionist, is closer to softball than football (see Figure 3). As discussed in the Introduction, it can be subtle to obtain the ground truth of the extent to which such similarities is due to gender. ",
+        "bbox": [
+            109,
+            531,
+            887,
+            622
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The gender subspace $g$ that we have identified allows us to quantify the contribution of $g$ to the similarities between any pair of words. We can decompose a given word vector $w \\in \\mathbb { R } ^ { d }$ as $w = w _ { g } + w _ { \\perp }$ , where $w _ { g } = ( w \\cdot g ) g$ is the contribution from gender and $w _ { \\perp } = w - w _ { g }$ . Note that all the word vectors are normalized to have unit length. We define the gender component to the similarity between two word vectors $w$ and $v$ as ",
+        "bbox": [
+            109,
+            622,
+            885,
+            684
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\beta (w, v) = \\left(w \\cdot v - \\frac {w _ {\\perp} \\cdot v _ {\\perp}}{\\| w _ {\\perp} \\| _ {2} \\| v _ {\\perp} \\| _ {2}}\\right) \\Bigg / w \\cdot v.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            691,
+            651,
+            727
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The intuition behind this metric is as follow: $\\frac { \\textbf {  { w } } _ { \\perp } \\cdot \\boldsymbol { v } _ { \\perp } } { \\| \\boldsymbol { w } _ { \\perp } \\| _ { 2 } \\| \\boldsymbol { v } _ { \\perp } \\| _ { 2 } }$ is the inner product between the two vectors if we project out the gender subspace and renormalize the vectors to be of unit length. The metric quantifies how much this inner product changes (as a fraction of the original inner product value) due to this operation of removing the gender subspace. Because of noise in the data, every vector has some non-zero component $w _ { \\perp }$ and $\\beta$ is well-defined. Note that $\\beta ( w , w ) = 0$ , which is reasonable since the similarity of a word to itself should not depend on gender contribution. If $w _ { g } = 0 = v _ { g }$ , then $\\beta ( w , v ) = 0$ ; and if $w _ { \\perp } = 0 = v _ { \\perp }$ , then $\\beta ( w , v ) = 1$ . ",
+        "bbox": [
+            109,
+            734,
+            887,
+            840
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "In Figure 3, as a case study, we examine the most extreme words on the  softball $-$ football direction. The five most extreme words (i.e. words with the highest positive or the lowest negative projections onto ",
+        "bbox": [
+            109,
+            840,
+            885,
+            875
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "page_number",
+        "text": "10 ",
+        "bbox": [
+            488,
+            898,
+            509,
+            910
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "image",
+        "img_path": "images/b9572b8877f66d6b181018d0c9804cd978e23057fd34ce679a5157c88427b6cf.jpg",
+        "image_caption": [
+            "Figure 7: Selected words projected along two axes: $x$ is a projection onto the difference between the embeddings of the words he and she, and $y$ is a direction learned in the embedding that captures gender neutrality, with gender neutral words above the line and gender specific words below the line. Our hard debiasing algorithm removes the gender pair associations for gender neutral words. In this figure, the words above the horizontal line would all be collapsed to the vertical line. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            114,
+            97,
+            877,
+            349
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "−−−−→ softball − −−−−−→ football) are shown in the table. Words such as receptionist, waitress and homemaker are closer to softball than football, and the $\\beta$ ’s between these words and softball is substantial (67%, 35%, 38%, respectively). This suggests that the apparent similarity in the embeddings of these words to  softball can be largely explained by gender biases in the embedding. Similarly, businessman and maestro are closer to football and this can also be attributed largely to indirect gender bias, with $\\beta$ ’s of $3 1 \\%$ and 42%, respectively. ",
+        "bbox": [
+            109,
+            474,
+            883,
+            556
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "6 Debiasing algorithms ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            579,
+            395,
+            599
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "The debiasing algorithms are defined in terms of sets of words rather than just pairs, for generality, so that we can consider other biases such as racial or religious biases. We also assume that we have a set of words to neutralize, which can come from a list or from the embedding as described in Section 7. (In many cases it may be easier to list the gender specific words not to neutralize as this set can be much smaller.) ",
+        "bbox": [
+            109,
+            609,
+            883,
+            670
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "The first step, called Identify gender subspace, is to identify a direction (or, more generally, a subspace) of the embedding that captures the bias. For the second step, we define two options: Neutralize and Equalize or Soften. Neutralize ensures that gender neutral words are zero in the gender subspace. Equalize perfectly equalizes sets of words outside the subspace and thereby enforces the property that any neutral word is equidistant to all words in each equality set. For instance, if {grandmother, grandfather} and $\\{ { \\mathrm { g u y } } , { \\mathrm { g a l } } \\}$ were two equality sets, then after equalization babysit would be equidistant to grandmother and grandfather and also equidistant to gal and guy, but presumably closer to the grandparents and further from the gal and guy. This is suitable for applications where one does not want any such pair to display any bias with respect to neutral words. ",
+        "bbox": [
+            109,
+            671,
+            883,
+            806
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "The disadvantage of Equalize is that it removes certain distinctions that are valuable in certain applications. For instance, one may wish a language model to assign a higher probability to the phrase to grandfather a regulation) than to grandmother a regulation since grandfather has a meaning that grandmother does not – equalizing the two removes this distinction. The Soften algorithm reduces the differences between these sets ",
+        "bbox": [
+            109,
+            806,
+            883,
+            868
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "page_number",
+        "text": "11 ",
+        "bbox": [
+            488,
+            898,
+            506,
+            909
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "while maintaining as much similarity to the original embedding as possible, with a parameter that controls this trade-off. ",
+        "bbox": [
+            109,
+            90,
+            880,
+            119
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "To define the algorithms, it will be convenient to introduce some further notation. A subspace $B$ is defined by $k$ orthogonal unit vectors $B = \\{ b _ { 1 } , \\ldots , b _ { k } \\} \\subset \\mathbb { R } ^ { d }$ . In the case $k = 1$ , the subspace is simply a direction. We denote the projection of a vector $v$ onto $B$ by, ",
+        "bbox": [
+            109,
+            121,
+            880,
+            167
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\nv _ {B} = \\sum_ {j = 1} ^ {k} (v \\cdot b _ {j}) b _ {j}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            433,
+            178,
+            565,
+            218
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "This also means that $v - v _ { B }$ is the projection onto the orthogonal subspace. ",
+        "bbox": [
+            112,
+            227,
+            658,
+            243
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Step 1: Identify gender subspace. Inputs: word sets $W$ , defining sets $D _ { 1 } , D _ { 2 } , \\dotsc , D _ { n } \\subset W$ as well as embedding $\\{ \\vec { w } \\in \\mathbb { R } ^ { d } \\} _ { w \\in W }$ and integer parameter $k \\geq 1$ . Let ",
+        "bbox": [
+            109,
+            244,
+            880,
+            277
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mu_ {i} := \\sum_ {w \\in D _ {i}} \\vec {w} / | D _ {i} |\n$$",
+        "text_format": "latex",
+        "bbox": [
+            434,
+            290,
+            562,
+            321
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "be the means of the defining sets. Let the bias subspace $B$ be the first $k$ rows of SVD(C) where ",
+        "bbox": [
+            112,
+            330,
+            800,
+            347
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbf {C} := \\sum_ {i = 1} ^ {n} \\sum_ {w \\in D _ {i}} \\left(\\vec {w} - \\mu_ {i}\\right) ^ {T} (\\vec {w} - \\mu_ {i}) / | D _ {i} |.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            362,
+            358,
+            635,
+            397
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Step 2a: Hard de-biasing (neutralize and equalize). Additional inputs: words to neutralize $N \\subseteq W$ , family of equality sets $\\mathcal { E } = \\{ E _ { 1 } , E _ { 2 } , \\dots , E _ { m } \\}$ where each $E _ { i } \\subseteq W$ . For each word $w \\in N$ , let $\\vec { w }$ be re-embedded to ",
+        "bbox": [
+            111,
+            409,
+            883,
+            453
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\vec {w} := (\\vec {w} - \\vec {w} _ {B}) / \\| \\vec {w} - \\vec {w} _ {B} \\|.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            401,
+            455,
+            594,
+            470
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "For each set $E \\in { \\mathcal { E } }$ , let ",
+        "bbox": [
+            112,
+            477,
+            279,
+            491
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mu := \\sum_ {w \\in E} w / | E |\n$$",
+        "text_format": "latex",
+        "bbox": [
+            441,
+            502,
+            575,
+            532
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nu := \\mu - \\mu_ {B}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            442,
+            537,
+            552,
+            549
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\text {F o r e a c h} w \\in E, \\vec {w} := \\nu + \\sqrt {1 - \\| \\nu \\| ^ {2}} \\frac {\\vec {w} _ {B} - \\mu_ {B}}{\\| \\vec {w} _ {B} - \\mu_ {B} \\|}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            308,
+            551,
+            689,
+            583
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "$B$ $\\left\\{ \\vec { w } \\in \\mathbb { R } ^ { d } \\right\\} _ { w \\in W }$ ",
+        "bbox": [
+            112,
+            592,
+            627,
+            609
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Equalize equates each set of words outside of $B$ to their simple average $\\nu$ and then adjusts vectors so that they are unit length. It is perhaps easiest to understand by thinking separately of the two components $\\vec { w } _ { B }$ and $\\vec { w } _ { \\perp B } = \\vec { w } - \\vec { w } _ { B }$ . The latter $\\vec { w } _ { \\perp B }$ are all simply equated to their average. Within $B$ , they are centered (moved to mean 0) and then scaled so that each $\\vec { w }$ is unit length. To motivate why we center, beyond the fact that it is common in machine learning, consider the bias direction being the gender direction ( $k = 1$ ) and a gender pair such as $E = \\{ { \\mathrm { m a l e } } , { \\mathrm { f e m a l e } } \\}$ . As discussed, it so happens that both words are positive (female) in the gender direction, though female has a greater projection. One can only speculate as to why this is the case, e.g., perhaps the frequency of text such as male nurse or male escort or she was assaulted by the male. However, because female has a greater gender component, after centering the two will be symmetrically balanced across the origin. If instead, we simply scaled each vector’s component in the bias direciton without centering, male and female would have exactly the same embedding and we would lose analogies such as father:male :: mother:female. ",
+        "bbox": [
+            109,
+            609,
+            883,
+            789
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Before defining the Soften alternative step, we note that Neutralizing and Equalizing completely remove pair bias. ",
+        "bbox": [
+            109,
+            790,
+            880,
+            819
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Observation 1. After Steps 1 and 2a, for any gender neutral word $w$ any equality set $E$ , and any two words $e _ { 1 } , e _ { 2 } \\in E$ , $\\vec { w } \\cdot \\vec { e } _ { 1 } = w \\cdot \\vec { e } _ { 2 }$ and $\\| \\vec { w } - \\vec { e } _ { 1 } \\| = \\| \\vec { w } - \\vec { e } _ { 2 } \\|$ . Furthermore, if $\\mathcal { E } = \\{ \\{ x , y \\} | ( x , y ) \\in P \\}$ are the sets of pairs defining PairBias, then PairBias $= 0$ . ",
+        "bbox": [
+            111,
+            829,
+            883,
+            875
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "page_number",
+        "text": "12 ",
+        "bbox": [
+            488,
+            898,
+            506,
+            909
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Proof. Step 1 ensures that $\\vec { w } _ { B } = 0$ , while step 2a ensures that ${ \\vec { e } } _ { 1 } - v e c e _ { 2 }$ lies entirely in $B$ . Hence, their inner product is 0 and ${ \\vec { w } } \\cdot { \\vec { e } } _ { 1 } = w \\cdot { \\vec { e } } _ { 2 }$ . Lastly, $\\| \\vec { w } - \\vec { e } _ { 1 } \\| = \\| \\vec { w } - \\vec { e } _ { 2 } \\|$ follows from the fact that $\\| u _ { 1 } - u _ { 2 } \\| ^ { 2 } = 2 - 2 u _ { 1 } \\cdot u _ { 2 }$ for unit vectors $u _ { 1 } , u _ { 2 }$ and PairBias being 0 follows trivially from the definition of PairBias. □ ",
+        "bbox": [
+            111,
+            90,
+            883,
+            137
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Step 2b: Soft bias correction. Overloading the notation, we let $W \\in \\mathbb { R } ^ { d \\times | v o c a b | }$ denote the matrix of all embedding vectors and $N$ denote the matrix of the embedding vectors corresponding to gender neutral words. $W$ and $N$ are learned from some corpus and are inputs to the algorithm. The desired debiasing transformation $T \\in \\mathbb { R } ^ { d \\times d }$ is a linear transformation that seeks to preserve pairwise inner products between all the word vectors while minimizing the projection of the gender neutral words onto the gender subspace. This can be formalized as the following optimization problem ",
+        "bbox": [
+            109,
+            146,
+            883,
+            238
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min _ {T} \\| (T W) ^ {T} (T W) - W ^ {T} W \\| _ {F} ^ {2} + \\lambda \\| (T N) ^ {T} (T B) \\| _ {F} ^ {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            316,
+            247,
+            684,
+            270
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "where $B$ is the gender subspace learned in Step 1 and $\\lambda$ is a tuning parameter that balances the objective of preserving the original embedding inner products with the goal of reducing gender bias. For $\\lambda$ large, $T$ would remove the projection onto $B$ from all the vectors in $N$ , which corresponds exactly to Step 2a. In the experiment, we use $\\lambda = 0 . 2$ . The optimization problem is a semi-definite program and can be solved efficiently. The output embedding is normalized to have unit length, $\\hat { W } = \\{ T w / \\| T w \\| _ { 2 } , w \\in W \\}$ . ",
+        "bbox": [
+            109,
+            281,
+            883,
+            358
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "7 Determining gender neutral words ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            378,
+            545,
+            398
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "For practical purposes, since there are many fewer gender specific words, it is more efficient to enumerate the set of gender specific words $S$ and take the gender neutral words to be the compliment, $N = W \\setminus S$ . Using dictionary definitions, we derive a subset $S _ { 0 }$ of 218 words out of the words in w2vNEWS. Recall that this embedding is a subset of 26,377 words out of the full 3 million words in the embedding, as described in Section 3. This base list $S _ { 0 }$ is given in Appendix C. Note that the choice of words is subjective and ideally should be customized to the application at hand. ",
+        "bbox": [
+            109,
+            411,
+            883,
+            500
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "We generalize this list to the entire 3 million words in the Google News embedding using a linear classifier, resulting in the set $S$ of 6,449 gender-specific words. More specifically, we trained a linear Support Vector Machine (SVM) with the default regularization parameter of $C = 1 . 0$ . We then ran this classifier on the remaining words, taking $S = S _ { 0 } \\cup S _ { 1 }$ , where $S _ { 1 }$ were the words labeled as gender specific by our classifier among the words in the entire embedding that were not in the 26,377 words of w2vNEWS. ",
+        "bbox": [
+            109,
+            502,
+            883,
+            575
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Using 10-fold cross-validation to evaluate the accuracy of this process, we find an $F$ -score of . $6 2 7 \\pm . 1 0 2$ based on stratified 10-fold cross-validation. The binary accuracy is well over 99% due to the imbalanced nature of the classes. For another test of how accurately the embedding agrees with our base set of 218 words, we evaluate the class-balanced error by re-weighting the examples so that the positive and negative examples have equal weights, i.e., weighting each class inverse proportionally to the number of samples from that class. Here again, we use stratified 10-fold cross validation to evaluate the error. Within each fold, the regularization parameter was also chosen by 10-fold (nested) cross validation. The average (balanced) accuracy of the linear classifiers, across folds, was $9 5 . 1 2 \\% \\pm 1 . 4 6 \\%$ with 95% confidence. ",
+        "bbox": [
+            109,
+            577,
+            883,
+            696
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Figure 7 illustrates the results of the classifier for separating gender-specific words from gender-neutral words. To make the figure legible, we show a subset of the words. The $x$ -axis correspond to projection of words onto the $\\overrightarrow { \\mathrm { s h e } } - \\overrightarrow { \\mathrm { h e } }$ direction and the $y$ -axis corresponds to the distance from the decision boundary of the trained SVM. ",
+        "bbox": [
+            109,
+            698,
+            883,
+            758
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "8 Debiasing results ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            782,
+            351,
+            803
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "We evaluated our debiasing algorithms to ensure that they preserve the desirable properties of the original embedding while reducing both direct and indirect gender biases. ",
+        "bbox": [
+            109,
+            813,
+            883,
+            844
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "page_number",
+        "text": "13 ",
+        "bbox": [
+            490,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "table",
+        "img_path": "images/1521c469efb769ac5c325c60d800e4bf1cc84bb6fe2720ca9c637a031503a94d.jpg",
+        "table_caption": [],
+        "table_footnote": [
+            "Table 1: The columns show the performance of the original w2vNEWS embedding (“before”) and the debiased w2vNEWS on the standard evaluation metrics measuring coherence and analogy-solving abilities: RG [32], WS [12], MSR-analogy [26]. Higher is better. The results show that the performance does not degrade after debiasing. Note that we use a subset of vocabulary in the experiments. Therefore, the performances are lower than the previously published results. "
+        ],
+        "table_body": "<table><tr><td></td><td>RG</td><td>WS</td><td>analogy</td></tr><tr><td>Before</td><td>62.3</td><td>54.5</td><td>57.0</td></tr><tr><td>Hard-debiased</td><td>62.4</td><td>54.1</td><td>57.0</td></tr><tr><td>Soft-debiased</td><td>62.4</td><td>54.2</td><td>56.8</td></tr></table>",
+        "bbox": [
+            349,
+            87,
+            645,
+            170
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Direct Bias. First we used the same analogy generation task as before: for both the hard-debiased and the soft-debiased embeddings, we automatically generated pairs of words that are analogous to she-he and asked crowd-workers to evaluate whether these pairs reflect gender stereotypes. Figure 8 shows the results. On the initial w2vNEWS embedding, 19% of the top 150 analogies were judged as showing gender stereotypes by a majority of the ten workers. After applying our hard debiasing algorithm, only 6% of the new embedding were judged as stereotypical. As an example, consider the analogy puzzle, he to doctor is as she to $X$ . The original embedding returns $X = n u r s e$ while the hard-debiased embedding finds X = physician. Moreover the hard-debiasing algorithm preserved gender appropriate analogies such as she to ovarian cancer is as he to prostate cancer. This demonstrates that the hard-debiasing has effectively reduced the gender stereotypes in the word embedding. Figure 8 also shows that the number of appropriate analogies remains similar as in the original embedding after executing hard-debiasing. This demonstrates that that the quality of the embeddings is preserved. The details results are in Appendix G. Soft-debiasing was less effective in removing gender bias. ",
+        "bbox": [
+            109,
+            279,
+            883,
+            474
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "To further confirms the quality of embeddings after debiasing, we tested the debiased embedding on several standard benchmarks that measure whether related words have similar embeddings as well as how well the embedding performs in analogy tasks. Table 1 shows the results on the original and the new embeddings and the transformation does not negatively impact the performance. ",
+        "bbox": [
+            109,
+            476,
+            883,
+            537
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Indirect bias. We also investigated how the strict debiasing algorithm affects indirect gender bias. Because we do not have the ground truth on the indirect effects of gender bias, it is challenging to quantify the performance of the algorithm in this regard. However we do see promising qualitative improvements, as shown in Figure 3 in the softball, football example. After applying the strict debias algorithm, we repeated the experiment and show the most extreme words in the $\\overrightarrow { \\mathrm { s o f t b a l l } } - \\overrightarrow { \\mathrm { f o o t b a l l } }$ direction. The most extreme words closer to softball are now infielder and major leaguer in addition to pitcher, which are more relevant and do not exhibit gender bias. Gender stereotypic associations such are receptionist, waitress and homemaker are moved down the list. Similarly, words that clearly show male bias, e.g. businessman, are also no longer at the top of the list. Note that the two most extreme words in the  softball − football direction are pitcher and footballer. The similarities between pitcher and softball and between footballer and football comes from the actual functions of these words and hence have little gender contribution. These two words are essentially unchanged by the debiasing algorithm. ",
+        "bbox": [
+            109,
+            553,
+            883,
+            741
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "9 Discussion ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            761,
+            274,
+            780
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Word embeddings help us further our understanding of bias in language. We find a single direction that largely captures gender, that helps us capture associations between gender neutral words and gender as well as indirect inequality.The projection of gender neutral words on this direction enables us to quantify their degree of female- or male-bias. ",
+        "bbox": [
+            109,
+            792,
+            883,
+            851
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "To reduce the bias in an embedding, we change the embeddings of gender neutral words, by removing ",
+        "bbox": [
+            135,
+            852,
+            882,
+            869
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            490,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/8a02d1ead2a5f0461ff6ee28387e792852dd88d86694c377d85e1399130067e7.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            145,
+            90,
+            488,
+            272
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "image",
+        "img_path": "images/354a2fa87e4c87a785e1b5c3e8691aaeff6d5cfd47c8d0177c2201fe32a49ab7.jpg",
+        "image_caption": [
+            "Figure 8: Number of stereotypical (Left) and appropriate (Right) analogies generated by wordembeddings before and after debiasing. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            504,
+            89,
+            851,
+            272
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "their gender associations. For instance, nurse is moved to to be equally male and female in the direction $g$ . In addition, we find that gender-specific words have additional biases beyond $g$ . For instance, grandmother and grandfather are both closer to wisdom than gal and guy are, which does not reflect a gender difference. On the other hand, the fact that babysit is so much closer to grandmother than grandfather (more than for other gender pairs) is a gender bias specific to grandmother. By equating grandmother and grandfather outside of gender, and since we’ve removed $g$ from babysit, both grandmother and grandfather and equally close to babysit after debiasing. By retaining the gender component for gender-specific words, we maintain analogies such as she:grandmother :: he:grandfather. Through empirical evaluations, we show that our hard-debiasing algorithm significantly reduces both direct and indirect gender bias while preserving the utility of the embedding. We have also developed a soft-embedding algorithm which balances reducing bias with preserving the original distances, and could be appropriate in specific settings. ",
+        "bbox": [
+            109,
+            344,
+            883,
+            511
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "One perspective on bias in word embeddings is that it merely reflects bias in society, and therefore one should attempt to debias society rather than word embeddings. However, by reducing the bias in today’s computer systems (or at least not amplifying the bias), which is increasingly reliant on word embeddings, in a small way debiased word embeddings can hopefully contribute to reducing gender bias in society. At the very least, machine learning should not be used to inadvertently amplify these biases, as we have seen can naturally happen. ",
+        "bbox": [
+            109,
+            511,
+            883,
+            602
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "In specific applications, one might argue that gender biases in the embedding (e.g. computer programmer is closer to he) could capture useful statistics and that, in these special cases, the original biased embeddings could be used. However given the potential risk of having machine learning algorithms that amplify gender stereotypes and discriminations, we recommend that we should err on the side of neutrality and use the debiased embeddings provided here as much as possible. ",
+        "bbox": [
+            109,
+            601,
+            883,
+            676
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we focus on quantifying and reducing gender bias in word embeddings. Corpus of documents often contain other undesirable stereotypes and these can also be reflected in the embedding vectors. The same w2vNEWS also exhibits strong racial stereotype. For example, projecting all the occupation words onto the direction  minorities − whites, we find that the most extreme occupations closer to whites are parliamentarian, advocate, deputy, chancellor, legislator, and lawyer. In contrast, the most extreme occupations at the minorites end are butler, footballer, socialite, and crooner. It is a subtle issue to understand the direct and indirect bias due to racial, ethnic and cultural stereotypes. An important direction of future work would be to quantify and remove these biases. ",
+        "bbox": [
+            109,
+            676,
+            883,
+            799
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "While we focus on English word embeddings, it is also an interesting direction to consider how the approach and findings here would apply to other languages, especially languages with grammatical gender where the definitions of most nouns carry a gender marker. ",
+        "bbox": [
+            109,
+            799,
+            882,
+            845
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            490,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            114,
+            87,
+            238,
+            106
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[1] J. Angwin, J. Larson, S. Mattu, and L. Kirchner. Machine bias: There’s software used across the country to predict future criminals. and it’s biased against blacks., 2016. ",
+            "[2] C. Aschwanden. The finkbeiner test: What matters in stories about women scientists? DoubleXScience, 2013. ",
+            "[3] S. Barocas and A. D. Selbst. Big data’s disparate impact. Available at SSRN 2477899, 2014. ",
+            "[4] E. Beigman and B. B. Klebanov. Learning with annotation noise. In ACL, 2009. ",
+            "[5] A. J. Cuddy, E. B. Wolf, P. Glick, S. Crotty, J. Chong, and M. I. Norton. Men as cultural ideals: Cultural values moderate gender stereotype content. Journal of personality and social psychology, 109(4):622, 2015. ",
+            "[6] A. Datta, M. C. Tschantz, and A. Datta. Automated experiments on ad privacy settings. Proceedings on Privacy Enhancing Technologies, 2015. ",
+            "[7] C. Dwork, M. Hardt, T. Pitassi, O. Reingold, and R. Zemel. Fairness through awareness. In Innovations in Theoretical Computer Science Conference, 2012. ",
+            "[8] J. Eisenstein, B. O’Connor, N. A. Smith, and E. P. Xing. Diffusion of lexical change in social media. PLoS ONE, pages 1–13, 2014. ",
+            "[9] M. Faruqui, J. Dodge, S. K. Jauhar, C. Dyer, E. Hovy, and N. A. Smith. Retrofitting word vectors to semantic lexicons. In NAACL, 2015. ",
+            "[10] M. Feldman, S. A. Friedler, J. Moeller, C. Scheidegger, and S. Venkatasubramanian. Certifying and removing disparate impact. In KDD, 2015. ",
+            "[11] C. Fellbaum, editor. Wordnet: An Electronic Lexical Database. The MIT Press, Cambridge, MA, 1998. ",
+            "[12] L. Finkelstein, E. Gabrilovich, Y. Matias, E. Rivlin, Z. Solan, G. Wolfman, and E. Ruppin. Placing search in context: The concept revisited. In WWW. ACM, 2001. ",
+            "[13] P. Glick and S. T. Fiske. The ambivalent sexism inventory: Differentiating hostile and benevolent sexism. Journal of personality and social psychology, 70(3):491, 1996. ",
+            "[14] J. Gordon and B. Van Durme. Reporting bias and knowledge extraction. Automated Knowledge Base Construction (AKBC), 2013. ",
+            "[15] A. G. Greenwald, D. E. McGhee, and J. L. Schwartz. Measuring individual differences in implicit cognition: the implicit association test. Journal of personality and social psychology, 74(6):1464, 1998. ",
+            "[16] C. Hansen, M. Tosik, G. Goossen, C. Li, L. Bayeva, F. Berbain, and M. Rotaru. How to get the best word vectors for resume parsing. In SNN Adaptive Intelligence / Symposium: Machine Learning 2015, Nijmegen. ",
+            "[17] J. Holmes and M. Meyerhoff. The handbook of language and gender, volume 25. John Wiley & Sons, 2008. ",
+            "[18] O. İrsoy and C. Cardie. Deep recursive neural networks for compositionality in language. In NIPS. 2014. ",
+            "[19] R. Jakobson, L. R. Waugh, and M. Monville-Burston. On language. Harvard Univ Pr, 1990. ",
+            "[20] J. T. Jost and A. C. Kay. Exposure to benevolent sexism and complementary gender stereotypes: consequences for specific and diffuse forms of system justification. Journal of personality and social psychology, 88(3):498, 2005. "
+        ],
+        "bbox": [
+            112,
+            116,
+            883,
+            875
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[21] M. Kay, C. Matuszek, and S. A. Munson. Unequal representation and gender stereotypes in image search results for occupations. In Human Factors in Computing Systems. ACM, 2015. ",
+            "[22] T. Lei, H. Joshi, R. Barzilay, T. Jaakkola, A. M. Katerina Tymoshenko, and L. Marquez. Semi-supervised question retrieval with gated convolutions. In NAACL. 2016. ",
+            "[23] O. Levy and Y. Goldberg. Linguistic regularities in sparse and explicit word representations. In CoNLL, 2014. ",
+            "[24] T. Mikolov, K. Chen, G. Corrado, and J. Dean. Efficient estimation of word representations in vector space. In ICLR, 2013. ",
+            "[25] T. Mikolov, I. Sutskever, K. Chen, G. S. Corrado, and J. Dean. Distributed representations of words and phrases and their compositionality. In NIPS. ",
+            "[26] T. Mikolov, W.-t. Yih, and G. Zweig. Linguistic regularities in continuous space word representations. In HLT-NAACL, pages 746–751, 2013. ",
+            "[27] E. Nalisnick, B. Mitra, N. Craswell, and R. Caruana. Improving document ranking with dual word embeddings. In www, April 2016. ",
+            "[28] B. A. Nosek, M. Banaji, and A. G. Greenwald. Harvesting implicit group attitudes and beliefs from a demonstration web site. Group Dynamics: Theory, Research, and Practice, 6(1):101, 2002. ",
+            "[29] D. Pedreshi, S. Ruggieri, and F. Turini. Discrimination-aware data mining. In Proceedings of the 14th ACM SIGKDD international conference on Knowledge discovery and data mining, pages 560–568. ACM, 2008. ",
+            "[30] J. Pennington, R. Socher, and C. D. Manning. Glove: Global vectors for word representation. In EMNLP, 2014. ",
+            "[31] K. Ross and C. Carter. Women and news: A long and winding road. Media, Culture & Society, 33(8):1148–1165, 2011. ",
+            "[32] H. Rubenstein and J. B. Goodenough. Contextual correlates of synonymy. Communications of the ACM, 8(10):627–633, 1965. ",
+            "[33] E. Sapir. Selected writings of Edward Sapir in language, culture and personality, volume 342. Univ of California Press, 1985. ",
+            "[34] B. Schmidt. Rejecting the gender binary: a vector-space operation. http://bookworm.benschmidt. org/posts/2015-10-30-rejecting-the-gender-binary.html, 2015. ",
+            "[35] J. P. Stanley. Paradigmatic woman: The prostitute. Papers in language variation, pages 303–321, 1977. ",
+            "[36] L. Sweeney. Discrimination in online ad delivery. Queue, 11(3):10, 2013. ",
+            "[37] A. Torralba and A. Efros. Unbiased look at dataset bias. In CVPR, 2012. ",
+            "[38] P. D. Turney. Domain and function: A dual-space model of semantic relations and compositions. Journal of Artificial Intelligence Research, pages 533–585, 2012. ",
+            "[39] C. Wagner, D. Garcia, M. Jadidi, and M. Strohmaier. It’s a man’s wikipedia? assessing gender inequality in an online encyclopedia. In Ninth International AAAI Conference on Web and Social Media, 2015. ",
+            "[40] D. Yogatama, M. Faruqui, C. Dyer, and N. A. Smith. Learning word representations with hierarchical sparse coding. In ICML, 2015. ",
+            "[41] I. Zliobaite. A survey on measuring indirect discrimination in machine learning. arXiv preprint arXiv:1511.00148, 2015. "
+        ],
+        "bbox": [
+            112,
+            89,
+            883,
+            873
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "A Generating analogies ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            87,
+            401,
+            108
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "We now expand on different possible methods for generating $( x , y )$ pairs, given $( a , b )$ for generating analogies a:x :: b:y. The first and simplest metric is to consider scoring an analogy by $\\lVert ( \\vec { a } - \\vec { b } ) - ( \\vec { x } - \\vec { y } )$ . This may be called the parallelogram approach and, for the purpose of finding the best single $y$ given $a , b , x$ , it is equivalent to the most common approach to finding single word analogies, namely maximizing $\\cos ( \\vec { y } , \\vec { x } + \\vec { b } - \\vec { a } )$ called cosAdd in earlier work [26] since we assume all vectors are unit length. This works well in some cases, but a weakness can be seen that, for many triples $( a , b , x )$ , the closest word to $x$ is $y = x$ , i.e., $x = \\arg \\operatorname* { m i n } _ { y } \\| ( { \\vec { a } } - { \\vec { b } } ) - ( { \\vec { x } } - { \\vec { y } } ) \\|$ . As a result, the definition explicitly excludes the possibility of returning $x$ itself. In these cases, $y$ is often a word very similar to $x$ , and in most of these cases such an algorithm produces two opposing analogies: $a { : } x : : \\ b { : } y$ $y$ as well as $a { : } y : :  { b } { : } x$ , which violates a desideratum of analogies (see [38], section 2.2). ",
+        "bbox": [
+            109,
+            118,
+            883,
+            271
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Related issues are discussed in [38, 23], the latter of which proposes the 3CosMul objective to finding $y$ given $( a , b , x )$ : ",
+        "bbox": [
+            109,
+            272,
+            883,
+            303
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\max _ {y} \\frac {(1 + \\cos (\\vec {x} , \\vec {y})) (1 + \\cos (\\vec {x} , \\vec {b})}{1 + \\cos (\\vec {y} , \\vec {a}) + \\epsilon}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            380,
+            303,
+            617,
+            337
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The additional $\\epsilon$ is necessary so that the denominator is positive. This approach is designed for finding a single word $y$ and not directly applicable for the problem of generating both $x$ and $y$ as the objective is not symmetric in $x$ and $y$ . ",
+        "bbox": [
+            109,
+            342,
+            883,
+            387
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "In the spirit of their work, we note that a desired property is that the direction ${ \\vec { a } } - { \\vec { b } }$ should be similar (in angle) to the direction ${ \\vec { x } } - { \\vec { y } }$ even if the magnitudes differ. Interestingly, given $( a , b , x )$ , the $y$ that maximizes $\\cos ( \\vec { a } - \\vec { b } , \\vec { x } - \\vec { y } )$ is generally an extreme. For instance, for $a = h e$ and $b =$ she, for the vast majority of words $x$ , the word her maximizes the expression for $y$ . This is due to the fact that the most significant difference between a random word $x$ and the word her is that her is likely much more feminine than $x$ . Since, from a perceptual point of view it is easier to compare and contrast similar items than very different items, we instead seek $x$ and $y$ that are not semantically similar, which is why our definition is restricted to $\\| { \\vec { x } } - { \\vec { y } } \\| \\leq \\delta$ ",
+        "bbox": [
+            109,
+            387,
+            883,
+            494
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "As $\\delta$ varies from small to large, the analogies vary from generating very similar $x$ and $y$ to very loosely related $x$ and $y$ where their relationship is vague and more “creative”. ",
+        "bbox": [
+            111,
+            494,
+            883,
+            523
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Finally, Figure 9 highlights differences between analogies generated from our approach and the corresponding analogies generated by the first approach mentioned above, namely minimizing: ",
+        "bbox": [
+            109,
+            525,
+            883,
+            555
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {x, y: x \\neq a, y \\neq b, x \\neq y} \\| (\\vec {a} - \\vec {b}) - (\\vec {x} - \\vec {y}) \\|, \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            375,
+            566,
+            883,
+            590
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "To compare, we took the first 100 analogies generated using the two approaches that did not have any gender-specific words. We then display the first 10 analogies from each list which do not occur in the other list of 100. ",
+        "bbox": [
+            109,
+            601,
+            883,
+            646
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "B Learning the linear transform ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            669,
+            498,
+            690
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "In the soft debiasing algorithm, we need to solve the following optimization problem. ",
+        "bbox": [
+            109,
+            700,
+            723,
+            715
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min _ {T} \\| (T W) ^ {T} (T W) - W ^ {T} W \\| _ {F} ^ {2} + \\lambda \\| (T N) ^ {T} (T B) \\| _ {F} ^ {2}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            316,
+            729,
+            684,
+            752
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Let $X = T ^ { T } T$ , then this is equivalent to the following semi-definite programming problem ",
+        "bbox": [
+            135,
+            758,
+            784,
+            775
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {X} \\| W ^ {T} X W - W ^ {T} W \\| _ {F} ^ {2} + \\lambda \\| N ^ {T} X B \\| _ {F} ^ {2} \\quad \\mathrm {s . t .} X \\succeq 0. \\tag {3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            300,
+            785,
+            883,
+            810
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The first term ensures that the pairwise inner products are preserved and the second term induces the biases of gender neutral words onto the gender subspace to be small. The user-specified parameter $\\lambda$ balances the two terms. ",
+        "bbox": [
+            109,
+            819,
+            883,
+            863
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "table",
+        "img_path": "images/0bdaa6c0af122bf758a22c8c95f611ca35512df7d317fd91ed0d8482a4d99df7.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Analogies generated using eq. (2)</td></tr><tr><td>petite-diminutive</td></tr><tr><td>seventh inning-eighth inning</td></tr><tr><td>seventh-sixth</td></tr><tr><td>east-west</td></tr><tr><td>tripled-doubled</td></tr><tr><td>breast cancer-cancer</td></tr><tr><td>meter hurdles-meter dash</td></tr><tr><td>thousands-tens</td></tr><tr><td>eight-seven</td></tr><tr><td>unemployment rate-jobless rate</td></tr></table>",
+        "bbox": [
+            151,
+            88,
+            429,
+            255
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "table",
+        "img_path": "images/c201f5f4d0cbeb5bc93d7b44b3f44cf0fa7530a8d554a23397e97a2a8d0c4609.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Analogies generated using our approach, eq. (1)</td></tr><tr><td>petite-lanky</td></tr><tr><td>volleyball-football</td></tr><tr><td>interior designer-architect</td></tr><tr><td>bitch-bastard</td></tr><tr><td>bra-pants</td></tr><tr><td>nurse-surgeon</td></tr><tr><td>feminine-manly</td></tr><tr><td>glamorous-flashy</td></tr><tr><td>registered nurse-physician</td></tr><tr><td>cupcakes-pizzas</td></tr></table>",
+        "bbox": [
+            444,
+            88,
+            843,
+            256
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Figure 9: First 10 different she-he analogies generated using the parallelogram approach and our approach, from the top 100 she-he analogies not containing gender specific words. Most of the analogies on the left seem to have little connection to gender. ",
+        "bbox": [
+            109,
+            265,
+            883,
+            311
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Directly solving this SDP optimization problem is challenging. In practice, the dimension of matrix $W$ is in the scale of $3 0 0 \\times 4 0 0 , 0 0 0$ . The dimensions of the matrices $W ^ { T } X W$ and $W ^ { T } W$ are $4 0 0 , 0 0 0 \\times 4 0 0 , 0 0 0$ causing computational and memory issues. We perform singular value decomposition on $W$ , such that $W = U \\Sigma V ^ { T }$ , where $U$ and $V$ are orthogonal matrices and $\\Sigma$ is a diagonal matrix. ",
+        "bbox": [
+            109,
+            334,
+            883,
+            396
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\| W ^ {T} X W - W ^ {T} W \\| _ {F} ^ {2} = \\| W ^ {T} (X - I) W \\| _ {F} ^ {2} \\\\ = \\left\\| V \\Sigma U ^ {T} (X - I) U \\Sigma V ^ {T} \\right\\| _ {F} ^ {2} \\tag {4} \\\\ = \\| \\Sigma U ^ {T} (X - I) U \\Sigma \\| _ {F} ^ {2}. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            318,
+            404,
+            880,
+            465
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "The last equality follows the fact that $V$ is an orthogonal matrix and $\\begin{array} { r } { \\langle \\| V Y V ^ { T } \\| _ { F } ^ { 2 } = t r ( V Y ^ { T } V ^ { T } V Y V ^ { T } ) = } \\end{array}$ $t r ( V Y ^ { T } Y V ^ { T ^ { \\prime } } ) = t r ( Y ^ { T } Y V ^ { T ^ { \\prime } } V ) = t r ( Y ^ { T } Y ) = \\| Y \\| _ { F } ^ { 2 }$ .) ",
+        "bbox": [
+            109,
+            474,
+            883,
+            506
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Substituting Eq. (4) to Eq. (3) gives ",
+        "bbox": [
+            135,
+            506,
+            405,
+            521
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {X} \\| \\Sigma U ^ {T} (X - I) U \\Sigma \\| _ {F} ^ {2} + \\lambda \\| P X S ^ {T} \\| _ {F} ^ {2} \\quad \\text {s . t .} X \\succeq 0. \\tag {5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            300,
+            529,
+            883,
+            554
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Here $\\Sigma U ^ { T } ( X - I ) U \\Sigma$ is a $\\mathrm { 3 0 0 \\times 3 0 0 }$ matrix and can be solved efficiently. The solution $T$ is the debiasing transformation of the word embedding. ",
+        "bbox": [
+            109,
+            561,
+            883,
+            595
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "C Details of gender specific words base set ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            616,
+            617,
+            636
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "This section gives precise details of how we derived our list of gender neutral words. Note that the choice of gender neutral words is partly subjective. Some words are most often associated with females or males but have exceptions, such as beard (bearded women), estrogen (men have small amounts of the hormone estrogen), and rabbi (reformed Jewish congregations recognize female rabbis). There are also many words that have multiple senses, some of which are gender neutral and others of which are gender specific. For instance, the profession of nursing is gender neutral while nursing a baby (i.e., breastfeeding) is only performed by women. ",
+        "bbox": [
+            109,
+            647,
+            883,
+            737
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "To derive the base subset of words from w2vNEWS, for each of the 26,377 words in the filtered embedding, we selected words whose definitions include any of the following words in their singular or plural forms: female, male, woman, man, girl, boy, sister, brother, daughter, son, grandmother, grandfather, wife, husband. Definitions were taken from Wordnet [11] (in the case where a word had multiple senses/synsets, we chose the definition whose corresponding lemma had greatest frequency in terms of its count). This list of hundreds of words contains most gender specific words of interest but also contains some gender neutral words, e.g., the definition of mating is “the act of pairing a male and female for reproductive purposes.” Even though the word female is in the definition, mating is not gender specific. We went through this list and manually selected those words that were clearly gender specific. Motivated by the application of improving web search, ",
+        "bbox": [
+            109,
+            738,
+            883,
+            875
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "we used a strict definition of gender specificity, so that when in doubt a word was defined to be gender neutral. For instance, clothing words (e.g., the definition of vest is “a collarless men’s undergarment for the upper part of the body”) were classified as gender neutral since there are undoubtedly people of every gender that wear any given type of clothing. After this filtering, we were left with the following list of 218 gender-specific words (sorted by word frequency): ",
+        "bbox": [
+            109,
+            90,
+            883,
+            167
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "he, his, her, she, him, man, women, men, woman, spokesman, wife, himself, son, mother, father, chairman, daughter, husband, guy, girls, girl, boy, boys, brother, spokeswoman, female, sister, male, herself, brothers, dad, actress, mom, sons, girlfriend, daughters, lady, boyfriend, sisters, mothers, king, businessman, grandmother, grandfather, deer, ladies, uncle, males, congressman, grandson, bull, queen, businessmen, wives, widow, nephew, bride, females, aunt, prostate cancer, lesbian, chairwoman, fathers, moms, maiden, granddaughter, younger brother, lads, lion, gentleman, fraternity, bachelor, niece, bulls, husbands, prince, colt, salesman, hers, dude, beard, filly, princess, lesbians, councilman, actresses, gentlemen, stepfather, monks, ex girlfriend, lad, sperm, testosterone, nephews, maid, daddy, mare, fiance, fiancee, kings, dads, waitress, maternal, heroine, nieces, girlfriends, sir, stud, mistress, lions, estranged wife, womb, grandma, maternity, estrogen, ex boyfriend, widows, gelding, diva, teenage girls, nuns, czar, ovarian cancer, countrymen, teenage girl, penis, bloke, nun, brides, housewife, spokesmen, suitors, menopause, monastery, motherhood, brethren, stepmother, prostate, hostess, twin brother, schoolboy, brotherhood, fillies, stepson, congresswoman, uncles, witch, monk, viagra, paternity, suitor, sorority, macho, businesswoman, eldest son, gal, statesman, schoolgirl, fathered, goddess, hubby, stepdaughter, blokes, dudes, strongman, uterus, grandsons, studs, mama, godfather, hens, hen, mommy, estranged husband, elder brother, boyhood, baritone, grandmothers, grandpa, boyfriends, feminism, countryman, stallion, heiress, queens, witches, aunts, semen, fella, granddaughters, chap, widower, salesmen, convent, vagina, beau, beards, handyman, twin sister, maids, gals, housewives, horsemen, obstetrics, fatherhood, councilwoman, princes, matriarch, colts, ma, fraternities, pa, fellas, councilmen, dowry, barbershop, fraternal, ballerina ",
+        "bbox": [
+            114,
+            167,
+            888,
+            454
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "D Questionnaire for generating gender stereotypical words ",
+        "text_level": 1,
+        "bbox": [
+            111,
+            476,
+            797,
+            497
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Task: for each category, please enter 10 or more words, separated by commas. We are looking for a variety of creative answers – this is a mentally challenging HIT that will make you think. ",
+        "bbox": [
+            109,
+            507,
+            883,
+            539
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "• 10 or more comma-separated words definitionally associated with males. ",
+        "bbox": [
+            135,
+            550,
+            751,
+            565
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Examples: dude, menswear, king, penis, ... ",
+        "bbox": [
+            151,
+            570,
+            462,
+            585
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "• 10 or more comma-separated words definitionally associated with females. ",
+        "bbox": [
+            135,
+            595,
+            766,
+            611
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Examples: queen, Jane, girl, ... ",
+        "bbox": [
+            151,
+            616,
+            380,
+            631
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "• 10 or more comma-separated words stereotypically associated with males ",
+        "bbox": [
+            135,
+            641,
+            759,
+            656
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Examples: football, janitor, cocky, ... ",
+        "bbox": [
+            151,
+            661,
+            419,
+            676
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "• 10 or more comma-separated words stereotypically associated with females ",
+        "bbox": [
+            135,
+            686,
+            772,
+            702
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Examples: pink, sewing, caring, sassy, nurse, ... ",
+        "bbox": [
+            151,
+            707,
+            500,
+            722
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Thank you for your help in making Artificially Intelligent systems that aren’t prejudiced. :-) ",
+        "bbox": [
+            135,
+            733,
+            800,
+            750
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "E Questionnaire for generating gender stereotypical analogies ",
+        "text_level": 1,
+        "bbox": [
+            111,
+            771,
+            831,
+            792
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "An analogy describes two pairs of words where the relationship between the two words in each pair is the same. An example of an analogy is apple is to fruit as asparagus is to vegetable (denoted as apple:fruit::asparagus:vegetable). We need your help to improve our analogy generating system. ",
+        "bbox": [
+            109,
+            803,
+            885,
+            849
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "page_number",
+        "text": "20 ",
+        "bbox": [
+            488,
+            898,
+            509,
+            910
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Task: please enter 10 or more analogies reflecting gender stereotypes, separated by commas. We are looking for a variety of creative answers – this is a mentally challenging HIT that will make you think. ",
+        "bbox": [
+            109,
+            90,
+            887,
+            125
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Examples of stereotypes ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            138,
+            318,
+            154
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• tall : man :: short : woman reflects a cultural stereotype that men are tall and women are short. ",
+            "• doctor : man :: nurse : woman reflects a stereotype that doctors are typically men and nurses are typically women. "
+        ],
+        "bbox": [
+            135,
+            164,
+            879,
+            219
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "F Questionnaire for rating stereotypical analogies ",
+        "text_level": 1,
+        "bbox": [
+            111,
+            242,
+            694,
+            263
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "An analogy describes two pairs of words where the relationship between the two words in each pair is the same. An example of an analogy is apple is to fruit as asparagus is to vegetable (denoted as apple:fruit::asparagus:vegetable). We need your help to improve our analogy generating system. ",
+        "bbox": [
+            109,
+            273,
+            885,
+            320
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Task: Which analogies are stereotypes? Which ones are appropriate analogies? ",
+        "bbox": [
+            127,
+            335,
+            781,
+            352
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "• Examples of stereotype analogies ",
+        "bbox": [
+            135,
+            364,
+            429,
+            378
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "tall : man :: short : woman ",
+        "bbox": [
+            151,
+            383,
+            354,
+            397
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "doctor : man :: nurse : woman ",
+        "bbox": [
+            153,
+            405,
+            379,
+            417
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "• Examples of appropriate analogies ",
+        "bbox": [
+            135,
+            429,
+            439,
+            445
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "King: man :: Queen : woman ",
+        "bbox": [
+            151,
+            449,
+            370,
+            464
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "brother : man :: sister : woman ",
+        "bbox": [
+            153,
+            470,
+            385,
+            483
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "John : man :: Mary : woman ",
+        "bbox": [
+            153,
+            489,
+            367,
+            503
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "His : man :: Hers : woman ",
+        "bbox": [
+            153,
+            510,
+            351,
+            523
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "salesman : man :: saleswoman : woman ",
+        "bbox": [
+            151,
+            530,
+            441,
+            542
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "penis : man :: vagina : woman ",
+        "bbox": [
+            153,
+            551,
+            377,
+            565
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "WARNING: This HIT may contain adult content. Worker discretion is advised. ",
+        "bbox": [
+            135,
+            577,
+            710,
+            592
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Check the analogies that are stereotypes ",
+        "bbox": [
+            135,
+            593,
+            429,
+            608
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            138,
+            614,
+            156,
+            622
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Check the analogies that are nonsensical ",
+        "bbox": [
+            138,
+            623,
+            429,
+            638
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            138,
+            646,
+            155,
+            652
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Check the analogies that are nonsensical ",
+        "bbox": [
+            138,
+            654,
+            429,
+            667
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            138,
+            676,
+            155,
+            681
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Any suggestions or comments on the hit? Optional feedback ",
+        "bbox": [
+            138,
+            683,
+            571,
+            699
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "G Analogies Generated by Word Embeddings ",
+        "text_level": 1,
+        "bbox": [
+            111,
+            720,
+            651,
+            742
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "table",
+        "img_path": "images/9f59bd79aac9a1fc985de1e35cb2afadfaf88a913f518288f5690316931a4d0a.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"3\">After executing hard debiasing</td><td colspan=\"3\">Before executing debiasing</td></tr><tr><td>Analogy</td><td>Appropriate</td><td>Biased</td><td>Analogy</td><td>Appropriate</td><td>Biased</td></tr><tr><td>hostess:bartender</td><td>1</td><td>8</td><td>midwife:doctor</td><td>1</td><td>10</td></tr><tr><td>ballerina:dancer</td><td>0</td><td>7</td><td>sewing:carpentry</td><td>2</td><td>9</td></tr><tr><td>colts:mares</td><td>6</td><td>7</td><td>pediatrician:orthopedic_surgeon</td><td>0</td><td>9</td></tr><tr><td>ma:na</td><td>8</td><td>7</td><td>registered_nurse:physician</td><td>1</td><td>9</td></tr><tr><td>salesperson:salesman</td><td>1</td><td>7</td><td>housewife:shopkeeper</td><td>1</td><td>9</td></tr></table>",
+        "bbox": [
+            114,
+            765,
+            962,
+            878
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            898,
+            506,
+            909
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "table",
+        "img_path": "images/cc5c8ba8bf2a3b8493341b1283d4fd5431b44d245c794685e815d24475ece01f.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>diva:superstar</td><td>4</td><td>7</td></tr><tr><td>witches:vampires</td><td>1</td><td>7</td></tr><tr><td>hair_salon:barbershop</td><td>4</td><td>6</td></tr><tr><td>maid:housekeeper</td><td>3</td><td>6</td></tr><tr><td>soprano:baritone</td><td>4</td><td>5</td></tr><tr><td>footy:blokes</td><td>0</td><td>5</td></tr><tr><td>maids:servants</td><td>4</td><td>5</td></tr><tr><td>dictator:strongman</td><td>0</td><td>5</td></tr><tr><td>bachelor:bachelor-degree</td><td>7</td><td>4</td></tr><tr><td>witch:witchcraft</td><td>0</td><td>4</td></tr><tr><td>gaffer:lads</td><td>1</td><td>3</td></tr><tr><td>convent:monastery</td><td>8</td><td>3</td></tr><tr><td>hen:cock</td><td>8</td><td>2</td></tr><tr><td>aldermen:councilmen</td><td>0</td><td>2</td></tr><tr><td>girlfriend:friend</td><td>0</td><td>2</td></tr><tr><td>housewife:homemaker</td><td>2</td><td>2</td></tr><tr><td>maternal:infant_mortality</td><td>1</td><td>2</td></tr><tr><td>beau:lover</td><td>1</td><td>2</td></tr><tr><td>mistress:prostitute</td><td>0</td><td>2</td></tr><tr><td>heroine:protagonist</td><td>2</td><td>2</td></tr><tr><td>heiress:socialite</td><td>2</td><td>2</td></tr><tr><td>teenage_girl:teenager</td><td>3</td><td>2</td></tr><tr><td>estrogen:testosterone</td><td>9</td><td>2</td></tr><tr><td>actresses:actors</td><td>10</td><td>1</td></tr><tr><td>blokes:bloke</td><td>1</td><td>1</td></tr><tr><td>girlfriends:buddies</td><td>6</td><td>1</td></tr><tr><td>compatriot:countryman</td><td>3</td><td>1</td></tr><tr><td>compatriots:counrymen</td><td>2</td><td>1</td></tr><tr><td>gals:dudes</td><td>10</td><td>1</td></tr><tr><td>eldest:elder_brother</td><td>1</td><td>1</td></tr><tr><td>sperm:embryos</td><td>2</td><td>1</td></tr><tr><td>mother:father</td><td>10</td><td>1</td></tr><tr><td>wedlock:fathered</td><td>0</td><td>1</td></tr><tr><td>mama:fella</td><td>7</td><td>1</td></tr><tr><td>lesbian:gay</td><td>8</td><td>1</td></tr><tr><td>kid:guy</td><td>1</td><td>1</td></tr><tr><td>carpenter:handyman</td><td>5</td><td>1</td></tr><tr><td>she:he</td><td>9</td><td>1</td></tr><tr><td>herself:himself</td><td>10</td><td>1</td></tr><tr><td>her:his</td><td>10</td><td>1</td></tr><tr><td>uterus:intestine</td><td>1</td><td>1</td></tr><tr><td>queens:kings</td><td>10</td><td>1</td></tr><tr><td>female:male</td><td>9</td><td>1</td></tr><tr><td>women:men</td><td>10</td><td>1</td></tr><tr><td>pa:mo</td><td>9</td><td>1</td></tr><tr><td>nun:monk</td><td>7</td><td>1</td></tr><tr><td>matriarch:patriarch</td><td>9</td><td>1</td></tr><tr><td>nuns:priests</td><td>9</td><td>1</td></tr><tr><td>menopause:puberty</td><td>2</td><td>1</td></tr><tr><td>fiance:roommate</td><td>0</td><td>1</td></tr><tr><td>daughter:son</td><td>9</td><td>1</td></tr></table>",
+        "bbox": [
+            120,
+            89,
+            514,
+            863
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "table",
+        "img_path": "images/b1dad87e5d9fb56a60fa1ec3e94825358b3aa9d6f693f08da61371b81bc9e1c8.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>skirts:shorts</td><td>0</td><td>9</td></tr><tr><td>nurse:surgeon</td><td>1</td><td>9</td></tr><tr><td>interior/designer:architect</td><td>1</td><td>8</td></tr><tr><td>softball:baseball</td><td>4</td><td>8</td></tr><tr><td>blond:burly</td><td>2</td><td>8</td></tr><tr><td>nanny:chauffeur</td><td>1</td><td>8</td></tr><tr><td>feminism:conservatism</td><td>2</td><td>8</td></tr><tr><td>adorable:goofy</td><td>0</td><td>8</td></tr><tr><td>vocalists:guitarists</td><td>0</td><td>8</td></tr><tr><td>cosmetics:pharmaceuticals</td><td>1</td><td>8</td></tr><tr><td>whore:coward</td><td>0</td><td>7</td></tr><tr><td>vocalist:guitarist</td><td>1</td><td>7</td></tr><tr><td>petite:lanky</td><td>1</td><td>7</td></tr><tr><td>salesperson:salesman</td><td>1</td><td>7</td></tr><tr><td>sassy:snappy</td><td>2</td><td>7</td></tr><tr><td>diva:superstar</td><td>4</td><td>7</td></tr><tr><td>charming:affable</td><td>2</td><td>6</td></tr><tr><td>giggle:chuckle</td><td>1</td><td>6</td></tr><tr><td>witch:demon</td><td>2</td><td>6</td></tr><tr><td>volleyball:football</td><td>1</td><td>6</td></tr><tr><td>feisty:mild_mannered</td><td>0</td><td>6</td></tr><tr><td>cupcakes:pizzas</td><td>1</td><td>6</td></tr><tr><td>dolls:replicas</td><td>0</td><td>6</td></tr><tr><td>netball:rugby</td><td>0</td><td>6</td></tr><tr><td>hairdresser:barber</td><td>6</td><td>5</td></tr><tr><td>soprano:baritone</td><td>4</td><td>5</td></tr><tr><td>gown:blazer</td><td>6</td><td>5</td></tr><tr><td>glamorous:flashy</td><td>2</td><td>5</td></tr><tr><td>sweater:jersey</td><td>0</td><td>5</td></tr><tr><td>feminist:liberal</td><td>0</td><td>5</td></tr><tr><td>bra:pants</td><td>2</td><td>5</td></tr><tr><td>rebounder:playmaker</td><td>0</td><td>5</td></tr><tr><td>nude:shirtless</td><td>0</td><td>5</td></tr><tr><td>judgmental:arrogant</td><td>1</td><td>4</td></tr><tr><td>boobs:ass</td><td>1</td><td>4</td></tr><tr><td>salon:barbershop</td><td>7</td><td>4</td></tr><tr><td>lovely:brilliant</td><td>0</td><td>4</td></tr><tr><td>practicality:durability</td><td>0</td><td>4</td></tr><tr><td>singer:frontman</td><td>0</td><td>4</td></tr><tr><td>gorgeous:magnificent</td><td>2</td><td>4</td></tr><tr><td>ponytail:mustache</td><td>2</td><td>4</td></tr><tr><td>feminists:socialists</td><td>0</td><td>4</td></tr><tr><td>bras:trousers</td><td>5</td><td>4</td></tr><tr><td>wedding_dress:tuxedo</td><td>6</td><td>4</td></tr><tr><td>violinist:virtuoso</td><td>0</td><td>4</td></tr><tr><td>handbag:briefcase</td><td>8</td><td>3</td></tr><tr><td>giggling:grinning</td><td>0</td><td>3</td></tr><tr><td>kids:guys</td><td>3</td><td>3</td></tr><tr><td>beautiful:majestic</td><td>1</td><td>3</td></tr><tr><td>feminine:manly</td><td>8</td><td>3</td></tr><tr><td>convent:monastery</td><td>8</td><td>3</td></tr></table>",
+        "bbox": [
+            519,
+            90,
+            936,
+            862
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            898,
+            508,
+            909
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "daughters:sons 10 ",
+        "bbox": [
+            120,
+            89,
+            431,
+            104
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "spokeswoman:spokesman 10 ",
+        "bbox": [
+            124,
+            107,
+            429,
+            121
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "politician:statesman 1 ",
+        "bbox": [
+            124,
+            122,
+            426,
+            136
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "stallion:stud 7 ",
+        "bbox": [
+            124,
+            137,
+            426,
+            150
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "suitor:takeover_bid 8 ",
+        "bbox": [
+            124,
+            152,
+            426,
+            166
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "waitress:waiter 10 ",
+        "bbox": [
+            124,
+            167,
+            426,
+            180
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "lady:waitress 0 ",
+        "bbox": [
+            124,
+            183,
+            426,
+            196
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "bride:wedding 0 ",
+        "bbox": [
+            124,
+            196,
+            426,
+            210
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "widower:widowed 3 ",
+        "bbox": [
+            124,
+            213,
+            426,
+            224
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "husband:younger_brother 3 ",
+        "bbox": [
+            124,
+            227,
+            426,
+            242
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "actress:actor 1 9 ",
+        "bbox": [
+            124,
+            244,
+            426,
+            255
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mustache:beard 0 ",
+        "bbox": [
+            124,
+            258,
+            426,
+            270
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "facial_hair:beards 0 ",
+        "bbox": [
+            124,
+            272,
+            426,
+            285
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "suitors:bidders 6 ",
+        "bbox": [
+            124,
+            287,
+            426,
+            300
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "girl:boy 9 ",
+        "bbox": [
+            124,
+            303,
+            426,
+            316
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "childhood:boyhood 1 ",
+        "bbox": [
+            124,
+            319,
+            426,
+            332
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "girls:boys 10 ",
+        "bbox": [
+            124,
+            334,
+            426,
+            347
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "counterparts:brethren 4 ",
+        "bbox": [
+            124,
+            349,
+            426,
+            362
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "brides:bridal 1 ",
+        "bbox": [
+            124,
+            364,
+            426,
+            376
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "sister:brother 10 ",
+        "bbox": [
+            124,
+            378,
+            426,
+            392
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "friendship:brotherhood 3 ",
+        "bbox": [
+            124,
+            393,
+            426,
+            407
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "sisters:brothers 9 ",
+        "bbox": [
+            124,
+            409,
+            426,
+            422
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "businesswoman:businessman 9 ",
+        "bbox": [
+            124,
+            424,
+            426,
+            436
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "businesspeople:businessmen 1 ",
+        "bbox": [
+            124,
+            439,
+            426,
+            452
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "chairwoman:chairman 10 ",
+        "bbox": [
+            124,
+            455,
+            426,
+            467
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "bastard:chap 0 ",
+        "bbox": [
+            124,
+            469,
+            426,
+            483
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "hens:chickens 1 3 ",
+        "bbox": [
+            124,
+            484,
+            426,
+            497
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "viagra:cialis 1 ",
+        "bbox": [
+            124,
+            500,
+            426,
+            513
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "filly:colt 9 ",
+        "bbox": [
+            124,
+            515,
+            426,
+            527
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "fillies:colts 8 ",
+        "bbox": [
+            124,
+            529,
+            426,
+            542
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "congresswoman:congressman 1 9 ",
+        "bbox": [
+            124,
+            545,
+            426,
+            558
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "councilwoman:councilman 9 ",
+        "bbox": [
+            124,
+            560,
+            426,
+            573
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "wife:cousin 1 0 ",
+        "bbox": [
+            124,
+            575,
+            426,
+            588
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mom:dad 10 ",
+        "bbox": [
+            124,
+            590,
+            426,
+            603
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mommy:daddy 10 ",
+        "bbox": [
+            124,
+            604,
+            426,
+            619
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "moms:dads 1 9 ",
+        "bbox": [
+            124,
+            621,
+            426,
+            633
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "widow:deceased 1 0 ",
+        "bbox": [
+            124,
+            635,
+            426,
+            648
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "gal:dude 9 ",
+        "bbox": [
+            124,
+            650,
+            426,
+            664
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "stepmother:eldest_son 1 3 ",
+        "bbox": [
+            124,
+            666,
+            426,
+            680
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "deer:elk 1 ",
+        "bbox": [
+            124,
+            681,
+            426,
+            693
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "estranged_husband:estranged 0 ",
+        "bbox": [
+            124,
+            695,
+            426,
+            709
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "ex_boyfriend:ex_girlfriend 7 ",
+        "bbox": [
+            124,
+            710,
+            426,
+            724
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "widows:families 1 4 ",
+        "bbox": [
+            124,
+            726,
+            426,
+            738
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "motherhood:fatherhood 10 ",
+        "bbox": [
+            124,
+            741,
+            426,
+            753
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mothers:fathers 1 10 ",
+        "bbox": [
+            124,
+            756,
+            426,
+            768
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "guys:fellas 1 ",
+        "bbox": [
+            124,
+            771,
+            426,
+            784
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "feminism:feminist 1 ",
+        "bbox": [
+            124,
+            786,
+            426,
+            799
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "womb:fetus 0 ",
+        "bbox": [
+            124,
+            801,
+            426,
+            814
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "sorority:fraternity 9 ",
+        "bbox": [
+            124,
+            816,
+            426,
+            830
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "lesbians:gays 9 ",
+        "bbox": [
+            124,
+            832,
+            426,
+            845
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mare:gelding 7 ",
+        "bbox": [
+            124,
+            847,
+            426,
+            861
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "sexism:racism 0 3 ",
+        "bbox": [
+            545,
+            90,
+            934,
+            104
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "pink:red 0 3 ",
+        "bbox": [
+            545,
+            107,
+            934,
+            121
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "blouse:shirt 6 3 ",
+        "bbox": [
+            545,
+            122,
+            934,
+            135
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "bitch:bastard 8 2 ",
+        "bbox": [
+            545,
+            137,
+            934,
+            150
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "wig:beard 4 2 ",
+        "bbox": [
+            545,
+            152,
+            934,
+            166
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "hysterical:comical 0 2 ",
+        "bbox": [
+            545,
+            167,
+            934,
+            181
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "male_counterparts:counterparts 1 2 ",
+        "bbox": [
+            545,
+            183,
+            934,
+            196
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "beauty:grandeur 0 2 ",
+        "bbox": [
+            545,
+            198,
+            934,
+            210
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "cheerful:jovial 0 2 ",
+        "bbox": [
+            545,
+            213,
+            934,
+            224
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "breast_cancer:lymphoma 3 2 ",
+        "bbox": [
+            545,
+            227,
+            934,
+            242
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "heiress:magnate 6 2 ",
+        "bbox": [
+            545,
+            244,
+            934,
+            256
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "estrogen:testosterone 9 2 ",
+        "bbox": [
+            545,
+            258,
+            934,
+            271
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "starlet:youngster 2 2 ",
+        "bbox": [
+            545,
+            273,
+            934,
+            286
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "Mary:John 9 ",
+        "bbox": [
+            545,
+            287,
+            934,
+            301
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "actresses:actors 10 ",
+        "bbox": [
+            545,
+            303,
+            934,
+            316
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "middle_aged:bearded 0 ",
+        "bbox": [
+            545,
+            318,
+            934,
+            330
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mums:blokes 5 1 ",
+        "bbox": [
+            545,
+            333,
+            934,
+            345
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "girlfriends:buddies 6 ",
+        "bbox": [
+            545,
+            348,
+            934,
+            361
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mammogram:colonoscopy 0 ",
+        "bbox": [
+            545,
+            364,
+            934,
+            376
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "compatriot:countryman 3 ",
+        "bbox": [
+            545,
+            378,
+            934,
+            392
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "luscious:crisp 0 ",
+        "bbox": [
+            545,
+            393,
+            934,
+            407
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "gals:dudes 10 ",
+        "bbox": [
+            545,
+            409,
+            934,
+            422
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "siblings:elder_brother 1 ",
+        "bbox": [
+            545,
+            424,
+            934,
+            436
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mother:father 10 1 ",
+        "bbox": [
+            545,
+            439,
+            934,
+            452
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "babe:fella 9 ",
+        "bbox": [
+            545,
+            454,
+            934,
+            467
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "lesbian:gay 8 1 ",
+        "bbox": [
+            545,
+            469,
+            934,
+            483
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "breasts:genitals 0 ",
+        "bbox": [
+            545,
+            484,
+            934,
+            497
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "wonderful:great 0 ",
+        "bbox": [
+            545,
+            500,
+            934,
+            513
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "she:he 9 ",
+        "bbox": [
+            545,
+            515,
+            934,
+            527
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "herself:himself 10 ",
+        "bbox": [
+            545,
+            529,
+            934,
+            542
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "her:his 10 ",
+        "bbox": [
+            545,
+            545,
+            934,
+            556
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "mommy:kid 0 ",
+        "bbox": [
+            545,
+            560,
+            934,
+            573
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "queens:kings 10 ",
+        "bbox": [
+            545,
+            575,
+            934,
+            589
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "female:male 9 ",
+        "bbox": [
+            545,
+            590,
+            934,
+            603
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "women:men 10 ",
+        "bbox": [
+            545,
+            604,
+            934,
+            618
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "boyfriend:pal 0 ",
+        "bbox": [
+            545,
+            619,
+            934,
+            633
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "matriarch:patriarch 9 1 ",
+        "bbox": [
+            545,
+            635,
+            934,
+            648
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "nun:priest 10 ",
+        "bbox": [
+            545,
+            651,
+            934,
+            664
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "breast:prostate 9 ",
+        "bbox": [
+            545,
+            666,
+            934,
+            679
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "daughter:son 9 ",
+        "bbox": [
+            545,
+            681,
+            934,
+            694
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "daughters:sons 10 ",
+        "bbox": [
+            545,
+            696,
+            934,
+            709
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "spokeswoman:spokesman 10 ",
+        "bbox": [
+            545,
+            710,
+            934,
+            724
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "fabulous:terrific 3 1 ",
+        "bbox": [
+            545,
+            726,
+            934,
+            738
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "headscarf:turban 6 1 ",
+        "bbox": [
+            545,
+            741,
+            934,
+            753
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "waitress:waiter 10 1 ",
+        "bbox": [
+            545,
+            756,
+            934,
+            768
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "husband:younger_brother 3 ",
+        "bbox": [
+            545,
+            771,
+            934,
+            784
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "hers:yours 2 ",
+        "bbox": [
+            545,
+            786,
+            934,
+            799
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "teenage_girls:youths 0 ",
+        "bbox": [
+            545,
+            801,
+            934,
+            814
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "actress:actor 9 0 ",
+        "bbox": [
+            545,
+            816,
+            934,
+            829
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "blonde:blond 4 0 ",
+        "bbox": [
+            545,
+            830,
+            934,
+            844
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "girl:boy 9 0 ",
+        "bbox": [
+            545,
+            847,
+            934,
+            861
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "page_number",
+        "text": "23 ",
+        "bbox": [
+            488,
+            898,
+            508,
+            910
+        ],
+        "page_idx": 22
+    },
+    {
+        "type": "table",
+        "img_path": "images/6d6aad9f27406faef40cedfd25dd74eb751fb8b7fe25147eb952426de079dd81.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>fella:gentleman</td><td>1</td><td>0</td><td>childhood:boyhood</td><td>1</td><td>0</td></tr><tr><td>ladies:gentlemen</td><td>10</td><td>0</td><td>girls:boys</td><td>10</td><td>0</td></tr><tr><td>boyfriends:girlfriend</td><td>3</td><td>0</td><td>sister:brother</td><td>10</td><td>0</td></tr><tr><td>goddess:god</td><td>9</td><td>0</td><td>sisters:brothers</td><td>9</td><td>0</td></tr><tr><td>grandmother:grandfather</td><td>10</td><td>0</td><td>businesswoman:businessman</td><td>9</td><td>0</td></tr><tr><td>grandma:grandpa</td><td>9</td><td>0</td><td>chairwoman:chairman</td><td>10</td><td>0</td></tr><tr><td>grandmothers:grandparents</td><td>5</td><td>0</td><td>filly:colt</td><td>9</td><td>0</td></tr><tr><td>granddaughter:grandson</td><td>10</td><td>0</td><td>fillies:colts</td><td>8</td><td>0</td></tr><tr><td>granddaughters:grandsons</td><td>9</td><td>0</td><td>congresswoman:congressman</td><td>9</td><td>0</td></tr><tr><td>me:him</td><td>2</td><td>0</td><td>councilwoman:councilman</td><td>9</td><td>0</td></tr><tr><td>queen:king</td><td>10</td><td>0</td><td>mom:dad</td><td>10</td><td>0</td></tr><tr><td>youngster:lad</td><td>1</td><td>0</td><td>moms:dads</td><td>9</td><td>0</td></tr><tr><td>elephant:lion</td><td>0</td><td>0</td><td>gal:dude</td><td>9</td><td>0</td></tr><tr><td>elephants:lions</td><td>0</td><td>0</td><td>motherhood:fatherhood</td><td>10</td><td>0</td></tr><tr><td>manly:macho</td><td>4</td><td>0</td><td>mothers:fathers</td><td>10</td><td>0</td></tr><tr><td>females:males</td><td>10</td><td>0</td><td>sorority:fraternity</td><td>9</td><td>0</td></tr><tr><td>woman:man</td><td>8</td><td>0</td><td>mare:gelding</td><td>7</td><td>0</td></tr><tr><td>fiancee:married</td><td>4</td><td>0</td><td>lady:gentleman</td><td>9</td><td>0</td></tr><tr><td>maternity:midwives</td><td>1</td><td>0</td><td>ladies:gentlemen</td><td>10</td><td>0</td></tr><tr><td>monks:monasteries</td><td>0</td><td>0</td><td>goddess:god</td><td>9</td><td>0</td></tr><tr><td>niece:nephew</td><td>9</td><td>0</td><td>grandmother:grandfather</td><td>10</td><td>0</td></tr><tr><td>nieces:nephews</td><td>9</td><td>0</td><td>grandma:grandpa</td><td>9</td><td>0</td></tr><tr><td>hobby:pal</td><td>1</td><td>0</td><td>granddaughter:grandson</td><td>10</td><td>0</td></tr><tr><td>obstetrics:pediatrics</td><td>3</td><td>0</td><td>granddaughters:grandsons</td><td>9</td><td>0</td></tr><tr><td>vagina:penis</td><td>10</td><td>0</td><td>kinda:guy</td><td>1</td><td>0</td></tr><tr><td>princess:prince</td><td>9</td><td>0</td><td>heroine:hero</td><td>9</td><td>0</td></tr><tr><td>colon:prostate</td><td>6</td><td>0</td><td>me:him</td><td>2</td><td>0</td></tr><tr><td>ovarian_cancer:prostate_cancer</td><td>10</td><td>0</td><td>queen:king</td><td>10</td><td>0</td></tr><tr><td>salespeople:salesmen</td><td>2</td><td>0</td><td>females:males</td><td>10</td><td>0</td></tr><tr><td>semen:saliva</td><td>7</td><td>0</td><td>woman:man</td><td>8</td><td>0</td></tr><tr><td>schoolgirl:schoolboy</td><td>8</td><td>0</td><td>niece:nephew</td><td>9</td><td>0</td></tr><tr><td>replied:sir</td><td>0</td><td>0</td><td>neces:nephews</td><td>9</td><td>0</td></tr><tr><td>spokespeople:spokesmen</td><td>0</td><td>0</td><td>vagina:penis</td><td>10</td><td>0</td></tr><tr><td>boyfriend:stepfather</td><td>1</td><td>0</td><td>princess:prince</td><td>9</td><td>0</td></tr><tr><td>stepdaughter:stepson</td><td>9</td><td>0</td><td>ovarian_cancer:prostate_cancer</td><td>10</td><td>0</td></tr><tr><td>teenage_girls:teenagers</td><td>1</td><td>0</td><td>schoolgirl:schoolboy</td><td>8</td><td>0</td></tr><tr><td>hers:theirs</td><td>0</td><td>0</td><td>spokespeople:spokesmen</td><td>0</td><td>0</td></tr><tr><td>twin_sister:twin_brother</td><td>9</td><td>0</td><td>stepdaughter:stepson</td><td>9</td><td>0</td></tr><tr><td>aunt:uncle</td><td>9</td><td>0</td><td>twin_sister:twin_brother</td><td>9</td><td>0</td></tr><tr><td>aunts:uncles</td><td>10</td><td>0</td><td>aunt:uncle</td><td>9</td><td>0</td></tr><tr><td>husbands:wives</td><td>7</td><td>0</td><td>aunts:uncles</td><td>10</td><td>0</td></tr></table>",
+        "bbox": [
+            119,
+            87,
+            937,
+            712
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "H Debiasing the full w2vNEWS embedding. ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            729,
+            632,
+            750
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "text",
+        "text": "In the main text, we focused on the results from a cleaned version of w2vNEWS consisting of 26,377 lower-case words. We have also applied our hard debiasing algorithm to the full w2vNEWS dataset. Evalution based on the standard metrics shows that the debiasing does not degrade the utility of the embedding (Table 3). ",
+        "bbox": [
+            111,
+            761,
+            883,
+            808
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "page_number",
+        "text": "24 ",
+        "bbox": [
+            488,
+            898,
+            508,
+            910
+        ],
+        "page_idx": 23
+    },
+    {
+        "type": "table",
+        "img_path": "images/d4ce383fe73dd438d80f253d60f5d7eeecca8bf1c8e6c6d9cc54fe16c7988dd4.jpg",
+        "table_caption": [
+            "Table 3: The columns show the performance of the original, complete w2vNEWS embedding (“before”) and the debiased w2vNEWS on the standard evaluation metrics measuring coherence and analogy-solving abilities: RG [32], WS [12], MSR-analogy [26]. Higher is better. The results show that the performance does not degrade after debiasing. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>RG</td><td>WS</td><td>analogy</td></tr><tr><td>Before</td><td>76.1</td><td>70.0</td><td>71.2</td></tr><tr><td>Hard-debiased</td><td>76.5</td><td>69.7</td><td>71.2</td></tr><tr><td>Soft-debiased</td><td>76.9</td><td>69.7</td><td>71.2</td></tr></table>",
+        "bbox": [
+            349,
+            404,
+            645,
+            484
+        ],
+        "page_idx": 24
+    },
+    {
+        "type": "page_number",
+        "text": "25 ",
+        "bbox": [
+            488,
+            897,
+            508,
+            909
+        ],
+        "page_idx": 24
+    }
+]

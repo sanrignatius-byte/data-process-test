@@ -1,0 +1,232 @@
+\section{Computational Fairness}
+\label{sec:main-idea}
+
+Our notion of computational fairness starts with two players, Alice and Bob. Alice runs an algorithm $\mathcal{A}$ that makes decisions based on some input.  For example, Alice may be an employer using $\mathcal{A}$ to decide who to hire. Specifically, $\mathcal{A}$ takes a data set $D$ with protected attribute $X$ and unprotected attributes $Y$ and makes a (binary) decision $C$. By law, Alice is not allowed to use $X$ in making decisions, and claims to use only $Y$. It is Bob's job to verify that on the data $D$, Alice's algorithm $\mathcal{A}$ is not liable for a claim of disparate impact. 
+
+\vspace*{0.1in}\mypara{Trust model.} We assume that Bob does not have access to
+$\mathcal{A}$. Further, we assume that Alice has good intentions: specifically,
+that Alice is not secretly using $X$ in $\mathcal{A}$ while lying about
+it. While assuming Alice is lying about the use of $X$ might be more plausible, it is much harder to detect. More importantly, from a functional perspective, it does not matter whether Alice uses $X$ explicitly or uses proxy attributes $Y$ that have the same effect: this is the core message from the Griggs case that introduced the doctrine of disparate impact. In other words, our \emph{certification} process is indifferent to Alice's intentions, but our \emph{repair} process will assume good faith.
+
+We summarize our main idea with the following intuition:
+\begin{quote}
+\emph{  If Bob cannot predict $X$ given the other attributes of $D$, then $\mathcal{A}$ is fair with respect to Bob on $D$. % More generally, if the balanced error rate of any predictor is at least $\epsilon$, then the algorithm is $\epsilon$-fair. 
+}\end{quote}
+
+% Bob can be thought of as an ensemble of all possible models, where the bias of $D$ on the most biased model is determined to be the true bias.  (This also hints at an implementation of Bob in which Bob runs a large collection of models and measures the bias in the results.)
+
+\subsection{Predictability and Disparate Impact}
+
+We now present a formal definition of predictability and link it to the legal notion of disparate impact.  Recall that $D = (X,Y,C)$ where $X$ is the protected attribute, $Y$ is the remaining attributes, and $C$ is the class outcome to be predicted.
+
+The basis for our formulation is a procedure that predicts $X$ from $Y$. We would like a way to measure the quality of this predictor in a way that a) can be optimized using standard predictors in machine learning and b) can be related to $\lrplus$. The standard notions of accuracy of a classifier fail to do the second (as discussed earlier) and using $\lrplus$ directly fails to satisfy the first constraint. 
+
+The error measure we seek turns out to be the \emph{balanced error rate} \ber. 
+
+\begin{defn}[BER]
+  Let $f : Y \to X$ be a predictor of $X$ from $Y$. The \emph{balanced error rate} \ber of $f$ on distribution $\mathcal{D}$ over the pair $(X, Y)$ is defined as the (unweighted) average class-conditioned error of $f$. In other words, 
+\[ \ber(f(Y), X) = \frac{\Pr[f(Y) = 0 | X = 1] + \Pr[f(Y) = 1 | X = 0] }{2} \]
+\end{defn}
+
+\begin{defn}[{\small Predictability}]
+$X$ is said to be \emph{$\epsilon$-predictable} from $Y$ if there exists a function $f:Y \rightarrow X$ such that
+\[\ber(f(Y), X) \le\epsilon. \]
+\end{defn}
+
+This motivates our definition of $\epsilon$-fairness, as a data set that is \emph{not} predictable.
+\begin{defn}[$\epsilon$-fairness]
+A data set $D = (X, Y, C)$ is said to be \emph{$\epsilon$-fair} if for any
+classification algorithm $f \colon Y \to X$ 
+\[\ber(f(Y), X) > \epsilon \]
+with (empirical) probabilities estimated from $D$.
+\end{defn}
+
+Recall the definition of disparate impact from Section \ref{sec:note-meas-disp}.  We will be interested in examining the potential disparate impact of a classifier $g \colon Y \rightarrow C$ and will consider the value $\di(g) = 1 / \lrplus(g(Y), X)$ as it relates to the threshold $\tau$.  Where $g$ is clear from context, we will refer to this as $\di$.
+
+The justification of our definition of fairness comes from the following theorem:
+\begin{theorem}
+\label{sec:conn-pred-disp-1}
+A data set is $(1/2-\beta/8)$-predictable if and only if it admits disparate impact, where $\beta$ is the fraction of elements in the minority class $(X = 0)$ that are selected $(C = 1)$. 
+\end{theorem}
+
+\begin{proof}
+We will start with the direction showing that disparate impact implies predictability.  Suppose that there exists some function $g:Y \rightarrow C$ such that $\lrplus(g(y), c) \geq \frac{1}{\tau}$.  We will create a function $\psi:C \rightarrow X$ such that $\ber(\psi(g(y)), x) < \epsilon$ for $(x,y) \in D$. Thus the combined predictor $f = \psi \circ g$ satisfies the definition of predictability. 
+
+Consider the confusion matrix associated with $g$, depicted in \autoref{tab:di-confusion}.
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{r|c|c}
+   Prediction & $X = 0$ & $X = 1$ \\ \hline
+   $g(y) = \no  $ & a       & b       \\
+   $g(y) = \yes $ & c       & d
+  \end{tabular}
+  \caption{Confusion matrix for $g$\label{tab:di-confusion}}
+\end{table}
+Set $\alpha \triangleq
+\frac{b}{b+d}$ and $\beta\triangleq \frac{c}{a+c}$. Then we can write 
+$ \lrplus(g(y), X) = \frac{1-\alpha}{\beta}$ and $\di(g) = \frac{\beta}{1 - \alpha}$. 
+
+We define the \emph{purely biased} mapping $\psi \colon C \to X$ as $\psi(\yes) = 1$ and $\psi(\no) = 0$. Finally, let $\phi \colon Y \to X = \psi \circ g$. The confusion matrix for $\phi$ is depicted in \autoref{tab:ber-confusion}. Note that the confusion matrix for $\phi$ is identical to the matrix for $g$. 
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{r|c|c}
+   Prediction & $X = 0$ & $X = 1$ \\ \hline
+   $\phi(Y) = 0  $ & a       & b       \\
+   $\phi(Y) = 1  $ & c       & d
+  \end{tabular}
+  \caption{Confusion matrix for $\phi$\label{tab:ber-confusion}}
+\end{table}
+
+We can now express $\ber(\phi)$ in terms of this matrix. Specifically, 
+$ \ber(\phi) = \frac{\alpha + \beta}{2}$.
+
+\vspace*{0.1in}
+\mypara{Representations.} 
+We can now express contours of the $\di$ and $\ber$ functions as curves in the unit square $[0,1]^2$. 
+Reparametrizing $\pi_1 = 1 - \alpha$ and $\pi_0 = \beta$, we can express the error
+measures as $  \di(g) =  \frac{\pi_0}{\pi_1} $ and $ \ber(\phi) = \frac{1 + \pi_0 - \pi_1}{2} $
+
+
+As a consequence, any classifier $g$ with $\di(g) = \delta$ can be represented
+in the $[0,1]^2$ unit square as the line $\pi_1 = \pi_0/\delta$. Any classifier $\phi$
+with $\ber(\phi) = \epsilon$ can be written as the function $\pi_1 = \pi_0 + 1 - 2\epsilon$. 
+
+
+Let us now fix the desired \di\ threshold $\tau$, corresponding to the line $\pi_1
+=\pi_0/\tau$. Notice that the region $\{(\pi_0,\pi_1)\mid \pi_1 \ge \pi_0/\tau\}$ is the region
+where one would make a finding of disparate impact (for $\tau = 0.8$).
+
+Now given a classification that admits a finding of disparate impact, we can
+compute $\beta$. Consider the point $(\beta, \beta/\tau)$ at which the line $\pi_0 = \beta$ intersects the
+\di curve $\pi_1 = \pi_0/\tau$. This point lies on the \ber contour $(1 +
+\beta-\beta/\tau)/2 = \epsilon$, yielding 
+$ \epsilon = 1/2 - \beta(\frac{1}{\tau}-1)/2 $
+In particular, for the \di threshold of $\tau = 0.8$, the desired \ber threshold is
+\[\epsilon = \frac{1}{2} - \frac{\beta}{8} \]
+and so disparate impact implies predictability.
+
+With this infrastructure in place, the other direction of the proof is now easy.  To show that predictability implies disparate impact, we will use the same idea of a purely biased classifier.  Suppose there is a function $f \colon Y \to X$ such that $\ber(f(y), x) \leq \epsilon$.  Let $\psi^{-1} \colon X \to C$ be the inverse purely biased mapping, i.e. $\psi^{-1}(1) = \yes$ and $\psi^{-1}(0) = \no$.  Let $g \colon Y \to C = \psi^{-1} \circ f$.  Using the same representation as before, this gives us
+$ \pi_1 \geq 1 + \pi_0 - 2  \epsilon$ and therefore
+\[ \frac{\pi_0}{\pi_1} \leq \frac{\pi_0}{1 + \pi_0 - 2  \epsilon} = 1 - \frac{1 - 2 \epsilon}{\pi_0 + 1 - 2 \epsilon} \]
+Recalling that $\di(g) = \frac{\pi_0}{\pi_1}$ and that $\pi_0 = \beta$ yields
+$ \di(g) \leq 1 - \frac{1 - 2 \epsilon}{\beta + 1 - 2\epsilon} = \tau$.
+For $\tau = 0.8$, this again gives us a desired \ber threshold of
+$\epsilon = \frac{1}{2} - \frac{\beta}{8}$.
+\end{proof}
+
+Note that as $\epsilon$ approaches $1/2$ the bound tends towards
+the trivial (since any binary classifier has \ber at most $1/2$). In
+other words, as $\beta$ tends to $0$, the bound becomes vacuous. 
+
+This points to an interesting line of attack to evade a disparate impact finding. Note that
+$\beta$ is the (class conditioned) rate at which members of the protected class
+are selected. Consider now a scenario where a company is being investigated for
+discriminatory hiring practices. One way in which the company might defeat such
+a finding is by interviewing (but not hiring) a large proportion of applicants
+from the protected class. This effectively drives $\beta$ down, and the
+observation above says that in this setting their discriminatory practices will
+be harder to detect, because our result can not guarantee that a classifier will
+have error significantly less than $0.5$. 
+
+Observe that in this analysis we use an extremely weak classifier to prove the
+existence of a relation between predictability and disparate impact. It is
+likely that using a better classifier (for example the Bayes optimal classifier or even a classifier that optimizes \ber) might yield a stronger relationship between the two notions. 
+
+\vspace*{0.1in}\mypara{Dealing with uncertainty.} In general, $\beta$ might be
+hard to estimate from a fixed data set, and in practice we might only know that
+the true value of $\beta$ lies in a range $[\beta_\ell, \beta_u]$. Since the
+\ber threshold varies monotonically with $\beta$, we can merely use $\beta_\ell$
+to obtain a conservative estimate. 
+
+Another source of uncertainty is in the \ber estimate itself. Suppose that our
+classifier yields an error that lies in a range $[\gamma, \gamma']$. Again,
+because of monotonicity, we will obtain an interval of values $[\tau, \tau']$
+for \di. Note that if (using a Bayesian approach) we are able to build a
+distribution over \ber, this distribution will then transfer over to the \di
+estimate as well. 
+
+\subsection{Certifying (lack of) DI with SVMs}
+\label{sec:certifying-lack-of}
+
+The above argument gives us a way to determine whether a data set is potentially
+amenable to disparate impact (in other words, whether there is insufficient
+information to detect a protected attribute from the provided data).
+
+\looseness-1 \vspace*{0.1in}\mypara{Algorithm.}
+We run a classifier that optimizes \ber on the given data set, attempting to
+predict the protected attributes $X$ from the remaining attributes $Y$.  Suppose
+the error in this prediction is $\epsilon$. Then using the estimate of $\beta$
+from the data, we can substitute this into the equation above and obtain a
+threshold $\epsilon'$.  If $\epsilon' < \epsilon$, then we can declare the data
+set free from disparate impact. 
+
+\looseness-1 Assume that we have an optimal classifier with respect to \ber. Then we know
+that all classifiers will incur a \ber of at least $\epsilon$. By Theorem
+\ref{sec:conn-pred-disp-1}, this implies that no classifier on $D$ will exhibit
+disparate impact, and so our certification is correct. 
+
+The only remaining question is what classifier is used by this algorithm.  The usual way to incorporate class sensitivity into a classifier is to use different costs for misclassifying points in different classes. A number of class-sensitive cost measures fall into this framework, and there are algorithms for optimizing these measures (see \cite{menon2013statistical} for a review), as well as a general (but expensive) method due to Joachims that does a clever grid search over a standard SVM to optimize a large family of class-sensitive measures\cite{joachims2005support}. Oddly, \ber is not usually included among the measures studied. 
+
+Formally, as pointed out by Zhao et al\cite{zhao2013beyond}, \ber is not a
+cost-sensitive classification error measure because the weights assigned to
+class-specific misclassification depend on the relative class sizes (so they can
+be normalized). However, for any given data set we know the class sizes and can
+reweight accordingly. We adapt a standard hinge-loss SVM to incorporate
+class-sensitivity and optimize for (regularized) \ber. This adaptation is
+standard, and yields a cost function that can be optimized using AdaBoost. %For
+%more details, see the extended version of this paper \cite{arxiv-version}.
+
+  We illustrate this by showing how to adapt a standard hinge-loss SVM to instead optimize \ber\footnote{This approach in general is well known; we provide a detailed derivation here for clarity.}. Consider the standard soft-margin (linear) SVM:
+ \begin{equation}
+ \min_{\vec{w},\boldsymbol{\xi},b}\frac{1}{2}\|\vec{w}\|^2 + \frac{C}{n}\sum_{j=1}^n\xi_j
+ \end{equation}
+such that
+ \begin{equation} 
+ y_j(\innerprod{\vec{w}}{\vec{x}_j} + b)\geq 1-\xi_j\quad\text{and}\quad \xi_j\geq 0\label{eq:1}.
+ \end{equation}
+ The constraints in \eqref{eq:1} are equivalent to the following:
+ \begin{equation}
+ \xi_j \geq \max\{1 - y_j(\innerprod{\vec{w}}{\vec{x}_j} + b), 0\},
+ \end{equation}
+ in which the right side is the hinge loss.
+
+ Minimizing the \emph{balanced error rate} (BER) would result in the following optimization:
+ \begin{equation}
+   \min_{\vec{w},b}\frac{1}{2}\|\vec{w}\|^2 + 
+   C\left( 
+     \frac{1}{2n^+}\sum_{\{j|y_j=1\}}(1-\hat{y}_j) + 
+     \frac{1}{2n^-}\sum_{\{j|y_j=-1\}}(1+\hat{y}_j) 
+   \right),
+ \end{equation}
+ where $n^+ = |\{j\mid y_j=1\}|$ and $n^- = |\{j\mid y_j=-1\}|$ (we'll use $n_j$ to refer to the correct count for the corresponding $y_j$). 
+ This optimization is NP-hard for the same reasons as minimizing the 0-1 loss is, so we will relax it to hinge loss as usual:
+ \begin{align}
+   &\min_{\vec{w},b}\ \frac{1}{2}\|\vec{w}\|^2 + 
+   C\left( 
+     \frac{1}{2n^+}\sum_{\{j|y_j=1\}}\xi_j + 
+     \frac{1}{2n^-}\sum_{\{j|y_j=-1\}}\xi_j 
+   \right),
+ \\=&\min_{\vec{w},b}\ \frac{1}{2}\|\vec{w}\|^2 + 
+   \frac{C}{n} \sum_j\frac{n}{2n_j}\xi_j
+ \\=&\min_{\vec{w},b}\ \frac{1}{2}\|\vec{w}\|^2 + 
+   \frac{C}{n} \sum_j D_j\xi_j,\label{eq:2}
+ \end{align}
+ where $\xi_j$ has the same constraints as in \eqref{eq:1}. 
+ \eqref{eq:2} now has the same form as an SVM in AdaBoost, so we can use existing techniqes to solve this SVM. 
+ Note also that $\sum_j D_j = 1$, making the $D_j$ a distribution over $[1..n]$ -- this means that we can use an AdaBoost formulation without needing to adjust constants.
+
+
+
+
+% For $\gamma > 0$, let the \emph{approximate} \di\ threshold be $\tau' = (1+\gamma)\tau$, corresponding to the line $y = x/\tau'$. 
+
+% We now invoke \autoref{cone-cover} with $u(x) = x/\tau$, $\ell(x) = x/\tau'$, and an arbitrary $x_0$. Let the resulting \pshiftID $h_k(x)$ consist of the partitioned range $[x_0, x_1, \ldots, x_k]$ and parameters $c_0, c_1, \ldots, c_{k-1}$. 
+
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "bias"
+%%% End:

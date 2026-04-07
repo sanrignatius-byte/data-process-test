@@ -1,0 +1,108 @@
+\pdfoutput=1
+\documentclass[11pt]{paper}
+\usepackage{geometry}
+\usepackage{mathpazo}
+\usepackage{amsmath,amsthm,amssymb,xspace}
+\usepackage{xspace}
+\usepackage{microtype}
+\newtheorem{problem}{Problem}[section]
+\newtheorem{defn}{Definition}[section]
+\newtheorem{stmt}{Statement}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{conjecture}{Conjecture}[section]
+\usepackage{url}
+\usepackage{mathtools}
+\mathtoolsset{showonlyrefs,mathic}
+\usepackage{cite}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[final,inline,nomargin,index]{fixme}
+\fxsetup{theme=colorsig,mode=multiuser,inlineface=\itshape,envface=\itshape}
+\FXRegisterAuthor{sv}{asv}{Suresh}
+\FXRegisterAuthor{sf}{asf}{Sorelle} 
+\FXRegisterAuthor{cs}{acs}{Carlos} 
+\FXRegisterAuthor{jm}{ajm}{John} 
+
+\usepackage{graphicx}
+\graphicspath{{.}{figures/ggplot/}}
+% \definecolor{gray}{rgb}{0.9,0.9,0.9}
+% \newcommand{\colornote}[2]{%
+%   \begin{center}
+%     \noindent\colorbox{#1}{
+%       \begin{minipage}{0.9\textwidth}%
+%         \noindent #2%
+%       \end{minipage}%
+%     }
+%   \end{center}
+% }
+
+\DeclareMathOperator{\err}{err}
+\newcommand{\sens}{\text{sensitivity}}
+\newcommand{\specf}{\text{specificity}}
+\newcommand{\lrplus}{\ensuremath{\text{LR}_+}}
+\newcommand{\di}{\ensuremath{\mathsf{DI}}\xspace}
+\newcommand{\ber}{\text{\textsc{ber}}\xspace}
+\newcommand{\shiftID}{shift\xspace}
+\newcommand{\pshiftID}{piecewise \shiftID}
+\newcommand{\yes}{\text{YES}}
+\newcommand{\no}{\text{NO}}
+\newcommand{\innerprod}[2]{\left\langle #1, #2 \right\rangle}
+
+\DeclarePairedDelimiter\paren{\lparen}{\rparen}
+
+% because ACM's paragraph header is horrible
+\newcommand{\mypara}[1]{\noindent\textbf{\sffamily #1}}
+
+% No titlenote in plain article format, removing it for now
+% \titlenote{Author ordering on this paper is alphabetical. The corresponding author is Suresh Venkatasubramanian.}
+\title{Certifying and removing disparate impact\thanks{Author ordering on this paper is alphabetical.  This research funded in part by NSF grant 1251049 under the BIGDATA program}}
+\author{Michael Feldman\\Haverford College \and Sorelle A. Friedler\\Haverford College \and John Moeller\\University of Utah \and Carlos
+  Scheidegger\\University of Arizona \and Suresh
+  Venkatasubramanian\thanks{Corresponding author.}\\University of Utah}
+\newcommand{\reals}{\mathbb{R}}
+
+%ACM licensing information
+\newfont{\mycrnotice}{ptmr8t at 7pt}
+\newfont{\myconfname}{ptmri8t at 7pt}
+\let\crnotice\mycrnotice%
+\let\confname\myconfname%
+
+\clubpenalty=10000 
+\widowpenalty = 10000
+
+
+
+\begin{document}
+\maketitle
+
+\input abstract
+
+\input intro
+
+\input prelim
+
+\input certify
+
+\input repair
+
+\input experiments
+
+\input discussion2
+
+\section{Acknowledgments}
+
+This research was funded in part by the  NSF under grant BIGDATA-1251049. Thanks to Deborah Karpatkin, David Robinson, and Natalie Shapero for helping us understand the legal interpretation of disparate impact.  Any misunderstandings about these issues in this paper are our own.  Thanks also to Mark Gould for pointing us to the Griggs v. Duke decision, which helped to set us down this path in the first place.
+
+\bibliographystyle{abbrv}
+\bibliography{bias}
+
+\input appendix
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-PDF-mode: t
+%%% TeX-master: t
+%%% End:

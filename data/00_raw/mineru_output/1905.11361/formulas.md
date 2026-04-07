@@ -1,0 +1,411 @@
+$$
+\ell_ {\alpha} (b _ {1}, b _ {2}) = \alpha \mathbb {I} [ b _ {1} = 0, b _ {2} = 1 ] + (1 - \alpha) \mathbb {I} [ b _ {1} = 1, b _ {2} = 0 ]
+$$
+
+$$
+l _ {\alpha} (\pi) = E \left[ \ell_ {\alpha} \left(y _ {i}, \pi \left(\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}\right)\right) \right] \tag {1}
+$$
+
+$$
+\operatorname * {P r} [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 | y _ {i} = 0 ] = \operatorname * {P r} [ S _ {\tau} \geq \theta | y _ {i} = 0 ] = \operatorname * {P r} [ Z _ {\tau} ^ {\eta} \geq \theta ].
+$$
+
+$$
+\operatorname * {P r} [ S _ {\tau} = k | y _ {i} = 0 ] = \operatorname * {P r} [ Z _ {\tau} ^ {\eta} = k ] = \binom {\tau} {k} \eta^ {k} (1 - \eta) ^ {\tau - k}.
+$$
+
+$$
+\operatorname * {P r} [ S _ {\tau} = k | y _ {i} = + 1 ] = \operatorname * {P r} [ Z _ {\tau} ^ {\eta} = \tau - k ] = \binom {\tau} {k} \eta^ {\tau - k} (1 - \eta) ^ {k}.
+$$
+
+$$
+\theta_ {p, \alpha} ^ {*} = \arg \min _ {\theta} l _ {\alpha} (\theta) = \left\lceil \frac {\tau}{2} - \frac {\log (\frac {1}{p} - 1) + \log (\frac {1}{\alpha} - 1)}{2 \log (1 + \frac {2 \sigma}{1 - \sigma})} \right\rceil .
+$$
+
+$$
+\arg \min  _ {\pi} \quad \mathrm {F D R} _ {\pi} = \Pr \left[ y _ {i} = 0 \mid \Pr \left[ \pi \left(\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}\right) = 1 \right] \right.
+$$
+
+$$
+\text {s u b j e c t} \quad \frac {\tau_ {\pi}}{\Pr [ \pi (\hat {y} _ {i , 1} , \dots , \hat {y} _ {i , \tau}) = 1 ]} \leq B \tag {2}
+$$
+
+$$
+\underset {\tau} {\text {m i n i m i z e}} \qquad \mathbb {E} [ \tau ]
+$$
+
+$$
+\text {s u b j e c t} \quad \forall_ {i} \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 \text {i f f} \Pr [ y _ {i} = + 1 | \hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau} ] \geq 1 - \epsilon
+$$
+
+$$
+\forall_ {i} \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 0 \text {i f f} \Pr [ y _ {i} = + 1 | \hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau} ] <   \epsilon^ {\prime}
+$$
+
+$$
+\pi_ {G r e e d y} (\hat {y} _ {i, 1}, \ldots , \hat {y} _ {i, j}) = \left\{ \begin{array}{l l} 0 & \text {i f} \operatorname * {P r} [ y _ {i} = + 1 | \hat {y} _ {i, 1}, \ldots , \hat {y} _ {i, j} ] <   \epsilon^ {\prime} \\ 1 & \text {i f} \operatorname * {P r} [ y _ {i} = + 1 | \hat {y} _ {i, 1}, \ldots , \hat {y} _ {i, j} ] \geq 1 - \epsilon \\ \text {r e t e s t} & \text {e l s e} \end{array} \right..
+$$
+
+$$
+\pi_ {G r e e d y} (\hat {y} _ {i, 1}, \ldots , \hat {y} _ {i, \tau}) = \left\{ \begin{array}{l l} 0 & \text {i f X _ {\tau} <   \log \frac {\epsilon^ {\prime}}{1 - \epsilon^ {\prime}}} \\ 1 & \text {i f X _ {\tau} \geq \log (\frac {1 - \epsilon}{\epsilon})} \\ \mathrm {r e t e s t} & \text {e l s e} \end{array} \right.
+$$
+
+$$
+a = \left\lceil \frac {\log (\frac {(1 - \epsilon) (1 - \epsilon^ {\prime}) (1 + \sigma)}{\epsilon \epsilon^ {\prime} (1 - \sigma)})}{\log (\frac {1 + \sigma}{1 - \sigma})} \right\rceil \gg \frac {1}{\sigma} \quad \mathrm {a n d} \quad z = \left\lceil \frac {\log (\frac {p (1 - \epsilon^ {\prime}) (1 + \sigma)}{\epsilon^ {\prime} (1 - p) (1 - \sigma)})}{\log (\frac {1 + \sigma}{1 - \sigma})} \right\rceil
+$$
+
+$$
+\mathrm {F P R} _ {\theta , \tau} ^ {\eta_ {1}} = \operatorname * {P r} _ {\eta_ {1}} [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 | y _ {i} = 0 ] <   \operatorname * {P r} _ {\eta_ {2}} [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 | y _ {i} = 0 ] = \mathrm {F P R} _ {\theta , \tau} ^ {\eta_ {2}},
+$$
+
+$$
+\mathrm {F N R} _ {\theta , \tau} ^ {\eta_ {1}} = \operatorname * {P r} _ {\eta_ {1}} [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 0 | y _ {i} = + 1 ] <   \operatorname * {P r} _ {\eta_ {2}} [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 0 | y _ {i} = + 1 ] = F N R _ {\theta , \tau} ^ {\eta_ {2}}.
+$$
+
+$$
+\Pr \left[ \left| \frac {1}{m} \sum_ {i = 1} ^ {m} y _ {i} - \mathbb {E} [ y _ {i} ] \right| \geq \epsilon \right] \leq 2 e ^ {- m \epsilon^ {2} / 2 \sigma^ {2}}.
+$$
+
+$$
+\operatorname * {P r} \left[ \left| \frac {1}{m} \sum_ {i = 1} ^ {m} y _ {i} - p \right| \geq \epsilon \right] \leq 2 e ^ {- 2 m \epsilon^ {2}}.
+$$
+
+$$
+\begin{array}{l} l _ {\alpha} (\theta + 1, \tau) - l _ {\alpha} (\theta , \tau) = - \alpha \Pr [ y = 0, S _ {\tau} = \theta ] + (1 - \alpha) \Pr [ y = + 1, S _ {\tau} = \theta ] \\ = - \alpha \operatorname * {P r} [ S _ {\tau} = \theta | y = 0 ] \operatorname * {P r} [ y = 0 ] + (1 - \alpha) \operatorname * {P r} [ S _ {\tau} = \theta | y = + 1 ] \operatorname * {P r} [ y = + 1 ] \\ \end{array}
+$$
+
+$$
+l _ {\frac {1}{2}} (\theta + 1, \tau) - l _ {\frac {1}{2}} (\theta , \tau) = - (1 - p) \alpha \operatorname * {P r} [ S _ {\tau} = \theta | y = 0 ] + p (1 - \alpha) \operatorname * {P r} [ S _ {\tau} = \theta | y = + 1 ].
+$$
+
+$$
+(1 - p) \alpha \Pr [ S _ {\tau} = \theta | y = 0 ] <   p (1 - \alpha) \Pr [ S _ {\tau} = \theta | y = + 1 ] \tag {3}
+$$
+
+$$
+\operatorname * {P r} [ S _ {\tau} = \theta | y = 0 ] = \binom {\tau} {\theta} (\frac {1 - \sigma}{2}) ^ {\theta} (\frac {1 + \sigma}{2}) ^ {\tau - \theta}
+$$
+
+$$
+\Pr [ S _ {\tau} = \theta | y = + 1 ] = \binom {\tau} {\tau - \theta} (\frac {1 - \sigma}{2}) ^ {\tau - \theta} (\frac {1 + \sigma}{2}) ^ {\theta}
+$$
+
+$$
+(1 - p) \alpha \binom {\tau} {\theta} (\frac {1 - \sigma}{2}) ^ {\theta} (\frac {1 + \sigma}{2}) ^ {\tau - \theta} <   p (1 - \alpha) \binom {\tau} {\tau - \theta} (\frac {1 - \sigma}{2}) ^ {\tau - \theta} (\frac {1 + \sigma}{2}) ^ {\theta}.
+$$
+
+$$
+(\frac {1 - \sigma}{1 + \sigma}) ^ {2 \theta} <   (\frac {1 - \sigma}{1 + \sigma}) ^ {\tau} (\frac {p}{1 - p}) (\frac {1 - \alpha}{\alpha}).
+$$
+
+$$
+2 \theta \log (\frac {1 - \sigma}{1 + \sigma}) <   \tau \log (\frac {1 - \sigma}{1 + \sigma}) + \log (\frac {p}{1 - p}) + \log (\frac {1 - \alpha}{\alpha}).
+$$
+
+$$
+\theta > \frac {\tau \log (\frac {1 - \sigma}{1 + \sigma}) + \log (\frac {p}{1 - p}) + \log (\frac {1 - \alpha}{\alpha})}{2 \log (\frac {1 - \sigma}{1 + \sigma})} = \left\lceil \frac {1}{2} (\tau - \frac {\log (\frac {1}{p} - 1) + \log (\frac {1}{\alpha} - 1)}{\log (1 + \frac {2 \sigma}{1 - \sigma})}) \right\rceil
+$$
+
+$$
+(1 - p) \alpha \Pr [ S _ {\tau} = \theta | y = 0 ] <   p (1 - \alpha) \Pr [ S _ {\tau} = \theta | y = + 1 ],
+$$
+
+$$
+\alpha (1 - p) \Pr [ S _ {\tau} = \theta | y = 0 ] > (1 - \alpha) p \Pr [ S _ {\tau} = \theta | y = + 1 ].
+$$
+
+$$
+\Pr [ \mathbb {E} [ S _ {\tau} ] - S _ {\tau} \geq \epsilon | y = + 1 ] = \Pr [ \tau (\frac {1 + \sigma}{2}) - S _ {\tau} \geq \epsilon | y = + 1 ] \leq e ^ {- 2 \epsilon^ {2} \tau} <   \delta .
+$$
+
+$$
+\operatorname * {P r} [ S _ {\tau} - \mathbb {E} [ S _ {\tau} ] \geq \epsilon | y = 0 ] = \operatorname * {P r} [ S _ {\tau} - \tau (\frac {1 - \sigma}{2}) \geq \epsilon | y = 0 ] \leq e ^ {- 2 \epsilon^ {2} \tau} <   \delta
+$$
+
+$$
+r _ {k} = \operatorname * {P r} [ \pi (\hat {y} _ {i, 1}, \ldots , \hat {y} _ {i, \tau}) = 1 | S _ {\tau} = k \neq \theta ] = \left\{ \begin{array}{l l} 0, & \quad \text {i f} k <   \theta \\ 1 & \quad \text {i f} k > \theta \end{array} \right..
+$$
+
+$$
+\Pr \left[ y _ {i} = + 1 \mid S _ {\tau} = \theta \right] = \frac {\Pr \left[ y _ {i} = + 1 \right] \Pr \left[ S _ {\tau} = \theta \mid y _ {i} = + 1 \right]}{\Pr \left[ S _ {\tau} = \theta \right]} =
+$$
+
+$$
+\frac {p \binom {\tau} {\theta} (\frac {1 - \sigma}{2}) ^ {\tau - \theta} (\frac {1 + \sigma}{2}) ^ {\theta}}{p \binom {\tau} {\theta} (\frac {1 - \sigma}{2}) ^ {\tau - \theta} (\frac {1 + \sigma}{2}) ^ {\theta} + (1 - p) \binom {\tau} {\tau - \theta} (\frac {1 + \sigma}{2}) ^ {\tau - \theta} (\frac {1 - \sigma}{2}) ^ {\theta}}.
+$$
+
+$$
+\frac {p (1 + \sigma) ^ {2 \theta - \tau}}{p (1 + \sigma) ^ {2 \theta - \tau} + (1 - p) (1 - \sigma) ^ {2 \theta - \tau}} = \frac {p (\frac {1 + \sigma}{1 - \sigma}) ^ {2 \theta - \tau}}{p (\frac {1 + \sigma}{1 - \sigma}) ^ {2 \theta - \tau} + 1 - p}.
+$$
+
+$$
+\left(\frac {1 + \sigma}{1 - \sigma}\right) ^ {2 \theta - \tau} (1 - p) > 1 - p.
+$$
+
+$$
+(\frac {1 + \sigma}{1 - \sigma}) ^ {2 \theta - \tau} > p (\frac {1 + \sigma}{1 - \sigma}) ^ {2 \theta - \tau} + 1 - p,
+$$
+
+$$
+\operatorname * {P r} [ y _ {i ^ {\prime}} = + 1 ] = p <   \frac {p (\frac {1 + \sigma}{1 - \sigma}) ^ {2 \theta - \tau}}{p (\frac {1 + \sigma}{1 - \sigma}) ^ {2 \theta - \tau} + 1 - p} = \operatorname * {P r} [ y _ {i} = + 1 | S _ {\tau} = \theta ].
+$$
+
+$$
+\frac {\mathrm {P r} [ \hat {y} _ {i , j} = 1 | y _ {i} = 1 ]}{\mathrm {P r} [ \hat {y} _ {i , j} = 1 | y _ {i} = 0 ]} = \frac {1 + \sigma}{1 - \sigma}.
+$$
+
+$$
+\begin{array}{l} X _ {\tau} = X _ {0} + \sum_ {j = 1} ^ {\tau} (2 \hat {y} _ {i, j} - 1) \cdot \log \left(\frac {\Pr [ \hat {y} _ {i , j} = + 1 | y _ {i} = + 1 ]}{\Pr [ \hat {y} _ {i , j} = + 1 | y _ {i} = 0 ]}\right) \\ = \log (\frac {p}{1 - p}) + S _ {\tau} \log (\frac {1 + \sigma}{1 - \sigma}) \\ = \log \left(\left(\frac {p}{1 - p}\right) \left(\frac {1 + \sigma}{1 - \sigma}\right) ^ {S _ {\tau}}\right). \\ \end{array}
+$$
+
+$$
+\frac {\operatorname * {P r} [ S _ {\tau} = s _ {\tau} | y _ {i} = 1 ]}{\operatorname * {P r} [ S _ {\tau} = s _ {\tau} | y _ {i} = 0 ]} = \left(\frac {1 + \sigma}{1 - \sigma}\right) ^ {s _ {\tau}},
+$$
+
+$$
+X _ {\tau} = \log \left(\left(\frac {p}{1 - p}\right) \left(\frac {\Pr \left[ S _ {\tau} = s _ {\tau} \mid y _ {i} = 1 \right]}{\Pr \left[ S _ {\tau} = s _ {\tau} \mid y _ {i} = 0 \right]}\right)\right). \tag {4}
+$$
+
+$$
+\Pr \left[ S _ {\tau} = s _ {\tau} \mid y _ {i} = 1 \right] = \frac {\Pr \left[ S _ {\tau} = s _ {\tau} \right] \cdot \Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]}{\Pr \left[ y _ {i} = 1 \right]}
+$$
+
+$$
+\Pr \left[ S _ {\tau} = s _ {\tau} \mid y _ {i} = 0 \right] = \frac {\Pr \left[ S _ {\tau} = s _ {\tau} \right] \cdot \Pr \left[ y _ {i} = 0 \mid S _ {\tau} = s _ {\tau} \right]}{\Pr \left[ y _ {i} = 0 \right]},
+$$
+
+$$
+\frac {\Pr \left[ S _ {\tau} = s _ {\tau} \mid y _ {i} = 1 \right]}{\Pr \left[ S _ {\tau} = s _ {\tau} \mid y _ {i} = 0 \right]} = \frac {(1 - p) \cdot \Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]}{p \cdot \Pr \left[ y _ {i} = 0 \mid S _ {\tau} = s _ {\tau} \right]}. \tag {5}
+$$
+
+$$
+X _ {\tau} = \log \left(\frac {\Pr [ y _ {i} = 1 | S _ {\tau} = s _ {\tau} ]}{\Pr [ y _ {i} = 0 | S _ {\tau} = s _ {\tau} ]}\right) = \log \left(\frac {\Pr [ y _ {i} = 1 | S _ {\tau} = s _ {\tau} ]}{1 - \Pr [ y _ {i} = 1 | S _ {\tau} = s _ {\tau} ]}\right) \geq \log \beta
+$$
+
+$$
+\frac {\Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]}{1 - \Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]} \geq \beta
+$$
+
+$$
+\Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right] \geq \beta \left(1 - \Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]\right)
+$$
+
+$$
+\operatorname * {P r} [ y _ {i} = 1 | S _ {\tau} = s _ {\tau} ] \geq \frac {\beta}{1 + \beta}
+$$
+
+$$
+\frac {\Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]}{1 - \Pr \left[ y _ {i} = 1 \mid S _ {\tau} = s _ {\tau} \right]} <   \beta^ {\prime}
+$$
+
+$$
+\operatorname * {P r} [ y _ {i} = 1 | S _ {\tau} = s _ {\tau} ] <   \frac {\beta^ {\prime}}{1 + \beta^ {\prime}}
+$$
+
+$$
+\operatorname * {P r} [ \hat {y} _ {i, j} = + 1 | y _ {i} = + 1 ] = \frac {1 + \sigma}{2}
+$$
+
+$$
+\Pr [ \hat {y} _ {i, j} = 0 | y _ {i} = + 1 ] = \frac {1 - \sigma}{2}
+$$
+
+$$
+\Pr \left[ \hat {y} _ {i, j} = 0 \mid y _ {i} = 1 \right] - \Pr \left[ \hat {y} _ {i, j} = + 1 \mid y _ {i} = 1 \right] = - \sigma .
+$$
+
+$$
+\log \frac {\epsilon^ {\prime}}{1 - \epsilon^ {\prime}} - \log \left(\frac {1 + \sigma}{1 - \sigma}\right)
+$$
+
+$$
+X _ {0} = \log \frac {p}{1 - p}.
+$$
+
+$$
+\log (\frac {1 - \epsilon}{\epsilon}).
+$$
+
+$$
+a = \left\lceil \frac {\log \left(\frac {1 - \epsilon}{\epsilon}\right) - \left(\log \frac {\epsilon^ {\prime}}{1 - \epsilon^ {\prime}} - \log \left(\frac {1 + \sigma}{1 - \sigma}\right)\right)}{\log \left(\frac {1 + \sigma}{1 - \sigma}\right)} \right\rceil = \left\lceil \frac {\log \left(\frac {(1 - \epsilon) (1 - \epsilon^ {\prime}) (1 + \sigma)}{\epsilon \epsilon^ {\prime} (1 - \sigma)}\right)}{\log \left(\frac {1 + \sigma}{1 - \sigma}\right)} \right\rceil .
+$$
+
+$$
+z = \left\lceil \frac {\log \frac {p}{1 - p} - (\log \frac {\epsilon^ {\prime}}{1 - \epsilon^ {\prime}} - \log (\frac {1 + \sigma}{1 - \sigma}))}{\log (\frac {1 + \sigma}{1 - \sigma})} \right\rceil = \left\lceil \frac {\log (\frac {p (1 - \epsilon^ {\prime}) (1 + \sigma)}{\epsilon^ {\prime} (1 - p) (1 - \sigma)})}{\log (\frac {1 + \sigma}{1 - \sigma})} \right\rceil
+$$
+
+$$
+\mathbb {E} [ \tau_ {s} ] = \mathbb {E} [ D _ {z = 1} ] = \frac {1}{q - p} \left(z - a \cdot \frac {1 - (\frac {q}{p}) ^ {z}}{1 - (\frac {q}{p}) ^ {a}}\right) = \frac {1}{- \sigma} \left(z - a \cdot \frac {1 - (\frac {1 - \sigma}{1 + \sigma}) ^ {z}}{1 - (\frac {1 - \sigma}{1 + \sigma}) ^ {a}}\right).
+$$
+
+$$
+\mathbb {E} [ \tau_ {s} ] = \frac {1}{\sigma} \left(a \cdot \frac {1 - (\frac {1 - \sigma}{1 + \sigma}) ^ {z}}{1 - (\frac {1 - \sigma}{1 + \sigma}) ^ {a}} - z\right).
+$$
+
+$$
+\operatorname * {P r} [ \hat {y} _ {i, j} = + 1 | y _ {i} ] = \frac {1 - \sigma}{2}
+$$
+
+$$
+\operatorname * {P r} [ \hat {y} _ {i, j} = 0 | y _ {i} = + 1 ] = \frac {1 + \sigma}{2}.
+$$
+
+$$
+\Pr \left[ \hat {y} _ {i, j} = 0 \mid y _ {i} = 0 \right] - \Pr \left[ \hat {y} _ {i, j} = + 1 \mid y _ {i} = 0 \right] = \sigma
+$$
+
+$$
+\mathbb {E} [ \tau_ {u} ] = \frac {1}{\sigma} \left(z - a \cdot \frac {1 - (\frac {1 + \sigma}{1 - \sigma}) ^ {z}}{1 - (\frac {1 + \sigma}{1 - \sigma}) ^ {a}}\right).
+$$
+
+$$
+\mathrm {F N R} = \Pr \left[ \pi_ {\mathrm {G r e e d y}} (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 0 | y _ {i} = + 1 \right] = \frac {\left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {a} - \left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {z}}{\left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {a} - 1}
+$$
+
+$$
+\mathrm {T N R} = \operatorname * {P r} [ \pi_ {\mathrm {G r e e d y}} (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 0 | y _ {i} = 0 ] = \frac {(\frac {1 + \sigma}{1 - \sigma}) ^ {a} - (\frac {1 + \sigma}{1 - \sigma}) ^ {z}}{(\frac {1 + \sigma}{1 - \sigma}) ^ {a} - 1}.
+$$
+
+$$
+\mathrm {T P R} = \Pr \left[ \pi_ {\text {G r e e d y}} \left(\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}\right) = 1 \mid y _ {i} = + 1 \right] = 1 - \frac {\left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {a} - \left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {z}}{\left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {a} - 1} =
+$$
+
+$$
+\frac {(\frac {1 - \sigma}{1 + \sigma}) ^ {z} - 1}{(\frac {1 - \sigma}{1 + \sigma}) ^ {a} - 1} = \frac {\frac {\epsilon^ {\prime} (1 - p) (1 - \sigma)}{p (1 - \epsilon^ {\prime}) (1 + \sigma)} - 1}{\frac {\epsilon^ {\prime} \epsilon (1 - \sigma)}{(1 - \epsilon^ {\prime}) (1 - \epsilon) (1 + \sigma)} - 1} = \frac {\frac {\mu (1 - p)}{p} - 1}{\frac {\epsilon \mu}{(1 - \epsilon)} - 1} = \frac {(1 - \epsilon) (\mu (1 - p) - p)}{p (\epsilon \mu - (1 - \epsilon))},
+$$
+
+$$
+\mathrm {T P R} = \Theta \left(\frac {p - \mu}{p}\right) = \Theta \left(1 - \frac {\epsilon^ {\prime}}{p} (1 - \sigma)\right).
+$$
+
+$$
+\begin{array}{l} \mathrm {F P R} = \Pr [ \pi_ {\mathrm {G r e e d y}} (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 | y _ {i} = 0 ] = \frac {(\frac {1 + \sigma}{1 - \sigma}) ^ {z} - 1}{(\frac {1 + \sigma}{1 - \sigma}) ^ {a} - 1} = \frac {\frac {p (1 - \epsilon^ {\prime}) (1 + \sigma)}{(1 - p) \epsilon^ {\prime} (1 - \sigma)} - 1}{\frac {(1 - \epsilon^ {\prime}) (1 - \epsilon) (1 + \sigma)}{\epsilon^ {\prime} \epsilon (1 - \sigma)} - 1} = \\ = \frac {\frac {p}{(1 - p) \mu} - 1}{\frac {(1 - \epsilon)}{\epsilon \mu} - 1} \frac {\epsilon (p - (1 - p) \mu)}{(1 - p) (1 - \epsilon - \epsilon \mu)} = \Theta (\epsilon (p - \mu)) = \Theta (\epsilon (p - \epsilon^ {\prime} + \epsilon^ {\prime} \sigma)) \\ \end{array}
+$$
+
+$$
+\mathbb {E} [ \tau ] = \mathbb {E} [ \tau_ {s} ] p + \mathbb {E} [ \tau_ {u} ] (1 - p) =
+$$
+
+$$
+\begin{array}{l} = \frac {1}{\sigma} \left(a \cdot \frac {1 - \left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {z}}{1 - \left(\frac {1 - \sigma}{1 + \sigma}\right) ^ {a}} - z\right) p + \frac {1}{\sigma} \left(z - a \cdot \frac {1 - \left(\frac {1 + \sigma}{1 - \sigma}\right) ^ {z}}{1 - \left(\frac {1 + \sigma}{1 - \sigma}\right) ^ {a}}\right) (1 - p) = \\ \approx \frac {1}{\sigma} \left(a \cdot \left(1 - \frac {\epsilon^ {\prime}}{p} (1 - \sigma)\right) - z\right) p + \frac {1}{\sigma} \left(z - a \left(\epsilon \left(p - \epsilon^ {\prime} + \epsilon^ {\prime} \sigma\right)\right)\right) (1 - p) \approx \frac {a p}{\sigma} \\ \end{array}
+$$
+
+$$
+\mathcal {L} (\eta | k) = \operatorname {a r g m a x} _ {\eta} f _ {k} (\eta) = \operatorname {a r g m a x} _ {\eta} \binom {n} {k} \eta^ {k} (1 - \eta) ^ {n - k} = \frac {k}{n}.
+$$
+
+$$
+\operatorname {a r g m a x} _ {\eta} f _ {k} (\eta) = \operatorname {a r g m a x} _ {\eta} \binom {n} {k} \eta^ {k} (1 - \eta) ^ {n - k} = \operatorname {a r g m a x} _ {\eta} \eta^ {k} (1 - \eta) ^ {n - k}
+$$
+
+$$
+\operatorname {a r g m a x} _ {\eta} \eta^ {k} (1 - \eta) ^ {n - k} = \operatorname {a r g m a x} _ {\eta} \ln (\eta^ {k} (1 - \eta) ^ {n - k}) = \operatorname {a r g m a x} _ {\eta} k \ln (\eta) + (n - k) \ln (1 - \eta)
+$$
+
+$$
+\frac {d \ln (f _ {k} (\eta))}{d \eta} = \frac {k}{\eta} - \frac {n - k}{1 - \eta} = 0.
+$$
+
+$$
+k (1 - \eta) = (n - k) \eta
+$$
+
+$$
+\frac {d ^ {2} \ln (f _ {k} (\eta))}{d \eta^ {2}} = - \frac {k}{\eta^ {2}} - \frac {n - k}{(1 - \eta) ^ {2}} <   0,
+$$
+
+$$
+\Pr [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 | y _ {i} = 0, \eta = \eta_ {i} ] = \Pr \left[ Z _ {\tau} ^ {\eta_ {i}} \geq \theta \right]
+$$
+
+$$
+\Pr [ \pi (\hat {y} _ {i, 1}, \dots , \hat {y} _ {i, \tau}) = 1 | y _ {i} = + 1, \eta = \eta_ {i} ] = \Pr [ Z _ {\tau} ^ {\eta_ {i}} \leq \tau - \theta ].
+$$
+
+$$
+F P _ {\theta , \tau} ^ {\eta_ {1}} = \Pr [ \theta \leq Z _ {n} ^ {\eta_ {1}} ] <   \Pr [ \theta \leq Z _ {n} ^ {\eta_ {2}} ] = F P _ {\theta , \tau} ^ {\eta_ {2}}
+$$
+
+$$
+F N _ {\theta , \tau} ^ {\eta_ {1}} = \Pr \left[ Z _ {n} ^ {\eta_ {1}} \leq \tau - \theta \right] <   \Pr \left[ Z _ {n} ^ {\eta_ {2}} \leq \tau - \theta \right] = F N _ {\theta , \tau} ^ {\eta_ {2}}.
+$$
+
+$$
+\Sigma = \left[ \begin{array}{c c c c} \sigma_ {Q} ^ {2} & \sigma_ {Q} ^ {2} & \dots & \sigma_ {Q} ^ {2} \\ \sigma_ {Q} ^ {2} & \sigma_ {Q} ^ {2} + \sigma_ {\eta} ^ {2} & \dots & \sigma_ {Q} ^ {2} \\ \vdots & \vdots & \ddots & \vdots \\ \sigma_ {Q} ^ {2} & \sigma_ {Q} ^ {2} & \dots & \sigma_ {Q} ^ {2} + \sigma_ {\eta} ^ {2} \end{array} \right] \tag {6}
+$$
+
+$$
+\Sigma = \left[ \begin{array}{c c} \Sigma_ {1 1} & \Sigma_ {1 2} \\ \Sigma_ {2 1} & \Sigma_ {2 2} \end{array} \right]
+$$
+
+$$
+\mathbb {E} [ Q | Y _ {1}, \dots , Y _ {n} ] = \mu_ {Q} + \Sigma_ {1 2} \Sigma_ {2 2} ^ {- 1} (\mathbf {y} - \mu_ {y}) \tag {7}
+$$
+
+$$
+V a r [ Q | Y _ {1}, \dots , Y _ {n} ] = \Sigma_ {1 1} - \Sigma_ {1 2} \Sigma_ {2 2} ^ {- 1} \Sigma_ {2 1} \tag {8}
+$$
+
+$$
+\mathbb {E} [ Q | Y _ {1}, \dots , Y _ {n} ] = \mu_ {Q} + \left[ \frac {1}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n}, \dots \right] \cdot (\mathbf {y} - \mu_ {y}) \tag {9}
+$$
+
+$$
+\operatorname {V a r} [ Q | Y _ {1}, \dots , Y _ {n} ] = \frac {1}{\frac {1}{\sigma_ {Q} ^ {2}} + \frac {n}{\sigma_ {\eta} ^ {2}}} \tag {10}
+$$
+
+$$
+(A + B) ^ {- 1} = A ^ {- 1} - \frac {1}{1 + \operatorname {T r a c e} \left(B A ^ {- 1}\right)} A ^ {- 1} B A ^ {- 1} \tag {11}
+$$
+
+$$
+\Sigma_ {2 2} ^ {- 1} = (A + B) ^ {- 1} = \left[ \begin{array}{c c c} \frac {1}{\sigma_ {\eta} ^ {2}} & & 0 \\ & \ddots & \\ 0 & & \frac {1}{\sigma_ {\eta} ^ {2}} \end{array} \right] - \frac {1}{1 + \frac {n \sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {2}}} \left[ \begin{array}{c c c} \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {4}} & \dots & \dots \\ \vdots & \ddots & \vdots \\ \vdots & \dots & \ddots \end{array} \right]
+$$
+
+$$
+\begin{array}{l} - \frac {\frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {4}}}{1 + \frac {n \sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {2}}} = - \frac {\frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {4}}}{1 + \frac {n \sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {2}}} \cdot \frac {\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}}}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}}} (12) \\ = - \frac {\frac {1}{\sigma_ {\eta} ^ {2}}}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n} (13) \\ = - \frac {1}{\frac {\sigma_ {\eta} ^ {4}}{\sigma_ {Q} ^ {2}} + n \sigma_ {\eta} ^ {2}} (14) \\ \end{array}
+$$
+
+$$
+\frac {1}{\sigma_ {\eta} ^ {2}} - \frac {1}{\frac {\sigma_ {\eta} ^ {4}}{\sigma_ {Q} ^ {2}} + n \sigma_ {\eta} ^ {2}} \tag {15}
+$$
+
+$$
+\begin{array}{l} \Sigma_ {1 2} \Sigma_ {2 2} ^ {- 1} = \left[ \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {2}} - \frac {n \sigma_ {Q} ^ {2}}{\frac {\sigma_ {\eta} ^ {4}}{\sigma^ {2}} + n \sigma_ {\eta} ^ {2}}, \dots \right] \\ = \left[ \begin{array}{c} \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {2}} \left(\frac {\sigma_ {\eta} ^ {4}}{\sigma_ {Q} ^ {2}} + n \sigma_ {\eta} ^ {2}\right) n \sigma_ {Q} ^ {2} \\ \hline \frac {\sigma_ {\eta} ^ {4}}{\sigma_ {Q} ^ {2}} + n \sigma_ {\eta} ^ {2} \end{array} , \dots \right] \\ = \left[ \begin{array}{c} \sigma_ {\eta} ^ {2} \\ \hline \frac {\sigma_ {\eta} ^ {4}}{\sigma_ {Q} ^ {2}} + n \sigma_ {\eta} ^ {2} \end{array} , \dots \right] \\ = \left[ \frac {1}{\frac {\sigma_ {Q} ^ {2}}{\sigma_ {Q} ^ {2}} + n}, \dots \right] \tag {16} \\ \end{array}
+$$
+
+$$
+\frac {1}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n}
+$$
+
+$$
+\Sigma_ {1 2} \Sigma_ {2 2} ^ {- 1} \Sigma_ {2 1} = \frac {n \sigma_ {Q} ^ {2}}{\frac {\sigma_ {Q} ^ {2}}{\sigma_ {Q} ^ {2}} + n} \tag {17}
+$$
+
+$$
+\begin{array}{l} \operatorname {V a r} [ Q | Y _ {1}, \dots , Y _ {n} ] = \Sigma_ {1 1} - \Sigma_ {1 2} \Sigma_ {2 2} ^ {- 1} \Sigma_ {2 1} \\ = \sigma_ {Q} ^ {2} - \frac {n \sigma_ {Q} ^ {2}}{\frac {\sigma_ {n} ^ {2}}{\sigma_ {Q} ^ {2}} + n} \\ = \frac {\sigma_ {Q} ^ {2} \left(\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n\right) - n \sigma_ {Q} ^ {2}}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n} \\ = \frac {\sigma_ {\eta} ^ {2}}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n} \\ = \frac {1}{\frac {1}{\sigma_ {Q} ^ {2}} + \frac {n}{\sigma_ {\eta} ^ {2}}} \tag {18} \\ \end{array}
+$$
+
+$$
+\mathrm {V a r} [ Q | Y _ {1}, \dots , Y _ {n} ] = \frac {1}{\frac {1}{\sigma_ {Q} ^ {2}} + \frac {n}{\sigma_ {\eta} ^ {2}}} = \frac {\sigma_ {Q} ^ {2} \sigma_ {\eta} ^ {2}}{\sigma_ {\eta} ^ {2} + n \sigma_ {Q} ^ {2}}.
+$$
+
+$$
+\frac {\sigma_ {Q} ^ {2} \sigma_ {\eta_ {1}} ^ {2}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}} = \frac {\sigma_ {Q} ^ {2} \sigma_ {\eta_ {2}} ^ {2}}{\sigma_ {\eta_ {2}} ^ {2} + n _ {2} \sigma_ {Q} ^ {2}}
+$$
+
+$$
+\sigma_ {\eta_ {1}} ^ {2} \left(\sigma_ {\eta_ {2}} ^ {2} + n _ {2} \sigma_ {Q} ^ {2}\right) = \sigma_ {\eta_ {2}} ^ {2} \left(\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}\right)
+$$
+
+$$
+\sigma_ {\eta_ {1}} ^ {2} n _ {2} = \sigma_ {\eta_ {2}} ^ {2} n _ {1}.
+$$
+
+$$
+\mathbb {E} [ Q | Y _ {1}, \dots , Y _ {n} ] = \mu_ {Q} + \left[ \frac {1}{\frac {\sigma_ {\eta} ^ {2}}{\sigma_ {Q} ^ {2}} + n}, \dots \right] \cdot (\mathbf {y} - \mu_ {y}) = \mu_ {Q} + \left[ \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta} ^ {2} + n \sigma_ {Q} ^ {2}}, \dots \right] \cdot (\mathbf {y} - \mu_ {y})
+$$
+
+$$
+\begin{array}{l} \mathbb {E} _ {1} [ Q | Y _ {1}, \dots , Y _ {n _ {1}} ] - \mathbb {E} _ {2} [ Q | Y _ {1}, \dots , Y _ {n _ {2}} ] = \\ \left[ \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}}, \ldots \right] \cdot (\mathbf {y _ {1}} - \boldsymbol {\mu_ {y}}) - \left[ \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta_ {2}} ^ {2} + n _ {2} \sigma_ {Q} ^ {2}}, \ldots \right] \cdot (\mathbf {y _ {2}} - \boldsymbol {\mu_ {y}}) \\ = \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}} n _ {1} (\bar {\mathbf {y _ {1}}}) - \frac {\sigma_ {Q} ^ {2}}{\sigma_ {\eta_ {2}} ^ {2} + n _ {2} \sigma_ {Q} ^ {2}} n _ {2} (\bar {\mathbf {y _ {2}}}) \\ = \frac {\sigma_ {Q} ^ {2} n _ {1}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}} (\bar {\mathbf {y}} _ {\mathbf {1}}) - \frac {\sigma_ {Q} ^ {2} n _ {2}}{\sigma_ {\eta_ {2}} ^ {2} + n _ {2} \sigma_ {Q} ^ {2}} (\bar {\mathbf {y}} _ {\mathbf {2}}) \\ = \frac {\sigma_ {Q} ^ {2} n _ {1}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}} (\bar {\mathbf {y _ {1}}}) - \frac {\sigma_ {Q} ^ {2} \frac {\sigma_ {\eta_ {2}} ^ {2}}{\sigma_ {\eta_ {1}} ^ {2}} n _ {1}}{\sigma_ {\eta_ {2}} ^ {2} + \frac {\sigma_ {\eta_ {2}} ^ {2}}{\sigma_ {\eta_ {1}} ^ {2}} n _ {1} \sigma_ {Q} ^ {2}} (\bar {\mathbf {y _ {2}}}) \\ = \frac {\sigma_ {Q} ^ {2} n _ {1}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}} (\bar {\mathbf {y _ {1}}}) - \frac {\sigma_ {Q} ^ {2} n _ {1}}{\sigma_ {\eta_ {1}} ^ {2} + n _ {1} \sigma_ {Q} ^ {2}} (\bar {\mathbf {y _ {2}}}) \\ \end{array}
+$$

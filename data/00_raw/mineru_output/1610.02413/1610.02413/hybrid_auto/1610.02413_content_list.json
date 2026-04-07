@@ -1,0 +1,2736 @@
+[
+    {
+        "type": "text",
+        "text": "Equality of Opportunity in Supervised Learning ",
+        "text_level": 1,
+        "bbox": [
+            199,
+            148,
+            799,
+            175
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Moritz Hardt ",
+        "bbox": [
+            271,
+            200,
+            392,
+            217
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Eric Price ",
+        "bbox": [
+            449,
+            200,
+            535,
+            215
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Nathan Srebro ",
+        "bbox": [
+            594,
+            200,
+            723,
+            215
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "October 11, 2016 ",
+        "bbox": [
+            421,
+            231,
+            573,
+            247
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            462,
+            282,
+            532,
+            296
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "We propose a criterion for discrimination against a specified sensitive attribute in supervised learning, where the goal is to predict some target based on available features. Assuming data about the predictor, target, and membership in the protected group are available, we show how to optimally adjust any learned predictor so as to remove discrimination according to our definition. Our framework also improves incentives by shifting the cost of poor classification from disadvantaged groups to the decision maker, who can respond by improving the classification accuracy. ",
+        "bbox": [
+            166,
+            304,
+            828,
+            409
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "In line with other studies, our notion is oblivious: it depends only on the joint statistics of the predictor, the target and the protected attribute, but not on interpretation of individual features. We study the inherent limits of defining and identifying biases based on such oblivious measures, outlining what can and cannot be inferred from different oblivious tests. ",
+        "bbox": [
+            166,
+            410,
+            828,
+            470
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "We illustrate our notion using a case study of FICO credit scores. ",
+        "bbox": [
+            192,
+            470,
+            663,
+            484
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            510,
+            303,
+            527
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "As machine learning increasingly affects decisions in domains protected by anti-discrimination law, there is much interest in algorithmically measuring and ensuring fairness in machine learning. In domains such as advertising, credit, employment, education, and criminal justice, machine learning could help obtain more accurate predictions, but its effect on existing biases is not well understood. Although reliance on data and quantitative measures can help quantify and eliminate existing biases, some scholars caution that algorithms can also introduce new biases or perpetuate existing ones [BS16]. In May 2014, the Obama Administration’s Big Data Working Group released a report $\\left[ \\mathrm { P P M ^ { + } 1 4 } \\right]$ arguing that discrimination can sometimes “be the inadvertent outcome of the way big data technologies are structured and used” and pointed toward “the potential of encoding discrimination in automated decisions”. A subsequent White House report [Whi16] calls for “equal opportunity by design” as a guiding principle in domains such as credit scoring. ",
+        "bbox": [
+            120,
+            542,
+            872,
+            750
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Despite the demand, a vetted methodology for avoiding discrimination against protected attributes in machine learning is lacking. A naïve approach might require that the algorithm should ignore all protected attributes such as race, color, religion, gender, disability, or family status. However, this idea of “fairness through unawareness” is ineffective due to the existence of redundant encodings, ways of predicting protected attributes from other features [PRT08]. ",
+        "bbox": [
+            120,
+            750,
+            870,
+            834
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Another common conception of non-discrimination is demographic parity. Demographic parity requires that a decision—such as accepting or denying a loan application—be independent of the protected attribute. In the case of a binary decision $\\widehat { Y } \\in \\{ 0 , 1 \\}$ and a binary protected attribute $A \\in \\{ 0 , 1 \\}$ , this constraint can be formalized by asking that $\\operatorname* { P r } \\{ { \\widehat { Y } } = 1 | A = { \\overset { \\cdot } { 0 } } { \\overset { \\cdot } { ) } } = \\operatorname* { P r } \\{ { \\widehat { Y } } =$ ",
+        "bbox": [
+            122,
+            835,
+            870,
+            905
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1610.02413v1 [cs.LG] 7 Oct 2016 ",
+        "bbox": [
+            22,
+            272,
+            58,
+            700
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_number",
+        "text": "1 ",
+        "bbox": [
+            493,
+            926,
+            503,
+            938
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "$1 \\mid A = 1 \\}$ . In other words, membership in a protected class should have no correlation with the decision. Through its various equivalent formalizations this idea appears in numerous papers. Unfortunately, as was already argued by Dwork et al. $\\left[ \\mathrm { D H P ^ { + } 1 } 2 \\right]$ , the notion is seriously flawed on two counts. First, it doesn’t ensure fairness. Indeed, the notion permits that we accept qualified applicants in the demographic $A = 0$ , but unqualified individuals in $A = 1$ , so long as the percentages of acceptance match. This behavior can arise naturally, when there is little or no training data available within $A = 1$ . Second, demographic parity often cripples the utility that we might hope to achieve. Just imagine the common scenario in which the target variable Y —whether an individual actually defaults or not—is correlated with A. Demographic parity would not allow the ideal predictor ${ \\widehat { \\boldsymbol { Y } } } = { \\boldsymbol { Y } }$ , which can hardly be considered discriminatory as it represents the actual outcome. As a result, the loss in utility of introducing demographic parity can be substantial. ",
+        "bbox": [
+            120,
+            99,
+            872,
+            304
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we consider non-discrimination from the perspective of supervised learning, where the goal is to predict a true outcome Y from features $X$ based on labeled training data, while ensuring they are “non-discriminatory” with respect to a specified protected attribute $A$ . As in the usual supervised learning setting, we assume that we have access to labeled training data, in our case indicating also the protected attribute $A$ . That is, to samples from the joint distribution of $( X , A , Y )$ . This data is used to construct a predictor ${ \\widehat { Y } } ( X )$ or ${ \\widehat { \\boldsymbol { Y } } } ( { \\boldsymbol { X } } , { \\boldsymbol { A } } )$ , and we also use such data to test whether it is unfairly discriminatory. ",
+        "bbox": [
+            120,
+            305,
+            874,
+            425
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Unlike demographic parity, our notion always allows for the perfectly accurate solution of ${ \\widehat { Y } } = Y$ . More broadly, our criterion is easier to achieve the more accurate the predictor $\\widehat { Y }$ is, aligning fairness with the central goal in supervised learning of building more accurate predictors. ",
+        "bbox": [
+            120,
+            426,
+            872,
+            494
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The notion we propose is “oblivious”, in that it is based only on the joint distribution, or joint statistics, of the true target Y , the predictions $\\widehat { Y }$ , and the protected attribute A. In particular, it does not evaluate the features in X nor the functional form of the predictor ${ \\widehat { Y } } ( X )$ nor how it was derived. This matches other tests recently proposed and conducted, including demographic parity and different analyses of common risk scores. In many cases, only oblivious analysis is possible as the functional form of the score and underlying training data are not public. The only information about the score is the score itself, which can then be correlated with the target and protected attribute. Furthermore, even if the features or the functional form are available, going beyond oblivious analysis essentially requires subjective interpretation or casual assumptions about specific features, which we aim to avoid. ",
+        "bbox": [
+            120,
+            493,
+            874,
+            664
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "1.1 Summary of our contributions ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            683,
+            449,
+            700
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We propose a simple, interpretable, and actionable framework for measuring and removing discrimination based on protected attributes. We argue that, unlike demographic parity, our framework provides a meaningful measure of discrimination, while demonstrating in theory and experiment that we also achieve much higher utility. Our key contributions are as follows: ",
+        "bbox": [
+            120,
+            710,
+            874,
+            779
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "• We propose an easily checkable and interpretable notion of avoiding discrimination based on protected attributes. Our notion enjoys a natural interpretation in terms of graphical dependency models. It can also be viewed as shifting the burden of uncertainty in classification from the protected class to the decision maker. In doing so, our notion helps to incentivize the collection of better features, that depend more directly on the target rather then the protected attribute, and of data that allows better prediction for all protected classes. ",
+        "bbox": [
+            150,
+            784,
+            872,
+            905
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_number",
+        "text": "2 ",
+        "bbox": [
+            491,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• We give a simple and effective framework for constructing classifiers satisfying our criterion from an arbitrary learned predictor. Rather than changing a possibly complex training pipeline, the result follows via a simple post-processing step that minimizes the loss in utility. ",
+            "• We show that the Bayes optimal non-discriminating (according to our definition) classifier is the classifier derived from any Bayes optimal (not necessarily non-discriminating) regressor using our post-processing step. Moreover, we quantify the loss that follows from imposing our non-discrimination condition in case the score we start from deviates from Bayesian optimality. This result helps to justify the approach of deriving a fair classifier via post-processing rather than changing the original training process. ",
+            "• We capture the inherent limitations of our approach, as well as any other oblivious approach, through a non-identifiability result showing that different dependency structures with possibly different intuitive notions of fairness cannot be separated based on any oblivious notion or test. "
+        ],
+        "bbox": [
+            151,
+            99,
+            874,
+            359
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Throughout our work, we assume a source distribution over $( Y , X , A )$ , where Y is the target or true outcome (e.g. “default on loan”), X are the available features, and $A$ is the protected attribute. Generally, the features X may be an arbitrary vector or an abstract object, such as an image. Our work does not refer to the particular form X has. ",
+        "bbox": [
+            122,
+            369,
+            870,
+            436
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The objective of supervised learning is to construct a (possibly randomized) predictor ${ \\widehat { Y } } = f ( X , A )$ that predicts Y as is typically measured through a loss function. Furthermore, we would like to require that $\\widehat { Y }$ does not discriminate with respect to $A$ , and the goal of this paper is to formalize this notion. ",
+        "bbox": [
+            122,
+            439,
+            872,
+            506
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "2 Equalized odds and equal opportunity ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            531,
+            581,
+            553
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We now formally introduce our first criterion. ",
+        "bbox": [
+            122,
+            565,
+            491,
+            580
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 2.1 (Equalized odds). We say that a predictor $\\widehat { Y }$ satisfies equalized odds with respect to protected attribute $A$ and outcome Y , if $\\widehat { Y }$ and $A$ are independent conditional on Y . ",
+        "bbox": [
+            122,
+            590,
+            872,
+            625
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Unlike demographic parity, equalized odds allows $\\widehat { Y }$ to depend on $A$ but only through the target variable Y . As such, the definition encourages the use of features that allow to directly predict Y , but prohibits abusing $A$ as a proxy for Y . ",
+        "bbox": [
+            122,
+            633,
+            872,
+            686
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "As stated, equalized odds applies to targets and protected attributes taking values in any space, including binary, multi-class, continuous or structured settings. The case of binary random variables Y ,Yb and $A$ is of central importance in many applications, encompassing the main conceptual and technical challenges. As a result, we focus most of our attention on this case, in which case equalized odds are equivalent to: ",
+        "bbox": [
+            122,
+            686,
+            872,
+            772
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left\\{\\widehat {Y} = 1 \\mid A = 0, Y = y \\right\\} = \\Pr \\left\\{\\widehat {Y} = 1 \\mid A = 1, Y = y \\right\\}, \\quad y \\in \\{0, 1 \\}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            259,
+            781,
+            736,
+            806
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "For the outcome $y = 1$ , the constraint requires that $\\widehat { Y }$ has equal true positive rates across the two demographics $A = 0$ and $A = 1$ . For $y = 0$ , the constraint equalizes false positive rates. The definition aligns nicely with the central goal of building highly accurate classifiers, since ${ \\widehat { Y } } = Y$ is always an acceptable solution. However, equalized odds enforces that the accuracy is equally high in all demographics, punishing models that perform well only on the majority. ",
+        "bbox": [
+            122,
+            816,
+            872,
+            905
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_number",
+        "text": "3 ",
+        "bbox": [
+            493,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "2.1 Equal opportunity ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            99,
+            341,
+            118
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In the binary case, we often think of the outcome $Y = 1$ as the “advantaged” outcome, such as “not defaulting on a loan”, “admission to a college” or “receiving a promotion”. A possible relaxation of equalized odds is to require non-discrimination only within the “advantaged” outcome group. That is, to require that people who pay back their loan, have an equal opportunity of getting the loan in the first place (without specifying any requirement for those that will ultimately default). This leads to a relaxation of our notion that we call “equal opportunity”. ",
+        "bbox": [
+            122,
+            126,
+            872,
+            231
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Definition 2.2 (Equal opportunity). We say that a binary predictor $\\widehat { Y }$ satisfies equal opportunity with respect to $A$ and Y if $\\operatorname* { P r } \\left\\{ { \\widehat { Y } } = 1 \\mid A = 0 , Y = 1 \\right\\} = \\operatorname* { P r } \\left\\{ { \\widehat { Y } } = 1 \\mid A = 1 , Y = 1 \\right\\}$ . ",
+        "bbox": [
+            122,
+            239,
+            872,
+            280
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Equal opportunity is a weaker, though still interesting, notion of non-discrimination, and thus typically allows for stronger utility as we shall see in our case study. ",
+        "bbox": [
+            122,
+            287,
+            872,
+            324
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "2.2 Real-valued scores ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            340,
+            344,
+            358
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Even if the target is binary, a real-valued predictive score $R = f ( X , A )$ is often used (e.g. FICO scores for predicting loan default), with the interpretation that higher values of $R$ correspond to greater likelihood of $Y = 1$ and thus a bias toward predicting $\\widehat { Y } = 1$ . A binary classifier $\\widehat { Y }$ can be obtained by thresholding the score, i.e. setting $\\mathbf { \\widehat { Y } } = \\mathbb { I } \\{ R > t \\}$ for some threshold t. Varying this threshold changes the trade-off between sensitivity (true positive rate) and specificity (true negative rate). ",
+        "bbox": [
+            122,
+            368,
+            872,
+            470
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Our definition for equalized odds can be applied also to such score functions: a score $R$ satisfies equalized odds if $R$ is independent of $A$ given Y . If a score obeys equalized odds, then any thresholding $\\widehat { Y } = \\mathbb { I } \\{ R > t \\}$ of it also obeys equalized odds (as does any other predictor derived from $R$ alone). ",
+        "bbox": [
+            122,
+            470,
+            872,
+            539
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In Section 4, we will consider scores that might not satisfy equalized odds, and see how equalized odds predictors can be derived from them and the protected attribute $A$ , by using different (possibly randomized) thresholds depending on the value of A. The same is possible for equality of opportunity without the need for randomized thresholds. ",
+        "bbox": [
+            122,
+            539,
+            872,
+            608
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "2.3 Oblivious measures ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            627,
+            354,
+            643
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "As stated before, our notions of non-discrimination are oblivious in the following formal sense. ",
+        "bbox": [
+            122,
+            654,
+            872,
+            672
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Definition 2.3. A property of a predictor $\\widehat { Y }$ or score $R$ is said to be oblivious if it only depends on the joint distribution of $( Y , A , { \\widehat { Y } } )$ or $( Y , A , R )$ , respectively. ",
+        "bbox": [
+            122,
+            681,
+            872,
+            719
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "As a consequence of being oblivious, all the information we need to verify our definitions is contained in the joint distribution of predictor, protected group and outcome, $( \\widehat { Y } , A , Y )$ . In the binary case, when $A$ and Y are reasonably well balanced, the joint distribution of $( \\widehat { Y } , A , Y )$ is determined by 8 parameters that can be estimated to very high accuracy from samples. We will therefore ignore the effect of finite sample perturbations and instead assume that we know the joint distribution of $( { \\widehat { Y } } , A , Y )$ . ",
+        "bbox": [
+            122,
+            728,
+            872,
+            832
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_number",
+        "text": "4 ",
+        "bbox": [
+            493,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "3 Comparison with related work ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            97,
+            496,
+            118
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "There is much work on this topic in the social sciences and legal scholarship; we point the reader to Barocas and Selbst [BS16] for an excellent entry point to this rich literature. See also the survey by Romei and Ruggieri [RR14], and the references at http://www.fatml.org/resources.html. ",
+        "bbox": [
+            120,
+            131,
+            872,
+            181
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In its various equivalent notions, demographic parity appears in many papers, such as [CKP09, Zli15, BZVGRG15] to name a few. Zemel et al. $\\left[ Z \\mathrm { W } S ^ { + } 1 3 \\right]$ propose an interesting way of achieving demographic parity by aiming to learn a representation of the data that is independent of the protected attribute, while retaining as much information about the features X as possible. Louizos et al. $[ \\mathrm { L S L } ^ { + } 1 5 ]$ extend on this approach with deep variational auto-encoders. Feldman et al. $\\left[ \\mathrm { F F M ^ { + } } 1 5 \\right]$ propose a formalization of “limiting disparate impact”. For binary classifiers, the condition states that $\\operatorname* { P r } \\left\\{ { \\widehat { Y } } = 1 \\mid A = 0 \\right\\} \\leqslant 0 . 8 \\cdot \\operatorname* { P r } \\left\\{ { \\widehat { Y } } = { \\overset { \\cdot } { 1 } } \\mid A = 1 \\right\\}$ . The authors argue that this corresponds to the $^ { \\prime \\prime } 8 0 \\%$ rule” in the legal literature. The notion differs from demographic parity mainly in that it compares the probabilities as a ratio rather than additively, and in that it allows a one-sided violation of the constraint. ",
+        "bbox": [
+            120,
+            183,
+            877,
+            354
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "While simple and seemingly intuitive, demographic parity has serious conceptual limitations as a fairness notion, many of which were pointed out in work of Dwork et al. $\\left[ \\mathrm { D H P ^ { + } 1 } 2 \\right]$ . In our experiments, we will see that demographic parity also falls short on utility. Dwork et al. $\\left[ \\mathrm { D H P ^ { + } 1 } 2 \\right]$ argue that a sound notion of fairness must be task-specific, and formalize fairness based on a hypothetical similarity measure $d ( \\boldsymbol { x } , \\boldsymbol { x } ^ { \\prime } )$ requiring similar individuals to receive a similar distribution over outcomes. In practice, however, in can be difficult to come up with a suitable metric. Our notion is task-specific in the sense that it makes critical use of the final outcome Y , while avoiding the difficulty of dealing with the features X. ",
+        "bbox": [
+            120,
+            354,
+            872,
+            492
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In a recent concurrent work, Kleinberg, Mullainathan and Raghavan [KMR16] showed that in general a score that is calibrated within each group does not satisfy a criterion equivalent to equalized odds for binary predictors. This result highlights that calibration alone does not imply non-discrimination according to our measure. Conversely, achieving equalized odds may in general compromise other desirable properties of a score. ",
+        "bbox": [
+            120,
+            492,
+            872,
+            577
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Early work of Pedreshi et al. [PRT08] and several follow-up works explore a logical rulebased approach to non-discrimination. These approaches don’t easily relate to our statistical approach. ",
+        "bbox": [
+            120,
+            577,
+            874,
+            630
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "4 Achieving equalized odds and equality of opportunity ",
+        "text_level": 1,
+        "bbox": [
+            122,
+            652,
+            751,
+            676
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We now explain how to find an equalized odds or equal opportunity predictor $\\widetilde { Y }$ derived from a, possibly discriminatory, learned binary predictor $\\widehat { Y }$ or score $R$ . We envision that $\\widehat { Y }$ or $R$ are whatever comes out of the existing training pipeline for the problem at hand. Importantly, we do not require changing the training process, as this might introduce additional complexity, but rather only a post-learning step. In particular, we will construct a non-discriminating predictor which is derived from $\\widehat { Y }$ or $R$ : ",
+        "bbox": [
+            120,
+            688,
+            872,
+            791
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Definition 4.1 (Derived predictor). A predictor $\\widetilde { Y }$ is derived from a random variable R and the protected attribute $A$ if it is a possibly randomized function of the random variables $( R , A )$ alone. In particular, $\\widetilde { Y }$ is independent of $X$ conditional on $( R , A )$ . ",
+        "bbox": [
+            120,
+            801,
+            874,
+            854
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "The definition asks that the value of a derived predictor $\\widetilde { Y }$ should only depend on $R$ and the protected attribute, though it may introduce additional randomness. But the formulation of ",
+        "bbox": [
+            122,
+            864,
+            872,
+            900
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_number",
+        "text": "5 ",
+        "bbox": [
+            493,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "$\\widetilde { Y }$ (that is, the function applied to the values of $R$ and $A$ ), depends on information about the joint distribution of $( R , A , Y )$ . In other words, this joint distribution (or an empirical estimate of it) is required at training time in order to construct the predictor $\\widetilde { Y }$ , but at prediction time we only have access to values of $( R , A )$ . No further data about the underlying features $X$ , nor their distribution, is required. ",
+        "bbox": [
+            122,
+            99,
+            872,
+            188
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Loss minimization. It is always easy to construct a trivial predictor satisfying equalized odds, by making decisions independent of $X , A$ and $R$ . For example, using the constant predictor $\\stackrel { \\triangledown } { \\widehat { Y } } = 0$ or $\\widetilde { \\boldsymbol { Y } } = 1$ . The goal, of course, is to obtain a good predictor satisfying the condition. To quantify the notion of “good”, we consider a loss function $\\ell \\colon \\{ 0 , 1 \\} ^ { 2 } \\to \\ln$ that takes a pair of labels and returns a real number $\\ell ( \\widehat { y } , y ) \\in \\mathbb { R }$ which indicates the loss (or cost, or undesirability) of predicting $\\widehat { y }$ when the correct label is $y$ . Our goal is then to design derived predictors $\\widetilde { Y }$ that minimize the expected loss $\\mathbb { E } \\ell ( \\widetilde { Y } , Y )$ subject to one of our definitions. ",
+        "bbox": [
+            122,
+            204,
+            874,
+            325
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "4.1 Deriving from a binary predictor ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            343,
+            473,
+            362
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We will first develop an intuitive geometric solution in the case where we adjust a binary predictor $\\widehat { Y }$ and $A$ is a binary protected attribute The proof generalizes directly to the case of a discrete protected attribute with more than two values. For convenience, we introduce the notation ",
+        "bbox": [
+            122,
+            369,
+            870,
+            436
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\gamma_ {a} (\\widehat {Y}) \\stackrel {\\text {d e f}} {=} \\left(\\Pr \\left\\{\\widehat {Y} = 1 \\mid A = a, Y = 0 \\right\\}, \\Pr \\left\\{\\widehat {Y} = 1 \\mid A = a, Y = 1 \\right\\}\\right). \\tag {4.1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            266,
+            436,
+            870,
+            462
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "The first component of $\\gamma _ { a } ( \\widehat { Y } )$ is the false positive rate of $\\widehat { Y }$ within the demographic satisfying $A = a$ . Similarly, the second component is the true positive rate of $\\widehat { Y }$ within $A = a$ . Observe that we can calculate $\\gamma _ { a } ( \\widehat { Y } )$ given the joint distribution of $( \\widehat { Y } , A , Y )$ . The definitions of equalized odds and equal opportunity can be expressed in terms of $\\gamma ( \\widehat { Y } ) .$ , as formalized in the following straight-forward Lemma: ",
+        "bbox": [
+            122,
+            465,
+            870,
+            551
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Lemma 4.2. A predictor $\\widehat { Y }$ satisfies: ",
+        "bbox": [
+            122,
+            559,
+            400,
+            578
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. equalized odds if and only if $\\gamma _ { 0 } ( \\widehat { Y } ) = \\gamma _ { 1 } ( \\widehat { Y } ) .$ , and ",
+            "2. equal opportunity if and only if $\\gamma _ { 0 } ( \\widehat { Y } )$ and $\\gamma _ { 1 } ( \\widehat { Y } )$ agree in the second component, i.e., $\\gamma _ { 0 } ( \\widehat { Y } ) _ { 2 } =$ $\\dot { \\gamma _ { 1 } } ( \\widehat { Y } ) _ { 2 }$ . "
+        ],
+        "bbox": [
+            145,
+            583,
+            872,
+            648
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "For $a \\in \\{ 0 , 1 \\}$ , consider the two-dimensional convex polytope defined as the convex hull of four vertices: ",
+        "bbox": [
+            122,
+            652,
+            872,
+            686
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\nP _ {a} (\\widehat {Y}) \\stackrel {\\text {d e f}} {=} \\operatorname {c o n v h u l l} \\left\\{(0, 0), \\gamma_ {a} (\\widehat {Y}), \\gamma_ {a} (1 - \\widehat {Y}), (1, 1) \\right\\} \\tag {4.2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            315,
+            693,
+            870,
+            720
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Our next lemma shows that $P _ { 0 } ( \\widehat { Y } )$ and $P _ { 1 } ( \\widehat { Y } )$ characterize exactly the trade-offs between false positives and true positives that we can achieve with any derived classifier. The polytopes are visualized in Figure 1. ",
+        "bbox": [
+            122,
+            727,
+            870,
+            781
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Lemma 4.3. A predictor $\\widetilde { Y }$ is derived if and only if for all $a \\in \\{ 0 , 1 \\}$ , we have $\\gamma _ { a } ( \\widetilde { Y } ) \\in P _ { a } ( \\widehat { Y } )$ . ",
+        "bbox": [
+            122,
+            785,
+            805,
+            805
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Proof. Since a derived predictor $\\widetilde { Y }$ can only depend on $( { \\widehat { Y } } , A )$ and these variables are binary, the predictor $\\widetilde { Y }$ is completely described by four parameters in [0,1] corresponding to the probabilities $\\operatorname* { P r } \\left\\{ { \\widetilde { Y } } = 1 \\mid { \\widehat { \\overline { { Y } } } } = { \\widehat { y } } , { \\dot { A } } = a \\right\\}$ for $\\widehat { y , a } \\in \\{ 0 , 1 \\}$ . Each of these parameter choices leads to one of the points in $P _ { a } ( \\widehat { Y } )$ and every point in the convex hull can be achieved by some parameter setting. □ ",
+        "bbox": [
+            122,
+            810,
+            874,
+            904
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_number",
+        "text": "6 ",
+        "bbox": [
+            493,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/7b1bb5f713b1ecaab7ab7ccceae5f04b9b82f518ec3596e3d4cd5884f1a7ae1f.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            145,
+            99,
+            346,
+            253
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/0fbcf3c4135644f01a06b2d52a7cde2da0bdd1d984bef9d3052c31059459d836.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            352,
+            102,
+            578,
+            284
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/079b5cc56317afea370bb9ce7075fe7816d72eb16cf23d3daa555e698a63dd25.jpg",
+        "image_caption": [
+            "Figure 1 gives a simple geometric picture for the solution of the linear program whose guarantees are summarized next. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            607,
+            102,
+            836,
+            284
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Figure 1: Finding the optimal equalized odds predictor (left), and equal opportunity predictor (right). ",
+        "bbox": [
+            122,
+            297,
+            870,
+            333
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Combining Lemma 4.2 with Lemma 4.3, we see that the following optimization problem gives the optimal derived predictor with equalized odds: ",
+        "bbox": [
+            122,
+            340,
+            870,
+            376
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {\\widetilde {Y}} \\mathbb {E} \\ell (\\widetilde {Y}, Y) \\tag {4.3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            364,
+            386,
+            870,
+            414
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\text {s . t .} \\quad \\forall a \\in \\{0, 1 \\}: \\gamma_ {a} (\\widetilde {Y}) \\in P _ {a} (\\widehat {Y}) \\quad \\left(\\text {d e r i v e d}\\right)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            375,
+            417,
+            870,
+            439
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\gamma_ {0} (\\widetilde {Y}) = \\gamma_ {1} (\\widetilde {Y}) \\quad \\text {(e q u a l i z e d o d d s)}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            416,
+            441,
+            870,
+            460
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Proposition 4.4. The optimization problem (4.3) is a linear program in four variables whose coefficients can be computed from the joint distribution of $( \\widehat { Y } , A , \\grave { Y } )$ . Moreover, its solution is an optimal equalized odds predictor derived from $\\widehat { Y }$ and A. ",
+        "bbox": [
+            122,
+            520,
+            872,
+            571
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Proof of Proposition 4.4. The second claim follows by combining Lemma 4.2 with Lemma 4.3. To argue the first claim, we saw in the proof of Lemma 4.3 that a derived predictor is specified by four parameters and the constraint region is an intersection of two-dimensional linear constraints. It remains to show that the objective function is a linear function in these parameters. Writing out the objective, we have ",
+        "bbox": [
+            122,
+            582,
+            874,
+            667
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} \\left[ \\ell (\\widetilde {Y}, Y) \\right] = \\sum_ {y, y ^ {\\prime} \\in \\{0, 1 \\}} \\ell (y, y ^ {\\prime}) \\Pr \\left\\{\\widetilde {Y} = y ^ {\\prime}, Y = y \\right\\}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            318,
+            679,
+            674,
+            720
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Further, ",
+        "bbox": [
+            124,
+            731,
+            192,
+            746
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\Pr \\left\\{\\widetilde {Y} = y ^ {\\prime}, Y = y \\right\\} = \\Pr \\left\\{\\widetilde {Y} = y ^ {\\prime}, Y = y \\mid \\widetilde {Y} = \\widehat {Y} \\right\\} \\Pr \\left\\{\\widetilde {Y} = \\widehat {Y} \\right\\} \\\\ + \\Pr \\left\\{\\widetilde {Y} = y ^ {\\prime}, Y = y \\mid \\widetilde {Y} \\neq \\widehat {Y} \\right\\} \\Pr \\left\\{\\widetilde {Y} \\neq \\widehat {Y} \\right\\} \\\\ = \\Pr \\left\\{\\widehat {Y} = y ^ {\\prime}, Y = y \\right\\} \\Pr \\left\\{\\widetilde {Y} = \\widehat {Y} \\right\\} + \\Pr \\left\\{\\widehat {Y} = 1 - y ^ {\\prime}, Y = y \\right\\} \\Pr \\left\\{\\widetilde {Y} \\neq \\widehat {Y} \\right\\}. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            184,
+            757,
+            807,
+            835
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "All probabilities in the last line that do not involve $\\widetilde { Y }$ can be computed from the joint distribution. The probabilities that do involve $\\widetilde { Y }$ are each a linear function of the parameters that specify $\\widetilde { Y }$ . ",
+        "bbox": [
+            122,
+            848,
+            872,
+            883
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "□ ",
+        "bbox": [
+            852,
+            883,
+            870,
+            897
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_number",
+        "text": "7 ",
+        "bbox": [
+            491,
+            926,
+            504,
+            936
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "The corresponding optimization problem for equation opportunity is the same except that it has a weaker constraint $\\gamma _ { 0 } ( \\widetilde { Y } ) _ { 2 } = \\dot { \\gamma } _ { 1 } ( \\widetilde { Y } ) _ { 2 }$ . The proof is analogous to that of Proposition 4.4. Figure 1 explains the solution geometrically. ",
+        "bbox": [
+            122,
+            99,
+            874,
+            154
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "4.2 Deriving from a score function ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            171,
+            452,
+            189
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "We now consider deriving non-discriminating predictors from a real valued score $R \\in [ 0 , 1 ]$ . The motivation is that in many realistic scenarios (such as FICO scores), the data are summarized by a one-dimensional score function and a decision is made based on the score, typically by thresholding it. Since a continuous statistic can carry more information than a binary outcome Y , we can hope to achieve higher utility when working with $R$ directly, rather then with a binary predictor $\\widehat { \\boldsymbol { Y } }$ . ",
+        "bbox": [
+            122,
+            198,
+            872,
+            299
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "A “protected attribute blind” way of deriving a binary predictor from $R$ would be to threshold it, i.e. using $\\widehat { Y } = \\mathbb { I } \\{ R > t \\}$ . If $R$ satisfied equalized odds, then so will such a predictor, and the optimal threshold should be chosen to balance false positive and false negatives so as to minimize the expected loss. When R does not already satisfy equalized odds, we might need to use different thresholds for different values of $A$ (different protected groups), i.e. $\\widetilde { Y } = \\mathbb { I } \\left\\{ R > t _ { A } \\right\\}$ . As we will see, even this might not be sufficient, and we might need to introduce additional randomness as in the preceding section. ",
+        "bbox": [
+            122,
+            300,
+            874,
+            419
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Central to our study is the ROC (Receiver Operator Characteristic) curve of the score, which captures the false positive and true positive (equivalently, false negative) rates at different thresholds. These are curves in a two dimensional plane, where the horizontal axes is the false positive rate of a predictor and the vertical axes is the true positive rate. As discussed in the previous section, equalized odds can be stated as requiring the true positive and false positive rates, $( \\operatorname* { P r } { \\Bigl \\{ } { \\widehat { Y } } = 1 \\mid { \\dot { Y } } = 0 , A = a { \\Bigr \\} } , \\operatorname* { P r } { \\Bigl \\{ } { \\widehat { Y } } = 1 \\mid Y = 1 , A = a { \\Bigr \\} } )$ , agree between different values of a of the protected attribute. That is, that for all values of the protected attribute, the conditional behavior of the predictor is at exactly the same point in this space. We will therefor consider the $A$ -conditional ROC curves ",
+        "bbox": [
+            122,
+            421,
+            872,
+            575
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\nC _ {a} (t) \\stackrel {{\\mathrm {d e f}}} {{=}} \\left(\\Pr \\left\\{\\widehat {R} > t \\mid A = a, Y = 0 \\right\\}, \\Pr \\left\\{\\widehat {R} > t \\mid A = a, Y = 1 \\right\\}\\right).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            276,
+            585,
+            718,
+            612
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Since the ROC curves exactly specify the conditional distributions $R | A , Y$ , a score function obeys equalized odds if and only if the ROC curves for all values of the protected attribute agree, that is $C _ { a } ( t ) = C _ { a ^ { \\prime } } ( t )$ for all values of a and $t$ . In this case, any thresholding of $R$ yields an equalized odds predictor (all protected groups are at the same point on the curve, and the same point in false/true-positive plane). ",
+        "bbox": [
+            122,
+            623,
+            870,
+            709
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "When the ROC curves do not agree, we might choose different thresholds $t _ { a }$ for the different protected groups. This yields different points on each $A$ -conditional ROC curve. For the resulting predictor to satisfy equalized odds, these must be at the same point in the false/truepositive plane. This is possible only at points where all $A$ -conditional ROC curves intersect. But the ROC curves might not all intersect except at the trivial endpoints, and even if they do, their point of intersection might represent a poor tradeoff between false positive and false negatives. ",
+        "bbox": [
+            122,
+            709,
+            872,
+            811
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "As with the case of correcting a binary predictor, we can use randomization to fill the span of possible derived predictors and allow for significant intersection in the false/true-positive plane. In particular, for every protected group $a$ , consider the convex hull of the image of the conditional ROC curve: ",
+        "bbox": [
+            122,
+            811,
+            870,
+            876
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\nD _ {a} \\stackrel {\\text {d e f}} {=} \\operatorname {c o n v h u l l} \\left\\{C _ {a} (t): t \\in [ 0, 1 ] \\right\\} \\tag {4.4}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            372,
+            876,
+            870,
+            901
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_number",
+        "text": "8 ",
+        "bbox": [
+            493,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/bfe35debdfb80941d17e854f5b8ca35023f2f6b3f62e96023dc7c026ec64de2b.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            135,
+            113,
+            374,
+            311
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/ba96c7e89ce87ef85098db6693db394491c30e27188f1199d27591c1b31a64c9.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            379,
+            113,
+            617,
+            311
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/8b4c3cfe7bb4c40c55c335766c8c8e4d6eae2f7616b6a0b5f348b5359a9bf8ce.jpg",
+        "image_caption": [
+            "Figure 2: Finding the optimal equalized odds threshold predictor (middle), and equal opportunity threshold predictor (right). For the equal opportunity predictor, within each group the cost for a given true positive rate is proportional to the horizontal gap between the ROC curve and the profit-maximizing tangent line (i.e., the two curves on the left plot), so it is a convex function of the true positive rate (right). This lets us optimize it efficiently with ternary search. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            622,
+            113,
+            861,
+            318
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "The definition of $D _ { a }$ is analogous to the polytope $P _ { a }$ in the previous section, except that here we do not consider points below the main diagonal (line from $( 0 , 0 )$ to (1, 1)), which are worse than “random guessing” and hence never desirable for any reasonable loss function. ",
+        "bbox": [
+            122,
+            422,
+            872,
+            476
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Deriving an optimal equalized odds threshold predictor. Any point in the convex hull $D _ { a }$ represents the false/true positive rates, conditioned on $A = a$ , of a randomized derived predictor based on R. In particular, since the space is only two-dimensional, such a predictor $\\widetilde { Y }$ can always be taken to be a mixture of two threshold predictors (corresponding to the convex hull of two points on the ROC curve). Conditional on $A = a$ , the predictor $\\widetilde { Y }$ behaves as ",
+        "bbox": [
+            122,
+            494,
+            874,
+            582
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\widetilde {Y} = \\mathbb {I} \\left\\{R > T _ {a} \\right\\},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            439,
+            590,
+            553,
+            611
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "where $T _ { a }$ is a randomized threshold assuming the value ${ \\underline { { t } } } _ { a }$ with probability ${ \\underline { { p } } } _ { a }$ and the value $\\overline { { t } } _ { a }$ with probability $\\overline { { p } } _ { a }$ . In other words, to construct an equalized odds predictor, we should choose a point in the intersection of these convex hulls, $\\gamma = ( \\gamma _ { 0 } , \\gamma _ { 1 } ) \\in \\cap _ { a } D _ { a } ,$ , and then for each protected group realize the true/false-positive rates $\\gamma$ with a (possible randomized) predictor $\\mathcal { \\overline { { Y } } } | ( A = a ) = \\mathbb { I } \\{ R > T _ { a } \\}$ resulting in the predictor $\\widetilde { Y } = \\operatorname* { P r } \\mathbb { I } \\{ R > T _ { A } \\}$ . For each group $a$ , we either use a fixed threshold $T _ { a } = t _ { a }$ or a mixture of two thresholds ${ \\underline { { t } } } _ { a } < { \\overline { { t } } } _ { a }$ . In the latter case, if $A = a$ and $R < \\underline { { t } } _ { a }$ we always set $\\widetilde { Y } = 0$ , if $R > \\overline { { t } } _ { a }$ we always set $\\widetilde { Y } = 1$ , but if $\\underline { { t } } _ { a } < R < \\overline { { t } } _ { a . }$ , we flip a coin and set Ye = 1 with probability p . $\\widetilde { Y } = \\overset { \\cdots } { 1 }$ ${ \\underline { { p } } } _ { a }$ ",
+        "bbox": [
+            122,
+            625,
+            872,
+            765
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "The feasible set of false/true positive rates of possible equalized odds predictors is thus the intersection of the areas under the $A$ -conditional ROC curves, and above the main diagonal (see Figure 2). Since for any loss function the optimal false/true-positive rate will always be on the upper-left boundary of this feasible set, this is effectively the ROC curve of the equalized odds predictors. This ROC curve is the pointwise minimum of all $A$ -conditional ROC curves. The performance of an equalized odds predictor is thus determined by the minimum performance among all protected groups. Said differently, requiring equalized odds incentivizes the learner to build good predictors for all classes. For a given loss function, finding the optimal tradeoff ",
+        "bbox": [
+            122,
+            766,
+            874,
+            902
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "page_number",
+        "text": "9 ",
+        "bbox": [
+            493,
+            926,
+            504,
+            938
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "amounts to optimizing (assuming w.l.o.g. $\\ell ( 0 , 0 ) = \\ell ( 1 , 1 ) = 0$ ): ",
+        "bbox": [
+            122,
+            99,
+            612,
+            117
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {\\forall a: \\gamma \\in D _ {a}} \\gamma_ {0} \\ell (1, 0) + (1 - \\gamma_ {1}) \\ell (0, 1) \\tag {4.5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            372,
+            128,
+            870,
+            154
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "This is no longer a linear program, since $D _ { a }$ are not polytopes, or at least are not specified as such. Nevertheless, (4.5) can be efficiently optimized numerically using ternary search. ",
+        "bbox": [
+            122,
+            162,
+            870,
+            198
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Deriving an optimal equal opportunity threshold predictor. The construction follows the same approach except that there is one fewer constraint. We only need to find points on the conditional ROC curves that have the same true positive rates in both groups. Assuming continuity of the conditional ROC curves, this means we can always find points on the boundary of the conditional ROC curves. In this case, no randomization is necessary. The optimal solution corresponds to two deterministic thresholds, one for each group. As before, the optimization problem can be solved efficiently using ternary search over the target true positive value. Here we use, as Figure 2 illustrates, that the cost of the best solution is convex as a function of its true positive rate. ",
+        "bbox": [
+            122,
+            215,
+            872,
+            369
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "5 Bayes optimal predictors ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            393,
+            434,
+            415
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "In this section, we develop the theory a theory for non-discriminating Bayes optimal classification. We will first show that a Bayes optimal equalized odds predictor can be obtained as an derived threshold predictor of the Bayes optimal regressor. Second, we quantify the loss of deriving an equalized odds predictor based on a regressor that deviates from the Bayes optimal regressor. This can be used to justify the approach of first training classifiers without any fairness constraint, and then deriving an equalized odds predictor in a second step. ",
+        "bbox": [
+            122,
+            426,
+            874,
+            531
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Definition 5.1 (Bayes optimal regressor). Given random variables $( X , A )$ and a target variable Y , the Bayes optimal regressor is $\\begin{array} { r } { R = \\arg \\operatorname* { m i n } _ { r ( x , a ) } \\mathbb { E } \\left[ ( Y - r ( X , A ) ) ^ { 2 } \\right] = r ^ { * } ( X , A ) } \\end{array}$ with $r ^ { * } ( x , a ) = \\mathbb { E } [ Y \\mid X =$ $x , A = a ]$ . ",
+        "bbox": [
+            122,
+            537,
+            872,
+            594
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The Bayes optimal classifier, for any proper loss, is then a threshold predictor of $R$ , where the threshold depends on the loss function (see, e.g., [Was10]). We will extend this result to the case where we additionally ask the classifier to satisfy an oblivious property, such as our non-discrimination properties. ",
+        "bbox": [
+            122,
+            599,
+            872,
+            670
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Proposition 5.2. For any source distribution over $( Y , X , A )$ with Bayes optimal regressor $R ( X , A )$ , any loss function, and any oblivious property C, there exists a predictor $Y ^ { * } ( R , A )$ such that: ",
+        "bbox": [
+            122,
+            676,
+            874,
+            712
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. $Y ^ { \\ast }$ is an optimal predictor satisfying C. That is, $\\mathbb { E } \\ell ( Y ^ { * } , Y ) \\leqslant \\mathbb { E } \\ell ( { \\widehat { Y } } , Y )$ for any predictor ${ \\widehat { Y } } ( X , A )$ which satisfies C. ",
+            "2. $Y ^ { \\ast }$ is derived from $( R , A )$ . "
+        ],
+        "bbox": [
+            143,
+            719,
+            872,
+            781
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Proof. Consider an arbitrary classifier $\\widehat { Y }$ on the attributes $( X , A )$ , defined by a (possibly randomized) function ${ \\widehat { Y } } = f ( X , A )$ . Given $R = r , A = a$ ), we can draw a fresh $X ^ { \\prime }$ from the distribution $( X \\mid R = r , A = a )$ , and set $Y ^ { * } = f ( X ^ { \\prime } , a )$ . This satisfies (2). Moreover, since Y is binary with expectation R, Y is independent of $X$ conditioned on $( R , A )$ . Hence $( Y , X , R , A )$ and $( Y , X ^ { \\prime } , R , A )$ have identical distributions, so $( Y ^ { * } , A , Y )$ and $( \\widehat { Y } , A , Y )$ also have identical distributions. This implies $Y ^ { \\ast }$ satisfies (1) as desired. □ ",
+        "bbox": [
+            122,
+            800,
+            874,
+            904
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            938
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "image",
+        "img_path": "images/2aac08eb4b5d1ddf116fd26cfd3bd3a32cd0358ee9a04ec590a8b691740ee919.jpg",
+        "image_caption": [
+            "Figure 3: Graphical model for the proof of Proposition 5.2. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            433,
+            95,
+            563,
+            198
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Corollary 5.3 (Optimality characterization). An optimal equalized odds predictor can be derived from the Bayes optimal regressor R and the protected attribute A. The same is true for an optimal equal opportunity predictor. ",
+        "bbox": [
+            120,
+            258,
+            872,
+            310
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "5.1 Near optimality ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            330,
+            318,
+            348
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "We can furthermore show that if we can approximate the (unconstrained) Bayes optimal regressor well enough, then we can also construct a nearly optimal non-discriminating classifier. ",
+        "bbox": [
+            122,
+            356,
+            874,
+            390
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "To state the result, we introduce the following distance measure on random variables. ",
+        "bbox": [
+            150,
+            391,
+            831,
+            407
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Definition 5.4. We define the conditional Kolmogorov distance between two random variables $R , R ^ { \\prime } \\in [ 0 , 1 ]$ in the same probability space as $A$ and Y as: ",
+        "bbox": [
+            122,
+            419,
+            872,
+            454
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "equation",
+        "text": "$$\nd _ {\\mathrm {K}} \\left(R, R ^ {\\prime}\\right) \\stackrel {\\text {d e f}} {=} \\max  _ {a, y \\in \\{0, 1 \\}} \\sup  _ {t \\in [ 0, 1 ]} \\left| \\Pr \\left\\{R > t \\mid A = a, Y = y \\right\\} - \\Pr \\left\\{R ^ {\\prime} > t \\mid A = a, Y = y \\right\\} \\right|. \\tag {5.1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            207,
+            465,
+            872,
+            501
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Without the conditioning on $A$ and Y , this definition coincides with the standard Kolmogorov distance. Closeness in Kolmogorov distance is a rather weak requirement. We need the slightly stronger condition that the Kolmogorov distance is small for each of the four conditionings on A and Y . This captures the distance between the restricted ROC curves, as formalized next. ",
+        "bbox": [
+            122,
+            513,
+            872,
+            583
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Lemma 5.5. Let $R , R ^ { \\prime } \\in [ 0 , 1 ]$ be random variables in the same probability space as A and Y . Then, for any point $p$ on a restricted ROC curve of √ $R _ { * }$ , there is a point q on the corresponding restricted ROC curve of $R ^ { \\prime }$ such that $\\| p - q \\| _ { 2 } \\leqslant \\sqrt { 2 } \\cdot d _ { K } ( \\dot { R , R ^ { \\prime } } )$ . ",
+        "bbox": [
+            120,
+            593,
+            872,
+            646
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Proof. Assume the point $p$ is achieved by thresholding $R$ at $t \\in [ 0 , 1 ]$ . Let $q$ be the point on the ROC curve achieved by thresholding $R ^ { \\prime }$ at the same threshold $t ^ { \\prime }$ . After applying the definition to bound the distance in each coordinate, the claim follows from Pythagoras’ theorem. □ ",
+        "bbox": [
+            122,
+            656,
+            872,
+            708
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "We can now show that an equalized odds predictor derived from a nearly optimal regressor is still nearly optimal among all equal odds predictors, while quantifying the loss in terms of the conditional Kolmogorov distance. ",
+        "bbox": [
+            122,
+            719,
+            872,
+            771
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Theorem 5.6 (Near optimality). Assume that ` is a bounded loss function, and let $\\widehat { R } \\in [ 0 , 1 ]$ be an arbitrary random variable. Then, there is an optimal equalized odds predictor $Y ^ { \\ast }$ and an equalized odds predictor $\\widehat { Y }$ derived from $( \\widehat { R } , A )$ such that ",
+        "bbox": [
+            122,
+            780,
+            872,
+            834
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} \\ell (\\widehat {Y}, Y) \\leqslant \\mathbb {E} \\ell (Y ^ {*}, Y) + 2 \\sqrt {2} \\cdot d _ {\\mathrm {K}} (\\widehat {R}, R ^ {*}),\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            845,
+            648,
+            867
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "where $R ^ { * }$ is the Bayes optimal regressor. The same claim is true for equal opportunity. ",
+        "bbox": [
+            122,
+            878,
+            761,
+            897
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            508,
+            938
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Proof of Theorem 5.6. We prove the claim for equalized odds. The case of equal opportunity is analogous. ",
+        "bbox": [
+            122,
+            99,
+            870,
+            133
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Fix the loss function $\\ell$ and the regressor ${ \\widehat { R } } .$ Take $Y ^ { * }$ to be the predictor derived from the Bayes optimal regressor $R ^ { * }$ and $A$ . By Corollary 5.3, we know that this is an optimal equalized odds predictor as required by the lemma. It remains to construct a derived equalized odds predictor $\\widehat { Y }$ and relate its loss to that of $Y ^ { \\ast }$ . ",
+        "bbox": [
+            122,
+            133,
+            870,
+            202
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Recall the optimization problem for defining the optimal derived equalized odds predictor. Let $\\widehat { D } _ { a }$ be the constraint region defined by $\\widehat { R }$ . Likewise, let $D _ { a } ^ { * }$ be the constraint region under $R ^ { * }$ . The optimal classifier $Y ^ { \\ast }$ corresponds to a point $p ^ { * } \\in D _ { 0 } ^ { * } \\cap D _ { 1 } ^ { * }$ . As a consequence of Lemma 5.5, we can find (not necessarily identical) points $q _ { 0 } \\in \\widehat { D } _ { 0 }$ and $q _ { 1 } \\in \\widehat { D } _ { 1 }$ such that for all $a \\in \\{ 0 , 1 \\}$ , ",
+        "bbox": [
+            122,
+            202,
+            874,
+            273
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left\\| p ^ {*} - q _ {a} \\right\\| _ {2} \\leqslant \\sqrt {2} \\cdot d _ {\\mathrm {K}} (\\widehat {R}, R ^ {*}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            392,
+            284,
+            599,
+            306
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "We claim that this means we can also find a feasible point $q \\in \\widehat { D } _ { 0 } \\cap \\widehat { D } _ { 1 }$ such that ",
+        "bbox": [
+            122,
+            316,
+            751,
+            334
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left\\| p ^ {*} - q \\right\\| _ {2} \\leqslant 2 \\cdot d _ {\\mathrm {K}} (\\widehat {R}, R ^ {*}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            401,
+            345,
+            589,
+            364
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "To see this, assume without loss of generality that the first coordinate of $q _ { 1 }$ is greater than the first coordinate of $q _ { 0 . }$ , and that all points $p ^ { * } , q _ { 0 } , q _ { 1 }$ lie above the main diagonal. By definition of $\\widehat { D } _ { 1 }$ , we know that the entire line segment $L _ { 1 }$ from $( 0 , 0 )$ to $q _ { 1 }$ is contained in $\\widehat { D _ { 1 } }$ . Similarly, the entire line segment $L _ { 0 }$ between $q _ { 0 }$ and (1, 1) is contained in $\\widehat { D } _ { 0 }$ . Now, take $q \\in L _ { 0 } \\cap L _ { 1 }$ . By construction, $q \\in \\overline { { \\widehat { D } } } _ { 0 } \\cap \\widehat { D } _ { 1 }$ defines a classifier $\\widehat { Y }$ derived from $\\widehat { R }$ and A. Moreover, ",
+        "bbox": [
+            122,
+            377,
+            872,
+            463
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left\\| p ^ {*} - q \\right\\| _ {2} ^ {2} \\leqslant \\left\\| p ^ {*} - q _ {0} \\right\\| _ {2} ^ {2} + \\left\\| p ^ {*} - q _ {0} \\right\\| _ {2} ^ {2} \\leqslant 4 \\cdot d _ {\\mathrm {K}} \\left(\\widehat {R}, R ^ {*}\\right) ^ {2}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            305,
+            473,
+            686,
+            494
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Finally, by assumption on the loss function, there is a vector $\\boldsymbol { \\nu }$ with $\\| \\boldsymbol { v } \\| _ { 2 } \\leqslant \\sqrt { 2 }$ such that $\\mathbb { E } \\ell ( \\widehat { Y } , \\dot { Y } ) = \\langle \\nu , q \\rangle$ and $\\mathbb { E } \\ell ( Y ^ { * } , Y ) = \\left. \\upsilon , p ^ { * } \\right.$ . Applying Cauchy-Schwarz, ",
+        "bbox": [
+            122,
+            507,
+            870,
+            542
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbb {E} \\ell (\\widehat {Y}, Y) - \\mathbb {E} \\ell (Y ^ {*}, Y) = \\langle v, q - p ^ {*} \\rangle \\leqslant \\| v \\| _ {2} \\cdot \\| q - p ^ {*} \\| _ {2} \\leqslant 2 \\sqrt {2} \\cdot d _ {\\mathrm {K}} (\\widehat {R}, R ^ {*}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            236,
+            553,
+            756,
+            574
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "This completes the proof. ",
+        "bbox": [
+            122,
+            585,
+            328,
+            604
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "6 Oblivious identifiability of discrimination ",
+        "text_level": 1,
+        "bbox": [
+            122,
+            627,
+            624,
+            648
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Before turning to analyzing data, we pause to consider to what extent “black box” oblivious tests like ours can identify discriminatory predictions. To shed light on this issue, we introduce two possible scenarios for the dependency structure of the score, the target and the protected attribute. We will argue that while these two scenarios can have fundamentally different interpretations from the point of view of fairness, they can be indistinguishable from their joint distribution. In particular, no oblivious test can resolve which of the two scenarios applies. ",
+        "bbox": [
+            122,
+            661,
+            872,
+            765
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Scenario I Consider the dependency structure depicted in Figure 4. Here, $X _ { 1 }$ is a feature highly (even deterministically) correlated with the protected attribute $A$ , but independent of the target Y given A. For example, $X _ { 1 }$ might be “languages spoken at home” or “great great grandfather’s profession”. The target Y has a statistical correlation with the protected attribute. There’s a second real-valued feature $X _ { 2 }$ correlated with Y , but only related to A through Y . For example, $X _ { 2 }$ ",
+        "bbox": [
+            122,
+            782,
+            671,
+            904
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "image",
+        "img_path": "images/e939c401c234c0955c2b33962201dc573bf8b438f985b51688f2b30b5c033f12.jpg",
+        "image_caption": [
+            "Figure 4: Graphical model for Scenario I. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            710,
+            815,
+            844,
+            882
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            925,
+            509,
+            938
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "might capture an applicant’s driving record if applying for insurance, financial activity if applying for a loan, or criminal history in criminal justice situations. An intuitively “fair” predictor here is to use only ",
+        "bbox": [
+            122,
+            99,
+            669,
+            151
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "the feature $X _ { 2 }$ through the score $\\widetilde { R } = X _ { 2 } ^ { { \\mathbf { \\Upsilon } } }$ . The score $\\widetilde { R }$ satisfies equalized odds, since $X _ { 2 }$ and $A$ are independent conditional on Y . Because of the statistical correlation between $A$ and $Y$ , a better statistical predictor, with greater power, can be obtained by taking into account also the protected attribute $A$ , or perhaps its surrogate $X _ { 1 }$ . The statistically optimal predictor would have the form $R ^ { * } = r _ { I } ^ { * } ( X _ { 2 } , X _ { 1 } )$ , biasing the score according to the protected attribute $A$ . The score $R ^ { * }$ does not satisfy equalized odds, and in a sense seems to be “profiling” based on $A$ . ",
+        "bbox": [
+            122,
+            151,
+            872,
+            255
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Scenario II Now consider the dependency structure depicted in Figure 5. Here $X _ { 3 }$ is a feature, e.g. “wealth” or “annual income”, correlated with the protected attribute $A$ and directly predictive of the target Y . That is, in this model, the probability of paying back of a loan is just a function of an individual’s wealth, independent of their race. Using $X _ { 3 }$ on its own as a predictor, e.g. using the score $R ^ { * } = X _ { 3 }$ , does not naturally seem directly discriminatory. However, as can be seen from the dependency structure, this score does not satisfy equalized odds. We can correct it to satisfy equalized odds and consider the optimal non-discriminating predictor $\\widetilde { R } = \\widetilde { r _ { I I } } ( X _ { 3 } , A )$ ",
+        "bbox": [
+            122,
+            273,
+            671,
+            443
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "that does satisfy equalized odds. If $A$ and $X _ { 3 }$ , and thus $A$ and $Y$ , are positively correlated, then $\\widetilde { R }$ would depend inversely on $A$ (see numerical construction below), introducing a form of “corrective discrimination”, so as to make $\\widetilde { R }$ is independent of $A$ given Y (as is required by equalized odds). ",
+        "bbox": [
+            122,
+            443,
+            874,
+            513
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "image",
+        "img_path": "images/7de2b56fb68104f27334e11edaf0611f489c173cb569e47c8e736c0b4a218f83.jpg",
+        "image_caption": [
+            "Figure 5: Graphical model for Scenario II. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            709,
+            304,
+            844,
+            371
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "6.1 Unidentifiability ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            531,
+            330,
+            549
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "The above two scenarios seem rather different. The optimal score $R ^ { * }$ is in one case based directly on $A$ or its surrogate, and in another only on a directly predictive feature, but this is not apparent by considering the equalized odds criterion, suggesting a possible shortcoming of equalized odds. In fact, as we will now see, the two scenarios are indistinguishable using any oblivious test. That is, no test based only on the target labels, the protected attribute and the score would give different indications for the optimal score $R ^ { * }$ in the two scenarios. If it were judged unfair in one scenario, it would also be judged unfair in the other. ",
+        "bbox": [
+            120,
+            558,
+            874,
+            676
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "We will show this by constructing specific instantiations of the two scenarios where the joint distributions over $( Y , \\overbrace { A } , R ^ { * } , \\widetilde { R } )$ are identical. The scenarios are thus unidentifiable based only on these joint distributions. ",
+        "bbox": [
+            122,
+            678,
+            872,
+            728
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "We will consider binary targets and protected attributes taking values in $A , Y \\in \\{ - 1 , 1 \\}$ and real valued features. We deviate from our convention of {0,1}-values only to simplify the resulting expressions. In Scenario I, let: ",
+        "bbox": [
+            122,
+            729,
+            872,
+            780
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• $\\operatorname* { P r } \\left\\{ A = 1 \\right\\} = 1 / 2$ , and $X _ { 1 } = A$ ",
+            "• Y follows a logistic model parametrized based on A: Pr {Y = y | A = a} = 11+exp(−2ay) , $\\begin{array} { r } { A \\colon \\operatorname* { P r } \\left\\{ Y = y \\mid A = a \\right\\} = \\frac { 1 } { 1 + \\exp ( - 2 a y ) } , } \\end{array}$ ",
+            "• $X _ { 2 }$ is Gaussian with mean $Y \\colon X _ { 2 } = Y + { \\mathcal { N } } ( 0 , 1 )$ ",
+            "• Optimal unconstrained and equalized odds scores are given by: $R ^ { * } = X _ { 1 } + X _ { 2 } = A + X _ { 2 } ,$ and $\\widetilde { R } = X _ { 2 }$ "
+        ],
+        "bbox": [
+            150,
+            787,
+            870,
+            902
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            938
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "image",
+        "img_path": "images/4b9d34c75c5519c670ff678ce88b150bff2420ffb5b77825cdaa697dddb41ad3.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            243,
+            95,
+            413,
+            175
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/b4c3a0c947555685359b8cdac5e69611b7924082a763c3668638e0afdf9cffe7.jpg",
+        "image_caption": [
+            "Figure 6: Two possible directed dependency structures for the variables in scenarios I and II. The undirected (infrastructure graph) versions of both graphs are also possible. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            517,
+            95,
+            751,
+            174
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "In Scenario II, let: ",
+        "bbox": [
+            124,
+            239,
+            269,
+            253
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• $\\operatorname* { P r } \\left\\{ A = 1 \\right\\} = 1 / 2 .$ ",
+            "• X3 conditional on A = a is a mixture of two Gaussians: N (a + 1, 1) with weight 11+exp(−2a) $X _ { 3 }$ $A = a$ $\\mathcal { N } ( a + 1 , 1 )$ $\\frac { 1 } { 1 + \\exp ( - 2 a ) }$ and N (a − 1, 1) with weight 11+exp(2a) . $\\mathcal { N } ( a - 1 , 1 )$ $\\frac { 1 } { 1 + \\exp ( 2 a ) }$ ",
+            "• Y follows a logistic model parametrized based on X3: Pr {Y = y | X3 = x3} = 11+exp(−2yx3) . $\\begin{array} { r } { X _ { 3 } \\colon \\operatorname* { P r } \\left\\{ Y = y \\mid X _ { 3 } = x _ { 3 } \\right\\} = \\frac { 1 } { 1 + \\exp \\left( - 2 y x _ { 3 } \\right) } } \\end{array}$ ",
+            "• Optimal unconstrained and equalized odds scores are given by: $R ^ { * } = X _ { 3 }$ , and $\\widetilde { R } = X _ { 3 } - A$ "
+        ],
+        "bbox": [
+            151,
+            267,
+            867,
+            401
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "The following proposition establishes the equivalence between the scenarios and the optimality of the scores (proof at end of section): ",
+        "bbox": [
+            122,
+            412,
+            870,
+            446
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Proposition 6.1. The joint distributions of $( Y , A , R ^ { * } , \\widetilde { R } )$ are identical in the above two scenarios. Moreover, $R ^ { * }$ and $\\widetilde { R }$ are optimal unconstrained and equalized odds scores respectively, in that their ROC curves are optimal and for any loss function an optimal (unconstrained or equalized odds) classifier can be derived from them by thresholding. ",
+        "bbox": [
+            122,
+            458,
+            872,
+            527
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Not only can an oblivious test (based only on $( Y , A , R ) )$ not distinguish between the two scenarios, but even having access to the features is not of much help. Suppose we have access to all three feature, i.e. to a joint distribution over $( Y , A , X _ { 1 } , X _ { 2 } , X _ { 3 } )$ —since the distributions over $( Y , A , R ^ { * } , \\widetilde { R } )$ agree, we can construct such a joint distribution with $X _ { 2 } = \\widetilde { R }$ and $X _ { 3 } = \\widetilde { R }$ . The features are correlated with each other, with $X _ { 3 } = X _ { 1 } + X _ { 2 }$ . Without attaching meaning to the features or making causal assumptions about them, we do not gain any further insight on the two scores. In particular, both causal structures depicted in Figure 6 are possible. ",
+        "bbox": [
+            122,
+            537,
+            872,
+            657
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "6.2 Comparison of different oblivious measures ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            676,
+            570,
+            695
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "It is interesting to consider how different oblivious measures apply to the scores $\\widetilde { R }$ and $R ^ { * }$ in these two scenarios. ",
+        "bbox": [
+            122,
+            703,
+            870,
+            736
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "As discussed in Section 4.2, a score satisfies equalized odds iff the conditional ROC curves agree for both values of $A$ , which we refer to as having identical ROC curves. ",
+        "bbox": [
+            122,
+            738,
+            869,
+            772
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Definition 6.2 (Identical ROC Curves). We say that a score $R$ has identical conditional ROC curves if $C _ { a } ( t ) = C _ { a ^ { \\prime } } ( t )$ for all groups of $a , a ^ { \\prime }$ and all $t \\in \\mathbb { R }$ . ",
+        "bbox": [
+            122,
+            782,
+            869,
+            819
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "In particular, this property is achieved by an equalized odds score $\\widetilde { R }$ . Within each protected group, i.e. for each value $A = a$ , the score $R ^ { * }$ differs from $\\widetilde { R }$ by a fixed monotone transformation, namely an additive shift $R ^ { * } = \\widetilde { R } + A$ . Consider a derived threshold predictor $\\widehat { Y } ( \\widetilde { R } ) = \\mathbb { I } \\big \\{ \\widetilde { R } > t \\big \\}$ based on ${ \\widetilde { R } }$ . Any such predictor obeys equalized odds. We can also derive the same predictor ",
+        "bbox": [
+            122,
+            828,
+            872,
+            904
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            938
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "deterministically from $R ^ { * }$ and $A$ as $\\widehat { Y } ( R ^ { * } , A ) = \\mathbb { I } \\left\\{ R ^ { * } > t _ { A } \\right\\}$ where $t _ { A } = t { - } A$ . That is, in our particular example, $R ^ { * }$ is special in that optimal equalized odds predictors can be derived from it (and the protected attribute $A$ ) deterministically, without the need to introduce randomness as in Section 4.2. In terms of the $A$ -conditional ROC curves, this happens because the images of the conditional ROC curves $C _ { 0 }$ and $C _ { 1 }$ overlap, making it possible to choose points in the true/false-positive rate plane that are on both ROC curves. However, the same point on the conditional ROC curves correspond to different thresholds! Instead of $C _ { 0 } ( t ) = C _ { 1 } ( t )$ , for $R ^ { * }$ we have $C _ { 0 } ( t ) = C _ { 1 } ( t - 1 )$ . We refer to this property as “matching” conditional ROC curves: ",
+        "bbox": [
+            122,
+            99,
+            874,
+            238
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Definition 6.3 (Matching ROC curves). We say that a score R has matching conditional ROC curves if the images of all $A$ -conditional ROC curves are the same, i.e., for all groups $a , a ^ { \\prime }$ , $\\{ C _ { a } ( t ) \\colon t \\in \\mathbb { R } \\} = \\{ C _ { a ^ { \\prime } } ( t ) \\colon t \\in \\mathbb { R } \\}$ . ",
+        "bbox": [
+            122,
+            244,
+            870,
+            297
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Having matching conditional ROC curves corresponds to being deterministically correctable to be non-discriminating: If a predictor $R$ has matching conditional ROC curves, then for any loss function the optimal equalized odds derived predictor is a deterministic function of $R$ and A. But as our examples show, having matching ROC curves does not at all mean the score is itself non-discriminatory: it can be biased according to $A$ , and a (deterministic) correction might be necessary in order to ensure equalized odds. ",
+        "bbox": [
+            122,
+            304,
+            870,
+            407
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Having identical or matching ROC curves are properties of the conditional distribution $R | Y , A ,$ also referred to as “model errors”. Oblivious measures can also depend on the conditional distribution $Y | R , A ,$ also referred to as “target population errors”. In particular, one might consider the following property: ",
+        "bbox": [
+            122,
+            407,
+            870,
+            477
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Definition 6.4 (Matching frequencies). We say that a score $R$ has matching conditional frequencies, if for all groups $a , a ^ { \\prime }$ and all scores $t$ , we have ",
+        "bbox": [
+            122,
+            484,
+            874,
+            518
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\Pr \\left\\{Y = 1 \\mid R = t, A = a \\right\\} = \\Pr \\left\\{Y = 1 \\mid R = t, A = a ^ {\\prime} \\right\\}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            305,
+            527,
+            687,
+            546
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Matching conditional frequencies state that at a given score, both groups have the same probability of being labeled positive. The definition can also be phrased as requiring that the conditional distribution $Y | R , A$ be independent of $A$ . In other words, having matching conditional frequencies is equivalent to $A$ and Y being independent conditioned on R. The corresponding dependency structure is $Y - R - A$ . That is, the score $R$ includes all possible information the protected attribute can provide on the target Y . Indeed having matching conditional frequencies means that the score is in a sense “optimally dependent” on the protected attribute A. Formally, for any loss function the optimal (unconstrained, possibly discriminatory) derived predictor $\\overrightharpoon { Y } ( R , A )$ would be a function of $R$ alone, since $R$ already includes all relevant information about $A$ . In particular, an unconstrained optimal score, like $R ^ { * }$ in our constructions, would satisfy matching conditional frequencies. Having matching frequencies can therefore be seen as a property indicating utilizing the protected attribute for optimal predictive power, rather then protecting discrimination based on it. ",
+        "bbox": [
+            122,
+            556,
+            872,
+            777
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "It is also worth noting the similarity between matching frequencies and a binary predictor $\\widehat { Y }$ having equal conditional precision, that is $\\operatorname* { P r } \\left\\{ Y = 1 \\mid { \\widehat { Y } } = { \\widehat { y } } , { \\widehat { A } } = a \\right\\} = \\operatorname* { P r } \\left\\{ Y = 1 \\mid { \\widehat { Y } } = { \\widehat { y } } , { \\widehat { A } } = a ^ { \\prime } \\right\\}$ . Viewing $\\widehat { Y }$ as a score that takes two possible values, the notions agree. But $R$ having matching conditional frequencies does not imply the threshold predictors $\\widehat { Y } ( \\bar { R } ) = \\mathbb { I } \\{ R > t \\}$ will have matching precision—the conditional distributions $R | A$ might be different, and these are involved in marginalizing over $R > t$ and $R \\leqslant t$ . ",
+        "bbox": [
+            122,
+            777,
+            874,
+            886
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "To summarize, the properties of the scores in our scenarios are: ",
+        "bbox": [
+            150,
+            887,
+            653,
+            902
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            938
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• $R ^ { * }$ is optimal based on the features and protected attribute, without any constraints. ",
+            "• $\\widetilde { R }$ is optimal among all equalized odds scores. ",
+            "• $\\widetilde { R }$ does satisfy equal odds, $R ^ { * }$ does not satisfy equal odds. ",
+            "• $\\widetilde { R }$ has identical (thus matching) ROC curves, $R ^ { * }$ has matching but non-identical ROC curves. ",
+            "• $R ^ { * }$ has matching conditional frequencies, while $\\widetilde { R }$ does not. "
+        ],
+        "bbox": [
+            151,
+            99,
+            870,
+            248
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Proof of Proposition 6.1 ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            268,
+            321,
+            284
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "First consider Scenario I. The score $\\widetilde { R } = X _ { 2 }$ obeys equalized odds due to the dependency structure. More broadly, if a score $R = f ( X _ { 2 } , X _ { 1 } )$ obeys equalized odds, for some randomized function $f$ , it cannot depend on $X _ { 1 }$ : conditioned on Y , $X _ { 2 }$ is independent of $A = X _ { 1 } .$ , and so any dependency of $f$ on $X _ { 1 }$ would create a statistical dependency on $A = X _ { 1 }$ (still conditioned on Y ) which is not allowed. We can verify that $\\operatorname* { P r } \\left\\{ Y = y \\mid X _ { 2 } = x _ { 2 } \\right\\} \\propto \\operatorname* { P r } \\left\\{ Y = y \\right\\} \\operatorname* { P r } \\left\\{ X _ { 2 } = x _ { 2 } \\mid Y = y \\right\\} \\propto \\exp ( 2 y x _ { 2 } )$ which is monotone in $X _ { 2 }$ , and so for any loss function we would just want to threshold $X _ { 2 }$ and any function monotone in $X _ { 2 }$ would make an optimal equalized odds predictor. ",
+        "bbox": [
+            122,
+            292,
+            872,
+            412
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "To obtain the optimal unconstrained score consider ",
+        "bbox": [
+            151,
+            414,
+            563,
+            430
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\Pr \\left\\{Y = y \\mid X _ {1} = x _ {1}, X _ {2} = x _ {2} \\right\\} \\propto \\Pr \\left\\{A = x _ {1} \\right\\} \\Pr \\left\\{Y = y \\mid A = x _ {1} \\right\\} \\Pr \\left\\{X _ {2} = x _ {2} \\mid Y = y \\right\\} \\\\ \\propto \\exp (2 y (x _ {1} + x _ {2})). \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            196,
+            444,
+            795,
+            484
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "That is, optimal classification only depends on $x _ { 1 } + x _ { 2 }$ and so $R ^ { * } = X _ { 1 } + X _ { 2 }$ is optimal. ",
+        "bbox": [
+            122,
+            497,
+            795,
+            513
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Turning to scenario II, since $P ( Y | X _ { 3 } )$ is monotone in $X _ { 3 }$ , any monotone function of it is optimal (unconstrained), and the dependency structure implies its optimal even if we allow dependence on A. Furthermore, the conditional distribution $Y | X _ { 3 }$ matched that of $Y | R ^ { * }$ from scenario I since again we have $\\mathrm { P r } \\left\\{ Y = y \\vert X _ { 3 } = x _ { 3 } \\right\\} \\propto \\exp ( 2 y x _ { 3 } )$ by construction. Since we defined $R ^ { * } = X _ { 3 }$ , we have that the conditionals $R ^ { * } | Y$ match. We can also verify that by construction $X _ { 3 } | A$ matches $R ^ { * } | A$ in scenario I. Since in scenario I, $R ^ { * }$ is optimal even dependent on $A$ , we have that $A$ is independent of $Y$ conditioned on $R ^ { * }$ , as in scenario II when we condition on $X _ { 3 } = R ^ { * }$ . This establishes the joint distribution over $( A , Y , R ^ { * } )$ is the same in both scenarios. Since $\\widetilde { R }$ is the same deterministic function of $A$ and $R ^ { * }$ in both scenarios, we can further conclude the joint distributions over $A , Y , R ^ { * }$ and $\\widetilde { R }$ are the same. Since equalized odds is an oblivious property, once these distributions match, if $\\widetilde { R }$ obeys equalized odds in scenario I, it also obeys it in scenario II. ",
+        "bbox": [
+            122,
+            513,
+            872,
+            718
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "7 Case study: FICO scores ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            743,
+            426,
+            763
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "We examine various fairness measures in the context of FICO scores with the protected attribute of race. FICO scores are a proprietary classifier widely used in the United States to predict credit worthiness. Our FICO data is based on a sample of 301536 TransUnion TransRisk scores from 2003 [Res07]. These scores, ranging from 300 to 850, try to predict credit risk; they form our score R. People were labeled as in default if they failed to pay a debt for at least 90 days on at least one account in the ensuing 18-24 month period; this gives an outcome Y . Our protected attribute $A$ is race, which is restricted to four values: Asian, white non-Hispanic (labeled “white” ",
+        "bbox": [
+            122,
+            776,
+            874,
+            897
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            939
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "in figures), Hispanic, and black. FICO scores are complicated proprietary classifiers based on features, like number of bank accounts kept, that could interact with culture—and hence race—in unfair ways. A credit score cutoff of 620 is commonly used for prime-rate loans1, ",
+        "bbox": [
+            122,
+            99,
+            877,
+            156
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "image",
+        "img_path": "images/db34b8a325cb5b4795fe9382df0c62515f0c6f7323758ee223a6344a832fb61e.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            135,
+            171,
+            500,
+            426
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "image",
+        "img_path": "images/1bccae5daa289e28b0aca48747887504b7b8d226f9bd27529f7e590df8fdfc68.jpg",
+        "image_caption": [
+            "Figure 7: These two marginals, and the number of people per group, constitute our input data. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            501,
+            170,
+            861,
+            422
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "which corresponds to an any-account default rate of $1 8 \\%$ . Note that this measures default on any account TransUnion was aware of; it corresponds to a much lower $( \\approx 2 \\% )$ chance of default on individual new loans. To illustrate the concepts, we use any-account default as our target Y —a higher positive rate better illustrates the difference between equalized odds and equal opportunity. ",
+        "bbox": [
+            120,
+            469,
+            872,
+            554
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "We therefore consider the behavior of a lender who makes money on default rates below this, i.e., for whom whom false positives (giving loans to people that default on any account) is 82/18 as expensive as false negatives (not giving a loan to people that don’t default). The lender thus wants to construct a predictor $\\widehat { Y }$ that is optimal with respect to this asymmetric loss. A typical classifier will pick a threshold per group and set $\\widehat { Y } = \\overset { \\bullet } { 1 }$ for people with FICO scores above the threshold for their group. Given the marginal distributions for each group (Figure 7), we can study the optimal profit-maximizing classifier under five different constraints on allowed predictors: ",
+        "bbox": [
+            120,
+            555,
+            877,
+            691
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• Max profit has no fairness constraints, and will pick for each group the threshold that maximizes profit. This is the score at which $8 2 \\%$ of people in that group do not default. ",
+            "• Race blind requires the threshold to be the same for each group. Hence it will pick the single threshold at which $8 2 \\%$ of people do not default overall, shown in Figure 8. ",
+            "• Demographic parity picks for each group a threshold such that the fraction of group members that qualify for loans is the same. ",
+            "• Equal opportunity picks for each group a threshold such that the fraction of non-defaulting group members that qualify for loans is the same. "
+        ],
+        "bbox": [
+            151,
+            703,
+            872,
+            875
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "page_footnote",
+        "text": "1http://www.creditscoring.com/pages/bar.htm (Accessed: 2016-09-20) ",
+        "bbox": [
+            143,
+            885,
+            640,
+            901
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            925,
+            509,
+            938
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "image",
+        "img_path": "images/7fce6219ee9dab0f96a43cb62fe9d196fbc6862da442f443dc2ead006b431ccc.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            168,
+            103,
+            491,
+            333
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/4c40e2bee5aaf0ebe24c25f4a3abfd5c3ae0dd3f10946baa355e584e28409a2b.jpg",
+        "image_caption": [
+            "Figure 8: The common FICO threshold of 620 corresponds to a non-default rate of $8 2 \\%$ Rescaling the $x$ axis to represent the within-group thresholds (right), $\\operatorname* { P r } [ \\widehat { Y } = 1 \\mid Y = 1 , A ]$ is the fraction of the area under the curve that is shaded. This means black non-defaulters are much less likely to qualify for loans than white or Asian ones, so a race blind score threshold violates our fairness definitions. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            491,
+            102,
+            823,
+            334
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "• Equalized odds requires both the fraction of non-defaulters that qualify for loans and the fraction of defaulters that qualify for loans to be constant across groups. This cannot be achieved with a single threshold for each group, but requires randomization. There are many ways to do it; here, we pick two thresholds for each group, so above both thresholds people always qualify and between the thresholds people qualify with some probability. ",
+        "bbox": [
+            151,
+            455,
+            870,
+            542
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "We could generalize the above constraints to allow non-threshold classifiers, but we can show that each profit-maximizing classifier will use thresholds. As shown in Section 4, the optimal thresholds can be computed efficiently; the results are shown in Figure 9. Our proposed fairness definitions give thresholds between those of max-profit/race-blind thresholds and of demographic parity. Figure 10 plots the ROC curves for each group. It should be emphasized that differences in the ROC curve do not indicate differences in default behavior but rather differences in prediction accuracy—lower curves indicate FICO scores are less predictive for those populations. This demonstrates, as one should expect, that the majority (white) group is classified more accurately than minority groups, even over-represented minority groups like Asians. ",
+        "bbox": [
+            120,
+            551,
+            872,
+            720
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The left side of Figure 11 shows the fraction of people that wouldn’t default that would qualify for loans by the various metrics. Under max-profit and race-blind thresholds, we find that black people that would not default have a significantly harder time qualifying for loans than others. Under demographic parity, the situation is reversed. ",
+        "bbox": [
+            122,
+            723,
+            870,
+            792
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The right side of Figure 11 gives the profit achieved by each method, as a fraction of the max profit achievable. We show this as a function of the non-default rate above which loans are profitable (i.e. $8 2 \\%$ in the other figures). At $8 2 \\%$ , we find that a race blind threshold gets $9 9 . 3 \\%$ of the maximal profit, equal opportunity gets $9 2 . 8 \\%$ , equalized odds gets $8 0 . 2 \\%$ , and demographic parity gets $6 9 . 8 \\%$ . So equal opportunity fairness costs less than a quarter what demographic parity costs—and if the classifier improves, this would reduce further. ",
+        "bbox": [
+            122,
+            791,
+            870,
+            897
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            938
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/772f19188c7ff1a6815358bc901ddc6eafd04ed571c6de5d1fe1d32a1aa3b94f.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            138,
+            104,
+            491,
+            356
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "image",
+        "img_path": "images/3b98438544a1d8db486bd510efd59c993de071f1b641df736d67c7133ada8bd1.jpg",
+        "image_caption": [
+            "Figure 9: FICO thresholds for various definitions of fairness. The equal odds method does not give a single threshold, but instead $\\operatorname* { P r } [ \\widehat { Y } = 1 \\mid R , A ]$ increases over some not uniquely defined range; we pick the one containing the fewest people. Observe that, within each race, the equal opportunity threshold and average equal odds threshold lie between the max profit threshold and equal demography thresholds. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            496,
+            104,
+            857,
+            357
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "The difference between equal odds and equal opportunity is that under equal opportunity, the classifier can make use of its better accuracy among whites. Under equal odds this is viewed as unfair, since it means that white people who wouldn’t pay their loans have a harder time getting them than minorities who wouldn’t pay their loans. An equal odds classifier must classify everyone as poorly as the hardest group, which is why it costs over twice as much in this case. This also leads to more conservative lending, so it is slightly harder for non-defaulters of all groups to get loans. ",
+        "bbox": [
+            120,
+            481,
+            872,
+            601
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "The equal opportunity classifier does make it easier for defaulters to get loans if they are minorities, but the incentives are aligned properly. Under max profit, a small group may not be worth figuring out how to classify and so be treated poorly, since the classifier can’t identify the qualified individuals. Under equal opportunity, such poorly-classified groups are instead treated better than well-classified groups. The cost is thus born by the company using the classifier, which can decide to invest in better classification, rather than the classified group, which cannot. Equalized odds gives a similar, but much stronger, incentive since the cost for a small group is not proportional to its size. ",
+        "bbox": [
+            120,
+            601,
+            872,
+            737
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "While race blindness achieves high profit, the fairness guarantee is quite weak. As with max profit, small groups may be classified poorly and so treated poorly, and the company has little incentive to improve the accuracy. Furthermore, when race is redundantly encoded, race blindness degenerates into max profit. ",
+        "bbox": [
+            122,
+            739,
+            870,
+            808
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "8 Conclusions ",
+        "text_level": 1,
+        "bbox": [
+            124,
+            830,
+            299,
+            849
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "We proposed a fairness measure that accomplishes two important desiderata. First, it remedies the main conceptual shortcomings of demographic parity as a fairness notion. Second, it is fully ",
+        "bbox": [
+            122,
+            864,
+            872,
+            902
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "page_number",
+        "text": "19 ",
+        "bbox": [
+            488,
+            925,
+            509,
+            938
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "image",
+        "img_path": "images/b91ce166df8f3fa91cd0b0b4a0f1e7c2716ddd01203a80e019a97e19ea4b902a.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            138,
+            108,
+            488,
+            357
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/2dde63cf760019ebe04313204b1ecff684b6d96c1e0d16303df1b99390a1c10f.jpg",
+        "image_caption": [
+            "Figure 10: The ROC curve for using FICO score to identify non-defaulters. Within a group, we can achieve any convex combination of these outcomes. Equality of opportunity picks points along the same horizontal line. Equal odds picks a point below all lines. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            504,
+            118,
+            861,
+            358
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/b178fbeb2e05a7d88f408d65a5531295b14cf09075046e95afa15f8c98f87f59.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            138,
+            444,
+            506,
+            680
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/54e6b0d48ad422ffd45e666d94b4b1cacf4b30ac91882a078326ed43ad0d99ee.jpg",
+        "image_caption": [
+            "Figure 11: On the left, we see the fraction of non-defaulters that would get loans. On the right, we see the profit achievable for each notion of fairness, as a function of the false positive/negative trade-off. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            509,
+            445,
+            846,
+            694
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "aligned with the central goal of supervised machine learning, that is, to build higher accuracy classifiers. In light of our results, we draw several conclusions aimed to help interpret and apply our framework effectively. ",
+        "bbox": [
+            122,
+            785,
+            870,
+            835
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Choose reliable target variables. Our notion requires access to observed outcomes such as default rates in the loan setting. This is precisely the same requirement that supervised learning ",
+        "bbox": [
+            122,
+            856,
+            870,
+            892
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            509,
+            938
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "generally has. The broad success of supervised learning demonstrates that this requirement is met in many important applications. That said, having access to reliable “labeled data” is not always possible. Moreover, the measurement of the target variable might in itself be unreliable or biased. Domain-specific scrutiny is required in defining and collecting a reliable target variable. ",
+        "bbox": [
+            127,
+            99,
+            870,
+            183
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Measuring unfairness, rather than proving fairness. Due to the limitations we described, satisfying our notion (or any other oblivious measure) should not be considered a conclusive proof of fairness. Similarly, violations of our condition are not meant to be a proof of unfairness. Rather we envision our framework as providing a reasonable way of discovering and measuring potential concerns that require further scrutiny. We believe that resolving fairness concerns is ultimately impossible without substantial domain-specific investigation. This realization echoes earlier findings in “Fairness through Awareness” $[ \\mathrm { D H P ^ { + } 1 } 2 \\dot { }$ ] describing the task-specific nature of fairness. ",
+        "bbox": [
+            127,
+            205,
+            870,
+            340
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Incentives. Requiring equalized odds creates an incentive structure for the entity building the predictor that aligns well with achieving fairness. Achieving better prediction with equalized odds requires collecting features that more directly capture the target Y , unrelated to its correlation with the protected attribute. Deriving an equalized odds predictor from a score involves considering the pointwise minimum ROC curve among different protected groups, encouraging constructing of predictors that are accurate in all groups, e.g., by collecting data appropriately or basing prediction on features predictive in all groups. ",
+        "bbox": [
+            127,
+            361,
+            870,
+            481
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "When to use our post-processing step. An important feature of our notion is that it can be achieved via a simple and efficient post-processing step. In fact, this step requires only aggregate information about the data and therefore could even be carried out in a privacypreserving manner (formally, via Differential Privacy). In contrast, many other approaches require changing a usually complex machine learning training pipeline, or require access to raw data. Despite its simplicity, our post-processing step exhibits a strong optimality principle. If the underlying score was close to optimal, then the derived predictor will be close to optimal among all predictors satisfying our definition. However, this does not mean that the predictor is necessarily good in an absolute sense. It also does not mean that the loss compared to the original predictor is always small. An alternative to using our post-processing step is always to invest in better features and more data. Only when this is no longer an option, should our post-processing step be applied. ",
+        "bbox": [
+            127,
+            501,
+            870,
+            705
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "Predictive affirmative action. In some situations, including Scenario II in Section 6, the equalized odds predictor can be thought of as introducing some sort of affirmative action: the optimally predictive score $R ^ { * }$ is shifted based on A. This shift compensates for the fact that, due to uncertainty, the score is in a sense more biased then the target label (roughly, $R ^ { * }$ is more correlated with $A$ then Y is correlated with $A$ ). Informally speaking, our approach transfers the burden of uncertainty from the protected class to the decision maker. We believe this is a reasonable proposal, since it incentivizes the decision maker to invest additional resources toward building a better model. ",
+        "bbox": [
+            127,
+            726,
+            870,
+            863
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            926,
+            506,
+            938
+        ],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            125,
+            97,
+            250,
+            116
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[BS16] Solon Barocas and Andrew Selbst. Big data’s disparate impact. California Law Review, 104, 2016. ",
+            "[BZVGRG15] Muhammad Bilal Zafar, Isabel Valera, Manuel Gomez Rodriguez, and Krishna P Gummadi. Learning fair classifiers. CoRR, abs:1507.05259, 2015. ",
+            "[CKP09] T. Calders, F. Kamiran, and M. Pechenizkiy. Building classifiers with independency constraints. In In Proc. IEEE International Conference on Data Mining Workshops, pages 13–18, 2009. ",
+            "$\\left[ \\mathrm { D H P ^ { + } 1 } 2 \\right]$ Cynthia Dwork, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Richard S. Zemel. Fairness through awareness. In Proc. ACM ITCS, pages 214–226, 2012. ",
+            "$\\left[ \\mathrm { F F M ^ { + } } 1 5 \\right]$ Michael Feldman, Sorelle A. Friedler, John Moeller, Carlos Scheidegger, and Suresh Venkatasubramanian. Certifying and removing disparate impact. In Proc. 21st ACM SIGKDD, pages 259–268. ACM, 2015. ",
+            "[KMR16] Jon M. Kleinberg, Sendhil Mullainathan, and Manish Raghavan. Inherent tradeoffs in the fair determination of risk scores. CoRR, abs/1609.05807, 2016. ",
+            "[LSL+15] Christos Louizos, Kevin Swersky, Yujia Li, Max Welling, and Richard S. Zemel. The variational fair autoencoder. CoRR, abs/1511.00830, 2015. ",
+            "$\\left[ \\mathrm { P P M ^ { + } 1 4 } \\right]$ John Podesta, Penny Pritzker, Ernest J. Moniz, John Holdren, and Jefrey Zients. Big data: Seizing opportunities and preserving values. Executive Office of the President, May 2014. ",
+            "[PRT08] Dino Pedreshi, Salvatore Ruggieri, and Franco Turini. Discrimination-aware data mining. In Proc. 14th ACM SIGKDD, 2008. ",
+            "[Res07] US Federal Reserve. Report to the congress on credit scoring and its effects on the availability and affordability of credit, 2007. ",
+            "[RR14] Andrea Romei and Salvatore Ruggieri. A multidisciplinary survey on discrimination analysis. The Knowledge Engineering Review, 29:582–638, 11 2014. ",
+            "[Was10] Larry Wasserman. All of Statistics: A Concise Course in Statistical Inference. Springer, 2010. ",
+            "[Whi16] Big data: A report on algorithmic systems, opportunity, and civil rights. Executive Office of the President, May 2016. ",
+            "[Zli15] Indre Zliobaite. On the relation between accuracy and fairness in binary classification. CoRR, abs/1505.05723, 2015. ",
+            "$\\left[ Z \\mathrm { W } S ^ { + } 1 3 \\right]$ Richard S. Zemel, Yu Wu, Kevin Swersky, Toniann Pitassi, and Cynthia Dwork. Learning fair representations. In Proc. 30th ICML, 2013. "
+        ],
+        "bbox": [
+            125,
+            128,
+            874,
+            854
+        ],
+        "page_idx": 21
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            488,
+            925,
+            509,
+            938
+        ],
+        "page_idx": 21
+    }
+]

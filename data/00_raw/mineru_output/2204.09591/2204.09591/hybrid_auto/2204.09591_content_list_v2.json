@@ -1,0 +1,2823 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A Survey on Bias and Fairness in Natural Language Processing "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                80,
+                828,
+                101
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Rajas Bansal "
+                    }
+                ]
+            },
+            "bbox": [
+                445,
+                133,
+                561,
+                149
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Stanford University "
+                    }
+                ]
+            },
+            "bbox": [
+                421,
+                149,
+                583,
+                166
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "rajasb@stanford.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                386,
+                167,
+                618,
+                181
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                263,
+                242,
+                342,
+                258
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As NLP models become more integrated with the everyday lives of people, it becomes important to examine the social effect that the usage of these systems has. While these models understand language and have increased accuracy on difficult downstream tasks, there is evidence that these models amplify gender, racial and cultural stereotypes and lead to a vicious cycle in many settings. In this survey, we analyze the origins of biases, the definitions of fairness and how different subfields of NLP mitigate bias. We finally discuss how future studies can work towards eradicating pernicious biases from NLP algorithms. "
+                    }
+                ]
+            },
+            "bbox": [
+                142,
+                269,
+                463,
+                470
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                481,
+                260,
+                495
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Bias is the prior information possessed by AI systems, and contrary to the emotion piqued by the word, it reflects the intelligence held by the system. Yet, this bias can be harmful, when it is the result of harmful precedents (Caliskan et al., 2017). The blind application of AI systems possessing these biases runs the risk of amplifying harmful social biases which existed some 100 years ago. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                507,
+                490,
+                634
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To better understand this, consider the case of retrieving web pages relevant to a query which utilizes word embeddings. Consider a simple query, like, IIT Delhi computer science student. Now, there may be web-pages of hundreds of students which differ in nothing, except the name of the student, like John and Mary. Word embeddings attribute the field of computer science to males (Bolukbasi et al., 2016). This leads to the search engine ranking John’s page above Mary’s. This in turn makes women less recognized in Computer Science, thus amplifying the existing bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                636,
+                490,
+                828
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The text corpora that is used to train State-ofthe-Art algorithms themselves contain pernicious gender, racial and religious biases. ? use word embeddings as a quantitative lens through which to study historical trends - specifically trends in "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                829,
+                490,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "the gender and ethnic stereotypes in the United States. They analyze word embeddings trained over 100 years of text corpora and are able to show that their measurement of bias is highly correlated with various social movements, like the women’s movement in the 1960s-1970s and Asian-American population growth in the 1960s and 1980s. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                243,
+                885,
+                355
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The survey is organized as follows: Section 2 outlines the sources of bias in NLP; Section 3 defines the notion of fairness; Section 4 define different metrics used to quantify bias; Section 5 collates how debiasing is approached within different subfields of NLP while Section 6 explains how current techniques are not sufficient; Finally, Section 7 concludes and discussed directions for future work. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                356,
+                885,
+                483
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Bias "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                498,
+                586,
+                513
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Data collected from humans in the real world is not homogeneous, as is usually assumed in research. Demographics of the humans labelling the data may itself influence bias the model. Data collected in the real world is heterogeneous, generated by social subgroups with their own characteristics and behaviours. A model trained on biased data may lead to unfair and inaccurate predictions. Current work in NLP focuses on curing the symptoms of these biases, without trying to drill out their origins. This leads to the developed systems fixing only a specific type of the bias (for eg. gender) and not being able to generalize to cure others (like racial biases). This paper presents the origins of the prevalent biases in order to facilitate research sensitive to these. They can be grouped into 4 major groups (Shah et al., 2019) :- "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                524,
+                885,
+                799
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "• Label bias Label bias emerges when the distribution of the labeled variable in the input dataset diverges substantially from the ideal distribution. Here, the label themselves are erroneous. This may be due to the lack of expertise or prejudices held by annotators. "
+                    }
+                ]
+            },
+            "bbox": [
+                532,
+                813,
+                885,
+                910
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:2204.09591v1 [cs.CL] 6 Mar 2022 "
+                    }
+                ]
+            },
+            "bbox": [
+                21,
+                310,
+                60,
+                717
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Selection bias Selection bias emerges due to non-representative observations – when the annotators generating the training data have a different distribution than where the model is to be applied. A famous example being the “Wall Street Journal effect”, where syntactic parsers and part-of-speech taggers perform most accurately over language written by middle-aged white men (Garimella et al., 2019). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Over-amplification This may occur during the learning process itself, where the model may pick up small difference in human factors, and amplify these to be much larger in the predicted outcomes. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Semantic bias Embeddings are used as an off-the-shelf source of semantic information in NLP. However, these embeddings themselves contain unintended biases, with words for certain professions like nurses, homemakers and receptionists clustering together near feminine words, and thus act as a source of semantic bias for the downstream model. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                137,
+                74,
+                490,
+                464
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Typical word embeddings were found to associate European American names with more pleasant/positive words than African American words, and thus exhibit racial biases. While this racial bias is acknowledged by many papers, the majority of the work in this field focuses on gender bias. Other social biases like religious biases and cultural biases have not been given adequate attention and may require completely new methods to tackle them and may bring new challenges with them. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                476,
+                490,
+                638
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Fairness "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                648,
+                223,
+                664
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Fairness is at the heart of the problem but most prior work chooses to ignore it. The definitions have been listed so that future work realizes how different definitions of fairness may alter the problem, and which definition is most suited for their domain. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                673,
+                489,
+                769
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Consider the task of predicting an output variable Y given an input variable X, while remaining unbiased with respect to some variable Z. Let the predicted distribution be "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". (Zhang et al., 2018) "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                770,
+                490,
+                835
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "• Demographic Parity A predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "satisfies demographic parity if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and Z are independent. This definition says that the probability of a person being in the positive class should "
+                    }
+                ]
+            },
+            "bbox": [
+                137,
+                844,
+                490,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "be independent of if the person is male or female. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                74,
+                885,
+                105
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Equality of Opportunity A predictor "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "satisfies equality of opportunity with respect to a class y if "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "and Z are independent conditioned on "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "{ \\mathrm { Y } } = { \\mathrm { y } }"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". This says that the true positive rates should be the same for men and women. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Equality of Odds A predictor "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "satisfies equality of odds if "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "and Z are conditionally independent given Y. This definition says that the true positive and false positive rates should be the same for men and women. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                532,
+                121,
+                885,
+                299
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The definition of fairness to use is often a political choice, the right prefers Equality of Opportunity while the left prefers Equality of Odds. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                317,
+                885,
+                365
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Metrics for Observing Bias "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                381,
+                779,
+                398
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "A key problem in eradication of bias is that of quantifying and measuring the bias that may be already present in the training data or model. As quantifying bias is difficult in the symbolic domain, most metrics assume that words have been projected to some vector space before measuring bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                409,
+                885,
+                506
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1. Word Embedding Assosiation Test "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                527,
+                523,
+                823,
+                539
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The WEAT test proposed by Caliskan et al. (2017) is the most popular metric used to measure the bias present in word embeddings. The origins of this test are found in the Implicit Association Test (IAT) used by psychologists to show biases existing among humans using reaction time as a quantitative measure. Caliskan et al. (2017) show that human biases are also reproduced in Word2Vec and GLoVe embeddings. For example, male attributes like brother, father and grandfather were found to be more correlated with science-related words than female attributes. This intuition is used to formulate the WEAT test. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                546,
+                885,
+                772
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Consider two sets of target words (X,Y) (eg. programmer, engineer etc. and nurse, teacher etc.) and two sets of attribute words (A,B) (eg., he, man etc. and she, woman etc.). The null hypothesis is that there is that the attribute sets are similar to both target sets in terms of word similarity. The test measures the (un)likelihood of this hypothesis. The test "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                781,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "statistic is :- "
+                    }
+                ]
+            },
+            "bbox": [
+                152,
+                74,
+                247,
+                89
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} s (X, Y, A, B) = \\sum_ {x \\in X} s (x, A, B) \\\\ - \\sum_ {y \\in Y} s (y, A, B) \\quad (1) \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9d6d233238779bc5a4c0b59336c8a95d127c6515c869d9afeb3c59cf0399536d.jpg"
+                }
+            },
+            "bbox": [
+                171,
+                107,
+                487,
+                175
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where, "
+                    }
+                ]
+            },
+            "bbox": [
+                152,
+                189,
+                206,
+                203
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} s (w, A, B) = \\operatorname {m e a n} _ {a \\in A} \\cos (w, a) \\\\ - \\operatorname {m e a n} _ {b \\in B} \\cos (w, b) \\tag {2} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/156127f05bfe2300798d3a27b76f3c9e8b5f0b567c7be8574352f5de8809fc3c.jpg"
+                }
+            },
+            "bbox": [
+                171,
+                224,
+                487,
+                259
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In other words, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s ( w , A , B )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "measures the association of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as compared to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "B"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Different variations of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A , B , X , Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are used in different papers. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                272,
+                490,
+                337
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2. Sentence Encoder Association Test "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                129,
+                350,
+                430,
+                365
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This is a simple generalization of the WEAT test for sentence encoders. Here, the target and the attribute sets contain sentences instead of words. To extend the word level test to a sentence level test, words present in the earlier sets are put into semantically bleached sentence templates such as “This is word.”,“word is here.”, “word are things”. (May et al., 2019) "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                372,
+                490,
+                501
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "3. Projection on gender direction Bolukbasi et al. (2016) define the gender bias of a word "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by its projection on the “gender direction”: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\vec { w } \\cdot \\dot { ( h e \\mathrm { - } s h e ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "assuming all vectors to be normalized. The higher the projection on this direction, the more bias the word is said to possess. This measurement is done, assuming that words have been partitioned into two sets gendered words (like brother, mother etc. which contain implicit gender information) and gender neutral words (eg. programmer, homemaker etc which must not contain gender information). This metric is based on the implicit assumption that there is a gender subspace which subsumes all gender information of any word. "
+                    }
+                ]
+            },
+            "bbox": [
+                131,
+                513,
+                490,
+                772
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "4. Distance from gender pairs Some papers use the distance from gender pairs (like he and she) as a measure of the bias in the word. Models based on this metric ensure that gender neutral words like nurse, as defined above, are equidistant from he and she. "
+                    }
+                ]
+            },
+            "bbox": [
+                129,
+                784,
+                490,
+                881
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5. Language Model Bias "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                129,
+                892,
+                329,
+                909
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Bordia and Bowman (2019) define the probability of a word occuring in context with gendered words as "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                74,
+                887,
+                121
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "P (w | g) = \\frac {\\frac {c (w , g)}{\\sum_ {i} c (w _ {i} , g)}}{\\frac {c (g)}{\\sum_ {i} c (w _ {i})}}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/82194d344d7733622409bd53c8ee9186dcebebc78d3f65ed92ae4b7f04dcd03e.jpg"
+                }
+            },
+            "bbox": [
+                636,
+                124,
+                796,
+                175
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ( w , g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the count of the word in a specified context window and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the set of gendered words which belong to the male "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( m )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or the female "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( f )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "set. The bias score of any word "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "would then be, "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                179,
+                885,
+                258
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "b i a s (w) = l o g (\\frac {P (w | f)}{P (w | m)})",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c75b842b0f5f8db1b7bfc2d62c58f17ea7470e1a5ef2441d6be51e38b70522aa.jpg"
+                }
+            },
+            "bbox": [
+                616,
+                263,
+                815,
+                298
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "6. Gender Bias Evaluation Test-sets All of the metrics discussed above quantify bias present in word embeddings, failing to quantify the bias present in the model itself. This is a very narrow view, and Gender Bias Evaluation Test-Sets (GBETs) introduced by Sun et al. (2019) provides a solution to this problem. Standard test sets in NLP fail to measure the gender bias in models. These test sets themselves contain biases (such as containing more male references than female references), so evaluation on them might not reveal biases. The goal of designing these GBETs is to provide a standardized dataset to the research community to streamline research and allow them to measure biases present in their algorithms. "
+                    }
+                ]
+            },
+            "bbox": [
+                526,
+                305,
+                885,
+                562
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Gender Swapped GBETs The most commonly used method to construct these GBETs is gender swapping. Gender swapping is done by replacing every male definitional word with its female equivalent and vice versa. A system free from bias must give the same performance on both the male and female swapped test sets. The difference in score here acts as a proxy for the gender bias in the system. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                567,
+                885,
+                728
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For coreference resolution, Rudinger et al. (2018) and Zhao et al. (2018a) independently designed GBETs based on the gender swapping techniques and is discussed in detail later. For sentiment analysis, a GBET dataset named Equity Evaluation Corpus (?) is designed where every sentence in the dataset contains a gendered word along with an emotion carrying word. Gender bias is measured as the difference in emotional intensity predictions between gender-swapped datasets. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                732,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Approaches for Debiasing Models "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                74,
+                440,
+                91
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "There have been numerous attempts to eradicate bias and bring fairness into NLP models for solving a variety of sub-problems like coreference resolution, semantic role labeling and machine translation. Most effort in this direction however has been in debiasing word embeddings which are used as an off-the-shelf source of semantic knowledge. Thus in the first subsection we discuss the different methods used to debias word embeddings. We then take a number of subproblems in NLP to emphasize the applications of these techniques to different domains. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                102,
+                489,
+                294
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Generally, methods that target bias fall into three large categories :- "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                296,
+                489,
+                328
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "1. Pre-processing These methods acknowledge the bias that is present in the training data itself and try to alleviate this bias by transforming the input to the model itself. The downstream training algorithm is unchanged. "
+                    }
+                ]
+            },
+            "bbox": [
+                131,
+                343,
+                490,
+                425
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Brunet et al. (2019) identify and remove the articles from Wikipedia and the New York Times articles corpus which lead to the most increase in bias of the downstream GLoVe word embeddings. They use influence functions to approximate how the WEAT score changes due to the removal of one document from the training data. Then, the documents whose removal causes the most decrease in bias are removed. As removal of one document causes an imperceptibly small decrease in bias, a set of documents are considered for removal rather than a single document. "
+                    }
+                ]
+            },
+            "bbox": [
+                149,
+                430,
+                489,
+                640
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2. Post-processing Sometimes, re-training the model is infeasible as it may require a large amount of resources to train the model. In such a case, post-processing methods which alter the output without considering bias at the time of training are useful. The learned model is treated as a black box in this case and the labels assigned by the model are altered in order to improve bias scores. Most methods discussed in this survey are post-processing methods. "
+                    }
+                ]
+            },
+            "bbox": [
+                129,
+                653,
+                489,
+                829
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "3. In-processing In-processing techniques try to modify and change state-of-the-art learning algorithms in order to remove discrimination during the model training process. "
+                    }
+                ]
+            },
+            "bbox": [
+                129,
+                845,
+                489,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Zhao et al. (2018b) propose a Gender Neutral Variant of GLoVe training. They point out that post-processing methods remove gender information from embeddings which may be useful for some settings such as medicine. These methods also require tagging gender neutral words which may lead to pipelining errors due to wrong identification of such words. The authors’ Gender Neutral GLoVe training concentrates all socially-biased information in certain dimensions which can easily be removed if such an information is not required. Thus a word vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "consists of two parts, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w ~ = ~ [ w ^ { ( a ) } ; w ^ { ( g ) } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". All gender information is concentrated into "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w ^ { ( g ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", freeing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w ^ { ( a ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from any gender influence. This is done by adding two additional loss terms to the GLoVe learning objective. One, which separates out the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w ^ { ( g ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of male-definition and female-definition words far from each other (by maximizing the distance between them). The second encourages the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w ^ { ( a ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the neutral words to be in the null space of the gender direction, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v _ { g }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is estimated on the fly by averaging the difference between the male definition and the female definition words. "
+                    }
+                ]
+            },
+            "bbox": [
+                544,
+                74,
+                887,
+                492
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1 Word Embeddings "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                547,
+                513,
+                741,
+                529
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Word embeddings are a vector representation of a symbolic domain i.e words and are a fundamental component in many NLP systems. However, these contain 100 years of gender and ethnic sterotypes (Garg et al., 2018). Thus, a lot of attention has been paid to debiasing these vectors. However, Caliskan et al. (2017) view this debiasing with skepticism. They view AI as perception followed by action, and they feel that debiasing alters the AI’s perception and model of the world, rather than how it acts on this perception. Prejudice can anyway creep back in due to other proxies which may not be apparent (Gonen and Goldberg, 2019). "
+                    }
+                ]
+            },
+            "bbox": [
+                544,
+                542,
+                887,
+                768
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1.1 Removing Gender Subspace "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                547,
+                785,
+                830,
+                802
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The work in this line of thinking is based on the hypothesis that all gender, racial and religious biases and information can be subsumed by a particular subspace of word embeddings. These algorithms thus try to reduce the information that the gender neutral words possess "
+                    }
+                ]
+            },
+            "bbox": [
+                544,
+                813,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "in the gender-biased subspace. Debiasing involves two steps :- "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                74,
+                492,
+                108
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "(a) Identify gender subspace "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                159,
+                117,
+                391,
+                133
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "(b) Neutralize vectors "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                159,
+                136,
+                337,
+                151
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "First all words are separated into maledefinitional words "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\Omega _ { m } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", female-definitional words "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\Omega _ { f } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and gender neutral words "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\Omega _ { n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Many words in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Omega _ { m }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\Omega _ { f }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are paired together into complements (for eg. (he,she), (brother,sister), (John,Mary) etc.). The difference in the vector of these words i.e "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\vec { h e } - s \\vec { h } e"
+                    },
+                    {
+                        "type": "text",
+                        "content": "acts as the gender direction. Instead of taking just one difference, general practice is to take all such difference and run a PCA algorithm, which yields the subspace which explains the most variation in this space of gender direction. This is done by stacking all the above differences into a matrix C. The bias subspace, B is then defined to be the first "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rows of SVD(C). "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                162,
+                492,
+                419
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The neutralize step removes gender bias from all the vectors, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\vec { w } \\in \\Omega _ { n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". It does this by reembedding all the word vectors through the following process :- "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                426,
+                490,
+                491
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\vec {w} := \\frac {\\vec {w} - \\vec {w _ {B}}}{| | \\vec {w} - \\vec {w _ {B}} | |}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/55801a05fbe1d94c57d76a539323ec687f96e123730d420556fabaa6db4af0dc.jpg"
+                }
+            },
+            "bbox": [
+                253,
+                501,
+                386,
+                536
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w _ { B } ^ {  }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the projection of w onto the bias subspace B. This removes the gender component from all neutral words. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                546,
+                492,
+                594
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1.2 Data Augmentation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                152,
+                611,
+                366,
+                626
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Sometimes the training dataset may have a disproportionate number of references to one gender. To mitigate this, Zhao et al. (2018a) propose gender swapping in the training dataset which equalizes the references to each gender in this dataset. This is different from a GBET as GBETs were used to measure the bias that may be present in the model while this approach debias predictions by training on a gender-balanced dataset. When applied to coreference resolution model originally trained on OntoNotes 5.0 which was tested on WinoBias, gender augmentation lowered the difference between F1 scores on pro- and anti-stereotypical test sets significantly, which indicates the model does not make predictions motivated by gender. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                636,
+                492,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Complementary to augmentation, Brunet et al. (2019) propose removing those documents which contain the most amount of bias. They show that removing the 10 most influential (according to their metric) documents from the training set led to a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "40 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "decrease in the WEAT effect size. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                74,
+                885,
+                187
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.2 Sentence Encoding "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                547,
+                204,
+                744,
+                219
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Recently, opposed to word embeddings, sentence representations thorugh ELMo, BERT and GPT have become the prefered choice for encoding text. As these models contain contextual word embeddings in place of a single embedding for each word, traditional WEAT tests cannot be used here. Bias is measured in such cases using the SEAT test (Liang et al., 2019; May et al., 2019). The SEAT test is a very crude generalization of the WEAT test as discuessed. May et al. (2019) show that the biases that were shown by Caliskan et al. (2017) are reproduced for BERT and ELMo. The Hard Debias method estimates the bias subspace by computing the PCA of gendered sentence templates followed by removal of the component of the sentence encoding in the bias subspace. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                230,
+                885,
+                520
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "While many papers show that these debiasing methods reduce SEAT scores, they also report that the SEAT does not seem to be an adequate metric. Certain counter-intuitive trends are observed in the bias present in sentence embeddings as compared to the word embeddings. This may be due to two reasons, one, the templates formed are not as semantically bleached as expected and two, cosine similarity is not a good metric to measure sentence similarity as training for BERT and ELMo has been done on different objectives. Thus a better measure of bias in sentence representations is required. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                526,
+                885,
+                750
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Kurita et al. (2019) propose a new measure of bias for sentence representations which shows better correlation with human biases than SEAT and addresses some of the problems mentioned above. The process for measuring bias by correlating a [TARGET] (gendered word, in this case, he) to an [ATTRIBUTE] (in this case programmer) is as follows :- "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                757,
+                885,
+                885
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(a) Prepare a template sentence e.g. “[TAR-"
+                    }
+                ]
+            },
+            "bbox": [
+                554,
+                892,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Type 1 "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                285,
+                78,
+                327,
+                89
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physicianhired'the secretary becausehewas overwhelmed with clients. "
+                    }
+                ]
+            },
+            "bbox": [
+                122,
+                97,
+                489,
+                114
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physicianhired the secretary because shewas overwhelmed with clients. "
+                    }
+                ]
+            },
+            "bbox": [
+                122,
+                117,
+                489,
+                135
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physicianhired the secretary because'she was highly recommended. "
+                    }
+                ]
+            },
+            "bbox": [
+                132,
+                156,
+                482,
+                168
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physicianhired the secretary becausehewas highly recommended. "
+                    }
+                ]
+            },
+            "bbox": [
+                134,
+                171,
+                480,
+                184
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Type 2 "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                290,
+                200,
+                331,
+                212
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The secretaryicalled the physician and told himabout a new patient. "
+                    }
+                ]
+            },
+            "bbox": [
+                139,
+                225,
+                467,
+                239
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": ":The secretary called the physicianand told heriaboutanewpatient "
+                    }
+                ]
+            },
+            "bbox": [
+                139,
+                243,
+                465,
+                255
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physiciancalled the secretaryand told herthe cancel the appointment. "
+                    }
+                ]
+            },
+            "bbox": [
+                127,
+                279,
+                485,
+                292
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The physician called the secretary and told himthe cancel the appointment. "
+                    }
+                ]
+            },
+            "bbox": [
+                127,
+                298,
+                485,
+                311
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: (Zhao et al., 2018a) The WinoBias data with gender swapping. Male and female entities are marked in blue and orange respectively. The pro- and antistereotypical are shown through solid and dashed lines respectively. The gender should be irrelevant for the coreference system. "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                335,
+                489,
+                420
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "GET] is a [ATTRIBUTE]” "
+                    }
+                ]
+            },
+            "bbox": [
+                189,
+                432,
+                391,
+                447
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(b) Replace [TARGET] with [MASK] and compute "
+                    }
+                ]
+            },
+            "bbox": [
+                159,
+                450,
+                487,
+                481
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "p _ {t g t} = P ([ M A S K ] = [ T A R G E T ])",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/f792d464053376924587809d4bf3d87494ca0a071385fa9f92ee53e0f2063276.jpg"
+                }
+            },
+            "bbox": [
+                200,
+                494,
+                475,
+                512
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(c) Replace both [TARGET] and [AT-TRIBUTE] with [MASK], and compute prior probability "
+                    }
+                ]
+            },
+            "bbox": [
+                159,
+                523,
+                489,
+                571
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "p _ {p r i o r} = P ([ M A S K ] = [ T A R G E T ])",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/1f100cbe12a41ee3f5b521ae43431da52df7688377cb16c66b41381baf1f67ec.jpg"
+                }
+            },
+            "bbox": [
+                191,
+                583,
+                482,
+                601
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(d) Compute the association between target and attribute as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "l o g \\big ( \\frac { p _ { t g t } } { p _ { p r i o r } } \\big )"
+                    }
+                ]
+            },
+            "bbox": [
+                159,
+                613,
+                487,
+                649
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The bias can be calculated by subtracting the association scores for he/she. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                653,
+                487,
+                684
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.3 Coreference Resolution "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                152,
+                702,
+                381,
+                715
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Coreference resolution is the task aimed at identifying phrases (mentions) refering to the same entity. Zhao et al. (2018a) created a novel challenge corpus, WinoBias which follows the winograd format and contains references to people using a vocabulary of 40 occupations. Figure 1 shows the 2 types of sentences that are present in the WinoBias corpus. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                727,
+                489,
+                871
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Typical systems were found to give poor accuracy on the WinoBias dataset. This is because "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                877,
+                489,
+                909
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "the widely used OntoNotes 5.0 dataset uses male gendered pronouns to refer to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "80 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "entities. In order to reduce this bias, an additional training corpus was created by swapping all male entities for female entities and vice versa. The SoTA end-to-end system was then trained on the original augmented with the swapped corpus. Names were anonymized to remove the bias that a gendered name may carry with itself. The authors were able to show that the SoTA algorithms performed poorly on the WinoBias dataset. The anonymization, usage of bias free embeddings and the augmentation of data, as discussed were enough to improve the performance of these systems on the dataset. As the WinoBias evaluation may be out of domain for a system trained on OntoNotes, the authors also compared the difference in accuracy of all systems on the OntoNotes dev set and its gender swapped version. The debiased system did not show a significant difference in accuracy on swapping the gender. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                74,
+                884,
+                445
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.4 Machine Translation "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                547,
+                460,
+                757,
+                474
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The example most widely used to show bias in machine translation is the English sentence ”She works in a hospital, my friend is a nurse”. Here my friend is translated to “amiga” (girl friend) in Spanish, while the sentence “She works in a hospital, my friend is a doctor” translates my friend to amigo (boy friend) in Spanish. Escude Font and Costa-juss´ a` (2019) carry out a study of biases in MT from English to Spanish. In addition to the corpus available from WMT, they have created an additional test set to study gender bias. Motivated from the above example the test set is built using a sentence pattern “I’ve known {her, him, proper-noun} for a long time, my friend works as a {occupation}.” They used debiased word embeddings constructed through methods mentioned above and were able to show a huge improvement on the custom test set over the SoTA baseline. In fact, they were able to show improvement of 1 BLEU point over the original test set showing that the performance does not degrade when one uses these debiased embeddings. "
+                    }
+                ]
+            },
+            "bbox": [
+                544,
+                486,
+                885,
+                872
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Human translators rely on contextual information to infer certain aspects like gender of the "
+                    }
+                ]
+            },
+            "bbox": [
+                547,
+                877,
+                885,
+                909
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "speaker in order to make the best translation. In absence of such context, like the identity of the speaker, NMT make the statistically most likely choice which may be gender biased. Vanmassenhove et al. (2018) thus give more emphasis on speaker information being present in parallel data. They have thus released a large corpus of parallel data tagged with speaker information (name, gender, age, date of birth, euroID and date of the session). They then trained a NMT system which was given the gender of the speaker as the first token. The authors were able to show a 1 point improvement in BLEU score with the most improvement seen in sentences having female speakers. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                74,
+                492,
+                332
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.5 Semantic Role Labeling "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                152,
+                350,
+                386,
+                366
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Zhao et al. (2017) consider the task of visual semantic role labeling (vSRL) where the goal is to predict activities and the roles that objects play in it. Biases exist in such a setting too. In the imSitu training set, only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "33 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of cooking images have man as the agent role. After training a CRF, this bias is amplified: less than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "16 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of cooking images are labeled with man as the agent. They use a novel constrained inference framework called RBA (Reduced Bias Amplification). Here the Language Model bias formulation (4.5) is used to measure bias of the system. Bias amplification is measured by comparing the bias on the training set to that on the test set. "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                376,
+                490,
+                618
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In order to reduce bias amplification, the authors inject constraints enforcing that the test bias should remain in certain limits of the training bias. These constraints need to be applied at the corpus level and thus would require solving a large inference problem. Therefore, an approximate inference algorithm based on Lagrangian relaxation is used. Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ^ { s t a r }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the gender ratio present in the training set. Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { M } ^ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denote the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "test instance being assigned the agent as man. Then the constraints that we want to impose are "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                624,
+                492,
+                818
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "b ^ {\\star} - \\gamma \\leq \\frac {\\sum_ {i} y _ {M} ^ {i}}{\\sum_ {i} y _ {M} ^ {i} + \\sum_ {i} y _ {W} ^ {i}} \\leq b ^ {\\star} + \\gamma",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/5d5ee7708ba4819d462787bfde6c06fb865157d1bf8dbdbedbe208383041ad20.jpg"
+                }
+            },
+            "bbox": [
+                176,
+                829,
+                465,
+                866
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is an adjustable hyperparameter representing the error limit. These constraints "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                877,
+                490,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "can be generalized to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A \\textstyle \\sum _ { i } y ^ { i } - b \\leq 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and a Lagrangian formulation can then be used to solve the problem. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                74,
+                884,
+                122
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.6 Hate speech "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                547,
+                139,
+                690,
+                155
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Social media platforms are being criticized for being echo chambers of hate speech. However automated removal of such messages leads to suppressing the already marginalized voice of minorities. The task is especially challenging because what is considered toxic inherently depends on social context (e.g., speaker’s identity or dialect). Terms earlier deemed offensive (e.g., “n*gga”, “queer”) are no longer so if used by people from these groups (Sap et al., 2019). As race information is not available on Twitter, the authors use a proxy for identifying race, i.e the African American English dialect to signal race. The authors showed that the usage of the AAE dialect was shown to have high correlation with a tweet being classified as being hateful. Grouping tweets into White aligned and AAE aligned, the authors show that the false positive rates for AAE was "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "46 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as compared to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "9 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for White aligned tweets. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                165,
+                885,
+                487
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.7 Adversarial Learning Algorithms "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                547,
+                502,
+                858,
+                519
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Learning an generative adversarial network for the mitigating bias seems to be the most generalizable approach. Zhang et al. (2018) model a variation of GANs for mitigating biases. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                529,
+                885,
+                608
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In the context of learning word analogies, the generator learns the answers to simple word analogies while the discriminator tries to infer the gender from the prediction yielded by the generator. The generator attempts to prevent the discriminator from identifying the gender and will thus yield solutions which are less plagued by bias as they demonstrate in their paper. "
+                    }
+                ]
+            },
+            "bbox": [
+                546,
+                614,
+                885,
+                760
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 Why are current techniques not sufficient? "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                771,
+                821,
+                802
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Gonen and Goldberg (2019) point out that current methods of debiasing word vectors show promising scores on their seld-defined metrics. However, the removal is quite superficial. The actual effect is just hiding the bias, not removing it. Tests like WEAT and SEAT are good to check the presence of bias, "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                813,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "if any, however small WEAT scores do not mean that bias has been removed. The gender bias is still reflected in the debiased embeddings, and can be recovered from any downstream model. They find that:- "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                74,
+                489,
+                154
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. Words with strong previous gender bias (with the same direction) are easy to cluster together. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. The words with neutral gender, for eg receptionist, hairdresser which are sterotypically associated with the female gender still cluster together similar to the non-debiased word embeddings. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. A downstream classifier is still able to recover the implicit gender that was present in the debiased vectors just from their vectors and no additional information. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                129,
+                165,
+                490,
+                379
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Gender-direction which is the basis of gender association provides a way to measure the gender association of a word, but does not determine it. New metrics are needed in order to allow a metric to allow checking of bias in embeddings. Difference of accuracies over a gender-swapped GBET would be a good metric to check the bias but would not be a good method to train a network. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                388,
+                490,
+                518
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7 Conclusion and Future Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                530,
+                403,
+                545
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We looked at the different types of bias that exist in today’s machine learning systems and how deploying them in the real world leads to harmful outcomes. We then tried to define fairness formally and showed how different definitions lead to different models. We showed the different metrics used to measure bias that may be present in word embeddings or models. We finally looked at a wide range of subfields of NLP where debiasing is done and the different methods through which this is realized. Finally, Gonen and Goldberg (2019) pointed out that these metrics require a close look as they act as good indicators but do not determine it. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                555,
+                489,
+                763
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This field of bias mitigation in NLP has recently come up with the increase in the real word deployment of AI systems. The black box nature of NLP systems amplifies any problem that may exist due to bias, as the people using the system are not aware of the reasoning behind a prediction, they just know the final answer. This is a hot field with new innovations coming up everyday, however there is still a lot of scope for work in this space. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                765,
+                489,
+                910
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Most research has been restricted to measuring gender bias. However, there is little research in measuring bias due to race, religion or class, as these are more difficult to measure and may be less prevalent in typically used corpora. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Most systems assume that we know which kind of harmful bias exits in the corpora. However, this may not always be true, as sometimes, the sources of bias may not be obvious. For eg:- A resume filtering system may be biased against hiring people from a certain locality, which may not be obvious to those who use the system. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Current metrics, like WEAT measure the gender association of a gender neutral word, but do not determine the bias it contains. That is, some systems may be reducing the scores relating to these metrics but the system may still be making biased predictions. New metrics which determine human bias are required. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• The Computer Science community, conducting such research, may not be well versed with the origins and the problems that bias can bring about in the real world. Thus more interdisciplinary research with social scientists may lead to new insights. A hard-hitting truth is that this research itself does not come from culturally or socially diverse backgrounds. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Work in hate-speech and machine translation has uncovered that speaker information is very important in order to remove biases from the system. However, most corpora strip away the original source, or the demographics of the person writing the article or the context in which the article was published. This origin information is invaluable and may lead to removal of some biases. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                532,
+                74,
+                884,
+                736
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                512,
+                778,
+                610,
+                794
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Tolga Bolukbasi, Kai-Wei Chang, James Y Zou, Venkatesh Saligrama, and Adam T Kalai. 2016. Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In D. D. Lee, M. Sugiyama, U. V. Luxburg, I. Guyon, and R. Garnett, editors, Advances in Neural Information Processing Systems 29, pages 4349–4357. Curran Associates, Inc. "
+                    }
+                ]
+            },
+            "bbox": [
+                512,
+                803,
+                884,
+                909
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Shikha Bordia and Samuel R. Bowman. 2019. Identifying and reducing gender bias in word-level language models. In Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Student Research Workshop, pages 7–15, Minneapolis, Minnesota. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Marc-Etienne Brunet, Colleen Alkalay-Houlihan, Ashton Anderson, and Richard Zemel. 2019. Understanding the origins of bias in word embeddings. In Proceedings of the 36th International Conference on Machine Learning, volume 97 of Proceedings of Machine Learning Research, pages 803–811, Long Beach, California, USA. PMLR. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Aylin Caliskan, Joanna J. Bryson, and Arvind Narayanan. 2017. Semantics derived automatically from language corpora contain human-like biases. Science, 356(6334):183–186. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Joel Escude Font and Marta R. Costa-juss´ a. 2019.` Equalizing gender bias in neural machine translation with word embeddings techniques. In Proceedings of the First Workshop on Gender Bias in Natural Language Processing, pages 147–154, Florence, Italy. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Nikhil Garg, Londa Schiebinger, Dan Jurafsky, and James Zou. 2018. Word embeddings quantify 100 years of gender and ethnic stereotypes. Proceedings of the National Academy of Sciences, 115(16):E3635–E3644. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Aparna Garimella, Carmen Banea, Dirk Hovy, and Rada Mihalcea. 2019. Women’s syntactic resilience and men’s grammatical luck: Gender-bias in part-ofspeech tagging and dependency parsing. In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, pages 3493–3498, Florence, Italy. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hila Gonen and Yoav Goldberg. 2019. Lipstick on a pig: Debiasing methods cover up systematic gender biases in word embeddings but do not remove them. In Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), pages 609–614, Minneapolis, Minnesota. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Keita Kurita, Nidhi Vyas, Ayush Pareek, Alan W Black, and Yulia Tsvetkov. 2019. Quantifying social biases in contextual word representations. 1st ACL Workshop on Gender Bias for Natural Language Processing. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Paul Pu Liang, Irene Li, Emily Zheng, Yao Chong Lim, Ruslan Salakhutdinov, and Louis-Philippe Morency. 2019. Towards debiasing sentence representations. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chandler May, Alex Wang, Shikha Bordia, Samuel R. Bowman, and Rachel Rudinger. 2019. On measuring social biases in sentence encoders. In Proceedings of the 2019 Conference of the North American "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                76,
+                490,
+                908
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), pages 622–628, Minneapolis, Minnesota. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Rachel Rudinger, Jason Naradowsky, Brian Leonard, and Benjamin Van Durme. 2018. Gender bias in coreference resolution. In Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 2 (Short Papers), pages 8–14, New Orleans, Louisiana. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Maarten Sap, Dallas Card, Saadia Gabriel, Yejin Choi, and Noah A. Smith. 2019. The risk of racial bias in hate speech detection. In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, pages 1668–1678, Florence, Italy. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Deven Shah, H. Andrew Schwartz, and Dirk Hovy. 2019. Predictive biases in natural language processing models: A conceptual framework and overview. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tony Sun, Andrew Gaut, Shirlyn Tang, Yuxin Huang, Mai ElSherief, Jieyu Zhao, Diba Mirza, Elizabeth Belding, Kai-Wei Chang, and William Yang Wang. 2019. Mitigating gender bias in natural language processing: Literature review. In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, pages 1630–1640, Florence, Italy. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Eva Vanmassenhove, Christian Hardmeier, and Andy Way. 2018. Getting gender right in neural machine translation. In Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing, pages 3003–3008, Brussels, Belgium. Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Brian Hu Zhang, Blake Lemoine, and Margaret Mitchell. 2018. Mitigating unwanted biases with adversarial learning. In Proceedings of the 2018 AAAI/ACM Conference on AI, Ethics, and Society, AIES ’18, page 335–340, New York, NY, USA. Association for Computing Machinery. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jieyu Zhao, Tianlu Wang, Mark Yatskar, Vicente Ordonez, and Kai-Wei Chang. 2017. Men also like shopping: Reducing gender bias amplification using corpus-level constraints. In Conference on Empirical Methods in Natural Language Processing, volume abs/1707.09457, pages 2979–2989. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jieyu Zhao, Tianlu Wang, Mark Yatskar, Vicente Ordonez, and Kai-Wei Chang. 2018a. Gender bias in coreference resolution: Evaluation and debiasing methods. In Proceedings of the 2018 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 2 (Short Papers), pages 15–20, New Orleans, Louisiana. Association for Computational Linguistics. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                512,
+                76,
+                885,
+                908
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Jieyu Zhao, Yichao Zhou, Zeyu Li, Wei Wang, and Kai-Wei Chang. 2018b. Learning gender-neutral word embeddings. In EMNLP (short). "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                74,
+                489,
+                116
+            ]
+        }
+    ]
+]

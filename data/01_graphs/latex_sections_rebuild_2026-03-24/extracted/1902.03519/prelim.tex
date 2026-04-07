@@ -1,0 +1,73 @@
+
+
+\section{Preliminaries}\label{sec:prelim}
+%\paragraph{Fair clustering and fairlet decomposition.}
+\iffalse
+Fair clustering was introduced in~\cite{chierichetti2017fair} as follows: given a collection of points $P$, each point $p \in P$ is colored either \emph{red} or \emph{blue}. For each subset of points $S\subseteq P$, $\bal(S) := \min\set{{\card{r(S)} \over\card{b(S)}}, {\card{b(S)} \over \card{r(S)}}}$ where $r(S)$ and $b(S)$ respectively denote the number of red and blue points in $S$.
+Assuming $b<r$, a clustering $\sC$ is {\em ($b,r$)-fair} if for every cluster $C\in \sC$, $\bal(C) \geq {b\over r}$.
+\fi
+
+\begin{definition}[Fairlet Decomposition]\label{def:fairlet-dec}
+Suppose that $P\subseteq Y$ is a collection of points such that each is either colored {\em red} or {\em blue}. Moreover, suppose that $\bal(P) \geq {b\over r}$ for some integers $1\leq b\leq r$ such that $\mathrm{gcd}(r,b)=1$. A clustering $\script{X} = \set{D_1, \cdots, D_m}$ of $P$ is an \emph{$(r,b)$-fairlet decomposition} if \emph{(a)} each point $p\in P$ belongs to exactly one cluster $D_i \in \script{X}$, \emph{(b)} for each $D_i\in \script{Y}$, $\card{D_i} \leq b+r$, and \emph{(c)} for each $D_i \in \script{X}$, $\bal(D_i) \geq {b\over r}$. 
+\end{definition}
+
+
+\iffalse
+Following~\cite{chierichetti2017fair}, by computing an approximate $(r,b)$-fairlet decomposition of the input point set $P$, we can find an approximately optimal $(r,b)$-fair $k$-clustering of $P$.
+
+\begin{algorithm}
+\caption{The algorithm returns an $(r,b)$-fair $k$-median of $P$ given an ($r,b$)-fairlet decomposition $Q$ of $P$}\label{alg:fairlet-to-clustering}
+\begin{algorithmic}[1]
+\Procedure{\clusterFairlet}{$Q$}\Comment{$Q$ is an $(r,b)$-fairlet decomposition of $P$}
+	\ForAll{fairlet $q_i \in Q$}
+		\State {\bf let} an arbitrary point $c_i \in q_i$ be the center of $q_i$
+		\State {\bf add} $|q_i|$ copies of $c_i$ to $\bar{P}$
+	\EndFor
+	\State \Return an $\alpha_{k\text{-median}}$ approximate $k$-median clustering of $\bar{P}$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}[Fairlet to Fair Clustering]\label{thm:fairlet-to-clustering}
+Suppose that $Q$ is an $\alpha_{\text{fairlet}}$-approximate $(r,b)$-fairlet decomposition of $P$. Then, $\clusterFairlet(Q)$ returns an $((r+b)\cdot\alpha_{\text{fairlet}}\cdot\alpha_{k\text{-median}})$-approximate $(r,b)$-fair $k$-median clustering of $P$ where $\alpha_{k\text{-median}}$ denotes the approximation guarantee of the $k$-median algorithm invoked in \clusterFairlet.
+\end{theorem} 
+\fi
+
+
+\paragraph{Probabilistic metric embedding.}
+A probabilistic metric $(X, \bar{d})$ is defined as a set of $\ell$ metrics $(X, d_1), \cdots, (X, d_\ell)$ along with a probability distribution of support size $\ell$ denoted by $\alpha_1, \cdots, \alpha_\ell$ such that $\bar{d}(p,q) = \sum_{i=1}^\ell \alpha_i \cdot d_i(p,q)$. 
+For any finite metric $M = (Y,d)$ and probabilistic metric $(X, \bar{d})$, an {\em embedding} $f: Y \rightarrow X$ has distortion $c_f$, if:
+\begin{itemize}
+\item{for all $p,q \in Y$ and $i \leq k$, $d_i(f(p), f(q)) \geq d(p,q)$,}
+\item{$\bar{d}(f(p), f(q)) \leq c_f \cdot d(p,q)$.}
+\end{itemize}
+
+
+\begin{definition}[$\gamma$-HST]\label{def:HST}
+A tree $T$ rooted at vertex $r$ is a \emph{hierarchically well-separated tree ($\gamma$-HST)} if all edges of $T$ have non-negative weights and the following two conditions hold:
+\begin{enumerate}
+\item{The (weighted) distances from any node to all its children are the same.}
+\item{For each node $v \in V\setminus\set{r}$, the distance of $v$ to its children is at most ${1/\gamma}$ times the distance of $v$ to its parent.}
+\end{enumerate}
+\end{definition}
+
+We build on the following result due to~\cite{bartal1996probabilistic}, which gives a probabilistic embedding from $\mathbb{R}^d$ to a $\gamma$-HST. Our algorithm explicitly computes this embedding which we describe in more detail in the next section. For a proof of its properties refer to~\citep{indyk2001algorithmic} and the references therein. In this paper, we assume that the given pointset has $\poly(n)$ {\em aspect ratio} (i.e. the ratio between the maximum and minimum distance is $\poly(n)$).
+
+\begin{theorem}[\cite{bartal1996probabilistic}]\label{thm:tree-metric-distortion}
+Any finite metric space $M$ on points in $\mathbb{R}^d$ can be embedded into probabilistic metric over $\gamma$-HST metrics with $O(\gamma\cdot d \cdot \log_\gamma n)$ distortion in $O(d\cdot n \cdot \log_{\gamma} n)$ time.
+\end{theorem}
+\iffalse
+\begin{proof}
+A natural way of embedding the points is via a randomly shifted $d$-dimensional grid over the point set, where a cell is split into $\gamma^d$ smaller cells by splitting the cell into $\gamma$ equal pieces across every dimension. Corresponding to each cell $C$, we add an edge from $u_C$ to the root of the recursively generated trees on each subcells of $C$ with length proportional to the diameter of $C$.  
+
+We can argue that the embedding does not contract the distances between all pairs of points. Furthermore, since the $\gamma$-HST has $O(\log_{\gamma} n)$ levels (we assume that the aspect ratio of the point set is $n^{O(1)}$), we can show that in expectation, every distance expands by a factor of at most $O(\gamma \cdot d \cdot \log_{\gamma} n)$. 
+
+We show that in each level of the quad-tree $O(d\cdot n)$ time suffices to construct the next level. In the beginning of the algorithm a single cell contain all points. Now, consider level $\ell$ of the quad tree. Note that the algorithm only keeps the non-empty cells and the count of such cells is at most $n$. Then, for each non-empty cell $C$, the algorithm iterates over all points in $C$ and for each point $p\in C$ in $O(d)$ determines which child cell of $C$ contains $p$. Hence, in $O(d\cdot n)$ time the algorithm constructs the next level and in total $O(d\cdot n \cdot \log_{\gamma}n)$ suffices to construct the whole quad-tree.
+
+
+For more details on bounding the distortion of the described embedding refer to~\cite{indyk2001algorithmic}.
+\end{proof}
+\fi
+
+
+ 

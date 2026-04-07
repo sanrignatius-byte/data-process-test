@@ -1,0 +1,1499 @@
+[
+    {
+        "type": "text",
+        "text": "Mitigating Unwanted Biases with Adversarial Learning ",
+        "text_level": 1,
+        "bbox": [
+            218,
+            119,
+            779,
+            142
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Brian Hu Zhang ",
+        "bbox": [
+            161,
+            166,
+            305,
+            183
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Stanford University ",
+        "bbox": [
+            166,
+            183,
+            299,
+            196
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Stanford, CA ",
+        "bbox": [
+            187,
+            196,
+            279,
+            209
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "bhz@stanford.edu ",
+        "bbox": [
+            171,
+            210,
+            295,
+            223
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Blake Lemoine ",
+        "bbox": [
+            434,
+            166,
+            563,
+            181
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Google ",
+        "bbox": [
+            472,
+            183,
+            524,
+            196
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Mountain View, CA ",
+        "bbox": [
+            431,
+            196,
+            565,
+            209
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "lemoine@google.com ",
+        "bbox": [
+            424,
+            210,
+            571,
+            224
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Margaret Mitchell ",
+        "bbox": [
+            684,
+            166,
+            841,
+            181
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Google ",
+        "bbox": [
+            736,
+            183,
+            787,
+            196
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Mountain View, CA ",
+        "bbox": [
+            696,
+            196,
+            828,
+            209
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "mmitchellai@google.com ",
+        "bbox": [
+            676,
+            210,
+            848,
+            224
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            250,
+            273,
+            313,
+            286
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Machine learning is a tool for building models that accurately represent input training data. When undesired biases concerning demographic groups are in the training data, well-trained models will reflect those biases. We present a framework for mitigating such biases by including a variable for the group of interest and simultaneously learning a predictor and an adversary. The input to the network X, here text or census data, produces a prediction Y, such as an analogy completion or income bracket, while the adversary tries to model a protected variable Z, here gender or zip code. ",
+        "bbox": [
+            99,
+            295,
+            462,
+            422
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "The objective is to maximize the predictors ability to predict Y while minimizing the adversary’s ability to predict Z. Applied to analogy completion, this method results in accurate predictions that exhibit less evidence of stereotyping Z. When applied to a classification task using the UCI Adult (Census) Dataset, it results in a predictive model that does not lose much accuracy while achieving very close to equality of odds (Hardt, et al., 2016). The method is flexible and applicable to multiple definitions of fairness as well as a wide range of gradient-based learning models, including both regression and classification tasks. ",
+        "bbox": [
+            99,
+            424,
+            462,
+            563
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            210,
+            584,
+            351,
+            598
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Machine learning leverages data to build models capable of assessing the labels and properties of novel data. Unfortunately, the available training data frequently contains biases with respect to things that we would rather not use for decision making. Machine learning builds models faithful to training data and can lead to perpetuating these undesirable biases. For example, systems designed to predict creditworthiness and systems designed to perform analogy completion have been demonstrated to be biased against racial minorities and women respectively. Ideally we would be able to build a model which captures exactly those generalizations from the data which are useful for performing some task which are not discriminatory in a way which the people building those models consider unfair. ",
+        "bbox": [
+            81,
+            603,
+            478,
+            797
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Work on training machine learning systems that output fair decisions has defined several useful measurements for fairness: Demographic Parity, Equality of Odds, and Equality of Opportunity. These can be imposed as constraints or ",
+        "bbox": [
+            81,
+            797,
+            478,
+            854
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "incorporated into a loss function in order to mitigate disproportional outcomes in the system’s output predictions regarding a protected demographic, such as sex. ",
+        "bbox": [
+            514,
+            273,
+            911,
+            316
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we examine these fairness measures in the context of adversarial debiasing. We consider supervised deep learning tasks in which the task is to predict an output variable $Y$ given an input variable $X$ , while remaining unbiased with respect to some variable $Z$ . We refer to $Z$ as the protected variable. For these learning systems, the predictor ${ \\hat { Y } } = f ( X )$ can be constructed as (input, output, protected) tuples $( X , Y , Z )$ . The predictor $f ( X )$ is usually given access to the protected variable $Z$ , though this is not strictly necessary. This construction allows the determination of which types of bias are considered undesirable for a particular application to be chosen through the specification of the protected variable. ",
+        "bbox": [
+            514,
+            316,
+            911,
+            498
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "We speak to the concept of mitigating bias using the known term debiasing1, following definitions provided by Hardt et al. (2016) and refined by Beutel et al. (2017). ",
+        "bbox": [
+            514,
+            500,
+            911,
+            541
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Definition 1. DEMOGRAPHIC PARITY. A predictor $\\hat { Y }$ satisfies demographic parity if $\\hat { Y }$ and $Z$ are independent. ",
+        "bbox": [
+            514,
+            549,
+            911,
+            580
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "This means that $P ( \\hat { Y } = \\hat { y } )$ is equal for all values of the protected variable $Z \\colon P ( \\hat { Y } = \\hat { y } ) = P ( \\hat { Y } = \\hat { y } | Z = z )$ . ",
+        "bbox": [
+            514,
+            588,
+            911,
+            621
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Definition 2. EQUALITY OF ODDS. A predictor $\\hat { Y }$ satisfies equality of odds if $\\hat { Y }$ and $Z$ are conditionally independent given $Y$ . ",
+        "bbox": [
+            514,
+            628,
+            911,
+            672
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "This means that, for all possible values of the true label Y , $P ( \\hat { Y } = \\hat { y } )$ is the same for all values of the protected variable: $P ( \\hat { Y } = \\hat { y } | Y = y ) = P ( \\hat { Y } = \\hat { y } | Z = z , Y = y )$ ",
+        "bbox": [
+            514,
+            680,
+            911,
+            728
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Definition 3. EQUALITY OF OPPORTUNITY. If the output variable $Y$ is discrete, a predictor $\\hat { Y }$ satisfies equality of opportunity with respect to a class $y$ if $\\hat { Y }$ and $Z$ are independent conditioned on $Y = y$ . ",
+        "bbox": [
+            514,
+            733,
+            911,
+            794
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "This means that, for a particular value of the true label $Y$ , $P ( \\hat { Y } = \\hat { y } )$ is the same for all values of the protected variable: $P ( \\hat { Y } = \\hat { y } | Y = y ) = P ( \\hat { Y } = \\hat { y } | Z = z , Y = y )$ ",
+        "bbox": [
+            514,
+            800,
+            911,
+            848
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "Copyright $\\circledcirc$ 2018, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved. ",
+        "bbox": [
+            81,
+            861,
+            478,
+            888
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "1Note that “debias” may not be quite the right word, as all bias is not necessarily removed. ",
+        "bbox": [
+            514,
+            861,
+            911,
+            888
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1801.07593v1 [cs.LG] 22 Jan 2018 ",
+        "bbox": [
+            22,
+            268,
+            57,
+            705
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "We present an adversarial technique for achieving whichever one of these definitions is desired.2 A predictor $f$ will be trained to model $Y$ as accurately as possible while satisfying one of the above equality constraints. Demographic parity will be achieved by introducing an adversary $g$ which will attempt to predict a value for $Z$ from $\\hat { Y }$ . The gradient of $g$ will then be incorporated into the weight update rule of $f$ so as to reduce the amount of information about $Z$ transmitted through $\\hat { Y }$ . Equality of odds will be achieved by also giving $g$ access to the true label $Y$ , thereby limiting any information about $Z$ which $\\hat { Y }$ contains beyond the information already contained in $Y$ . ",
+        "bbox": [
+            81,
+            68,
+            478,
+            239
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We consider the case where the protected variable is a discrete feature present in the training set as well as the case in which the protected variable must be inferred from latent semantics (in particular, gender from word embeddings). In order to accomplish the latter we adapt a technique presented by Bolukbasi et al. (2016) to define a subspace capturing the semantics of the protected variable, and then train a model to perform a word analogies task accurately, while unbiased on this protected variable. A consequence of this technique is that the network learns “debiased” embeddings, embeddings that have the semantics of the protected variable removed. These embeddings are still able to perform the analogy task well, but are better at avoiding problematic examples such as those shown in Bolukbasi et al. (2016). ",
+        "bbox": [
+            81,
+            241,
+            478,
+            435
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Results on the UCI Adult Dataset demonstrate the technique we introduce allows us to train a model that achieves equality of odds to within $1 \\%$ on both protected groups. ",
+        "bbox": [
+            81,
+            436,
+            478,
+            478
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We also compare with the related previous work of Beutel et al. (2017), and find we are able to better equalize the differences between the two groups, measured by both False Positive Rate and False Negative Rate (1 - True Positive Rate), although note that the previous work performs better overall for False Negative Rate. ",
+        "bbox": [
+            81,
+            478,
+            478,
+            561
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We provide some discussion on caveats pertaining to this approach, difficulties in training these models that are shared by many adversarial approaches, as well as some discussion on difficulties that the fairness constraints introduce. ",
+        "bbox": [
+            81,
+            561,
+            480,
+            617
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 Related Work ",
+        "text_level": 1,
+        "bbox": [
+            204,
+            633,
+            357,
+            648
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "There has been significant work done in the area of debiasing various specific types of data or predictor. ",
+        "bbox": [
+            81,
+            655,
+            478,
+            683
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Debiasing word embeddings: Bolukbasi et al. (2016) devises a method to remove gender bias from word embeddings. The method relies on a lot of human input; namely, it needs a large “training set” of gender-specific words. ",
+        "bbox": [
+            81,
+            683,
+            478,
+            739
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Simple models: Lum and Johndrow (2016) demonstrate that removing the protected variable from the training data fails to yield a debiased model (since other variables can be highly correlated with the protected variable), and devise a method for learning fair predictive models in cases when the learning model is simple (e.g. linear regression). Hardt et al. ",
+        "bbox": [
+            81,
+            739,
+            478,
+            824
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "image",
+        "img_path": "images/759f8767372b07b099604e651b3874f51b1e4f3257228acecc592d3d8cbf67eb.jpg",
+        "image_caption": [
+            "Figure 1: The architecture of the adversarial network. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            519,
+            66,
+            915,
+            131
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "(2016) discuss the shortcomings of focusing solely on DE-MOGRAPHIC PARITY, present alternate definitions of fairness, and devise a method for deriving an unbiased predictor from a biased one, in cases when both the output variable and the protected variable are discrete. ",
+        "bbox": [
+            514,
+            186,
+            911,
+            255
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Adversarial training: Goodfellow et al. (2014) pioneered the technique of using multiple networks with competing goals to force the first network to “deceive” the second network, applying this method to the problem of creating reallife-like pictures. Beutel et al. (2017) apply an adversarial training method to achieve EQUALITY OF OPPORTUNITY in cases when the output variable is discrete. They also discuss the ability of the adversary to be powerful enough to enforce a fairness constraint even when it has access to a very small training sample. ",
+        "bbox": [
+            514,
+            256,
+            913,
+            396
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 Adversarial Debiasing ",
+        "text_level": 1,
+        "bbox": [
+            602,
+            409,
+            825,
+            426
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We begin with a model, which we call the predictor, trained to accomplish the task of predicting $Y$ given $X$ . As in Figure 1, we assume that the model is trained by attempting to modify weights $W$ to minimize some loss $L _ { P } ( \\hat { y } , y )$ , using a gradient-based method such as stochastic gradient descent. ",
+        "bbox": [
+            514,
+            429,
+            911,
+            500
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The output layer of the predictor is then used as an input to another network called the adversary which attempts to predict $Z$ . This is part of the network corresponds to the discriminator in a typical GAN (Goodfellow et al. 2014). We will suppose the adversary has loss term $L _ { A } ( \\hat { z } , z )$ and weights $U$ . Depending on the definition of fairness being achieved, the adversary may have other inputs. ",
+        "bbox": [
+            514,
+            500,
+            913,
+            597
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• For DEMOGRAPHIC PARITY, the adversary gets the predicted label $\\hat { Y }$ . Intuitively, this allows the adversary to try to predict the protected variable using nothing but the predicted label. The goal of the predictor is to prevent the adversary from doing this. ",
+            "• For EQUALITY OF ODDS, the adversary gets $\\hat { Y }$ and the true label $Y$ . ",
+            "• For EQUALITY OF OPPORTUNITY on a given class $y$ , we can restrict the training set of the adversary to training examples where $Y = { \\mathfrak { y } }$ .3 "
+        ],
+        "bbox": [
+            516,
+            601,
+            913,
+            757
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In order for gradients to propagate correctly, $\\hat { Y }$ above refers to the output layer of the network, not to the discrete prediction; for example, for a classification problem, $\\hat { Y }$ could refer to the output of the softmax layer. ",
+        "bbox": [
+            514,
+            763,
+            911,
+            821
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We update $U$ to minimize $L _ { A }$ at each training time step, according to the gradient $\\nabla _ { U } L _ { A }$ . We modify $W$ according ",
+        "bbox": [
+            514,
+            821,
+            911,
+            851
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_footnote",
+        "text": "2Achieving equality of odds and demographic parity are generally incongruent goals. See also Kleinberg, Mullainathan, and Raghavan (2016) for incongruency between calibration and equalized odds. ",
+        "bbox": [
+            81,
+            835,
+            478,
+            888
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_footnote",
+        "text": "3This last technique of restricting the training set is discussed at length by Beutel et al. (2017), so we only mention it here. ",
+        "bbox": [
+            514,
+            861,
+            913,
+            888
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "image",
+        "img_path": "images/2d20ec3859900703a01908d6ca746d361d0e418b568529db4515a4f627bc832a.jpg",
+        "image_caption": [
+            "Figure 2: Diagram illustrating the gradients in Eqn. 1 and the relevance of the projection term $\\mathrm { p r o j } _ { h } g$ . Without the projection term, in the pictured scenario, the predictor would move in the direction labelled $g + h$ in the diagram, which actually helps the adversary. With the projection term, the predictor will never move in a direction that helps the adversary. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            66,
+            482,
+            143
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "to the expression: ",
+        "bbox": [
+            81,
+            266,
+            202,
+            279
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nabla_ {W} L _ {P} - \\operatorname {p r o j} _ {\\nabla_ {W} L _ {A}} \\nabla_ {W} L _ {P} - \\alpha \\nabla_ {W} L _ {A} \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            143,
+            287,
+            478,
+            306
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $\\alpha$ is a tuneable hyperparameter that can vary at each time step and we define $\\mathrm { p r o j } _ { v } x = 0$ if $v = 0$ . ",
+        "bbox": [
+            81,
+            311,
+            478,
+            339
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The middle term p $\\mathbf { r o j } _ { \\nabla _ { W } L _ { A } } \\nabla _ { W } L _ { P }$ prevents the predictor from moving in a direction that helps the adversary decrease its loss while the last term, $\\alpha \\nabla _ { W } L _ { A }$ , attempts to increase the adversary’s loss. Without the projection term, it is possible for the predictor to end up helping the adversary (see Fig. 2). Without the last term, the predictor will never try to hurt the adversary, and, due to the stochastic nature of many gradient-based methods, will likely end up helping the adversary anyway. The result is that when training is completed the desired definition of equality should be satisfied. ",
+        "bbox": [
+            81,
+            339,
+            478,
+            478
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Notice that our definitions and method make no assumptions about the nature of the output and protected variables: in particular, they work with both regression and classification models, as well as with both discrete and continuous protected variables. ",
+        "bbox": [
+            81,
+            478,
+            480,
+            547
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4 Properties ",
+        "text_level": 1,
+        "bbox": [
+            218,
+            560,
+            344,
+            577
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We note several properties of the above method that we believe distinguish it from past work. ",
+        "bbox": [
+            81,
+            580,
+            478,
+            609
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. Generality: The above method can be used to enforce DEMOGRAPHIC PARITY, EQUALITY OF ODDS, or EQUALITY OF OPPORTUNITY as described in Hardt et al. (2016). Further, it applies without modification to the cases when the output variable and/or protected variable are continuous instead of discrete. ",
+            "2. Model-agnostic: The adversarial approach described can be applied regardless of how simple or complex the predictor’s model is, as long as the model is trained using a gradient-based method, as many modern learning models are. Further, as we will discuss later, at least in some situations, we suggest that the adversary does not need to be nearly as complex as the predictor—a simple adversary can be used with a complex predictor. ",
+            "3. Optimality: Under certain conditions, we show that if the predictor converges, it must converge to a model that satisfies the desired fairness definition. Since the predictor also attempts to decrease the prediction loss $L _ { P }$ , the predictor should still perform well on the target task. "
+        ],
+        "bbox": [
+            78,
+            614,
+            480,
+            888
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "5 Theoretical Guarantees ",
+        "text_level": 1,
+        "bbox": [
+            599,
+            66,
+            830,
+            82
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Proposition 1. Let the predictor, the adversary, and their weights W , $U$ be defined according to Section 3 Let $L _ { A } ( W , U )$ be the adversary’s loss, convex in $U$ , concave in W ,4 and continuously differentiable everywhere. ",
+        "bbox": [
+            514,
+            85,
+            913,
+            142
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Suppose that: ",
+        "bbox": [
+            532,
+            142,
+            627,
+            157
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. When the predictor’s weights are $W _ { 0 }$ , the predictor gives the same output $\\hat { Y }$ regardless of input $X$ . (For example, when $W _ { 0 } = 0$ ). ",
+            "2. There are some weights $U _ { 0 }$ that minimize $L _ { A }$ when the weights for $\\hat { Y }$ have no effect on the output: For all $W$ , $L _ { A } ( W , U _ { 0 } ) = \\operatorname* { m i n } _ { U } L _ { A } ( W _ { 0 } , U )$ . ",
+            "3. Predictor and adversary converge to $W ^ { * }$ and $U ^ { * }$ respectively. "
+        ],
+        "bbox": [
+            511,
+            160,
+            913,
+            281
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Then, $L _ { A } ( W ^ { * } , U ^ { * } ) = L _ { A } ( W ^ { * } , U _ { 0 } )$ . That is, the adversary gains no advantage from using the weights for $\\hat { Y }$ . ",
+        "bbox": [
+            514,
+            285,
+            913,
+            316
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Proof. Since the adversary converges, $L _ { A } ( W ^ { * } , U ^ { * } ) \\ \\leq$ $L _ { A } ( W ^ { * } , U _ { 0 } )$ : otherwise, since $L _ { A }$ is convex in $U$ , the adversary’s weights would move toward $U _ { 0 }$ . In other words, the adversary’s minimum is the point at which the adversary gains an advantage from using $\\hat { Y }$ . Similarly, since the predictor converges, $L _ { A } ( W ^ { * } , U ^ { * } ) \\ge L _ { A } ( W _ { 0 } , \\bar { U } ^ { * } )$ : Otherwise, the predictor would be able to increase the adversary’s loss by moving toward $W _ { 0 }$ , and the projection term and negative weight on $\\nabla _ { W } L _ { A }$ in Eqn. 1 would push the predictor to move towards 0. Then: ",
+        "bbox": [
+            514,
+            324,
+            913,
+            467
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} L _ {A} \\left(W ^ {*}, U _ {0}\\right) \\geq L _ {A} \\left(W ^ {*}, U ^ {*}\\right) \\quad (\\text {a s}) \\\\ \\geq L _ {A} \\left(W _ {0}, U ^ {*}\\right) \\quad (\\text {a s}) \\\\ \\geq L _ {A} \\left(W _ {0}, U _ {0}\\right) \\quad (\\text {b y}) \\\\ = L _ {A} \\left(W ^ {*}, U _ {0}\\right) \\quad (\\text {b y}) \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            531,
+            474,
+            880,
+            542
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "so we must have $L _ { A } ( W ^ { * } , U ^ { * } ) = L _ { A } ( W ^ { * } , U _ { 0 } )$ . ",
+        "bbox": [
+            516,
+            550,
+            831,
+            566
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/5946d1183f7977c51f5d0cf2f81f9d55235e3971c44f7736ca190dcfe572804a.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            895,
+            550,
+            911,
+            561
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Note that, in this proof, the adversary can be operating in a few different ways, as long as it is given $\\hat { Y }$ as one of its inputs; for example, for demographic parity, it could be given only $\\hat { Y }$ ; for equality of odds, it can be given both $\\hat { Y }$ and $Y$ . ",
+        "bbox": [
+            514,
+            574,
+            913,
+            647
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We will show in the next propositions that the adversary gaining no advantage from information about $\\hat { Y }$ is exactly the condition needed to guarantee that desired definitions of equality are satisfied. ",
+        "bbox": [
+            514,
+            647,
+            913,
+            705
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Proposition 2. Let the training data be comprised of triples $( X , { \\bar { Y } } , Z )$ drawn according to some distribution $D$ . Suppose: ",
+        "bbox": [
+            514,
+            709,
+            913,
+            753
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. The protected variable $Z$ is discrete. ",
+            "2. The adversary is trained for DEMOGRAPHIC PARITY; i.e. the adversary is given only the prediction $\\hat { y }$ . "
+        ],
+        "bbox": [
+            513,
+            756,
+            913,
+            801
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "4We understand that these assumptions are not satisfied in most use cases involving neural networks; however, as with most theoretical analyses of machine learning models (see, for example, Goodfellow et al. (2014) or Kingma and Ba (2014); the former makes even stronger assumptions), assumptions of concavity are necessary for any proofs to work ",
+        "bbox": [
+            514,
+            811,
+            913,
+            888
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "3. The adversary is strong enough that, at convergence, it has learned a randomized function A that minimizes the cross-entropy loss $\\mathbb { E } _ { ( x , y , z ) \\sim D } [ - \\log P ( A ( \\hat { y } ) = z ) ]$ ; i.e. the adversary in fact achieves the optimal accuracy with which you can predict $Z$ from $\\hat { Y }$ ",
+            "4. The predictor completely fools the adversary; in particular, the adversary achieves loss $H ( Z )$ , the entropy of $Z$ . "
+        ],
+        "bbox": [
+            78,
+            68,
+            478,
+            172
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Then the predictor satisfies DEMOGRAPHIC PARITY; i.e.,$\\hat { Y } \\perp Z$ .",
+        "bbox": [
+            83,
+            176,
+            478,
+            208
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Proof. Notice that if the adversary draws $A ( \\hat { y } )$ according to the distribution $Z | \\hat { Y } = \\hat { y }$ , then its loss is exactly the conditional entropy ",
+        "bbox": [
+            81,
+            219,
+            480,
+            266
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} H (Z | \\hat {Y}) = \\mathbb {E} [ - \\log P (Z = z | \\hat {Y} = \\hat {y}) ] \\\\ = \\mathbb {E} [ - \\log P (A (\\hat {y}) = z | \\hat {Y} = \\hat {y}) ] \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            138,
+            273,
+            419,
+            313
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where the expectation is taken over $( x , y , z ) \\sim D$ . Now suppose for contradiction that $\\hat { Y }$ is dependent on $Z$ . Then $H ( Z | \\hat { Y } ) < H ( Z )$ , so the adversary can achieve loss less than $H ( Z )$ , contradicting assumption (4). □ ",
+        "bbox": [
+            81,
+            319,
+            480,
+            383
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Proposition 3. If assumptions (2)-(4) above are replaced with the analogous equality of odds assumptions; in particular, that the adversary is given $\\hat { y }$ and $y$ , and the adversary cannot achieve loss better than $H ( Z | Y )$ then the predictor will satisfy EQUALITY OF ODDS; i.e., $( { \\hat { Y } } \\bot Z ) | Y$ ",
+        "bbox": [
+            81,
+            392,
+            480,
+            467
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Proof. Analogous to the above. Notice that if the adversary draws $A ( \\hat { y } , y ) \\sim ( Z | \\hat { Y } = \\hat { y } , Y = y )$ , then its loss is exactly the conditional entropy ",
+        "bbox": [
+            81,
+            477,
+            480,
+            523
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} H (Z | \\hat {Y}, Y) = \\mathbb {E} [ - \\log P (Z = z | \\hat {Y} = \\hat {y}, Y = y) ] \\\\ = \\mathbb {E} [ - \\log P (A (\\hat {y}) = z | \\hat {Y} = \\hat {y}, Y = y) ] \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            104,
+            529,
+            455,
+            571
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where the expectation is again taken over $( x , y , z ) \\sim D$ . But if $\\hat { Y }$ is conditionally dependent on $Z$ given $Y$ , then $H ( Z | \\hat { Y } , Y ) < H ( Z | Y )$ , so the adversary can achieve loss less than $H ( Z | Y )$ . □ ",
+        "bbox": [
+            81,
+            577,
+            480,
+            641
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Note that Propositions 2 and 3 work analogously in the case of continuous $Y$ and $Z$ , with the probability mass function $P$ replaced with the probability density function $p$ , and the discrete entropy $H$ replaced by the differential entropy $h ( X ) = \\mathbb { E } [ - \\log { \\bar { p } ( x ) } ]$ , since the relevant property $( h ( A ) = h ( A | B )$ iff $A \\perp B$ ) holds for differential entropy as well. They also work analogously when the adversary $A$ is restricted to a limited set of predictors. ",
+        "bbox": [
+            81,
+            648,
+            478,
+            762
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "For example, an adversary using least-squares regression trying to enforce equality of odds can be thought of as one that outputs $A ( \\hat { y } , y ) ~ \\sim ~ N ( \\mu ( \\hat { y } , y ) , \\sigma ^ { 2 } )$ where $\\mu ( \\hat { y } , y )$ is the output of the regressor, and $\\sigma ^ { 2 } ~ > ~ 0$ is a fixed constant. Note now that the differential entropy $h ( Z | \\hat { Y } , Y ) =$ $\\mathbb { E } [ - \\log p ( z | \\hat { y } , y ) ]$ is nothing more than the expected loglikelihood, and so the function $\\mu$ that minimizes this quantity is the optimal least-squares regressor. Thus, for example, if we restrict $\\mu$ to be a linear function of $( \\hat { y } , y )$ , and the other ",
+        "bbox": [
+            81,
+            762,
+            480,
+            888
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "conditions of Proposition 3 hold, then an analogous argument to the above propositions shows that $\\hat { Y }$ has no linear relationship with $Z$ after conditioning on $Y$ . ",
+        "bbox": [
+            514,
+            68,
+            911,
+            112
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "These claims together illustrate that a sufficiently powerful adversary trained on a sufficiently large training set can indeed accurately enforce the demographic parity or equality of odds constraints on the predictor, if the adversary and predictor converge. Guaranteed convergence is harder to achieve, both in theory and practice. In the practical scenarios below we discuss methods to encourage the training algorithm to converge, as well as reasonable choices of the adversary model that are both powerful and easy to train. ",
+        "bbox": [
+            514,
+            112,
+            913,
+            238
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "6 Experiments ",
+        "text_level": 1,
+        "bbox": [
+            643,
+            250,
+            785,
+            266
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "All models were trained using the Adam optimizer (Kingma and Ba 2014) for both predictor and adversary. ",
+        "bbox": [
+            516,
+            268,
+            913,
+            297
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Toy Scenario ",
+        "text_level": 1,
+        "bbox": [
+            517,
+            308,
+            622,
+            323
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We generate a training sample $\\left( x ^ { ( i ) } , y ^ { ( i ) } , z ^ { ( i ) } \\right) _ { i = 1 } ^ { n }$ (where $z$ is the protected variable) as follows. For each $i$ , let $r \\in 0 , 1$ be picked uniformly at random, and let $\\begin{array} { r } { \\boldsymbol { v } \\ \\sim \\ N ( r _ { i } , 1 ) } \\end{array}$ . Let $u , w \\ \\sim \\ N ( v _ { i } , 1 )$ vary independently. Then $\\begin{array} { r l } { x ^ { ( i ) } } & { { } = } \\end{array}$ $( r , u ) , y ^ { ( i ) } = [ w > 0 ] , z ^ { ( i ) } = r$ . (where [ ] denotes an indicator function). Intuitively, the variable that we are trying to predict, $y$ , depends directly on $v$ and $r$ . We are given as inputs the protected variable $r$ , and a noisy measurement of $v$ . The end goal would be to train a model that predicts $y$ while being unbiased on $r$ , effectively removing the direct signal for $r$ from the learned model. ",
+        "bbox": [
+            514,
+            325,
+            913,
+            484
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "If one trains generically a logistic regression model to predict $y$ given $x$ , it outputs something like $y = \\sigma ( 0 . 7 u + 0 . \\bar { 7 } r )$ , which is a reasonable model, but heavily incorporates the protected variable $r$ . To debias, We now train a model that achieves DEMOGRAPHIC PARITY. Note that removing the variable $r$ from the training data is insuffucient for debiasing: the model will still learn to use $u$ to predict $y$ , and $u$ is correlated with $r$ . If we use the described technique and add in another logistic model that tries to predict $z$ given $y$ , we find that the predictor model outputs something like $y = \\sigma ( 0 . 6 u - 0 . 6 r \\ ' + 0 . 6 )$ . Notice that not only is $r$ not included with a positive weight anymore, the model actually learns to use a negative weight on $r$ in order to balance out the effect of $r$ on $u$ Notice that $u - r \\sim N ( 0 , 2 )$ ; i.e., it is not dependent on $r$ , so we have successfully trained a model to predict $y$ independently of $r$ . ",
+        "bbox": [
+            514,
+            484,
+            911,
+            708
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Word Embeddings ",
+        "text_level": 1,
+        "bbox": [
+            516,
+            717,
+            666,
+            733
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We train a model to perform the analogy task (i.e., fill in the blank: man : woman :: he : ?). ",
+        "bbox": [
+            514,
+            734,
+            911,
+            763
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "It is known that word embeddings reflect or amplify problematic biases from the data they are trained on, for example, gender (Bolukbasi et al. 2016). We seek to train a model that can still solve analogies well, but is less prone to these gender biases. We first calculate a “gender direction” $g$ using a method based on Bolukbasi et al. (2016) which gives a method for defining the protected variable. We will use this technique in the context of defining gender for word embeddings, but, as discussed in Bolukbasi et al. (2016), the ",
+        "bbox": [
+            514,
+            763,
+            913,
+            888
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "table",
+        "img_path": "images/a9cae1e5ef3a65c7111c90a7f5a24a9469357bff317b2c966c9bb2effe311d98.jpg",
+        "table_caption": [
+            "Table 1: Completions for he : she :: doctor : ? "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"2\">biased</td><td colspan=\"2\">debiased</td></tr><tr><td>neighbor</td><td>similarity</td><td>neighbor</td><td>similarity</td></tr><tr><td>nurse</td><td>1.0121</td><td>nurse</td><td>0.7056</td></tr><tr><td>nanny</td><td>0.9035</td><td>obstetrician</td><td>0.6861</td></tr><tr><td>fiançée</td><td>0.8700</td><td>pediatrician</td><td>0.6447</td></tr><tr><td>maid</td><td>0.8674</td><td>dentist</td><td>0.6367</td></tr><tr><td>fiancé</td><td>0.8617</td><td>surgeon</td><td>0.6303</td></tr><tr><td>mother</td><td>0.8612</td><td>physician</td><td>0.6254</td></tr><tr><td>fiance</td><td>0.8611</td><td>cardiologist</td><td>0.6088</td></tr><tr><td>dentist</td><td>0.8569</td><td>pharmacist</td><td>0.6081</td></tr><tr><td>woman</td><td>0.8564</td><td>hospital</td><td>0.5969</td></tr></table>",
+        "bbox": [
+            109,
+            65,
+            452,
+            229
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "technique generalizes to other protected variables and other forms of embeddings. Following Bolukbasi et al. (2016), we pick 10 (male, female) word pairs, and define the and define the bias subspace to be the space spanned by the top $k$ principal components of the differences, where $k$ is a tuneable parameter. In our experiments, we find that $k = 1$ gives reasonable results, so we did not experiment further. ",
+        "bbox": [
+            81,
+            286,
+            478,
+            383
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We use embeddings trained from Wikipedia to generate input data from the Google analogy data set (Mikolov et al. 2013). For each analogy in the dataset, we let $x =$ $\\left( { { x } _ { 1 } } , { { x } _ { 2 } } , { { x } _ { 3 } } \\right) \\in { \\mathbb { R } } ^ { 3 d }$ comprise the word vectors for the first three words, $y$ be the word vector of the fourth word, and $z$ be $\\operatorname { p r o j } _ { g } y$ $_ { g } y$ . It is worth noting that these word vectors computed from the original embeddings are never updated nor is there projection onto the bias subspace and therefore the original word embeddings are never modified. What is learned is a tranform from a biased embedding space to a debiased embedding space. ",
+        "bbox": [
+            81,
+            383,
+            478,
+            536
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "As a model, we use the following: let $v = x _ { 2 } + x _ { 3 } - x _ { 1 }$ , and output $\\boldsymbol { \\hat { y } } \\ = \\ v \\ - \\ w w ^ { T } \\boldsymbol { v }$ , where our model parameter is $w$ . Intuitively, $v$ is the “generic” analogy vector as is commonly5 used for the analogy task. If left to its own devices (i.e., if not told to be unbiased on anything), the model should either learn $w = 0$ or else learn $w$ as a useless vector. ",
+        "bbox": [
+            81,
+            537,
+            478,
+            619
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "By contrast, if we add the adversarial discriminator network (here, simply $\\hat { z } = w _ { 2 } ^ { T } \\hat { y } )$ , we expect the debiased prediction model to learn that $w$ should be something close to $g$ $( \\ o \\mathrm { r } - g )$ , so that the discriminator cannot predict $z = p r o j _ { g } y$ . Indeed, both of these expectations hold: Without debiasing, the trained vector $w$ is approximately a unit vector nearly perpendicular to $g : w ^ { T } g \\stackrel { \\cdot \\cdot } { = } 0 . 0 8 , | | w | | = 0 . 8 2$ ; with debiasing, $w$ is approximately a unit vector pointing in a direction highly correlated with $\\begin{array} { r } { g : w ^ { T } g = 0 . 5 5 , \\lvert \\lvert w \\rvert \\rvert = 0 . 9 6 } \\end{array}$ . Even after debiasing, gendered analogies such as man : woman :: he : she are still preserved; however, many biased analogies go away, suggesting that the adversarial training process was indeed successful. An example of the kinds of changes in analogy completions observed after debiasing are illustrated in Table $1 ^ { 6 }$ . ",
+        "bbox": [
+            81,
+            619,
+            480,
+            827
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "table",
+        "img_path": "images/24ed65306e56dfae5a76f82264e0d84dfadd62bf9e63acafad5c5b29d78a1bb9.jpg",
+        "table_caption": [
+            "Table 2: Features in the UCI dataset per individual. Features are either continuous (Cont) or Categorical (Cat). Categorical features are converted to sparse tensors for the model. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Feature</td><td>Type</td><td>Description</td></tr><tr><td>age</td><td>Cont</td><td>Age of the individual</td></tr><tr><td>capital_gain</td><td>Cont</td><td>Capital gains recorded</td></tr><tr><td>capital_loss</td><td>Cont</td><td>Capital losses recorded</td></tr><tr><td>education_num</td><td>Cont</td><td>Highest education level (numerical form)</td></tr><tr><td>fnlwgt</td><td>Cont</td><td># of people census takers believe that observation represents</td></tr><tr><td>hours_perWeek</td><td>Cont</td><td>Hours worked per week</td></tr><tr><td>education</td><td>Cat</td><td>Highest level of education achieved</td></tr><tr><td>income</td><td>Cat</td><td>Whether individual makes &gt; $50K annually</td></tr><tr><td>marital_status</td><td>Cat</td><td>Marital status</td></tr><tr><td>native_country</td><td>Cat</td><td>Country of origin</td></tr><tr><td>occupation</td><td>Cat</td><td>Occupation</td></tr><tr><td>race</td><td>Cat</td><td>White, Asian-Pac-Islander, Amer-Indian-Eskimo, Other, Black</td></tr><tr><td>relationship</td><td>Cat</td><td>Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried</td></tr><tr><td>sex</td><td>Cat</td><td>Female, Male</td></tr><tr><td>workclass</td><td>Cat</td><td>Employer type</td></tr></table>",
+        "bbox": [
+            519,
+            65,
+            911,
+            334
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "UCI Adult Dataset ",
+        "text_level": 1,
+        "bbox": [
+            516,
+            412,
+            665,
+            426
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "To better align with the work in Beutel et al. (2017), we attempt to enforce EQUALITY OF ODDS on a model for the task of predicting the income of a person – in particular, predicting whether the income is $> { \\mathfrak { S } } 5 0 k$ – given various attributes about the person, as made available in the UCI Adult dataset (Asuncion and Newman 2007). ",
+        "bbox": [
+            514,
+            431,
+            911,
+            516
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Details on the features that the dataset provides are available in Table 2. We use both categorical and continuous columns as given, with exception to the fnlwgt feature, which we discard. We convert the remaining columns into tensors where the categorical columns are sparse tensors, age is bucketized at boundaries [18, 25, 30, 35, 40, 45, 50, 55, 60, 65], and the rest of the continuous columns are real-valued. ",
+        "bbox": [
+            514,
+            517,
+            913,
+            627
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "As discussed before, to enforce equality of odds, we give the adversary access to the true label $y$ . The adversary will learn the relationship between $y$ and $z$ regardless of what the predictor does; further, if the predictor’s predictions $\\hat { y }$ give more information about $z$ than is already contained in $y$ , the adversary will be able to improve its loss. Thus, the predictor, in attempting to fool the adversary, will move toward making sure that $\\hat { y }$ does not give such additional information; in other words, toward equality of odds. ",
+        "bbox": [
+            514,
+            628,
+            913,
+            753
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Our protected variable $z$ is a binary-valued variable for the two sexes annotated, MALE and FEMALE. ",
+        "bbox": [
+            514,
+            753,
+            911,
+            780
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Our predictor model is straightforward logistic regression: $\\hat { y } = \\sigma ( w _ { 1 } \\cdot x + b )$ , where $\\sigma$ is the sigmoid function. Our adversary model takes the form of the following logisticregression-like model: ",
+        "bbox": [
+            514,
+            781,
+            913,
+            838
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\ns = \\sigma \\big ((1 + | c |) \\sigma^ {- 1} (\\hat {y}) \\big) \\quad \\hat {z} = w _ {2} \\cdot [ s, s y, s (1 - y) ] + b\n$$",
+        "text_format": "latex",
+        "bbox": [
+            527,
+            845,
+            901,
+            864
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "debiasing will change this. ",
+        "bbox": [
+            516,
+            875,
+            679,
+            888
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "5see e.g. Mikolov et al. (2013) ",
+        "bbox": [
+            102,
+            834,
+            287,
+            849
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "6The presence of nurse in the second position may seem worrying, but it should be noted that in this particular set of word embeddings, nurse is the nearest neighbor to doctor; no amount of ",
+        "bbox": [
+            81,
+            849,
+            478,
+            888
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "where $c$ and $b$ are learnable scalars, $w _ { 2 }$ is a learnable vector, and $\\sigma ^ { - 1 }$ is the inverse of the sigmoid function (logit function) $\\sigma ^ { - 1 } ( t ) = \\log t - \\log ( 1 - t ) $ . Intuitively, we want our adversary to be able to learn functions of the form $\\hat { z } = f ( y , [ \\hat { y } > 0 . 5 ] )$ (i.e. dependent only on the boolean predicted value $[ \\hat { y } > 0 . 5 ]$ ), and thus enforce equality of odds. Here, the adversary would learn such a function by making c extremely large. We add 1 to $| c |$ to make sure the adversary never tries to ignore $\\hat { y }$ by setting $c = 0$ , which could be a difficult local minimum for the adversary to escape7. This adversary is both general enough to be used whenever $y$ and $z$ are both discrete8, and powerful enough that deviation from true equality of odds should cause the adversary to be able to decrease its loss. ",
+        "bbox": [
+            86,
+            68,
+            477,
+            261
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Without tweaking, this algorithm ran into issues with local minima, and the resulting models were often closer to demographic parity than equality of odds. We implemented a technique that helped: by increasing the hyperparameter $\\alpha$ in Eqn. 1 over time, the predictor had a much easier time learning to deceive the adversary and therefore more strictly enforce equality of odds. We set $\\alpha = { \\sqrt { t } }$ (where $t$ is the step counter), and to avoid divergence we set the predictor’s step size to $\\eta \\propto 1 / t$ , so that $\\alpha \\eta \\to 0$ as is preferred for stochastic gradient-based methods such as Adam. ",
+        "bbox": [
+            86,
+            262,
+            477,
+            402
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We train the model twice, once with debiasing and once without, and present side-by-side confusion matrices on the test set for income bracket with respect to the protected variable values Male and Female, shown in Table 3, and we present the false positive rates (FPR) and false negative rates (FNR) in Table 4. Note that false negative rate is equal to $1 -$ true positive rate, so the trade-offs are directly comparable to the $( x , y )$ values of an ROC curve. ",
+        "bbox": [
+            86,
+            402,
+            477,
+            513
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "table",
+        "img_path": "images/f8a5da271202e5818f0db76045e8dc38022f67693a17833977d88ae3c6d87026.jpg",
+        "table_caption": [
+            "Table 3: Confusion matrices on the UCI Adult dataset, with and without equality of odds enforcement. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"3\">Without Debiasing</td><td colspan=\"3\">With Debiasing</td></tr><tr><td>Female</td><td>Pred 0</td><td>Pred 1</td><td>Female</td><td>Pred 0</td><td>Pred 1</td></tr><tr><td>True 0</td><td>4711</td><td>120</td><td>True 0</td><td>4518</td><td>313</td></tr><tr><td>True 1</td><td>265</td><td>325</td><td>True 1</td><td>263</td><td>327</td></tr><tr><td>Male</td><td>Pred 0</td><td>Pred 1</td><td>Male</td><td>Pred 0</td><td>Pred 1</td></tr><tr><td>True 0</td><td>6907</td><td>697</td><td>True 0</td><td>7071</td><td>533</td></tr><tr><td>True 1</td><td>1194</td><td>2062</td><td>True 1</td><td>1416</td><td>1840</td></tr></table>",
+        "bbox": [
+            89,
+            526,
+            473,
+            628
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We notice that debiasing has only a small effect on overall accuracy $( 8 6 . 0 \\%$ vs $8 4 . 5 \\%$ ), and that the debiased model indeed (nearly) obeys equality of odds: as shown in Table 4, with debiasing, the FNR and FPR values are approximately equal across sex subgroups: $0 . 0 6 4 7 \\approx 0 . 0 7 0 1$ and $0 . 4 4 5 8 \\approx 0 . 4 3 4 9$ . ",
+        "bbox": [
+            86,
+            686,
+            477,
+            771
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Although the values don’t exactly reach equality, neither difference is statistically significant: a two-proportion twotail large sample $z$ -test yields $p$ -values 0.25 for $y = 0$ and ",
+        "bbox": [
+            86,
+            771,
+            477,
+            814
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "table",
+        "img_path": "images/a670a34fb79175675f388e5348270f7122f116ea7add225c3a76b1008f6e0d0b.jpg",
+        "table_caption": [
+            "Table 4: False Positive Rate (FPR) and False Negative Rate (FNR) for income bracket predictions for the two sex subgroups, with and without adversarial debiasing. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td></td><td colspan=\"2\">Female</td><td colspan=\"2\">Male</td></tr><tr><td></td><td></td><td>Without</td><td>With</td><td>Without</td><td>With</td></tr><tr><td rowspan=\"2\">Beutel et al. (2017)</td><td>FPR</td><td>0.1875</td><td>0.0308</td><td>0.1200</td><td>0.1778</td></tr><tr><td>FNR</td><td>0.0651</td><td>0.0822</td><td>0.1828</td><td>0.1520</td></tr><tr><td rowspan=\"2\">Current work</td><td>FPR</td><td>0.0248</td><td>0.0647</td><td>0.0917</td><td>0.0701</td></tr><tr><td>FNR</td><td>0.4492</td><td>0.4458</td><td>0.3667</td><td>0.4349</td></tr></table>",
+        "bbox": [
+            522,
+            65,
+            911,
+            137
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "0.62 for $y = 1$ ",
+        "bbox": [
+            519,
+            213,
+            619,
+            227
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "7 Conclusion ",
+        "text_level": 1,
+        "bbox": [
+            653,
+            239,
+            777,
+            255
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "In this work, we demonstrate a general and powerful method for training unbiased machine learning models. We state and prove theoretical guarantees for our method under reasonable assumptions, demonstrating in theory that the method can enforce the constraints that we claim, across multiple definitions of fairness, regardless of the complexity of the predictor’s model, or the nature (discrete or continuous) of the predicted and protected variables in question. We apply the method in practice to two very different scenarios: a standard supervised learning task, and the task of debiasing word embeddings while still maintaining ability to perform a certain task (analogies). We demonstrate in both cases the ability to train a model that is demonstrably less biased than the original one, and yet still performs extremely well on the task at hand. We discuss difficulties in getting these models to converge. We propose, in the common case of discrete output and protected variables, a simple adversary that is usable regardless of the complexity of the underlying model. ",
+        "bbox": [
+            519,
+            258,
+            911,
+            508
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "8 Future Work ",
+        "text_level": 1,
+        "bbox": [
+            645,
+            520,
+            785,
+            535
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "This process yields many questions that require further work to answer. ",
+        "bbox": [
+            519,
+            539,
+            911,
+            566
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. The debiased word embeddings we have trained are still useful in analogies. Are they still useful in other, more complex tasks? ",
+            "2. The adversarial training method is hard to get right and often touchy, in that getting the hyperparameters wrong results in quick divergence of the algorithm. What ways can be used to stabilize training and ensure convergence, and thus ensure that the theoretical guarantees presented here can work? ",
+            "3. There is a body of existing work for image recognition using adversarial networks. Image recognition in general can sometimes be subject to various biases such as being more or less successful at recognizing the faces of people of different races. Can multiple adversaries be combined to create high accuracy image recognition systems which do not exhibit such biases? ",
+            "4. In general, do more complex predictors require more complex adversaries? It would appear that in the case of $y$ and $z$ discrete, a very simple adversary suffices no matter how complex the predictor. Does this also apply to continuous cases, or would a simple adversary be too easy to deceive for a complex predictor? "
+        ],
+        "bbox": [
+            516,
+            570,
+            911,
+            888
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_footnote",
+        "text": "7This value added to $| c |$ is an adjustable hyperparameter; we found reasonable results using the value 1 and thus not feel the need to experiment further. ",
+        "bbox": [
+            86,
+            821,
+            477,
+            861
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_footnote",
+        "text": "8If $y$ and $z$ are multi-class, then the sigmoid becomes a softmax, but everything else remains the same. ",
+        "bbox": [
+            86,
+            861,
+            477,
+            888
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            233,
+            66,
+            330,
+            82
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[Asuncion and Newman 2007] Asuncion, A., and Newman, D. 2007. Uci machine learning repository. ",
+            "[Beutel et al. 2017] Beutel, A.; Chen, J.; Zhao, Z.; and Chi, E. H. 2017. Data decisions and theoretical implications when adversarially learning fair representations. arXiv preprint arXiv:1707.00075. ",
+            "[Bolukbasi et al. 2016] Bolukbasi, T.; Chang, K.-W.; Zou, J. Y.; Saligrama, V.; and Kalai, A. T. 2016. Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In Advances in Neural Information Processing Systems, 4349–4357. ",
+            "[Goodfellow et al. 2014] Goodfellow, I.; Pouget-Abadie, J.; Mirza, M.; Xu, B.; Warde-Farley, D.; Ozair, S.; Courville, A.; and Bengio, Y. 2014. Generative adversarial nets. In Advances in neural information processing systems, 2672– 2680. ",
+            "[Hardt et al. 2016] Hardt, M.; Price, E.; Srebro, N.; et al. 2016. Equality of opportunity in supervised learning. In Advances in Neural Information Processing Systems, 3315– 3323. ",
+            "[Kingma and Ba 2014] Kingma, D., and Ba, J. 2014. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980. ",
+            "[Kleinberg, Mullainathan, and Raghavan 2016] Kleinberg, J.; Mullainathan, S.; and Raghavan, M. 2016. Inherent trade-offs in the fair determination of risk scores. arXiv preprint arXiv:1609.05807. ",
+            "[Lum and Johndrow 2016] Lum, K., and Johndrow, J. 2016. A statistical framework for fair predictive algorithms. arXiv preprint arXiv:1610.08077. ",
+            "[Mikolov et al. 2013] Mikolov, T.; Sutskever, I.; Chen, K.; Corrado, G. S.; and Dean, J. 2013. Distributed representations of words and phrases and their compositionality. In Advances in neural information processing systems, 3111– 3119. "
+        ],
+        "bbox": [
+            76,
+            85,
+            480,
+            598
+        ],
+        "page_idx": 6
+    }
+]

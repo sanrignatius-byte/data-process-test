@@ -1,0 +1,971 @@
+[
+    {
+        "type": "text",
+        "text": "Learning Gender-Neutral Word Embeddings ",
+        "text_level": 1,
+        "bbox": [
+            265,
+            80,
+            734,
+            101
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Jieyu Zhao ",
+        "bbox": [
+            161,
+            139,
+            263,
+            155
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Yichao Zhou ",
+        "bbox": [
+            304,
+            139,
+            418,
+            154
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Zeyu Li ",
+        "bbox": [
+            458,
+            140,
+            531,
+            155
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Wei Wang ",
+        "bbox": [
+            573,
+            140,
+            663,
+            155
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Kai-Wei Chang ",
+        "bbox": [
+            705,
+            140,
+            842,
+            156
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "University of California, Los Angeles ",
+        "bbox": [
+            349,
+            156,
+            655,
+            173
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "{jyzhao, yz, zyli, weiwang, kwchang}@cs.ucla.edu ",
+        "bbox": [
+            295,
+            173,
+            710,
+            190
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            263,
+            263,
+            342,
+            279
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Word embedding models have become a fundamental component in a wide range of Natural Language Processing (NLP) applications. However, embeddings trained on human-generated corpora have been demonstrated to inherit strong gender stereotypes that reflect social constructs. To address this concern, in this paper, we propose a novel training procedure for learning gender-neutral word embeddings. Our approach aims to preserve gender information in certain dimensions of word vectors while compelling other dimensions to be free of gender influence. Based on the proposed method, we generate a Gender-Neutral variant of GloVe (GN-GloVe). Quantitative and qualitative experiments demonstrate that GN-GloVe successfully isolates gender information without sacrificing the functionality of the embedding model. ",
+        "bbox": [
+            142,
+            292,
+            460,
+            563
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            115,
+            577,
+            260,
+            590
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Word embedding models have been designed for representing the meaning of words in a vector space. These models have become a fundamental NLP technique and have been widely used in various applications. However, prior studies show that such models learned from humangenerated corpora are often prone to exhibit social biases, such as gender stereotypes (Bolukbasi et al., 2016; Caliskan et al., 2017). For example, the word “programmer” is neutral to gender by its definition, but an embedding model trained on a news corpus associates “programmer” closer with “male” than “female”. ",
+        "bbox": [
+            114,
+            602,
+            489,
+            810
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Such a bias substantially affects downstream applications. Zhao et al. (2018) show that a coreference resolution system is sexist due to the word embedding component used in the system. This concerns the practitioners who use the embedding model to build gender-sensitive applications such ",
+        "bbox": [
+            114,
+            813,
+            489,
+            910
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "as a resume filtering system or a job recommendation system as the automated system may discriminate candidates based on their gender, as reflected by their name. Besides, biased embeddings may implicitly affect downstream applications used in our daily lives. For example, when searching for “computer scientist” using a search engine, as this phrase is closer to male names than female names in the embedding space, a search algorithm using an embedding model in the backbone tends to rank male scientists higher than females’, hindering women from being recognized and further exacerbating the gender inequality in the community. ",
+        "bbox": [
+            509,
+            265,
+            884,
+            474
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "To alleviate gender stereotype in word embeddings, Bolukbasi et al. (2016) propose a postprocessing method that projects gender-neutral words to a subspace which is perpendicular to the gender dimension defined by a set of genderdefinition words.1 However, their approach has two limitations. First, the method is essentially a pipeline approach and requires the gender-neutral words to be identified by a classifier before employing the projection. If the classifier makes a mistake, the error will be propagated and affect the performance of the model. Second, their method completely removes gender information from those words which are essential in some domains such as medicine and social science (Back et al., 2010; McFadden et al., 1992). ",
+        "bbox": [
+            509,
+            476,
+            884,
+            733
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "To overcome these limitations, we propose a learning scheme, Gender-Neutral Global Vectors (GN-GloVe) for training word embedding models with protected attributes (e.g., gender) based on GloVe (Pennington et al., 2014).2 GN-GloVe represents protected attributes in certain dimen-",
+        "bbox": [
+            509,
+            734,
+            882,
+            831
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1809.01496v1 [cs.CL] 29 Aug 2018 ",
+        "bbox": [
+            21,
+            304,
+            60,
+            722
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "1Gender-definition words are the words associated with gender by definition (e,g., mother, waitress); the remainder are gender-neutral words. ",
+        "bbox": [
+            509,
+            846,
+            882,
+            883
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "2The code and data are released at https://github. com/uclanlp/gn_glove ",
+        "bbox": [
+            509,
+            883,
+            880,
+            909
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "sions while neutralizing the others during training. As the information of the protected attribute is restricted in certain dimensions, it can be removed from the embedding easily. By jointly identifying gender-neutral words while learning word vectors, GN-GloVe does not require a separate classifier to identify gender-neutral words; therefore, the error propagation issue is eliminated. The proposed approach is generic and can be incorporated with other word embedding models and be applied in reducing other societal stereotypes. ",
+        "bbox": [
+            114,
+            74,
+            489,
+            250
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Our contributions are summarized as follows: 1) To our best knowledge, GN-GloVe is the first method to learn word embeddings with protected attributes; 2) By capturing protected attributes in certain dimensions, our approach ameliorates the interpretability of word representations; 3) Qualitative and quantitative experiments demonstrate that GN-GloVe effectively isolates the protected attributes and preserves the word proximity. ",
+        "bbox": [
+            114,
+            252,
+            489,
+            397
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 Related Work ",
+        "text_level": 1,
+        "bbox": [
+            115,
+            407,
+            272,
+            423
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Word Embeddings Word embeddings serve as a fundamental building block for a broad range of NLP applications (dos Santos and Gatti, 2014; Bahdanau et al., 2014; Zeng et al., 2015) and various approaches (Mikolov et al., 2013b; Pennington et al., 2014; Levy et al., 2015) have been proposed for training the word vectors. Improvements have been made by leveraging semantic lexicons and morphology (Luong et al., 2013; Faruqui et al., 2014), disambiguating multiple senses (Suster et al.ˇ , 2016; Arora et al., 2018; Upadhyay et al., 2017), and modeling contextualized information by deep neural networks (Peters et al., 2018). However, none of these works attempts to tackle the problem of stereotypes exhibited in embeddings. ",
+        "bbox": [
+            114,
+            432,
+            489,
+            690
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Stereotype Analysis Implicit stereotypes have been observed in applications such as online advertising systems (Sweeney, 2013), web search (Kay et al., 2015), and online reviews (Wallace and Paul, 2016). Besides, Zhao et al. (2017) and Rudinger et al. (2018) show that coreference resolution systems are gender biased. The systems can successfully predict the link between “the president” with male pronoun but fail with the female one. Rudinger et al. (2017) use pointwise mutual information to test the SNLI (Bowman et al., 2015) corpus and demonstrate gender stereotypes as well as varying degrees of racial, re-",
+        "bbox": [
+            114,
+            700,
+            489,
+            910
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "ligious, and age-based stereotypes in the corpus. A temporal analysis about word embeddings (Garg et al., 2018) captures changes in gender and ethnic stereotypes over time. Researchers attributed such problem partly to the biases in the datasets (Zhao et al., 2017; Yao and Huang, 2017) and word embeddings (Garg et al., 2017; Caliskan et al., 2017) but did not provide constructive solutions. ",
+        "bbox": [
+            509,
+            74,
+            884,
+            203
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 Methodology ",
+        "text_level": 1,
+        "bbox": [
+            510,
+            216,
+            660,
+            233
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we take GloVe (Pennington et al., 2014) as the base embedding model and gender as the protected attribute. It is worth noting that our approach is general and can be applied to other embedding models and attributes. Following GloVe (Pennington et al., 2014), we construct a word-to-word co-occurrence matrix $X$ , denoting the frequency of the $j$ -th word appearing in the context of the $i$ -th word as $X _ { i , j }$ . $w , \\tilde { w } \\in \\mathbb R ^ { d }$ stand for the embeddings of a center and a context word, respectively, where $d$ is the dimension. ",
+        "bbox": [
+            509,
+            243,
+            884,
+            419
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In our embedding model, a word vector $w$ consists of two parts w = [w(a); w(g)]. w(a) ∈ Rd−k $\\boldsymbol { w } = [ w ^ { ( a ) } ; w ^ { ( g ) } ]$ $\\boldsymbol { w } ^ { ( a ) } \\in \\mathbb { R } ^ { d - k }$ and $w ^ { ( g ) } \\in \\bar { \\mathbb { R } } ^ { k }$ stand for neutralized and gendered components respectively, where $k$ is the number of dimensions reserved for gender information.3 Our proposed gender neutralizing scheme is to reserve the gender feature, known as “protected attribute” into $w ^ { ( g ) }$ . Therefore, the information encoded in $w ^ { ( a ) }$ is independent of gender influence. We use $v _ { g } ~ \\in ~ \\mathbb { R } ^ { d - k }$ to denote the direction of gender in the embedding space. We categorize all the vocabulary words into three subsets: male-definition $\\Omega _ { M }$ , female-definition $\\Omega _ { F }$ , and gender-neutral $\\Omega _ { N }$ , based on their definition in WordNet (Miller and Fellbaum, 1998). ",
+        "bbox": [
+            509,
+            420,
+            884,
+            661
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Gender Neutral Word Embedding Our minimization objective is designed in accordance with above insights. It contains three components: ",
+        "bbox": [
+            509,
+            671,
+            882,
+            720
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\nJ = J _ {G} + \\lambda_ {d} J _ {D} + \\lambda_ {e} J _ {E}, \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            600,
+            734,
+            882,
+            751
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "where $\\lambda _ { d }$ and $\\lambda _ { e }$ are hyper-parameters. ",
+        "bbox": [
+            509,
+            765,
+            801,
+            780
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The first component $J _ { G }$ is originated from GloVe (Pennington et al., 2014), which captures the word proximity: ",
+        "bbox": [
+            509,
+            781,
+            882,
+            829
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\nJ _ {G} = \\sum_ {i, j = 1} ^ {V} f (X _ {i, j}) \\left(w _ {i} ^ {T} \\tilde {w} _ {j} + b _ {i} + \\tilde {b} _ {j} - \\log X _ {i, j}\\right) ^ {2}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            510,
+            841,
+            885,
+            885
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_footnote",
+        "text": "3We set $k = 1$ in this paper. ",
+        "bbox": [
+            532,
+            894,
+            705,
+            909
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Here $f ( X _ { i , j } )$ is a weighting function to reduce the influence of extremely large co-occurrence frequencies. $b$ and $\\tilde { b }$ are the respective linear biases for $w$ and $\\tilde { w }$ . ",
+        "bbox": [
+            114,
+            74,
+            487,
+            137
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The other two terms are aimed to restrict gender information in $w ^ { ( g ) }$ , such that $w ^ { ( a ) }$ is neutral. Given male- and female-definition seed words $\\Omega _ { M }$ and $\\Omega _ { F }$ , we consider two distant metrics and form two types of objective functions. ",
+        "bbox": [
+            114,
+            139,
+            487,
+            218
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In $J _ { D } ^ { L 1 }$ , we directly minimizing the negative distances between words in the two groups: ",
+        "bbox": [
+            115,
+            219,
+            487,
+            250
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nJ _ {D} ^ {L 1} = - \\left\\| \\sum_ {w \\in \\Omega_ {M}} w ^ {(g)} - \\sum_ {w \\in \\Omega_ {F}} w ^ {(g)} \\right\\| _ {1}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            154,
+            260,
+            448,
+            311
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In $J _ { D } ^ { L 2 }$ , we restrict the values of word vectors in $[ \\beta _ { 1 } , \\beta _ { 2 } ]$ and push $w ^ { ( g ) }$ into one of the extremes: ",
+        "bbox": [
+            115,
+            319,
+            487,
+            354
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nJ _ {D} ^ {L 2} = \\sum_ {w \\in \\Omega_ {M}} \\left\\| \\beta_ {1} \\boldsymbol {e} - w ^ {(g)} \\right\\| _ {2} ^ {2} + \\sum_ {w \\in \\Omega_ {F}} \\left\\| \\beta_ {2} \\boldsymbol {e} - w ^ {(g)} \\right\\| _ {2} ^ {2},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            115,
+            362,
+            492,
+            401
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $e \\in \\mathcal { R } ^ { k }$ is a vector of all ones. $\\beta _ { 1 }$ and $\\beta _ { 2 }$ can be arbitrary values, and we set them to be 1 and $^ { - 1 }$ , respectively. ",
+        "bbox": [
+            114,
+            409,
+            487,
+            456
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Finally, for words in $\\Omega _ { N }$ , the last term encourages their $w ^ { ( a ) }$ to be retained in the null space of the gender direction $v _ { g }$ : ",
+        "bbox": [
+            114,
+            458,
+            489,
+            506
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nJ _ {E} = \\sum_ {w \\in \\Omega_ {N}} \\left(v _ {g} ^ {T} w ^ {(a)}\\right) ^ {2},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            206,
+            514,
+            398,
+            554
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $v _ { g }$ is estimating on the fly by averaging the differences between female words and their male counterparts in a predefined set, ",
+        "bbox": [
+            114,
+            558,
+            487,
+            607
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nv _ {g} = \\frac {1}{| \\Omega^ {\\prime} |} \\sum_ {(w _ {m}, w _ {f}) \\in \\Omega^ {\\prime}} (w _ {m} ^ {(a)} - w _ {f} ^ {(a)}),\n$$",
+        "text_format": "latex",
+        "bbox": [
+            166,
+            615,
+            436,
+            657
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $\\Omega ^ { \\prime }$ is a set of predefined gender word pairs. ",
+        "bbox": [
+            115,
+            663,
+            485,
+            678
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We use stochastic gradient descent to optimize Eq. (1). To reduce the computational complexity in training the wording embedding, we assume $v _ { g }$ is a fixed vector (i.e., we do not derive gradient w.r.t $v _ { g }$ in updating $w ^ { ( a ) } , \\forall w \\in \\Omega ^ { \\prime } )$ and estimate $v _ { g }$ only at the beginning of each epoch. ",
+        "bbox": [
+            114,
+            680,
+            487,
+            776
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4 Experiments ",
+        "text_level": 1,
+        "bbox": [
+            115,
+            787,
+            260,
+            804
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In this section, we conduct the following qualitative and quantitative studies: 1) We visualize the embedding space and show that GN-GloVe separates the protected gender attribute from other latent aspects; 2) We measure the ability of GN-GloVe to distinguish between gender-definition ",
+        "bbox": [
+            114,
+            813,
+            487,
+            909
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "words and gender-stereotype words on a newly annotated dataset; 3) We evaluate GN-GloVe on standard word embedding benchmark datasets and show that it performs well in estimating word proximity; 4) We demonstrate that GN-Glove reduces gender bias on a downstream application, coreference resolution. ",
+        "bbox": [
+            507,
+            74,
+            882,
+            185
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We compare GN-GloVe with two embedding models, GloVe and Hard-GloVe. GloVe is a widely-used model (Pennington et al., 2014), and we apply the post-processing step introduced in (Bolukbasi et al., 2016) to reduce gender bias in GloVe and name it after Hard-GloVe. All the embeddings are trained on 2017 English Wikipedia dump with the default hyper-parameters decribed in (Pennington et al., 2014). When training GN-GloVe, we constrain the value of each dimension within $[ - 1 , 1 ]$ to avoid numerical difficulty. We set $\\lambda _ { d }$ and $\\lambda _ { e }$ both to be 0.8. In our preliminary study on development data, we observe that the model is not sensitive to these parameters. Unless other stated, we use $J _ { D } ^ { L 1 }$ in the GN-GloVe model. ",
+        "bbox": [
+            507,
+            187,
+            882,
+            431
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Separate protected attribute First, we demonstrate that GN-GloVe preserves the gender association (either definitional or stereotypical associations) in $w ^ { ( g ) 4 }$ . To illustrate the distribution of gender information of different words, we plot Fig. 1a using $w ^ { ( g ) }$ for the $\\mathbf { X }$ -axis and a random value for the y-axis to spread out words in the plot. As shown in the figure, the gender-definition words, e.g. “waiter” and “waitress”, fall far away from each other in $w ^ { ( g ) }$ . In addition, words such as “housekeeper” and “doctor” are inclined to different genders and their $w ^ { ( g ) }$ preserves such information. ",
+        "bbox": [
+            507,
+            443,
+            882,
+            651
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Next, we demonstrate that GN-GloVe reduces gender stereotype using a list of profession titles from (Bolukbasi et al., 2016). All these profession titles are neutral to gender by definition. In Fig. 1b and Fig. 1c, we plot the cosine similarity between each word vector $w ^ { ( a ) }$ and the gender direction $v _ { g }$ (i.e., kwkkvg $\\frac { w ^ { T } v _ { g } } { \\| w \\| \\| v _ { g } \\| } )$ wT vg . Result shows that words, such as “doctor” and “nurse”, possess no gender association by definition, but their GloVe word vectors exhibit strong gender stereotype. In contrast, the gender projects of GN-GloVe word vectors $w ^ { ( a ) }$ are closer to zero. This demonstrates ",
+        "bbox": [
+            507,
+            653,
+            882,
+            848
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "4We follow the original GloVe implementation using the summation of word vector and context vector to represent a word. Therefore, the elements of the word vectors are constrained in [-2, 2] ",
+        "bbox": [
+            507,
+            859,
+            882,
+            908
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/6f2d300ba48b3d1e670cf89fa4cda5df0a9b6a52ace6c3f7e290ecb79a4922b8.jpg",
+        "image_caption": [
+            "(a) $w ^ { ( g ) }$ dimension for all the professions "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            139,
+            87,
+            361,
+            218
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/61e3e1d83747e69282f8b0c9271ce9c3ba4aeb227d06e890d7e51b771161417d.jpg",
+        "image_caption": [
+            "(b) Gender-neutral profession words projected to gender direction in GloVe "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            378,
+            90,
+            620,
+            219
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/423de15df26bd0f70901b01ac265decfe23c1f2bb6fa0399c69eb85eb599b2a1.jpg",
+        "image_caption": [
+            "(c) Gender-neutral profession words projected to gender direction in GN-GloVe ",
+            "Figure 1: Cosine similarity between the gender direction and the embeddings of gender-neutral words. In each figure, negative values represent a bias towards female, otherwise male. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            638,
+            90,
+            880,
+            221
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "the gender information has been substantially diminished from $w ^ { ( a ) }$ in the GN-GloVe embedding. ",
+        "bbox": [
+            114,
+            322,
+            485,
+            353
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We further quantify the gender information exhibited in the embedding models. For each model, we project the word vectors of occupational words into the gender sub-space defined by “he-she” and compute their average size. A larger projection indicates an embedding model is more biased. Results show that the average projection of GloVe is 0.080, the projection of Hard-GloVe is 0.019, and the projection of Gn-Glove is 0.052. Comparing with GloVe, GN-GloVe reduces the bias by $3 5 \\%$ . Although Hard-GloVe contains less gender information, we will show later GN-GloVe can tell difference between gender-stereotype and genderdefinition words better. ",
+        "bbox": [
+            114,
+            355,
+            487,
+            580
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Gender Relational Analogy To study the quality of the gender information present in each model, we follow SemEval 2012 Task2 (Jurgens et al., 2012) to create an analogy dataset, SemBias, with the goal to identify the correct analogy of “he - she” from four pairs of words. Each instance in the dataset consists of four word pairs: a genderdefinition word pair (Definition; e.g., “waiter - waitress”), a gender-stereotype word pair (Stereotyp; e.g., “doctor - nurse”) and two other pairs of words that have similar meanings (None; e.g., “dog - cat”, “cup - lid”)5. We consider 20 genderstereotype word pairs and 22 gender-definition word pairs and use their Cartesian product to generate 440 instances. Among the 22 genderdefinition word pairs, there are 2 word pairs that ",
+        "bbox": [
+            114,
+            590,
+            489,
+            850
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "table",
+        "img_path": "images/cce2b0bde6ccb8fc8cf3d0e7374aaaa19f4605fa8353f73b5dbc00931c5b44ac.jpg",
+        "table_caption": [
+            "Table 1: Percentage of predictions for each category on gender relational analogy task. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Dataset</td><td>Embeddings</td><td>Definition</td><td>Stereotype</td><td>None</td></tr><tr><td rowspan=\"3\">SemBias</td><td>GloVe</td><td>80.2</td><td>10.9</td><td>8.9</td></tr><tr><td>Hard-Glove</td><td>84.1</td><td>6.4</td><td>9.5</td></tr><tr><td>GN-GloVe</td><td>97.7</td><td>1.4</td><td>0.9</td></tr><tr><td rowspan=\"3\">SemBias (subset)</td><td>GloVe</td><td>57.5</td><td>20</td><td>22.5</td></tr><tr><td>Hard-Glove</td><td>25</td><td>27.5</td><td>47.5</td></tr><tr><td>GN-GloVe</td><td>75</td><td>15</td><td>10</td></tr></table>",
+        "bbox": [
+            515,
+            319,
+            880,
+            414
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "are not used as a seed word during the training. To test the generalization ability of the model, we generate a subset of data (SemBias (subset)) of 40 instances associated with these 2 pairs. ",
+        "bbox": [
+            507,
+            482,
+            882,
+            545
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Table 1 lists the percentage of times that each class of pair is on the top based on a word embedding model (Mikolov et al., 2013c). GN-GloVe achieves $9 7 . 7 \\%$ accuracy in identifying genderdefinition word pairs as an analogy to “he - she”. In contrast, GloVe and Hard-GloVe makes significantly more mistakes. On the subset, GN-GloVe also achieves significantly better performance than Hard-Glove and GloVe, indicating that it can generalize the gender pairs on the training set to identify other gender-definition word pairs. ",
+        "bbox": [
+            507,
+            546,
+            882,
+            722
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Word Similarity and Analogy In addition, we evaluate the word embeddings on the benchmark tasks to ensure their quality. The word similarity tasks measure how well a word embedding model captures the similarity between words comparing to human annotated rating scores. Embeddings are tested on multiple datasets: WS353-ALL (Finkelstein et al., 2001), RG-65 (Rubenstein and Goodenough, 1965), MTurk-287 (Radinsky et al., 2011), MTurk-771 (Halawi et al., 2012), RW (Luong et al., 2013), and MEN-TR-3k (Bruni et al., 2012) ",
+        "bbox": [
+            507,
+            732,
+            884,
+            909
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_footnote",
+        "text": "5The pair is sampled from the list of word pairs with “SIMILAR: Coordinates” relation annotated in (Jurgens et al., 2012). The original list has 38 pairs. After removing gender-definition word pairs, 29 are left. ",
+        "bbox": [
+            114,
+            858,
+            489,
+            909
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "table",
+        "img_path": "images/f7672efa57ff2c2f889183e03ec2ef64fc718048c3de5b09678ab2d9c137f548.jpg",
+        "table_caption": [
+            "Table 2: Results on the benchmark datasets. Performance is measured in accuracy and in Spearman rank correlation for word analogy and word similarity tasks, respectively. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td rowspan=\"2\">Embeddings</td><td colspan=\"2\">Analogy</td><td colspan=\"6\">Similarity</td></tr><tr><td>Google</td><td>MSR</td><td>WS353-ALL</td><td>RG-65</td><td>MTurk-287</td><td>MTurk-771</td><td>RW</td><td>MEN-TR-3k</td></tr><tr><td>GloVe</td><td>70.8</td><td>45.8</td><td>62.0</td><td>75.3</td><td>64.8</td><td>64.9</td><td>37.3</td><td>72.2</td></tr><tr><td>Hard-GloVe</td><td>70.8</td><td>45.8</td><td>61.2</td><td>74.8</td><td>64.4</td><td>64.8</td><td>37.3</td><td>72.2</td></tr><tr><td>GN-GloVe-L1</td><td>68.9</td><td>43.7</td><td>62.8</td><td>74.1</td><td>66.2</td><td>66.2</td><td>40.0</td><td>74.5</td></tr><tr><td>GN-GloVe-L2</td><td>68.8</td><td>43.6</td><td>62.5</td><td>76.4</td><td>66.8</td><td>65.6</td><td>39.3</td><td>74.4</td></tr></table>",
+        "bbox": [
+            122,
+            71,
+            878,
+            162
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "datasets. The analogy tasks are to answer the question $^ { 6 6 } A$ is to $B$ as $C$ is to ?” by finding a word vector $w$ that is closest to $w _ { A } - w _ { B } + w _ { C }$ in the embedding space. Google (Mikolov et al., 2013a) and MSR (Mikolov et al., 2013c) datasets are utilized for this evaluation. The results are shown in Table 2, where the suffix “-L1” and “-L2” of GN-GloVe stand for the GN-GloVe using $J _ { D } ^ { L 1 }$ and $J _ { D } ^ { L 2 }$ , respectively. Compared with others, GN-GloVe achieves a higher accuracy in the similarity tasks and its analogy score slightly drops indicating that GN-GloVe is capable of preserving proximity among words. ",
+        "bbox": [
+            117,
+            231,
+            485,
+            439
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Coreference Resolution Finally, we investigate how the gender bias in word embeddings affects a downstream application, such as coreference resolution. Coreference resolution aims at clustering the denotative noun phrases referring to the same entity in the given text. We evaluate our models on the Ontonotes 5.0 (Weischedel et al., 2012) benchmark dataset and the WinoBias dataset (Zhao et al., 2018).6 In particular, the WinoBias dataset is composed of pro-stereotype (PRO) and antistereotype (ANTI) subsets. The PRO subset consists of sentences where a gender pronoun refers to a profession, which is dominated by the same gender. Example sentences include “The CEO raised the salary of the receptionist because he is generous.” In this sentence, the pronoun “he” refers to “CEO” and this reference is consistent with societal stereotype. The ANTI subset contains the same set of sentences, but the gender pronoun in each sentence is replaced by the opposite gender. For instance, the gender pronoun “he” is replaced by “she” in the aforementioned example. Despite the sentence is almost identical, the gender pronoun now refers to a profession that is less represented by the gender. Details about the dataset are in (Zhao et al., 2018). ",
+        "bbox": [
+            117,
+            453,
+            485,
+            870
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "table",
+        "img_path": "images/90d8200d4681163228a6c63fb384f0c97291707e8acd4f8973cfdc731bd33025.jpg",
+        "table_caption": [
+            "Table 3: F1 score $( \\% )$ on the coreference system. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Embeddings</td><td>OntoNotes-test</td><td>PRO</td><td>ANTI</td><td>Avg</td><td>Diff</td></tr><tr><td>GloVe</td><td>66.5</td><td>76.2</td><td>46.0</td><td>61.1</td><td>30.2</td></tr><tr><td>Hard-Glove</td><td>66.2</td><td>70.6</td><td>54.9</td><td>62.8</td><td>15.7</td></tr><tr><td>GN-GloVe</td><td>66.2</td><td>72.4</td><td>51.9</td><td>62.2</td><td>20.5</td></tr><tr><td>GN-GloVe(wa)</td><td>65.9</td><td>70.0</td><td>53.9</td><td>62.0</td><td>16.1</td></tr></table>",
+        "bbox": [
+            517,
+            229,
+            878,
+            292
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We train the end-to-end coreference resolution model (Lee et al., 2017) with different word embeddings on OntoNote and report their performance in Table 3. For the WinoBias dataset, we also report the average (Avg) and absolute difference (Diff) of F1 scores on two subsets. A smaller Diff value indicates less bias in a system. Results show that GN-GloVe achieves comparable performance as Glove and Hard-GloVe on the OntoNotes dataset while distinctly reducing the bias on the WinoBias dataset. When only the $\\mathbf { \\chi } _ { w } ( a )$ potion of the embedding is used in representing words, ${ \\mathrm { G N - G l o V e } } ( w ^ { ( a ) } )$ further reduces the bias in coreference resolution. ",
+        "bbox": [
+            514,
+            338,
+            880,
+            560
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "5 Conclusion and Discussion ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            583,
+            774,
+            599
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we introduced an algorithm for training gender-neutral word embedding. Our method is general and can be applied in any language as long as a list of gender definitional words is provided as seed words (e.g., gender pronouns). Future directions include extending the proposed approach to model other properties of words such as sentiment and generalizing our analysis beyond binary gender. ",
+        "bbox": [
+            514,
+            615,
+            880,
+            759
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Acknowledgement ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            781,
+            672,
+            797
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "This work was supported by National Science Foundation Grant IIS-1760523. We would like to thank James Zou, Adam Kalai, Tolga Bolukbasi, and Venkatesh Saligrama for helpful discussion, and anonymous reviewers for their feedback. ",
+        "bbox": [
+            514,
+            813,
+            880,
+            891
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "6Specifically, we conduct experiments on the Type 1 version. ",
+        "bbox": [
+            117,
+            883,
+            485,
+            906
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            117,
+            74,
+            215,
+            89
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Sanjeev Arora, Yuanzhi Li, Yingyu Liang, Tengyu Ma, and Andrej Risteski. 2018. Linear algebraic structure of word senses, with applications to polysemy. Transactions of the Association of Computational Linguistics, 6:483–495. ",
+            "Sudie E Back, Rebecca L Payne, Annie N Simpson, and Kathleen T Brady. 2010. Gender and prescription opioids: Findings from the national survey on drug use and health. Addictive behaviors, 35(11):1001–1007. ",
+            "Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio. 2014. Neural machine translation by jointly learning to align and translate. arXiv preprint arXiv:1409.0473. ",
+            "Tolga Bolukbasi, Kai-Wei Chang, James Y Zou, Venkatesh Saligrama, and Adam T Kalai. 2016. Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In Advances in Neural Information Processing Systems, pages 4349–4357. ",
+            "Samuel R. Bowman, Gabor Angeli, Christopher Potts, and Christopher D. Manning. 2015. A large annotated corpus for learning natural language inference. In Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing (EMNLP). Association for Computational Linguistics. ",
+            "Elia Bruni, Gemma Boleda, Marco Baroni, and Nam-Khanh Tran. 2012. Distributional semantics in technicolor. In Proceedings of the 50th Annual Meeting of the Association for Computational Linguistics: Long Papers-Volume 1, pages 136–145. ",
+            "Aylin Caliskan, Joanna J Bryson, and Arvind Narayanan. 2017. Semantics derived automatically from language corpora contain human-like biases. Science, 356(6334):183–186. ",
+            "Manaal Faruqui, Jesse Dodge, Sujay K Jauhar, Chris Dyer, Eduard Hovy, and Noah A Smith. 2014. Retrofitting word vectors to semantic lexicons. arXiv preprint arXiv:1411.4166. ",
+            "Lev Finkelstein, Evgeniy Gabrilovich, Yossi Matias, Ehud Rivlin, Zach Solan, Gadi Wolfman, and Eytan Ruppin. 2001. Placing search in context: The concept revisited. In Proceedings of the 10th international conference on World Wide Web, pages 406– 414. ",
+            "Nikhil Garg, Londa Schiebinger, Dan Jurafsky, and James Zou. 2017. Word embeddings quantify 100 years of gender and ethnic stereotypes. arXiv preprint arXiv:1711.08412. ",
+            "Nikhil Garg, Londa Schiebinger, Dan Jurafsky, and James Zou. 2018. Word embeddings quantify 100 years of gender and ethnic stereotypes. Proceedings of the National Academy of Sciences, 115(16):E3635–E3644. "
+        ],
+        "bbox": [
+            117,
+            96,
+            489,
+            908
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Guy Halawi, Gideon Dror, Evgeniy Gabrilovich, and Yehuda Koren. 2012. Large-scale learning of word relatedness with constraints. In Proceedings of the 18th ACM SIGKDD international conference on Knowledge discovery and data mining, pages 1406– 1414. ACM. ",
+            "David A Jurgens, Peter D Turney, Saif M Mohammad, and Keith J Holyoak. 2012. Semeval-2012 task 2: Measuring degrees of relational similarity. In Proceedings of the First Joint Conference on Lexical and Computational Semantics-Volume 1: Proceedings of the main conference and the shared task, and Volume 2: Proceedings of the Sixth International Workshop on Semantic Evaluation, pages 356–364. Association for Computational Linguistics. ",
+            "Matthew Kay, Cynthia Matuszek, and Sean A Munson. 2015. Unequal representation and gender stereotypes in image search results for occupations. In Human Factors in Computing Systems, pages 3819– 3828. ",
+            "Kenton Lee, Luheng He, Mike Lewis, and Luke Zettlemoyer. 2017. End-to-end neural coreference resolution. EMNLP. ",
+            "Omer Levy, Yoav Goldberg, and Ido Dagan. 2015. Improving distributional similarity with lessons learned from word embeddings. Transactions of the Association for Computational Linguistics, 3:211–225. ",
+            "Thang Luong, Richard Socher, and Christopher Manning. 2013. Better word representations with recursive neural networks for morphology. In Proceedings of the Seventeenth Conference on Computational Natural Language Learning, pages 104–113. ",
+            "Anna C McFadden, George E Marsh, Barrie Jo Price, and Yunhan Hwang. 1992. A study of race and gender bias in the punishment of school children. Education and treatment of children, pages 140–146. ",
+            "Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. 2013a. Efficient estimation of word representations in vector space. arXiv preprint arXiv:1301.3781. ",
+            "Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg S Corrado, and Jeff Dean. 2013b. Distributed representations of words and phrases and their compositionality. In Advances in neural information processing systems, pages 3111–3119. ",
+            "Tomas Mikolov, Wen-tau Yih, and Geoffrey Zweig. 2013c. Linguistic regularities in continuous space word representations. In Proceedings of the 2013 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pages 746–751. ",
+            "George Miller and Christiane Fellbaum. 1998. Wordnet: An electronic lexical database. "
+        ],
+        "bbox": [
+            512,
+            76,
+            884,
+            907
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Jeffrey Pennington, Richard Socher, and Christopher Manning. 2014. Glove: Global vectors for word representation. In Proceedings of the 2014 conference on empirical methods in natural language processing (EMNLP), pages 1532–1543. ",
+            "Matthew E Peters, Mark Neumann, Mohit Iyyer, Matt Gardner, Christopher Clark, Kenton Lee, and Luke Zettlemoyer. 2018. Deep contextualized word representations. arXiv preprint arXiv:1802.05365. ",
+            "Kira Radinsky, Eugene Agichtein, Evgeniy Gabrilovich, and Shaul Markovitch. 2011. A word at a time: computing word relatedness using temporal semantic analysis. In Proceedings of the 20th international conference on World wide web, pages 337–346. ",
+            "Herbert Rubenstein and John B Goodenough. 1965. Contextual correlates of synonymy. Communications of the ACM, 8(10):627–633. ",
+            "Rachel Rudinger, Chandler May, and Benjamin Van Durme. 2017. Social bias in elicited natural language inferences. In Proceedings of the First ACL Workshop on Ethics in Natural Language Processing, pages 74–79. ",
+            "Rachel Rudinger, Jason Naradowsky, Brian Leonard, and Benjamin Van Durme. 2018. Gender bias in coreference resolution. In NAACL. ",
+            "Cicero dos Santos and Maira Gatti. 2014. Deep convolutional neural networks for sentiment analysis of short texts. In Proceedings of COLING 2014, the 25th International Conference on Computational Linguistics: Technical Papers, pages 69–78. ",
+            "Simon Suster, Ivan Titov, and Gertjan Van Noord. ˇ 2016. Bilingual learning of multi-sense embeddings with discrete autoencoders. arXiv preprint arXiv:1603.09128. ",
+            "Latanya Sweeney. 2013. Discrimination in online ad delivery. Queue, 11(3):10. ",
+            "Shyam Upadhyay, Kai-Wei Chang, Matt Taddy, Adam Kalai, and James Zou. 2017. Beyond bilingual: Multi-sense word embeddings using multilingual context. In Proceedings of the 2nd Workshop on Representation Learning for NLP, pages 101–110. ",
+            "Byron C Wallace and Michael J Paul. 2016. jerk or judgemental? patient perceptions of male versus female physicians in online reviews. ",
+            "Ralph Weischedel, Sameer Pradhan, Lance Ramshaw, Jeff Kaufman, Michelle Franchini, Mohammed El-Bachouti, Nianwen Xue, Martha Palmer, Jena D Hwang, Claire Bonial, et al. 2012. Ontonotes release 5.0. ",
+            "Sirui Yao and Bert Huang. 2017. Beyond parity: Fairness objectives for collaborative filtering. In Advances in Neural Information Processing Systems, pages 2925–2934. "
+        ],
+        "bbox": [
+            117,
+            76,
+            487,
+            908
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Daojian Zeng, Kang Liu, Yubo Chen, and Jun Zhao. 2015. Distant supervision for relation extraction via piecewise convolutional neural networks. In Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing, pages 1753– 1762. ",
+            "Jieyu Zhao, Tianlu Wang, Mark Yatskar, Vicente Ordonez, and Kai-Wei Chang. 2017. Men also like shopping: Reducing gender bias amplification using corpus-level constraints. arXiv preprint arXiv:1707.09457. ",
+            "Jieyu Zhao, Tianlu Wang, Mark Yatskar, Vicente Ordonez, and Kai-Wei Chang. 2018. Gender bias in coreference resolution: Evaluation and debiasing methods. NAACL. "
+        ],
+        "bbox": [
+            512,
+            76,
+            882,
+            292
+        ],
+        "page_idx": 6
+    }
+]

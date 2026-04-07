@@ -1,0 +1,200 @@
+%%%%% Custom comments stuff
+\newif\ifcomments
+\commentsfalse
+%\commentstrue
+
+\documentclass{article}
+\PassOptionsToPackage{square, numbers, compress,sort}{natbib}
+\usepackage[final]{nips_2017}
+
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[nonatbib,final]{nips_2017}
+
+%\usepackage[square,numbers]{natbib}
+\usepackage[resetlabels]{multibib}
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{algorithm,algorithmic}
+\usepackage{subcaption}
+\usepackage{aliascnt}
+\usepackage{hyperref}
+\usepackage{url}            % simple URL typesetting
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{pgfplots}
+\usepackage{booktabs}
+\usepackage{wrapfig}
+\usepackage[short]{optidef}
+\usepackage[inline]{enumitem}
+\usepgfplotslibrary{groupplots}
+
+\newlist{inlinelist}{enumerate*}{1}
+\setlist*[inlinelist,1]{%
+  label=\arabic*),
+}
+
+\newcommand{\titl}{On Fairness and Calibration }
+\newcommand{\authorinfo}{
+  Geoff Pleiss\thanks{Equal contribution, alphebetical order.}, \:
+  Manish Raghavan\footnotemark[1], \:
+  Felix Wu, \:
+  Jon Kleinberg, \:
+  Kilian Q. Weinberger
+  \\
+  Cornell University, Department of Computer Science
+  \\
+  \texttt{\{geoff,manish,kleinber\}@cs.cornell.edu},
+  \\
+  \texttt{\{fw245,kwq4\}@cornell.edu}
+}
+
+\title{\titl}
+\author{\authorinfo}
+
+\ifcomments\newcommand{\comments}[1]{#1}\else\newcommand{\comments}[1]{}\fi
+\definecolor{clrgp}{rgb}{.9,0,.9}
+\newcommand{\fw}[1]{\comments{\textcolor{blue}{[FW: #1]}}}
+\newcommand{\mr}[1]{\comments{\textcolor{red}{[MR: #1]}}}
+\newcommand{\gp}[1]{\comments{\textcolor{clrgp}{[GP: #1]}}}
+\newcommand{\kilian}[1]{\comments{\textcolor{purple}{\textbf{[Kilian: #1]}}}}
+
+\newtheorem{definition}{Definition}
+\newtheorem*{thm*}{Theorem}
+\newtheorem{thm}{Theorem}
+\newtheorem{corollary}{Corollary}[thm]
+\newaliascnt{lemma}{thm}
+\newtheorem{lemma}[lemma]{Lemma}
+\aliascntresetthe{lemma}
+
+% Autoref
+\renewcommand{\sectionautorefname}{Section}
+\newcommand{\definitionautorefname}{Definition}
+\newcommand{\thmautorefname}{Theorem}
+\newcommand{\lemmaautorefname}{Lemma}
+\newcommand{\corollaryautorefname}{Corollary}
+\newcommand{\algorithmautorefname}{Algorithm}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+
+\input{macros}
+\begin{document}
+
+\maketitle
+\setcounter{footnote}{0}
+
+\begin{abstract}
+  \input sections/abstract
+\end{abstract}
+
+\input sections/introduction
+
+\input sections/related_work
+
+
+\input sections/problem_setup
+
+
+\input sections/objectives
+
+%\input sections/feasibility
+
+%\input sections/optimality
+
+\input sections/impossibility
+
+\input sections/experiments
+
+\input sections/conclusion
+
+\section*{Acknowledgements}
+GP, FW, and KQW are supported in part by grants from the National Science Foundation
+(III-1149882, III-1525919, III-1550179, III-1618134, and III-1740822),
+the Office of Naval Research DOD (N00014-17-1-2175),
+and the Bill and Melinda Gates Foundation.
+MR is supported by an NSF Graduate Research Fellowship (DGE-1650441).
+JK is supported in part by a Simons Investigator Award, an ARO MURI grant, a
+Google Research Grant, and a Facebook Faculty Research Grant.
+
+{\footnotesize
+  \bibliographystyle{abbrvnat}
+  \bibliography{citations}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Supplementary Information
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\clearpage
+
+% Supplementary Information hacks from http://jshodges.com/index.php?qs=kb_001
+
+\makeatletter
+  % Tables and figures
+  \setcounter{table}{0}
+  \renewcommand{\thetable}{S\arabic{table}}%
+  \setcounter{figure}{0}
+  \renewcommand{\thefigure}{S\arabic{figure}}%
+  % Sections
+  \setcounter{section}{0}
+  \renewcommand{\thesection}{S\arabic{section}}
+  \renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+  % Equations
+  \setcounter{equation}{0}
+  %\def\tagform@#1{\maketag@@@{(S\ignorespaces#1\unskip\@@italiccorr)}}
+  \renewcommand\theequation{S\arabic{equation}}
+  % Citations
+  \renewcommand{\bibnumfmt}[1]{[S#1]}
+  % Pages
+  %\setcounter{page}{1}
+
+
+  % Renew title
+  \newcommand{\suptitle}{Supplementary Information for: \titl}
+  \renewcommand{\@title}{\suptitle}
+  \newcommand{\thanks}[1]{\footnotemark[1]}
+  \renewcommand{\@author}{\authorinfo}
+
+  % Make title
+  \par
+  \begingroup
+    \renewcommand{\thefootnote}{\fnsymbol{footnote}}
+    \renewcommand{\@makefnmark}{\hbox to \z@{$^{\@thefnmark}$\hss}}
+    \renewcommand{\@makefntext}[1]{%
+      \parindent 1em\noindent
+      \hbox to 1.8em{\hss $\m@th ^{\@thefnmark}$}#1
+    }
+    \thispagestyle{empty}
+    %\renewcommand{\authornote}[1]{\authornoterepeat}
+    \@maketitle
+    \@thanks
+  \endgroup
+  \let\maketitle\relax
+  \let\thanks\relax
+\makeatother
+
+\input supplementary/linearity
+
+%\input supplementary/feasibility_proofs
+
+\input supplementary/cost_and_error
+
+\input supplementary/optimality_proofs
+
+\input supplementary/impossibility_proofs
+
+\input supplementary/details_on_experiments
+
+\end{document}
+

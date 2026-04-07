@@ -1,0 +1,35 @@
+$$
+\mathbb {E} [ Y d (X) + (1 - Y) (1 - d (X)) ] = \mathbb {E} (2 Y d (X) - d (X)) + \mathbb {E} (Y) + 1 = 2 u (d, 0. 5) + \mathbb {E} (Y) + 1.
+$$
+
+$$
+u (d, 0. 5) = \mathbb {E} [ d (X, Z) (p _ {Y | X, Z} - 0. 5) ].
+$$
+
+$$
+\begin{array}{l} \mathbb {E} \left[ d ^ {*} (X, Z) \left(p _ {Y | X, Z} - . 5\right) \right] - \mathbb {E} \left[ d _ {D L P} (X) \left(p _ {Y | X, Z} - . 5\right) \right] \\ = \mathbb {E} \left[ \left(d ^ {*} (X, Z) - d _ {D L P} (X)\right) \left(p _ {Y | X, Z} - 0. 5\right) \right] \\ = \mathbb {E} [ p _ {Y | X, Z} -. 5 | d ^ {*} = 1, d _ {D L P} = 0 ] \mathbb {P} (d ^ {*} = 1, d _ {D L P} = 0) - \mathbb {E} [ p _ {Y | X, Z} -. 5 | d ^ {*} = 0, d _ {D L P} = 1 ] \mathbb {P} (d ^ {*} = 0, d _ {D L P} = 1) \\ = \left(\mathbb {E} \left[ p _ {Y \mid X, Z} - . 5 \mid d ^ {*} = 1, d _ {D L P} = 0 \right] - \mathbb {E} \left[ p _ {Y \mid X, Z} - . 5 \mid d ^ {*} = 0, d _ {D L P} = 1 \right]\right) \mathbb {P} \left(d ^ {*} = 1, d _ {D L P} = 0\right) \\ \geq 0 \\ \end{array}
+$$
+
+$$
+z _ {i} \sim \operatorname {B e r n o u l l i} (0. 5)
+$$
+
+$$
+\operatorname {h a i r} _ {\text {l e n g t h}} \mid z _ {i} = 1 \sim 3 5 \cdot \operatorname {B e t a} (2, 2)
+$$
+
+$$
+\operatorname {h a i r}  \mid z _ {i} = 0 \sim 3 5 \cdot \operatorname {B e t a} (2, 7)
+$$
+
+$$
+\operatorname {w o r k} _ {\exp_ {i}} \mid z _ {i} \sim \operatorname {P o i s s o n} (2 5 + 6 z _ {i}) - \operatorname {N o r m a l} (2 0, \sigma = 0. 2)
+$$
+
+$$
+y _ {i} \mid \text {w o r k} \exp \sim 2 \cdot \text {B e r n o u l l i} (p _ {i}) - 1,
+$$
+
+$$
+\text {w h e r e} p _ {i} = 1 / (1 + \exp [ - (- 2 5. 5 + 2. 5 \text {w o r k} \cdot \exp) ])
+$$

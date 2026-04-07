@@ -1,0 +1,4111 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Does mitigating ML’s impact disparity require treatment disparity? "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                266,
+                122,
+                730,
+                174
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Zachary C. Lipton1, Alexandra Chouldechova1, Julian McAuley2 "
+                    }
+                ]
+            },
+            "bbox": [
+                267,
+                224,
+                727,
+                239
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "1Carnegie Mellon University "
+                    }
+                ]
+            },
+            "bbox": [
+                403,
+                239,
+                594,
+                255
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2University of California, San Diego "
+                    }
+                ]
+            },
+            "bbox": [
+                377,
+                255,
+                620,
+                268
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "zlipton@cmu.edu, achould@cmu.edu, jmcauley@cs.ucsd.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                274,
+                268,
+                722,
+                282
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                459,
+                318,
+                537,
+                334
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Following precedent in employment discrimination law, two notions of disparity are widely-discussed in papers on fairness and ML. Algorithms exhibit treatment disparity if they formally treat members of protected subgroups differently; algorithms exhibit impact disparity when outcomes differ across subgroups (even unintentionally). Naturally, we can achieve impact parity through purposeful treatment disparity. One line of papers aims to reconcile the two parities proposing disparate learning processes (DLPs). Here, the sensitive feature is used during training but a group-blind classifier is produced. In this paper, we show that: (i) when sensitive and (nominally) nonsensitive features are correlated, DLPs will indirectly implement treatment disparity, undermining the policy desiderata they are designed to address; (ii) when group membership is partly revealed by other features, DLPs induce within-class discrimination; and (iii) in general, DLPs provide suboptimal trade-offs between accuracy and impact parity. Experimental results on several real-world datasets highlight the practical consequences of applying DLPs. "
+                    }
+                ]
+            },
+            "bbox": [
+                228,
+                344,
+                767,
+                540
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                560,
+                313,
+                575
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Effective decision-making requires choosing among options given the available information. That much is unavoidable, unless we wish to make trivial decisions. In selection processes, such as hiring, university admissions, and loan approval, the options are people; the available features include (but are rarely limited to) direct evidence of qualifications; and decisions impact lives. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                593,
+                826,
+                650
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Laws in many countries restrict the ways in which certain decisions can be made. For example, Title VII of the US Civil Rights Act [1], forbids employment decisions that discriminate on the basis of certain protected characteristics. Interpretation of this law has led to two notions of discrimination: disparate treatment and disparate impact. Disparate treatment addresses intentional discrimination, including (i) decisions explicitly based on protected characteristics; and (ii) intentional discrimination via proxy variables (e.g literacy tests for voting eligibility). Disparate impact addresses facially neutral practices that might nevertheless have an “unjustified adverse impact on members of a protected class” [1]. One might hope that detecting unjustified impact were as simple as detecting unequal outcomes. However, absent intentional discrimination, unequal outcomes can emerge due to correlations between protected and unprotected characteristics. Complicating matters, unequal outcomes may not always signal unlawful discrimination [2]. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                656,
+                826,
+                809
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Recently, owing to the increased use of machine learning (ML) to assist in consequential decisions, the topic of quantifying and mitigating ML-based discrimination has attracted interest in both policy and ML. However, while the existing legal doctrine offers qualitative ideas, intervention in an MLbased system requires more concrete formalism. Inspired by the relevant legal concepts, technical papers have proposed several criteria to quantify discrimination. One criterion requires that the fraction given a positive decision be equal across different groups. Another criterion states that a "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                816,
+                828,
+                902
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1711.07076v3 [stat.ML] 11 Jan 2019 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                263,
+                57,
+                717
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "32nd Conference on Neural Information Processing Systems (NeurIPS 2018), Montréal, Canada. "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                922,
+                746,
+                936
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/6644ba757fec1f7e49d5648477415b3c345bcd3103842f7342f50d9f381dc034.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                241,
+                93,
+                532,
+                262
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f707a00d355d2ce0ac7df317c33b052dc1c83727c30d2ba217874765d40cfa6a.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Demonstration of a DLP’s undesirable side effects on a simple example of hiring data (see §4.1). An unconstrained classifier (vertical line) hires candidates based on work experience, yielding higher hiring rates for men than for women. A DLP (dashed diagonal) achieves near-parity by differentiating based on an irrelevant attribute (hair length). The DLP hurts some short-haired women, flipping their decisions to reject, and helps some long-haired men. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                542,
+                98,
+                753,
+                160
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "classifier should be blind to the protected characteristic. Within the technical literature, these criteria are commonly referred to as disparate impact and disparate treatment, respectively. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                369,
+                823,
+                398
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we call these technical criteria impact parity and treatment parity to distinguish them from their legal antecedents. The distinction between technical and legal terminology is important to maintain. While impact and treatment parity are inspired by legal concepts, technical approaches that achieve these criteria may fail to satisfy the underlying legal and ethical desiderata. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                406,
+                823,
+                462
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We demonstrate one such disconnect through DLPs, a class of algorithms designed to simultaneously satisfy treatment- and impact-parity criteria [3–5]. DLPs operate according to the following principle: The protected characteristic may be used during training, but is not available to the model at prediction time. In the earliest such approach the protected characteristic is used to winnow the set of acceptable rules from an expert system [3]. Others incorporate the protected characteristic as either a regularizer, a constraint, or to preprocess the training data [5–7]. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                469,
+                825,
+                554
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "These approaches are grounded in the premise that DLPs are acceptable in cases where using a protected characteristic as a direct input to the model would constitute disparate treatment and thus be impermissible. Indeed, DLPs in some sense operationalize a form of prospective fair “test design” that is well aligned with the ruling in Ricci v. DeStefano [8]. In this paper we investigate the utility of DLPs as a technical solution and present the following cautionary insights: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                561,
+                826,
+                631
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. When protected characteristics are redundantly encoded in the other features, sufficiently powerful DLPs can (indirectly) implement any form of treatment disparity. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. When protected characteristics are partially encoded DLPs induce within-class discrimination based on irrelevant features, and can harm some members of the protected group. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. DLPs provide a suboptimal trade-off between accuracy and impact parity. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "4. While disparate treatment is by definition illegal, the status of treatment disparity is debated [9]. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                638,
+                823,
+                723
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Disparate Learning Processes "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                744,
+                454,
+                762
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To begin our formal description of the prior work, we’ll introduce some notation. A dataset consists of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n"
+                    },
+                    {
+                        "type": "text",
+                        "content": "examples, or data points "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ \\mathbf { x } _ { i } \\in \\mathcal { X } , y _ { i } \\in \\mathcal { Y } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", each consisting of a feature vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and a label "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". A supervised learning algorithm "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f : \\mathcal { X } ^ { n } \\times \\mathcal { Y } ^ { n }  ( \\mathcal { X }  [ 0 , 1 ] )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a mapping from datasets to models. The learning algorithm produces a model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } : \\mathcal { X } \\to \\mathcal { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which given a feature vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", predicts the corresponding output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In this discussion we focus on binary classification "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\mathcal { V } = \\{ 0 , 1 \\} )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                777,
+                826,
+                849
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We consider probabilistic classifiers which produce estimates "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { p } ( { \\bf x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the conditional probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbb { P } ( y = 1 \\mid \\mathbf { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the label given a feature vector x. To make a prediction "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } ( \\mathbf x ) \\in \\mathcal { V }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given an estimated probability "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { p } ( { \\bf x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "a threshold rule is used: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { i } = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "iff "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { p } _ { i } > t"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The optimal choice of the threshold "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t"
+                    },
+                    {
+                        "type": "text",
+                        "content": "depends on the performance metric being optimized. In our theoretical analysis, we consider "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                854,
+                825,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "2 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "optimizing the immediate utility [10], of which classification accuracy (expected 0 − 1 loss) is a special case. We will define this metric more precisely in the next section. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                90,
+                823,
+                119
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In formal descriptions of discrimination-aware ML, a dataset possesses a protected feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z _ { i } \\in { \\mathcal { Z } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", making each example a three-tuple "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( \\mathbf { x } _ { i } , y _ { i } , z _ { i } \\right)"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The protected characteristic may be real-valued, like age, or categorical, like race or gender. The goal of many methods in discrimination-aware ML is not only to maximize accuracy, but also to ensure some form of impact parity. Following related work, we consider binary protected features that divide the set of examples into two groups "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "a"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Our analysis extends directly to settings with more than two groups. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                125,
+                826,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Of the various measures of impact disparity, the two that are the most relevant here are the Calders-Verwer gap and the p-% rule. At a given threshold "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { q _ { z } = \\frac { 1 } { n _ { z } } \\sum _ { i : z _ { i } = z } \\mathbb { 1 } ( \\hat { p } _ { i } > t ) } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n _ { z } ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\textstyle \\sum _ { i } ^ { n } \\mathbb { 1 } ( z _ { i } = z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The Calders-Verwer (CV) gap, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { a } - q _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is the difference between the proportions assigned to the positive class in the advantaged group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "a"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the disadvantaged group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": "[4]. The p- "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule is a related metric[5]. Classifiers satisfy the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { p } \\mathbf { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { b } / q _ { a } \\ge p / 1 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                215,
+                826,
+                289
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Many papers in discrimination-aware ML propose to optimize accuracy (or some other risk) subject to constraints on the resulting level of impact parity as assessed by some metric [3, 7, 11–14]. Use of DLPs presupposes that using the protected feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as a model input is impermissible in this effort. Discarding protected features, however, does not guarantee impact parity [15]. DLPs incorporate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the learning algorithm, but without making it an input to the classifier. Formally, a DLP is a mapping: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { X } ^ { n } \\times \\mathcal { Y } ^ { n } \\times \\mathcal { Z } ^ { n }  ( \\mathcal { X }  \\mathcal { Y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". By definition, DLPs achieve treatment parity. However, satisfying treatment parity in this fashion may still violate disparate treatment. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                294,
+                826,
+                393
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Alternative approaches. Researchers have proposed a number of other techniques for reconciling accuracy and impact parity. One approach consists of preprocessing the training data to reduce the dependence between the resulting model predictions and the sensitive attribute [6, 16–19]. These methods differ in terms of which variables they affect and the degree of independence achieved. [6] proposed flipping negative labels of training examples form the protected group. [20] proposed learning representations (cluster assignments) so that group membership cannot be inferred from cluster membership. [17] and [19] also construct representations designed to be marginally independent from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                406,
+                826,
+                516
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Theoretical Analysis "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                536,
+                377,
+                553
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We present a set of simple theoretical results that demonstrate the optimality of treatment disparity, and highlight some properties of DLPs. We summarize our results as follows: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                566,
+                826,
+                595
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. Direct treatment disparity on the basis of "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "z"
+                            },
+                            {
+                                "type": "text",
+                                "content": "is the optimal strategy for maximizing classification accuracy1 subject to CV and "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p \\%"
+                            },
+                            {
+                                "type": "text",
+                                "content": "constraints. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. When "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "X"
+                            },
+                            {
+                                "type": "text",
+                                "content": "fully encodes "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Z"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", a sufficiently powerful DLP is equivalent to treatment disparity. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                601,
+                823,
+                643
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "In Section 4, we empirically demonstrate a related point: "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. When "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "X"
+                            },
+                            {
+                                "type": "text",
+                                "content": "only partially encodes "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Z"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", a DLP may be suboptimal and can induce intra-group disparity on the basis of otherwise irrelevant features correlated with "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Z"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                650,
+                823,
+                698
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Treatment disparity is optimal Absent impact parity constraints, the Bayes-optimal decision rule for minimizing expected "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 - 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "loss (i.e., maximizing accuracy) is given by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d _ { \\mathrm { u n c o n } } ^ { * } ( \\mathbf { x } , z ) ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta ( p _ { Y | X , Z } ( \\mathbf { x } , z ) \\geq \\bar { 0 . 5 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\delta ( )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is an indicator function. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                713,
+                823,
+                756
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We now show that the optimal decision rules in the CV and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "constrained problems have a similar form. The optimal decision rule will again be based on thresholding "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y | X , Z } ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", but at groupspecific thresholds. These rules can be thought of as operationalizing the following mechanism: Suppose that we start with the classifications of the unconstrained rule "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d _ { \\mathrm { u n c o n } } ^ { * } ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and this results in a CV gap of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { a } - q _ { b } > \\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". To reduce the CV gap to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "we have two mechanisms: We can (i) flip predictions from 0 to 1 in group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and (ii) we can flip predictions from 1 to 0 in group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "a"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The optimal strategy is to perform these flips on group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": "cases that have the highest value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y | X , Z } ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and group "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "a"
+                    },
+                    {
+                        "type": "text",
+                        "content": "cases that have the lowest value of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y | X , Z } ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                761,
+                826,
+                875
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1Our results are all presented in terms of a more general performance metric, of which classification accuracy is a special case. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                883,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "3 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The results in this section adapt the work of [10], who establish optimal decision rules "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": "under exact parity. In that work, the authors characterize the optimal decision rule "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d = d ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that maximizes the immediate utility "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u ( d , c ) = \\mathbb { E } [ Y d ( X , Z ) - c d ( \\bar { X } , Z ) ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( 0 < c < 1 \\right."
+                    },
+                    {
+                        "type": "text",
+                        "content": "), under different exact parity criteria. We begin with a lemma showing that expected classification accuracy has the functional form of an immediate utility function. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                90,
+                823,
+                160
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Lemma 1. Optimizing classification accuracy is equivalent to optimizing immediate utility with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c = 0 . 5"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                160,
+                823,
+                188
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. The expected accuracy of a binary decision rule "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ( X )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be written as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbb { E } [ Y d ( X ) + ( 1 -"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y ) ( { \\bar { 1 } } - d ( X ) ) { \\bar { ] } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Expanding and rearranging this expression gives "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                204,
+                823,
+                233
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbb {E} [ Y d (X) + (1 - Y) (1 - d (X)) ] = \\mathbb {E} (2 Y d (X) - d (X)) + \\mathbb {E} (Y) + 1 = 2 u (d, 0. 5) + \\mathbb {E} (Y) + 1.",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7584cc1c0b778298804a5118ba5751ab4a89867d75696b067154e72340bf08fb.jpg"
+                }
+            },
+            "bbox": [
+                174,
+                239,
+                818,
+                258
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The only term in this expression that depends on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the immediate utility "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Thus the decision rule that maximizes "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": "also maximizes accuracy. □ "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                263,
+                825,
+                292
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We note that the results in this section are related to the recent independent work of [21], who derive Bayes-optimal decision rules under the same parity constraints we consider here, working instead with the cost-sensitive risk, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { C S } ( d ; c ) = \\pi ( 1 - c ) \\mathrm { F N R } ( d ) + ( 1 - \\pi ) c \\mathrm { F P R } ( d )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\pi = \\mathbb { P } ( Y = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". One can show that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u ( d , c ) = - \\mathrm { C S } ( d ; c ) + \\pi ( 1 - c )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and hence the problem of maximizing immediate utility considered here is equivalent to minimizing cost-sensitive risk as in [21]. In our case, it will be more convenient to work with the immediate utility. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                308,
+                825,
+                393
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the next set of results, we follow [10] and assume that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y | X , Z } ( X , Z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", viewed as a random variable, has positive density on [0, 1]. This ensures that the optimal rules are unique and deterministic by disallowing point-masses of probability that would necessitate tie-breaking among observations with equal probability. The first result that we state is a direct corollary of two results in [10]. It considers the case where we desire exact parity, i.e., that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { a } = q _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                398,
+                825,
+                469
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Corollary 2. The optimal decision rules "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { * }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "under various parity constraints have the following form and are unique up to a set of probability zero: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                469,
+                823,
+                497
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. Among rules satisfying statistical parity (the "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "100 \\%"
+                            },
+                            {
+                                "type": "text",
+                                "content": "rule), the optimum is "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\begin{array} { r l } { d ^ { * } ( { \\bf x } , z ) } & { { } = } \\end{array}"
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\delta ( p _ { Y | X , Z } ( \\mathbf { x } , z ) \\geq t _ { z } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", where "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "t _ { z } \\in [ 0 , 1 ]"
+                            },
+                            {
+                                "type": "text",
+                                "content": "are constants that depend only on group membership "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "z"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. Among rules that have equal false positive rates across groups, the optimum is "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "d ^ { * } ( { \\bf x } , z ) ="
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\delta ( p _ { Y | X , Z } ( \\mathbf { x } , z ) \\geq s _ { z } )"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", where "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "s _ { z }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "are constants that depend only on group membership "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "z"
+                            },
+                            {
+                                "type": "text",
+                                "content": "(but are different from "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "t _ { z }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. (1) and (2) continue to hold even in the resource-constrained setting where the overall proportion of cases classified as positive is constrained. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                503,
+                825,
+                602
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. (1) and (2) are direct corollaries of Lemma 1 combined with Thm 3.2 and Prop 3.3 of [10]. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                618,
+                823,
+                633
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The next set of results establishes optimality under general "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and CV rules. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                648,
+                683,
+                662
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 3. Under the same assumptions as above, the optimum among rules that satisfy the CV constraint "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 \\leq q _ { a } - q _ { b } < \\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule also has the form "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { * } ( \\mathbf { x } , z ) = \\delta ( p _ { Y | X , Z } ( \\mathbf { x } , z ) \\geq t _ { z } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t _ { z } ~ \\in ~ [ 0 , 1 ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are constants that depend on the group membership "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and on the choice of constraint parameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or p. The thresholds "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are different for the CV constraint and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                662,
+                826,
+                720
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. Suppose that the optimal solution under the CV or "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule constraint classifies proportions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { a }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the advantaged and disadvantaged groups, respectively, to the positive class. As shown in Corbett-Davies et al. [10], we can rewrite the immediate utility as "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                736,
+                823,
+                779
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "u (d, 0. 5) = \\mathbb {E} [ d (X, Z) (p _ {Y | X, Z} - 0. 5) ].",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/99fc4bdaea49c0cc6649191f044711cec07b54e9dd043c835e8e8169bf381ae5.jpg"
+                }
+            },
+            "bbox": [
+                364,
+                786,
+                629,
+                804
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Thus the utility will be maximized when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { * } ( X , Z ) = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "proportion of individuals in each group that have the highest values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y \\mid X , Z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Since the optimal values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "may differ between the CV-constrained solution and the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "solution, the optimal thresholds may differ as well. □ "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                811,
+                825,
+                854
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our final result shows that a decision rule that does not directly use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as an input variable or for determining thresholds will have lower accuracy than the optimal rule that uses this information. That is, we show that DLPs are suboptimal for trading off accuracy and impact parity. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                869,
+                825,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "4 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Theorem 4. Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { * } ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the optimal decision rule under a the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "C V _ { \\neg } { \\gamma }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "constraint. Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d _ { D L P } ( \\mathbf { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the optimal solution to a DLP. If "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d _ { D L P } ( \\mathbf { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "satisfy CV or p-% constraints with the same "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { a }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the DLP solution results in lower or equal accuracy (equal only if the solutions are the same.) "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                90,
+                823,
+                148
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. From Proposition 3, we know that the unique accuracy-optimizing solution is given by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { * } ( \\check { \\mathbf { x } } , z ) = \\delta ( p _ { Y | X , Z } ( \\mathbf { x } , z ) \\geq t _ { z } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\mathrm { ~ - ~ } q _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "quantile of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y \\mid X , Z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The difference in immediate utility between the two decision rules can be expressed as follows: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                162,
+                823,
+                205
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\mathbb {E} \\left[ d ^ {*} (X, Z) \\left(p _ {Y | X, Z} - . 5\\right) \\right] - \\mathbb {E} \\left[ d _ {D L P} (X) \\left(p _ {Y | X, Z} - . 5\\right) \\right] \\\\ = \\mathbb {E} \\left[ \\left(d ^ {*} (X, Z) - d _ {D L P} (X)\\right) \\left(p _ {Y | X, Z} - 0. 5\\right) \\right] \\\\ = \\mathbb {E} [ p _ {Y | X, Z} -. 5 | d ^ {*} = 1, d _ {D L P} = 0 ] \\mathbb {P} (d ^ {*} = 1, d _ {D L P} = 0) - \\mathbb {E} [ p _ {Y | X, Z} -. 5 | d ^ {*} = 0, d _ {D L P} = 1 ] \\mathbb {P} (d ^ {*} = 0, d _ {D L P} = 1) \\\\ = \\left(\\mathbb {E} \\left[ p _ {Y \\mid X, Z} - . 5 \\mid d ^ {*} = 1, d _ {D L P} = 0 \\right] - \\mathbb {E} \\left[ p _ {Y \\mid X, Z} - . 5 \\mid d ^ {*} = 0, d _ {D L P} = 1 \\right]\\right) \\mathbb {P} \\left(d ^ {*} = 1, d _ {D L P} = 0\\right) \\\\ \\geq 0 \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/3c4d9ffa8f74ee3bec4c3886d25c31f2c381116479dcd813b92e93aac66f42f2.jpg"
+                }
+            },
+            "bbox": [
+                173,
+                210,
+                818,
+                296
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The final inequality follows since "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { * } ( X , Z ) = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the highest values of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y \\mid X , Z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { Y \\mid X , Z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is stochastically greater on the event "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ d ^ { * } = 1 , d _ { D L P } = 0 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "than on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left\\{ d ^ { * } = 0 , d _ { D L P } = 1 \\right\\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Note that equality holds only if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { \\mathbb { P } } ( d ^ { * } = 1 , d _ { D L P } = 0 ) \\bar { = } 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., if the two rules are (almost surely) equivalent. □ "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                304,
+                823,
+                349
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our results continue to hold under “do no harm” constraints, where we require that any individual in the disadvantaged group who was classified as positive under the unconstrained rule "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d _ { \\mathrm { u n c o n s } } ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "remains positively classified. This corresponds to the setting where the proportion of cases in the disadvantaged group classified as positive is constrained to be no lower than the proportion under the unconstrained rule (or no lower than some fixed value "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { a } ^ { \\operatorname* { m i n } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). Such constraints impose an upper bound on the optimal thresholds "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", but do not change the structure of the optimal rules. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                366,
+                825,
+                450
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Functional equivalence when protected characteristic is redundantly encoded. Consider the case where the protected feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is redundantly encoded in the other features x. More precisely, suppose that there exists a known subcomputation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "such that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z = g ( \\mathbf { x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This allows for any function of the data "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f ( \\mathbf { x } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to be represented as a function of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "alone via "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { f } ( \\mathbf { x } ) = f ( \\mathbf { x } , g ( \\mathbf { x } ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". While it remains the case that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { f } ( { \\bf x } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "does not directly use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as an input variable—and thus satisfies treatment parity— "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { f }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "should be no less legally suspect from a disparate treatment perspective than the original function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that uses "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "directly. The main difference for the purpose of our discussion is that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { f }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", resulting from a DLP, may technically satisfy treatment parity, while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f"
+                    },
+                    {
+                        "type": "text",
+                        "content": "does not. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                465,
+                823,
+                583
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "While this form of “strict” redundancy is unlikely, characterizing this edge case is important for considering whether DLPs should have different legal standing vis-a-vis disparate treatment than methods that use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "directly. This is particularly relevant if one thinks of the ‘practitioner’ in question as having discriminatory intent. Furthermore, the partial encoding of the protected attribute is commonplace in settings where discrimination is a concern (as with gender in our experiment in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\ S ~ )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). Indeed, the very premise of DLPs requires that x is significantly correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Moreover, DLPs provide an incentive for practitioners to game the system by adding features that are predictive of the protected attribute but not necessarily of the outcome, as these would improve the DLP’s performance. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                590,
+                825,
+                715
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Within-class discrimination when protected characteristic is partially redundantly encoded. When the protected characteristic is partially encoded in the other features, disparate treatment may induce within-class discrimination by applying the benefit of the affirmative action unevenly, and can even harm some members of the protected class. Next we demonstrate this phenomenon empirically using (synthetically biased) university admissions data and several public datasets. The ease of producing such examples might convince the reader that the varied effects of intervention with a DLP on members of the disadvantaged group raises practice and policy concerns about DLPs. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                731,
+                826,
+                830
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Empirical Analysis "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                849,
+                366,
+                867
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This preceding analysis demonstrates several theoretical advantages to increasing impact parity via treatment disparity: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                883,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "5 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Optimality: As demonstrated for CV score and for "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "p { - } \\%"
+                            },
+                            {
+                                "type": "text",
+                                "content": "rule, intervention via per-group thresholds maximizes accuracy subject to an impact parity constraint. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Rational ordering: Within each group, individuals with higher probability of belonging to the positive class are always assigned to the positive class ahead of those with lower probabilities. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Does no harm to the protected group: The treatment disparity intervention can be constrained to only benefit members of the disadvantaged class. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                174,
+                90,
+                825,
+                174
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "DLPs attempt to produce a classifier that satisfies the parity constraints, by relying upon the proxy features to satisfy the parity metric. Typically, this is accomplished either by introducing constraints to a convex optimization problem, or by adding a regularization term and tuning the corresponding hyper-parameter. Because the CV score and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule are non-convex in model parameters (scores only change when a point crosses the decision boundary), [4, 5] introduce convex surrogates aimed at reducing the correlation between the sensitive feature and the prediction. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                181,
+                823,
+                265
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "These approaches presume that the proxy variables contain information about the sensitive attribute. Otherwise, the parity could only be satisfied via a trivial solution (e.g. assign either everyone or nobody to the positive class). So we must consider two scenarios: (i) the proxy variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "fully encode "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", in which case, a sufficiently powerful DLP will implicitly reconstruct "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", because this gives the optimal solution to the impact-constrained objective; and (ii) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "doesn’t fully capture "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", or the DLP is unable to recover "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from x, in which case the DLP may be sub-optimal, may violate rational ordering within groups, and may harm members of the disadvantaged group. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                270,
+                826,
+                369
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.1 Synthetic data example: work experience and hair length in hiring "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                169,
+                383,
+                674,
+                398
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To begin, we illustrate our arguments empirically with a simple synthetic data experiment. To construct the data, we sample "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "n _ { \\mathrm { a l l } } = 2 0 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "total observations from the data-generating process described below. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "70 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the observations are used for training, and the remaining "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "30 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are reserved for model testing. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                409,
+                823,
+                465
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "z _ {i} \\sim \\operatorname {B e r n o u l l i} (0. 5)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/18613c42b98b5fc1ac87ba990e674d1126fb6762e56e39d6ac2872bf5b113781.jpg"
+                }
+            },
+            "bbox": [
+                398,
+                472,
+                535,
+                488
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname {h a i r} _ {\\text {l e n g t h}} \\mid z _ {i} = 1 \\sim 3 5 \\cdot \\operatorname {B e t a} (2, 2)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c3c2fd29de066f5a7fb18181672cda83cf987cb2b86ce995ed6ac9893bcb92ce.jpg"
+                }
+            },
+            "bbox": [
+                272,
+                489,
+                535,
+                506
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname {h a i r}  \\mid z _ {i} = 0 \\sim 3 5 \\cdot \\operatorname {B e t a} (2, 7)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7f836e40401cd621b1cb20010aaf5aab083cfc91c2f8179ad18c7cc9287dc133.jpg"
+                }
+            },
+            "bbox": [
+                272,
+                508,
+                535,
+                523
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname {w o r k} _ {\\exp_ {i}} \\mid z _ {i} \\sim \\operatorname {P o i s s o n} (2 5 + 6 z _ {i}) - \\operatorname {N o r m a l} (2 0, \\sigma = 0. 2)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/69b0fc04a540f7e96d3bdbed9a65a76d9995ebf66234368a60b380d7fdda8b80.jpg"
+                }
+            },
+            "bbox": [
+                315,
+                525,
+                723,
+                541
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "y _ {i} \\mid \\text {w o r k} \\exp \\sim 2 \\cdot \\text {B e r n o u l l i} (p _ {i}) - 1,",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/8b0061af9068c10f674643bcb4d37bc3d59b4e19dbb134a276e202a19b513ebf.jpg"
+                }
+            },
+            "bbox": [
+                320,
+                542,
+                583,
+                558
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\text {w h e r e} p _ {i} = 1 / (1 + \\exp [ - (- 2 5. 5 + 2. 5 \\text {w o r k} \\cdot \\exp) ])",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9f77320e23898875030352b28c216aa36352b8acd55ee393f88bb42200e08cfe.jpg"
+                }
+            },
+            "bbox": [
+                357,
+                560,
+                707,
+                577
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This data-generating process has the following key properties: (i) the historical hiring process was based solely on the number of years of work experience; (ii) because women on average have fewer years of work experience than men (5 years vs. 11), men have been hired at a much higher rate than women; and (iii) women have longer hair than men, a fact that was irrelevant to historical hiring practice. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                584,
+                823,
+                654
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1 shows the test set results of applying a DLP to the available historical data to equalize hiring rates between men and women. We apply the DLP proposed by Zafar et al. [5], using code available from the authors.2 While the DLP nearly equalizes hiring rates (satisfying a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "10 5 \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule), it does so through a problematic within-class discrimination mechanism. The DLP rule advantages individuals with longer hair over those with shorter hair and considerably longer work experience. We find that several women who would have been hired under historical practices, owing to their "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "^ { 1 2 + }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "years of work experience, would not be hired under the DLP due to their short hair (i.e., their male-like characteristics captured in x). Similarly, several men, who would not have been hired based on work experience alone, are advantaged by the DLP due to their longer hair (i.e., their ‘female-like’ characteristics in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). The DLP violates rational ordering, and harms some of the most qualified individuals in the protected group. Group parity is achieved at the cost of individual unfairness. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                659,
+                826,
+                825
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Granted, we might not expect factors such as hair length to knowingly be used as inputs to a typical hiring algorithm. We construct this toy example to illustrate a more general point: since DLPs do not have direct access to the protected feature, they must infer from the other features which people are most likely to belong to each subgroup. Using the protected feature directly can yield more "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                830,
+                823,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2https://github.com/mbilalzafar/fair-classification/ "
+                    }
+                ]
+            },
+            "bbox": [
+                189,
+                896,
+                596,
+                911
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "6 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/5d8ed17cf00f5ef4d442d4c91f6eff24d418e629591fc61703f13abe747cb2fd.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                181,
+                90,
+                385,
+                210
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c9cb9b5dba569a549ba9e4052ed5c5d52ca46786d4c404223df745725306750d.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                395,
+                90,
+                599,
+                210
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/bdc931e7c6287ad1b892c883a4e85c26e66474a2c405a7d48495cbc0ab895168.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: (left) probability of the sensitive variable versus (unconstrained) admission probability, on unseen test data. Downward triangles indicate individuals rejected only after applying the DLP (“treatment”), while upward triangles indicate individuals accepted only by the DLP. The remaining "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 4 { , } 0 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "blue/yellow dots indicate people whose decisions are not altered. Many students benefiting from the DLP are males who ‘look like’ females based on other features, whereas females who ‘look like’ males are hurt by the DLP. Detail view (center) and summary statistics (right) of the same plot. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                609,
+                90,
+                813,
+                210
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "reasonable policies: For example, by applying per-group thresholds, we could hire the highest rated individuals in each group, rather than distorting rankings within groups based on how female/male individuals appear to be from their other features. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                333,
+                823,
+                377
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.2 Case study: Gender bias in CS graduate admissions "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                396,
+                571,
+                411
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For our next example, we demonstrate a similar result but this time by analyzing real data with synthetic discrimination, to empirically demonstrate our arguments. We consider a sample of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\sim } 9 { , } 0 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "students considered for admission to the MS program of a large US university over an 11-year period. Half of the examples are withheld for testing. Available attributes include basic information, such as country of origin, interest areas, and gender, as well as quantitative fields such as GRE scores. Our data also includes a label in the form of an ‘above-the-bar’ decision provided by faculty reviewers. Admission rates for male and female applicants were observed to be within "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of each other. So, to demonstrate the effects of DLPs, we corrupt the data with synthetic discrimination. Of all women who were admitted, i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z _ { i } = b , y _ { i } = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we flip "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of those labels to 0: giving noisy labels "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { y } _ { i } = y _ { i } \\cdot \\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta \\sim B e r n o u l l i ( . 2 5 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This simulates historical bias in the training data. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                424,
+                826,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We then train three logistic regressors: (1) To predict the (synthetically corrupted) labels "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\bar { y } _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the non-sensitive features "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; (2) The same model, applying the DLP of [5]; and (3) A model to predict the sensitive feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the non-sensitive features "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The data contains limited information that predicts gender, though such predictions can be made better than random "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { \\ A U C { = } } 0 . 5 9"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") due to different rates of gender imbalance across (e.g.) countries and interests. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                570,
+                823,
+                641
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2 (left) shapes our basic intuition for what is happening: Considering the probability of admission for the unconstrained classifier (y-axis), students whose decisions are ‘flipped’ (after applying the fairness constraint) tend to be those close to the decision boundary. Furthermore, students predicted to be male "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { \\dot { X } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-axis) tend to be flipped to the negative class (left half of plot) while students predicted to be female tend to be flipped to the positive class (right half of plot). This is shown in detail in Figure 2 (center and right). Of the 43 students whose decisions are flipped to ‘non-admit,’ 5 are female, each of whom has ‘male-like’ characteristics according to their other features as demonstrated in our synthetic hair-length example. Demonstrated here with real-world data, the DLP both disrupts the within-group ordering and violates the do no harm principle by disadvantaging some women who, but for the DLP, would have been admitted. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                648,
+                826,
+                787
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Comparison with Treatment Disparity. To demonstrate the better performance of per-group thresholding, we implement a simple decision scheme and compare its performance to the DLP. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                805,
+                823,
+                848
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our thresholding rule for maximizing accuracy subject to a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule works as follows: Recall that the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule requires that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { b } / q _ { a } > p / 1 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which can be written as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\frac { p } { 1 0 0 } q _ { a } - q _ { b } < 0 } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We denote the quantity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\frac { p } { 1 0 0 } q _ { a } - q _ { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-gap. To maximize accuracy subject to satisfying the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule, we construct a score that quantifies reduction in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-gap per reduction in accuracy. Starting from the "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                854,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "7 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/73253ae8394dedc7c7f2c1c9f3baecda271905c3ae24a045329e78298413e562.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Statistics of public datasets. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>dataset</td><td>source</td><td>protected feature</td><td>prediction target</td><td>n</td></tr><tr><td>Income</td><td>UCI [22]</td><td>Gender (female)</td><td>income &gt; $50k</td><td>32,561</td></tr><tr><td>Marketing</td><td>UCI [23]</td><td>Status (married)</td><td>customer subscribes</td><td>45,211</td></tr><tr><td>Credit</td><td>UCI [24]</td><td>Gender (female)</td><td>credit card default</td><td>30,000</td></tr><tr><td>Employee Attr.</td><td>IBM [25]</td><td>Status (married)</td><td>employee attrition</td><td>1,470</td></tr><tr><td>Customer Attr.</td><td>IBM [25]</td><td>Status (married)</td><td>customer attrition</td><td>7,043</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                243,
+                112,
+                754,
+                203
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "accuracy-maximizing classifications "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(thresholding at .5), we then flip those predictions which close the gap fastest: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                232,
+                823,
+                260
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "1. Assign each example with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ \\tilde { y } _ { i } = 0 , z _ { i } = b \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ \\tilde { y } _ { i } = 1 , z _ { i } = a \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", a score "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "equal to the reduction in the p-gap divided by the reduction in accuracy: "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                268,
+                823,
+                297
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "equation_inline",
+                                "content": "a"
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { y } _ { i } = 1"
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\begin{array} { r } { c _ { i } = \\frac { p } { 1 0 0 n _ { a } ( 2 \\hat { p } _ { i } - 1 ) } } \\end{array}"
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "(b) For each example in group b with initial yˆi = 0, ci = 1nb(1−2ˆpi) . "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "b"
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { y } _ { i } = 0"
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\begin{array} { r } { c _ { i } = \\frac { 1 } { n _ { b } \\left( 1 - 2 \\hat { p } _ { i } \\right) } } \\end{array}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                181,
+                297,
+                653,
+                335
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2. Flip examples in descending order according to this score until the desired CV-score is reached. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                335,
+                818,
+                351
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "These scores do not change after each iteration, so the greedy policy leads to optimal flips (equivalently, optimal classification thresholds). "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                359,
+                826,
+                388
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The unconstrained classifier achieves a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "7 1 . 4 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". By applying this thresholding strategy, we were able to obtain the same accuracy as the method of [5], but with a higher "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "7 8 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "compared to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "7 7 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Note that on this data, the method of [5] maxes out at a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "7 7 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". That is, the method is limited in what "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\text{‰}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rules may be achieved. By contrast, the thresholding rule can achieve any desired parity level. Subject to a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "< 1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "drop in accuracy relative to the DLP we can achieve a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sim 1 0 0 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                398,
+                823,
+                481
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.3 Examples on public datasets "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                505,
+                410,
+                520
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Finally, for reproducibility, we repeat our experiments from Section 4.2 on a variety of public datasets (code and data will be released at publication time). Again we compare applying our simple thresholding scheme against the fairness constraint of [5], considering a binary outcome and a single protected feature. Basic info about these datasets (including the prediction target and protected feature) is shown in Table 1. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                535,
+                823,
+                604
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The protocol we follow is the same as in Section 4.2. Each of these datasets exhibits a certain degree of bias w.r.t. the protected characteristic (Table 2), so no synthetic discrimination is applied. In Table 2, we compare (1) The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule obtained using the classifier of [5] compared to that of a naïve classifier (column k vs. column h); and (2) The "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule obtained when applying our thresholding strategy from Section 4.2. As before, half of the data are withheld for testing. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                614,
+                823,
+                684
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "First, we note that in most cases, the method of [5] increases the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule (column k vs. h), while maintaining an accuracy similar to that of unconstrained classification (column i vs. f). One exception is the UCI-Credit dataset, in which both the accuracy and the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule simultaneously decrease; although this is against our expectations, note that the optimization technique of [5] is an approximation scheme and does not offer accuracy guarantees in practice (nor can it in general achieve a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "100 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). However these details are implementation-specific and not the focus of this paper. Second, as in Section 4.2, we note that the optimal thresholding strategy is able to offer a strictly larger "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule (column l vs. k) at a given accuracy (in this case, the accuracy from column i). In most cases, we can obtain a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule of (close to) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "100 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "at the given accuracy. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                693,
+                826,
+                819
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We emphasize that the goal of our experiments is not to ‘beat’ the method of [5], or even to comment on any specific discrimination-aware classification scheme. Rather, we emphasize that any DLP is fundamentally upper-bounded (in terms of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\mathrm { - } \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rule/accuracy trade-off) by simple schemes that explicitly consider the protected feature. Our experiments validate this claim, and reveal that the two schemes make strikingly different decisions. While concealing the protected feature from the classifier may be conceptually desirable, practitioners should be aware of the consequences. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                828,
+                823,
+                912
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "8 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                935,
+                503,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/0fbfcf39dc88d96ca575ba08fe2933a6560752dae4588585fbe2e534623dfe81.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Comparison between unconstrained classification, DLPs, and thresholding schemes. Note that the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rules from [5] were the strongest that could be obtained with their method; on complex datasets "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rules of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "100 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are rarely obtained in practice, due to their specific approximation scheme. Employee and Customer datasets are from IBM, the others are UCI datasets. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td colspan=\"5\">basic statistics</td><td colspan=\"3\">naïve (unconstrained) classification</td><td colspan=\"3\">fair (constrained) classification [5]</td><td>optimal threshold</td></tr><tr><td>dataset a</td><td>% prot. b</td><td>% prot. in +&#x27;ve c</td><td>% non-prot. in +&#x27;ve d</td><td>label p-% e</td><td>acc. f</td><td>prot./non-prot. in positive g</td><td>p-% h</td><td>acc. i</td><td>prot./non-prot. in positive j</td><td>p-% k</td><td>p-% at const. acc. l</td></tr><tr><td>Income</td><td>66.9%</td><td>30.6%</td><td>10.9%</td><td>35.8%</td><td>0.85</td><td>8% / 25%</td><td>31%</td><td>0.85</td><td>7% / 24%</td><td>29%</td><td>52.9%</td></tr><tr><td>Marketing</td><td>60.2%</td><td>14.1%</td><td>10.1%</td><td>71.9%</td><td>0.89</td><td>3% / 4%</td><td>82%</td><td>0.89</td><td>3% / 3%</td><td>102%</td><td>100.3%</td></tr><tr><td>Credit</td><td>60.4%</td><td>24.1%</td><td>20.8%</td><td>86.0%</td><td>0.82</td><td>10% / 12%</td><td>88%</td><td>0.74</td><td>21% / 25%</td><td>85%</td><td>100.0%</td></tr><tr><td>Employee</td><td>45.8%</td><td>19.2%</td><td>12.5%</td><td>65.0%</td><td>0.87</td><td>8% / 12%</td><td>65%</td><td>0.86</td><td>8% / 11%</td><td>69%</td><td>100.4%</td></tr><tr><td>Customer</td><td>48.3%</td><td>33.0%</td><td>19.7%</td><td>59.7%</td><td>0.80</td><td>15% / 30%</td><td>49%</td><td>0.79</td><td>16% / 19%</td><td>84%</td><td>100.2%</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                173,
+                152,
+                823,
+                272
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                297,
+                294,
+                314
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Coming to terms with treatment disparity. Legal considerations aside, treatment disparity approaches have three advantages over DLPs: they optimally trade accuracy for representativeness, preserve rankings among members of each group, and do no harm to members of the disadvantaged group. In addition, treatment disparity has another advantage: by setting class-dependent thresholds, it’s easier to understand how treatment disparity impacts individuals. It seems plausible that policy-makers could reason about thresholds to decide on the right trade-off between group equality and individual fairness. By contrast the tuning parameters of DLPs may be harder to reason about from a policy standpoint. Several key challenges remain. Our theoretical arguments demonstrate that thresholding approaches are optimal in the setting where we assume complete knowledge of the data-generating distribution. It is not always clear how best to realize these gains in practice, where imbalanced or unrepresentative datasets can pose a significant obstacle to accurate estimation. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                325,
+                826,
+                479
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Separating estimation from decision-making. In the context of algorithmic, or algorithmsupported decision-making, it’s often useful to obtain not just a classification, but also an accurate probability estimate. These estimates could then be incorporated into the decision-theoretic part of the pipeline where appropriate measures could be taken to align decisions with social values. By intervening at the modeling phase, DLPs distort the predicted probabilities themselves. It’s not clear what the outputs of the resulting classifiers actually signify. In unconstrained learning approaches, even if the label itself may reflect historical prejudice, one at least knows what is being estimated. This leaves open the possibility of intervening at decision time to promote more equal outcomes. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                491,
+                823,
+                603
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Fairness beyond disparate impact How best to quantify discrimination and unfairness remains an important open question. The CV scores and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p - \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "rules offer one set of definitions, but there are many other parity criteria to which our results do not directly apply, e.g., equality of opportunity [13]. Other notions of fairness and the trade-offs between them have been studied [14, 26–29]. In a recent paper, Zafar et al. [30] depart from parity-based definitions and propose instead a preference-based notion of fairness. Dwork et al. [11] address the problem of how best to incorporate information about protected characteristics for several of these other fairness criteria. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                616,
+                823,
+                713
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Problematically, research into fairness in ML is often motivated by the case in which our ground-truth data is tainted, capturing existing discriminatory patterns. Characterizing different forms of data bias, how to detect them, and how to draw valid inference from such data remain important outstanding challenges. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                720,
+                823,
+                777
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Even in settings where treatment disparity in favor of disadvantaged groups is an acceptable solution, questions remain of “how”, “how much?” and “when?”. While in some cases treatment disparity may arguably be correcting for omitted variable bias historical discrimination, in other settings it may be viewed as itself a form of discrimination. For example, in the United States, Asian students are simultaneously over-represented and discriminated against in higher education [2]. Such policy judgments require a keen understanding and awareness of the social and historical context in which the algorithms are developed and meant to operate. Recent work on identifying proxy discrimination [31] and causal formulations of fairness [32–34] offer some promising approaches to translating such understanding into technological solutions. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                786,
+                823,
+                911
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "9 "
+                    }
+                ]
+            },
+            "bbox": [
+                491,
+                935,
+                504,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                173,
+                89,
+                269,
+                104
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "https://www.nytimes.com/2017/08/02/us/affirmative-action-battle-has-a-new-focus-asian-americ "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                207,
+                165,
+                1000,
+                179
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[1] Civil rights act of 1964, 1964. Accessed on September 11th, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[2] Anemona Hartocollis and Stepanie Saul. Affirmative action battle has a new focus: Asian americans. 2017. URL "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[3] Dino Pedreshi, Salvatore Ruggieri, and Franco Turini. Discrimination-aware data mining. In KDD, 2008. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[4] Toshihiro Kamishima, Shotaro Akaho, and Jun Sakuma. Fairness-aware learning through regularization approach. In ICDM Workshops, 2011. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[5] Muhammad Bilal Zafar, Isabel Valera, Manuel Gomez Rodriguez, and Krishna P Gummadi. Fairness constraints: Mechanisms for fair classification. In AISTATS, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[6] Faisal Kamiran and Toon Calders. Classifying without discriminating. In Computer, Control and Communication, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[7] Faisal Kamiran, Toon Calders, and Mykola Pechenizkiy. Discrimination aware decision tree learning. In ICDM, 2010. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[8] Pauline Kim. Auditing algorithms for discrimination. 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[9] Pauline T Kim. Data-driven discrimination at work. William & Mary Law Review, 58(3), 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[10] Sam Corbett-Davies, Emma Pierson, Avi Feller, Sharad Goel, and Aziz Huq. Algorithmic decision making and the cost of fairness. arXiv preprint arXiv:1701.08230, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[11] Cynthia Dwork, Nicole Immorlica, Adam Tauman Kalai, and Max Leiserson. Decoupled classifiers for fair and efficient machine learning. arXiv preprint arXiv:1707.06613, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[12] Yahav Bechavod and Katrina Ligett. Learning fair classifiers: A regularization-inspired approach. arXiv preprint arXiv:1707.00044, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[13] Moritz Hardt, Eric Price, Nati Srebro, et al. Equality of opportunity in supervised learning. In NIPS, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[14] Ya’acov Ritov, Yuekai Sun, and Ruofei Zhao. On conditional parity as a notion of nondiscrimination in machine learning. arXiv preprint arXiv:1706.08519, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[15] Cynthia Dwork, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Richard Zemel. Fairness through awareness. In Innovations in Theoretical Computer Science Conference, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[16] Faisal Kamiran and Toon Calders. Data preprocessing techniques for classification without discrimination. Knowledge and Information Systems, 33(1):1–33, 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[17] Michael Feldman, Sorelle A Friedler, John Moeller, Carlos Scheidegger, and Suresh Venkatasubramanian. Certifying and removing disparate impact. In KDD, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[18] Philip Adler, Casey Falk, Sorelle A Friedler, Gabriel Rybeck, Carlos Scheidegger, Brandon Smith, and Suresh Venkatasubramanian. Auditing black-box models by obscuring features. arXiv preprint arXiv:1602.07043, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[19] James E Johndrow and Kristian Lum. An algorithm for removing sensitive information: application to race-independent recidivism prediction. arXiv preprint arXiv:1703.04957, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[20] Rich Zemel, Yu Wu, Kevin Swersky, Toni Pitassi, and Cynthia Dwork. Learning fair representations. In ICML, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[21] Aditya Menon and Robert Williamson. The cost of fairness in binary classification. In Fairness, Accountability and Transparency, 2018. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[22] Ron Kohavi. Scaling up the accuracy of naive-bayes classifiers: a decision-tree hybrid. In KDD, 1996. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                173,
+                112,
+                826,
+                910
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "10 "
+                    }
+                ]
+            },
+            "bbox": [
+                490,
+                935,
+                508,
+                946
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[23] S. Moro, P. Cortez, and P. Rita. A data-driven approach to predict the success of bank telemarketing. Decision Support Systems, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[24] I. C. Yeh and C. H. Lien. The comparisons of data mining techniques for the predictive accuracy of probability of default of credit card clients. Expert Systems with Applications, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[25] IBM Watson analytics blog. https://www.ibm.com/communities/analytics/watson-analytics-blog/. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[26] Matthew Joseph, Michael Kearns, Jamie Morgenstern, Seth Neel, and Aaron Roth. Rawlsian fairness for machine learning. arXiv preprint arXiv:1610.09559, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[27] Jon Kleinberg, Sendhil Mullainathan, and Manish Raghavan. Inherent trade-offs in the fair determination of risk scores. arXiv preprint arXiv:1609.05807, 2016. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[28] Alexandra Chouldechova. Fair prediction with disparate impact: A study of bias in recidivism prediction instruments. Big Data, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[29] Richard Berk, Hoda Heidari, Shahin Jabbari, Michael Kearns, and Aaron Roth. Fairness in criminal justice risk assessments: The state of the art. arXiv preprint arXiv:1703.09207, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[30] Muhammad Bilal Zafar, Isabel Valera, Manuel Gomez Rodriguez, Krishna P Gummadi, and Adrian Weller. From parity to preference-based notions of fairness in classification. arXiv preprint arXiv:1707.00010, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[31] Anupam Datta, Matt Fredrikson, Gihyuk Ko, Piotr Mardziel, and Shayak Sen. Proxy nondiscrimination in data-driven systems. arXiv preprint arXiv:1707.08120, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[32] Razieh Nabi and Ilya Shpitser. Fair inference on outcomes. arXiv preprint arXiv:1705.10378, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[33] Niki Kilbertus, Mateo Rojas-Carulla, Giambattista Parascandolo, Moritz Hardt, Dominik Janzing, and Bernhard Schölkopf. Avoiding discrimination through causal reasoning. arXiv preprint arXiv:1706.02744, 2017. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[34] Matt J Kusner, Joshua R Loftus, Chris Russell, and Ricardo Silva. Counterfactual fairness. arXiv preprint arXiv:1703.06856, 2017. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                90,
+                944,
+                547
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": []
+            },
+            "bbox": [
+                490,
+                935,
+                506,
+                946
+            ]
+        }
+    ]
+]

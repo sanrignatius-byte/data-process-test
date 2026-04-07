@@ -1,0 +1,78 @@
+%!TEX root=../main.tex
+\section{Discussion and Conclusion}
+
+  We have observed cases in which calibration and relaxed Equalized Odds
+  are compatible and cases where they
+  are not. When it is feasible, the penalty of equalizing cost is amplified if
+  the base rates between groups differ significantly. This is expected,
+  as base rate differences are what give rise to cost-disparity in the calibrated setting.
+  Seeking equality with respect to a single error rate (e.g. false-negatives, as in the income
+  prediction experiment) will necessarily increase disparity with respect to the
+  other error. This may be tolerable (in the income prediction case, some
+  employees will end up over-paid) but could also be highly problematic (e.g.
+  in criminal justice settings).
+%
+  % metric, while simultaneously increasing error.
+  % If we choose to equalize one of the error rates while maintaining calibration,
+  % then we will necessarily increase disparity with respect to the other error
+  % metric, while simultaneously increasing error.
+%
+  Finally, we have observed that the calibrated relaxation is infeasible when the best (discriminatory)
+  classifiers are not far from the trivial classifiers (leaving little room for interpolation). In such settings,
+  we see that calibration is completely incompatible with an equalized error
+  constraint.
+
+In summary, we conclude that maintaining cost parity \emph{and} calibration is
+desirable yet often difficult in practice. Although we provide an algorithm to
+effectively find the unique feasible solution to both constraints, it is
+inherently based on randomly exchanging the predictions of the better
+classifier with the trivial base rate. Even if fairness is reached in
+expectation, for an individual case, it may be hard  to accept that
+occasionally consequential decisions are made by randomly withholding
+predictive information, irrespective of a particular person's feature representation. In this
+paper we argue that, as long as calibration is required, no lower-error solution can be achieved.
+
+
+  % The only setting in which the calibrated framework yields reasonable results is
+  % when we are concerned with matching a weighed combination of error rates.
+  % In this setting, we are able to maintain calibration, while also introducing
+  % less error than if we explicitly matched both error rates. However, this relaxation
+  % only makes sense in certain real-world scenarios. In the criminal recidivism
+  % example, it would be possible to achieve this notion of non-discrimination by
+  % disproportionately assigning false-positive errors to one group while assigning
+  % false-negative errors to the other (as is the case now). While both errors
+  % are unfavorable to society at large, it is fair to argue that false-negative errors
+  % are favorable to the defendants while false-positive errors are especially
+  % detrimental. Therefore, the weighted cost notion of non-discrimination is
+  % not applicable to all settings, and in some cases could incur new types of
+  % discrimination.
+
+
+% An increasing amount of attention is being devoted to the issue of fairness in machine learning.  In this paper we specifically investigate settings in which calibration and
+% disparity of errors are important.
+% We introduce \methodname{}, a relaxation of Equalized Odds that maintains
+% classifier calibration. To achieve this notion of non-discrimination, we
+% introduce a post-processing method which is not only
+% feasible but optimal, and we also show fundamental limitations on how many constraints
+% calibrated classifiers can satisfy. Finally, we empirically evaluate the trade-offs between
+% this calibrated notion of non-discrimination and the original Equalized Odds framework.
+% It is important to note that the intent of our framework is not to resolve the
+% tradeoffs inherent to fair classification; we instead seek to make explicit a
+% space of possible solutions. This gives a practitioner the opportunity to
+% choose which framework is most applicable to the scenario he or she faces.
+
+% While our method -- and indeed any method that seeks to achieve similar
+% constraints -- necessarily trades off performance to reduce disparity, we note
+% that this tradeoff will incentivize the designer of a classifier to
+% reduce errors for the group that suffers higher cost, as the overall
+% performance of the system is limited by the performance on the worse-off group.
+% This might motivate the collection of richer features or more
+% data for the group with higher cost, leading to lower cost classifiers.
+%
+% Our work leads to several open questions related to fairness in
+% classification. While our results hold for a broad class of disparity
+% constraints, it would be interesting to further characterize
+% constrained calibrated classification.
+% Furthermore, we propose the more general problem of investigating tradeoffs
+% between calibration and other constraints when they are not simultaneously
+% satisfiable.

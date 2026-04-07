@@ -1,0 +1,4437 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Mitigating Unwanted Biases with Adversarial Learning "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                218,
+                119,
+                779,
+                142
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Brian Hu Zhang "
+                    }
+                ]
+            },
+            "bbox": [
+                161,
+                166,
+                305,
+                183
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Stanford University "
+                    }
+                ]
+            },
+            "bbox": [
+                166,
+                183,
+                299,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Stanford, CA "
+                    }
+                ]
+            },
+            "bbox": [
+                187,
+                196,
+                279,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "bhz@stanford.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                210,
+                295,
+                223
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Blake Lemoine "
+                    }
+                ]
+            },
+            "bbox": [
+                434,
+                166,
+                563,
+                181
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Google "
+                    }
+                ]
+            },
+            "bbox": [
+                472,
+                183,
+                524,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Mountain View, CA "
+                    }
+                ]
+            },
+            "bbox": [
+                431,
+                196,
+                565,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "lemoine@google.com "
+                    }
+                ]
+            },
+            "bbox": [
+                424,
+                210,
+                571,
+                224
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Margaret Mitchell "
+                    }
+                ]
+            },
+            "bbox": [
+                684,
+                166,
+                841,
+                181
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Google "
+                    }
+                ]
+            },
+            "bbox": [
+                736,
+                183,
+                787,
+                196
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Mountain View, CA "
+                    }
+                ]
+            },
+            "bbox": [
+                696,
+                196,
+                828,
+                209
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "mmitchellai@google.com "
+                    }
+                ]
+            },
+            "bbox": [
+                676,
+                210,
+                848,
+                224
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                250,
+                273,
+                313,
+                286
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Machine learning is a tool for building models that accurately represent input training data. When undesired biases concerning demographic groups are in the training data, well-trained models will reflect those biases. We present a framework for mitigating such biases by including a variable for the group of interest and simultaneously learning a predictor and an adversary. The input to the network X, here text or census data, produces a prediction Y, such as an analogy completion or income bracket, while the adversary tries to model a protected variable Z, here gender or zip code. "
+                    }
+                ]
+            },
+            "bbox": [
+                99,
+                295,
+                462,
+                422
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The objective is to maximize the predictors ability to predict Y while minimizing the adversary’s ability to predict Z. Applied to analogy completion, this method results in accurate predictions that exhibit less evidence of stereotyping Z. When applied to a classification task using the UCI Adult (Census) Dataset, it results in a predictive model that does not lose much accuracy while achieving very close to equality of odds (Hardt, et al., 2016). The method is flexible and applicable to multiple definitions of fairness as well as a wide range of gradient-based learning models, including both regression and classification tasks. "
+                    }
+                ]
+            },
+            "bbox": [
+                99,
+                424,
+                462,
+                563
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                210,
+                584,
+                351,
+                598
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Machine learning leverages data to build models capable of assessing the labels and properties of novel data. Unfortunately, the available training data frequently contains biases with respect to things that we would rather not use for decision making. Machine learning builds models faithful to training data and can lead to perpetuating these undesirable biases. For example, systems designed to predict creditworthiness and systems designed to perform analogy completion have been demonstrated to be biased against racial minorities and women respectively. Ideally we would be able to build a model which captures exactly those generalizations from the data which are useful for performing some task which are not discriminatory in a way which the people building those models consider unfair. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                603,
+                478,
+                797
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Work on training machine learning systems that output fair decisions has defined several useful measurements for fairness: Demographic Parity, Equality of Odds, and Equality of Opportunity. These can be imposed as constraints or "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                797,
+                478,
+                854
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "incorporated into a loss function in order to mitigate disproportional outcomes in the system’s output predictions regarding a protected demographic, such as sex. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                273,
+                911,
+                316
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we examine these fairness measures in the context of adversarial debiasing. We consider supervised deep learning tasks in which the task is to predict an output variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given an input variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", while remaining unbiased with respect to some variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We refer to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the protected variable. For these learning systems, the predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\hat { Y } } = f ( X )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be constructed as (input, output, protected) tuples "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( X , Y , Z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f ( X )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is usually given access to the protected variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", though this is not strictly necessary. This construction allows the determination of which types of bias are considered undesirable for a particular application to be chosen through the specification of the protected variable. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                316,
+                911,
+                498
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We speak to the concept of mitigating bias using the known term debiasing1, following definitions provided by Hardt et al. (2016) and refined by Beutel et al. (2017). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                500,
+                911,
+                541
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 1. DEMOGRAPHIC PARITY. A predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "satisfies demographic parity if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are independent. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                549,
+                911,
+                580
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This means that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\hat { Y } = \\hat { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is equal for all values of the protected variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z \\colon P ( \\hat { Y } = \\hat { y } ) = P ( \\hat { Y } = \\hat { y } | Z = z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                588,
+                911,
+                621
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 2. EQUALITY OF ODDS. A predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "satisfies equality of odds if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are conditionally independent given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                628,
+                911,
+                672
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This means that, for all possible values of the true label Y , "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\hat { Y } = \\hat { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the same for all values of the protected variable: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\hat { Y } = \\hat { y } | Y = y ) = P ( \\hat { Y } = \\hat { y } | Z = z , Y = y )"
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                680,
+                911,
+                728
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Definition 3. EQUALITY OF OPPORTUNITY. If the output variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is discrete, a predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "satisfies equality of opportunity with respect to a class "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are independent conditioned on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y = y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                733,
+                911,
+                794
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This means that, for a particular value of the true label "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\hat { Y } = \\hat { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the same for all values of the protected variable: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( \\hat { Y } = \\hat { y } | Y = y ) = P ( \\hat { Y } = \\hat { y } | Z = z , Y = y )"
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                800,
+                911,
+                848
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "Copyright "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\circledcirc"
+                    },
+                    {
+                        "type": "text",
+                        "content": "2018, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                861,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1Note that “debias” may not be quite the right word, as all bias is not necessarily removed. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                861,
+                911,
+                888
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1801.07593v1 [cs.LG] 22 Jan 2018 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                268,
+                57,
+                705
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We present an adversarial technique for achieving whichever one of these definitions is desired.2 A predictor "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f"
+                    },
+                    {
+                        "type": "text",
+                        "content": "will be trained to model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as accurately as possible while satisfying one of the above equality constraints. Demographic parity will be achieved by introducing an adversary "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which will attempt to predict a value for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The gradient of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "will then be incorporated into the weight update rule of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f"
+                    },
+                    {
+                        "type": "text",
+                        "content": "so as to reduce the amount of information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "transmitted through "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Equality of odds will be achieved by also giving "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "access to the true label "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", thereby limiting any information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains beyond the information already contained in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                68,
+                478,
+                239
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We consider the case where the protected variable is a discrete feature present in the training set as well as the case in which the protected variable must be inferred from latent semantics (in particular, gender from word embeddings). In order to accomplish the latter we adapt a technique presented by Bolukbasi et al. (2016) to define a subspace capturing the semantics of the protected variable, and then train a model to perform a word analogies task accurately, while unbiased on this protected variable. A consequence of this technique is that the network learns “debiased” embeddings, embeddings that have the semantics of the protected variable removed. These embeddings are still able to perform the analogy task well, but are better at avoiding problematic examples such as those shown in Bolukbasi et al. (2016). "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                241,
+                478,
+                435
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Results on the UCI Adult Dataset demonstrate the technique we introduce allows us to train a model that achieves equality of odds to within "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on both protected groups. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                436,
+                478,
+                478
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We also compare with the related previous work of Beutel et al. (2017), and find we are able to better equalize the differences between the two groups, measured by both False Positive Rate and False Negative Rate (1 - True Positive Rate), although note that the previous work performs better overall for False Negative Rate. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                478,
+                478,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We provide some discussion on caveats pertaining to this approach, difficulties in training these models that are shared by many adversarial approaches, as well as some discussion on difficulties that the fairness constraints introduce. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                561,
+                480,
+                617
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                204,
+                633,
+                357,
+                648
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "There has been significant work done in the area of debiasing various specific types of data or predictor. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                655,
+                478,
+                683
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Debiasing word embeddings: Bolukbasi et al. (2016) devises a method to remove gender bias from word embeddings. The method relies on a lot of human input; namely, it needs a large “training set” of gender-specific words. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                683,
+                478,
+                739
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Simple models: Lum and Johndrow (2016) demonstrate that removing the protected variable from the training data fails to yield a debiased model (since other variables can be highly correlated with the protected variable), and devise a method for learning fair predictive models in cases when the learning model is simple (e.g. linear regression). Hardt et al. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                739,
+                478,
+                824
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/759f8767372b07b099604e651b3874f51b1e4f3257228acecc592d3d8cbf67eb.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: The architecture of the adversarial network. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                519,
+                66,
+                915,
+                131
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "(2016) discuss the shortcomings of focusing solely on DE-MOGRAPHIC PARITY, present alternate definitions of fairness, and devise a method for deriving an unbiased predictor from a biased one, in cases when both the output variable and the protected variable are discrete. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                186,
+                911,
+                255
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Adversarial training: Goodfellow et al. (2014) pioneered the technique of using multiple networks with competing goals to force the first network to “deceive” the second network, applying this method to the problem of creating reallife-like pictures. Beutel et al. (2017) apply an adversarial training method to achieve EQUALITY OF OPPORTUNITY in cases when the output variable is discrete. They also discuss the ability of the adversary to be powerful enough to enforce a fairness constraint even when it has access to a very small training sample. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                256,
+                913,
+                396
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Adversarial Debiasing "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                602,
+                409,
+                825,
+                426
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We begin with a model, which we call the predictor, trained to accomplish the task of predicting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "X"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". As in Figure 1, we assume that the model is trained by attempting to modify weights "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to minimize some loss "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { P } ( \\hat { y } , y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", using a gradient-based method such as stochastic gradient descent. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                429,
+                911,
+                500
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The output layer of the predictor is then used as an input to another network called the adversary which attempts to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This is part of the network corresponds to the discriminator in a typical GAN (Goodfellow et al. 2014). We will suppose the adversary has loss term "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( \\hat { z } , z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and weights "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Depending on the definition of fairness being achieved, the adversary may have other inputs. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                500,
+                913,
+                597
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• For DEMOGRAPHIC PARITY, the adversary gets the predicted label "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". Intuitively, this allows the adversary to try to predict the protected variable using nothing but the predicted label. The goal of the predictor is to prevent the adversary from doing this. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• For EQUALITY OF ODDS, the adversary gets "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "and the true label "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Y"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• For EQUALITY OF OPPORTUNITY on a given class "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "y"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", we can restrict the training set of the adversary to training examples where "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Y = { \\mathfrak { y } }"
+                            },
+                            {
+                                "type": "text",
+                                "content": ".3 "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                601,
+                913,
+                757
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In order for gradients to propagate correctly, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "above refers to the output layer of the network, not to the discrete prediction; for example, for a classification problem, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "could refer to the output of the softmax layer. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                763,
+                911,
+                821
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We update "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to minimize "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "at each training time step, according to the gradient "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\nabla _ { U } L _ { A }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We modify "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W"
+                    },
+                    {
+                        "type": "text",
+                        "content": "according "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                821,
+                911,
+                851
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2Achieving equality of odds and demographic parity are generally incongruent goals. See also Kleinberg, Mullainathan, and Raghavan (2016) for incongruency between calibration and equalized odds. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                835,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3This last technique of restricting the training set is discussed at length by Beutel et al. (2017), so we only mention it here. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                861,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2d20ec3859900703a01908d6ca746d361d0e418b568529db4515a4f627bc832a.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Diagram illustrating the gradients in Eqn. 1 and the relevance of the projection term "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { p r o j } _ { h } g"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Without the projection term, in the pictured scenario, the predictor would move in the direction labelled "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g + h"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in the diagram, which actually helps the adversary. With the projection term, the predictor will never move in a direction that helps the adversary. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                89,
+                66,
+                482,
+                143
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "to the expression: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                266,
+                202,
+                279
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\nabla_ {W} L _ {P} - \\operatorname {p r o j} _ {\\nabla_ {W} L _ {A}} \\nabla_ {W} L _ {P} - \\alpha \\nabla_ {W} L _ {A} \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2b0900777f7515844721dbc301589a6662c1b1458b11d6d77a12037dcf093d90.jpg"
+                }
+            },
+            "bbox": [
+                143,
+                287,
+                478,
+                306
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a tuneable hyperparameter that can vary at each time step and we define "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { p r o j } _ { v } x = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                311,
+                478,
+                339
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The middle term p "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { r o j } _ { \\nabla _ { W } L _ { A } } \\nabla _ { W } L _ { P }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "prevents the predictor from moving in a direction that helps the adversary decrease its loss while the last term, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\nabla _ { W } L _ { A }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", attempts to increase the adversary’s loss. Without the projection term, it is possible for the predictor to end up helping the adversary (see Fig. 2). Without the last term, the predictor will never try to hurt the adversary, and, due to the stochastic nature of many gradient-based methods, will likely end up helping the adversary anyway. The result is that when training is completed the desired definition of equality should be satisfied. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                339,
+                478,
+                478
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Notice that our definitions and method make no assumptions about the nature of the output and protected variables: in particular, they work with both regression and classification models, as well as with both discrete and continuous protected variables. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                478,
+                480,
+                547
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Properties "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                218,
+                560,
+                344,
+                577
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We note several properties of the above method that we believe distinguish it from past work. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                580,
+                478,
+                609
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. Generality: The above method can be used to enforce DEMOGRAPHIC PARITY, EQUALITY OF ODDS, or EQUALITY OF OPPORTUNITY as described in Hardt et al. (2016). Further, it applies without modification to the cases when the output variable and/or protected variable are continuous instead of discrete. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. Model-agnostic: The adversarial approach described can be applied regardless of how simple or complex the predictor’s model is, as long as the model is trained using a gradient-based method, as many modern learning models are. Further, as we will discuss later, at least in some situations, we suggest that the adversary does not need to be nearly as complex as the predictor—a simple adversary can be used with a complex predictor. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. Optimality: Under certain conditions, we show that if the predictor converges, it must converge to a model that satisfies the desired fairness definition. Since the predictor also attempts to decrease the prediction loss "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "L _ { P }"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", the predictor should still perform well on the target task. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                614,
+                480,
+                888
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Theoretical Guarantees "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                599,
+                66,
+                830,
+                82
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 1. Let the predictor, the adversary, and their weights W , "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be defined according to Section 3 Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( W , U )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the adversary’s loss, convex in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", concave in W ,4 and continuously differentiable everywhere. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                85,
+                913,
+                142
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Suppose that: "
+                    }
+                ]
+            },
+            "bbox": [
+                532,
+                142,
+                627,
+                157
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. When the predictor’s weights are "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "W _ { 0 }"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", the predictor gives the same output "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "regardless of input "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "X"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". (For example, when "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "W _ { 0 } = 0"
+                            },
+                            {
+                                "type": "text",
+                                "content": "). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. There are some weights "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "U _ { 0 }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "that minimize "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "L _ { A }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "when the weights for "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "have no effect on the output: For all "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "W"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "L _ { A } ( W , U _ { 0 } ) = \\operatorname* { m i n } _ { U } L _ { A } ( W _ { 0 } , U )"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. Predictor and adversary converge to "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "W ^ { * }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "and "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "U ^ { * }"
+                            },
+                            {
+                                "type": "text",
+                                "content": "respectively. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                511,
+                160,
+                913,
+                281
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Then, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( W ^ { * } , U ^ { * } ) = L _ { A } ( W ^ { * } , U _ { 0 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". That is, the adversary gains no advantage from using the weights for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                285,
+                913,
+                316
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. Since the adversary converges, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( W ^ { * } , U ^ { * } ) \\ \\leq"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( W ^ { * } , U _ { 0 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ": otherwise, since "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is convex in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the adversary’s weights would move toward "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "U _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In other words, the adversary’s minimum is the point at which the adversary gains an advantage from using "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Similarly, since the predictor converges, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( W ^ { * } , U ^ { * } ) \\ge L _ { A } ( W _ { 0 } , \\bar { U } ^ { * } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ": Otherwise, the predictor would be able to increase the adversary’s loss by moving toward "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and the projection term and negative weight on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\nabla _ { W } L _ { A }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Eqn. 1 would push the predictor to move towards 0. Then: "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                324,
+                913,
+                467
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} L _ {A} \\left(W ^ {*}, U _ {0}\\right) \\geq L _ {A} \\left(W ^ {*}, U ^ {*}\\right) \\quad (\\text {a s}) \\\\ \\geq L _ {A} \\left(W _ {0}, U ^ {*}\\right) \\quad (\\text {a s}) \\\\ \\geq L _ {A} \\left(W _ {0}, U _ {0}\\right) \\quad (\\text {b y}) \\\\ = L _ {A} \\left(W ^ {*}, U _ {0}\\right) \\quad (\\text {b y}) \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9f8e3ace55aab73d63ca746af46d121ebe5d7f6f526dbdeaa41ece8e4f5065a6.jpg"
+                }
+            },
+            "bbox": [
+                531,
+                474,
+                880,
+                542
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "so we must have "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "L _ { A } ( W ^ { * } , U ^ { * } ) = L _ { A } ( W ^ { * } , U _ { 0 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                550,
+                831,
+                566
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/5946d1183f7977c51f5d0cf2f81f9d55235e3971c44f7736ca190dcfe572804a.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                895,
+                550,
+                911,
+                561
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Note that, in this proof, the adversary can be operating in a few different ways, as long as it is given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as one of its inputs; for example, for demographic parity, it could be given only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; for equality of odds, it can be given both "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                574,
+                913,
+                647
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We will show in the next propositions that the adversary gaining no advantage from information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is exactly the condition needed to guarantee that desired definitions of equality are satisfied. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                647,
+                913,
+                705
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 2. Let the training data be comprised of triples "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( X , { \\bar { Y } } , Z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "drawn according to some distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Suppose: "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                709,
+                913,
+                753
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. The protected variable "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Z"
+                            },
+                            {
+                                "type": "text",
+                                "content": "is discrete. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. The adversary is trained for DEMOGRAPHIC PARITY; i.e. the adversary is given only the prediction "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { y }"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                513,
+                756,
+                913,
+                801
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "4We understand that these assumptions are not satisfied in most use cases involving neural networks; however, as with most theoretical analyses of machine learning models (see, for example, Goodfellow et al. (2014) or Kingma and Ba (2014); the former makes even stronger assumptions), assumptions of concavity are necessary for any proofs to work "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                811,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. The adversary is strong enough that, at convergence, it has learned a randomized function A that minimizes the cross-entropy loss "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\mathbb { E } _ { ( x , y , z ) \\sim D } [ - \\log P ( A ( \\hat { y } ) = z ) ]"
+                            },
+                            {
+                                "type": "text",
+                                "content": "; i.e. the adversary in fact achieves the optimal accuracy with which you can predict "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Z"
+                            },
+                            {
+                                "type": "text",
+                                "content": "from "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "\\hat { Y }"
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "4. The predictor completely fools the adversary; in particular, the adversary achieves loss "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "H ( Z )"
+                            },
+                            {
+                                "type": "text",
+                                "content": ", the entropy of "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "Z"
+                            },
+                            {
+                                "type": "text",
+                                "content": ". "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                78,
+                68,
+                478,
+                172
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Then the predictor satisfies DEMOGRAPHIC PARITY; i.e.,"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y } \\perp Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "."
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                176,
+                478,
+                208
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. Notice that if the adversary draws "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A ( \\hat { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "according to the distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z | \\hat { Y } = \\hat { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then its loss is exactly the conditional entropy "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                219,
+                480,
+                266
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} H (Z | \\hat {Y}) = \\mathbb {E} [ - \\log P (Z = z | \\hat {Y} = \\hat {y}) ] \\\\ = \\mathbb {E} [ - \\log P (A (\\hat {y}) = z | \\hat {Y} = \\hat {y}) ] \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9a4ead8bc8b746299155fe33bd5dcabd0d2579a0f53a8b3109b4600d1827f4ea.jpg"
+                }
+            },
+            "bbox": [
+                138,
+                273,
+                419,
+                313
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where the expectation is taken over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( x , y , z ) \\sim D"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Now suppose for contradiction that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is dependent on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H ( Z | \\hat { Y } ) < H ( Z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so the adversary can achieve loss less than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H ( Z )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", contradicting assumption (4). □ "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                319,
+                480,
+                383
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proposition 3. If assumptions (2)-(4) above are replaced with the analogous equality of odds assumptions; in particular, that the adversary is given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and the adversary cannot achieve loss better than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H ( Z | Y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "then the predictor will satisfy EQUALITY OF ODDS; i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( { \\hat { Y } } \\bot Z ) | Y"
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                392,
+                480,
+                467
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Proof. Analogous to the above. Notice that if the adversary draws "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A ( \\hat { y } , y ) \\sim ( Z | \\hat { Y } = \\hat { y } , Y = y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then its loss is exactly the conditional entropy "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                477,
+                480,
+                523
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} H (Z | \\hat {Y}, Y) = \\mathbb {E} [ - \\log P (Z = z | \\hat {Y} = \\hat {y}, Y = y) ] \\\\ = \\mathbb {E} [ - \\log P (A (\\hat {y}) = z | \\hat {Y} = \\hat {y}, Y = y) ] \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/279856bf9c4e283248f4f46b40601adc13debbd5838438bafeaf5755120af7e4.jpg"
+                }
+            },
+            "bbox": [
+                104,
+                529,
+                455,
+                571
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where the expectation is again taken over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( x , y , z ) \\sim D"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". But if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is conditionally dependent on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H ( Z | \\hat { Y } , Y ) < H ( Z | Y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so the adversary can achieve loss less than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H ( Z | Y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". □ "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                577,
+                480,
+                641
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Note that Propositions 2 and 3 work analogously in the case of continuous "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", with the probability mass function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P"
+                    },
+                    {
+                        "type": "text",
+                        "content": "replaced with the probability density function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and the discrete entropy "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "H"
+                    },
+                    {
+                        "type": "text",
+                        "content": "replaced by the differential entropy "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "h ( X ) = \\mathbb { E } [ - \\log { \\bar { p } ( x ) } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", since the relevant property "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( h ( A ) = h ( A | B )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "iff "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A \\perp B"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") holds for differential entropy as well. They also work analogously when the adversary "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is restricted to a limited set of predictors. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                648,
+                478,
+                762
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For example, an adversary using least-squares regression trying to enforce equality of odds can be thought of as one that outputs "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A ( \\hat { y } , y ) ~ \\sim ~ N ( \\mu ( \\hat { y } , y ) , \\sigma ^ { 2 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mu ( \\hat { y } , y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the output of the regressor, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma ^ { 2 } ~ > ~ 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a fixed constant. Note now that the differential entropy "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "h ( Z | \\hat { Y } , Y ) ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbb { E } [ - \\log p ( z | \\hat { y } , y ) ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is nothing more than the expected loglikelihood, and so the function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mu"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that minimizes this quantity is the optimal least-squares regressor. Thus, for example, if we restrict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mu"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to be a linear function of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\hat { y } , y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and the other "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                762,
+                480,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "conditions of Proposition 3 hold, then an analogous argument to the above propositions shows that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { Y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has no linear relationship with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "after conditioning on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                68,
+                911,
+                112
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "These claims together illustrate that a sufficiently powerful adversary trained on a sufficiently large training set can indeed accurately enforce the demographic parity or equality of odds constraints on the predictor, if the adversary and predictor converge. Guaranteed convergence is harder to achieve, both in theory and practice. In the practical scenarios below we discuss methods to encourage the training algorithm to converge, as well as reasonable choices of the adversary model that are both powerful and easy to train. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                112,
+                913,
+                238
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 Experiments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                643,
+                250,
+                785,
+                266
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "All models were trained using the Adam optimizer (Kingma and Ba 2014) for both predictor and adversary. "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                268,
+                913,
+                297
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Toy Scenario "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                517,
+                308,
+                622,
+                323
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We generate a training sample "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( x ^ { ( i ) } , y ^ { ( i ) } , z ^ { ( i ) } \\right) _ { i = 1 } ^ { n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the protected variable) as follows. For each "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r \\in 0 , 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be picked uniformly at random, and let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\boldsymbol { v } \\ \\sim \\ N ( r _ { i } , 1 ) } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u , w \\ \\sim \\ N ( v _ { i } , 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "vary independently. Then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r l } { x ^ { ( i ) } } & { { } = } \\end{array}"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( r , u ) , y ^ { ( i ) } = [ w > 0 ] , z ^ { ( i ) } = r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". (where [ ] denotes an indicator function). Intuitively, the variable that we are trying to predict, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", depends directly on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We are given as inputs the protected variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and a noisy measurement of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The end goal would be to train a model that predicts "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "while being unbiased on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", effectively removing the direct signal for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the learned model. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                325,
+                913,
+                484
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "If one trains generically a logistic regression model to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", it outputs something like "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y = \\sigma ( 0 . 7 u + 0 . \\bar { 7 } r )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which is a reasonable model, but heavily incorporates the protected variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". To debias, We now train a model that achieves DEMOGRAPHIC PARITY. Note that removing the variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the training data is insuffucient for debiasing: the model will still learn to use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". If we use the described technique and add in another logistic model that tries to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "given "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we find that the predictor model outputs something like "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y = \\sigma ( 0 . 6 u - 0 . 6 r \\ ' + 0 . 6 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Notice that not only is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "not included with a positive weight anymore, the model actually learns to use a negative weight on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in order to balance out the effect of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Notice that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "u - r \\sim N ( 0 , 2 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; i.e., it is not dependent on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so we have successfully trained a model to predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "independently of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                484,
+                911,
+                708
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Word Embeddings "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                717,
+                666,
+                733
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We train a model to perform the analogy task (i.e., fill in the blank: man : woman :: he : ?). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                734,
+                911,
+                763
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It is known that word embeddings reflect or amplify problematic biases from the data they are trained on, for example, gender (Bolukbasi et al. 2016). We seek to train a model that can still solve analogies well, but is less prone to these gender biases. We first calculate a “gender direction” "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "using a method based on Bolukbasi et al. (2016) which gives a method for defining the protected variable. We will use this technique in the context of defining gender for word embeddings, but, as discussed in Bolukbasi et al. (2016), the "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                763,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/a9cae1e5ef3a65c7111c90a7f5a24a9469357bff317b2c966c9bb2effe311d98.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Completions for he : she :: doctor : ? "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td colspan=\"2\">biased</td><td colspan=\"2\">debiased</td></tr><tr><td>neighbor</td><td>similarity</td><td>neighbor</td><td>similarity</td></tr><tr><td>nurse</td><td>1.0121</td><td>nurse</td><td>0.7056</td></tr><tr><td>nanny</td><td>0.9035</td><td>obstetrician</td><td>0.6861</td></tr><tr><td>fiançée</td><td>0.8700</td><td>pediatrician</td><td>0.6447</td></tr><tr><td>maid</td><td>0.8674</td><td>dentist</td><td>0.6367</td></tr><tr><td>fiancé</td><td>0.8617</td><td>surgeon</td><td>0.6303</td></tr><tr><td>mother</td><td>0.8612</td><td>physician</td><td>0.6254</td></tr><tr><td>fiance</td><td>0.8611</td><td>cardiologist</td><td>0.6088</td></tr><tr><td>dentist</td><td>0.8569</td><td>pharmacist</td><td>0.6081</td></tr><tr><td>woman</td><td>0.8564</td><td>hospital</td><td>0.5969</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                109,
+                65,
+                452,
+                229
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "technique generalizes to other protected variables and other forms of embeddings. Following Bolukbasi et al. (2016), we pick 10 (male, female) word pairs, and define the and define the bias subspace to be the space spanned by the top "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "principal components of the differences, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a tuneable parameter. In our experiments, we find that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "gives reasonable results, so we did not experiment further. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                286,
+                478,
+                383
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We use embeddings trained from Wikipedia to generate input data from the Google analogy data set (Mikolov et al. 2013). For each analogy in the dataset, we let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\left( { { x } _ { 1 } } , { { x } _ { 2 } } , { { x } _ { 3 } } \\right) \\in { \\mathbb { R } } ^ { 3 d }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "comprise the word vectors for the first three words, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the word vector of the fourth word, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\operatorname { p r o j } _ { g } y"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "_ { g } y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". It is worth noting that these word vectors computed from the original embeddings are never updated nor is there projection onto the bias subspace and therefore the original word embeddings are never modified. What is learned is a tranform from a biased embedding space to a debiased embedding space. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                383,
+                478,
+                536
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As a model, we use the following: let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v = x _ { 2 } + x _ { 3 } - x _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\boldsymbol { \\hat { y } } \\ = \\ v \\ - \\ w w ^ { T } \\boldsymbol { v }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where our model parameter is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Intuitively, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the “generic” analogy vector as is commonly5 used for the analogy task. If left to its own devices (i.e., if not told to be unbiased on anything), the model should either learn "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or else learn "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as a useless vector. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                537,
+                478,
+                619
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "By contrast, if we add the adversarial discriminator network (here, simply "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { z } = w _ { 2 } ^ { T } \\hat { y } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we expect the debiased prediction model to learn that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "should be something close to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\ o \\mathrm { r } - g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so that the discriminator cannot predict "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z = p r o j _ { g } y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Indeed, both of these expectations hold: Without debiasing, the trained vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is approximately a unit vector nearly perpendicular to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g : w ^ { T } g \\stackrel { \\cdot \\cdot } { = } 0 . 0 8 , | | w | | = 0 . 8 2"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; with debiasing, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is approximately a unit vector pointing in a direction highly correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { g : w ^ { T } g = 0 . 5 5 , \\lvert \\lvert w \\rvert \\rvert = 0 . 9 6 } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Even after debiasing, gendered analogies such as man : woman :: he : she are still preserved; however, many biased analogies go away, suggesting that the adversarial training process was indeed successful. An example of the kinds of changes in analogy completions observed after debiasing are illustrated in Table "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 ^ { 6 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                619,
+                480,
+                827
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/24ed65306e56dfae5a76f82264e0d84dfadd62bf9e63acafad5c5b29d78a1bb9.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Features in the UCI dataset per individual. Features are either continuous (Cont) or Categorical (Cat). Categorical features are converted to sparse tensors for the model. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Feature</td><td>Type</td><td>Description</td></tr><tr><td>age</td><td>Cont</td><td>Age of the individual</td></tr><tr><td>capital_gain</td><td>Cont</td><td>Capital gains recorded</td></tr><tr><td>capital_loss</td><td>Cont</td><td>Capital losses recorded</td></tr><tr><td>education_num</td><td>Cont</td><td>Highest education level (numerical form)</td></tr><tr><td>fnlwgt</td><td>Cont</td><td># of people census takers believe that observation represents</td></tr><tr><td>hours_perWeek</td><td>Cont</td><td>Hours worked per week</td></tr><tr><td>education</td><td>Cat</td><td>Highest level of education achieved</td></tr><tr><td>income</td><td>Cat</td><td>Whether individual makes &gt; $50K annually</td></tr><tr><td>marital_status</td><td>Cat</td><td>Marital status</td></tr><tr><td>native_country</td><td>Cat</td><td>Country of origin</td></tr><tr><td>occupation</td><td>Cat</td><td>Occupation</td></tr><tr><td>race</td><td>Cat</td><td>White, Asian-Pac-Islander, Amer-Indian-Eskimo, Other, Black</td></tr><tr><td>relationship</td><td>Cat</td><td>Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried</td></tr><tr><td>sex</td><td>Cat</td><td>Female, Male</td></tr><tr><td>workclass</td><td>Cat</td><td>Employer type</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                519,
+                65,
+                911,
+                334
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "UCI Adult Dataset "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                412,
+                665,
+                426
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To better align with the work in Beutel et al. (2017), we attempt to enforce EQUALITY OF ODDS on a model for the task of predicting the income of a person – in particular, predicting whether the income is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "> { \\mathfrak { S } } 5 0 k"
+                    },
+                    {
+                        "type": "text",
+                        "content": "– given various attributes about the person, as made available in the UCI Adult dataset (Asuncion and Newman 2007). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                431,
+                911,
+                516
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Details on the features that the dataset provides are available in Table 2. We use both categorical and continuous columns as given, with exception to the fnlwgt feature, which we discard. We convert the remaining columns into tensors where the categorical columns are sparse tensors, age is bucketized at boundaries [18, 25, 30, 35, 40, 45, 50, 55, 60, 65], and the rest of the continuous columns are real-valued. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                517,
+                913,
+                627
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As discussed before, to enforce equality of odds, we give the adversary access to the true label "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The adversary will learn the relationship between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "regardless of what the predictor does; further, if the predictor’s predictions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "give more information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "than is already contained in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the adversary will be able to improve its loss. Thus, the predictor, in attempting to fool the adversary, will move toward making sure that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "does not give such additional information; in other words, toward equality of odds. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                628,
+                913,
+                753
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our protected variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a binary-valued variable for the two sexes annotated, MALE and FEMALE. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                753,
+                911,
+                780
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our predictor model is straightforward logistic regression: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } = \\sigma ( w _ { 1 } \\cdot x + b )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the sigmoid function. Our adversary model takes the form of the following logisticregression-like model: "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                781,
+                913,
+                838
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "s = \\sigma \\big ((1 + | c |) \\sigma^ {- 1} (\\hat {y}) \\big) \\quad \\hat {z} = w _ {2} \\cdot [ s, s y, s (1 - y) ] + b",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2d7fa52a88e94ee14c0804ccdd0aa459b0749656dbab4de75d25ff7903ebf6b2.jpg"
+                }
+            },
+            "bbox": [
+                527,
+                845,
+                901,
+                864
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "debiasing will change this. "
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                875,
+                679,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "5see e.g. Mikolov et al. (2013) "
+                    }
+                ]
+            },
+            "bbox": [
+                102,
+                834,
+                287,
+                849
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "6The presence of nurse in the second position may seem worrying, but it should be noted that in this particular set of word embeddings, nurse is the nearest neighbor to doctor; no amount of "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                849,
+                478,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are learnable scalars, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a learnable vector, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma ^ { - 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the inverse of the sigmoid function (logit function) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma ^ { - 1 } ( t ) = \\log t - \\log ( 1 - t ) "
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Intuitively, we want our adversary to be able to learn functions of the form "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { z } = f ( y , [ \\hat { y } > 0 . 5 ] )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(i.e. dependent only on the boolean predicted value "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ \\hat { y } > 0 . 5 ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "), and thus enforce equality of odds. Here, the adversary would learn such a function by making c extremely large. We add 1 to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "| c |"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to make sure the adversary never tries to ignore "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "by setting "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which could be a difficult local minimum for the adversary to escape7. This adversary is both general enough to be used whenever "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are both discrete8, and powerful enough that deviation from true equality of odds should cause the adversary to be able to decrease its loss. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                68,
+                477,
+                261
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Without tweaking, this algorithm ran into issues with local minima, and the resulting models were often closer to demographic parity than equality of odds. We implemented a technique that helped: by increasing the hyperparameter "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in Eqn. 1 over time, the predictor had a much easier time learning to deceive the adversary and therefore more strictly enforce equality of odds. We set "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = { \\sqrt { t } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the step counter), and to avoid divergence we set the predictor’s step size to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta \\propto 1 / t"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", so that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\eta \\to 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as is preferred for stochastic gradient-based methods such as Adam. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                262,
+                477,
+                402
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We train the model twice, once with debiasing and once without, and present side-by-side confusion matrices on the test set for income bracket with respect to the protected variable values Male and Female, shown in Table 3, and we present the false positive rates (FPR) and false negative rates (FNR) in Table 4. Note that false negative rate is equal to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 -"
+                    },
+                    {
+                        "type": "text",
+                        "content": "true positive rate, so the trade-offs are directly comparable to the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( x , y )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "values of an ROC curve. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                402,
+                477,
+                513
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/f8a5da271202e5818f0db76045e8dc38022f67693a17833977d88ae3c6d87026.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3: Confusion matrices on the UCI Adult dataset, with and without equality of odds enforcement. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td colspan=\"3\">Without Debiasing</td><td colspan=\"3\">With Debiasing</td></tr><tr><td>Female</td><td>Pred 0</td><td>Pred 1</td><td>Female</td><td>Pred 0</td><td>Pred 1</td></tr><tr><td>True 0</td><td>4711</td><td>120</td><td>True 0</td><td>4518</td><td>313</td></tr><tr><td>True 1</td><td>265</td><td>325</td><td>True 1</td><td>263</td><td>327</td></tr><tr><td>Male</td><td>Pred 0</td><td>Pred 1</td><td>Male</td><td>Pred 0</td><td>Pred 1</td></tr><tr><td>True 0</td><td>6907</td><td>697</td><td>True 0</td><td>7071</td><td>533</td></tr><tr><td>True 1</td><td>1194</td><td>2062</td><td>True 1</td><td>1416</td><td>1840</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                89,
+                526,
+                473,
+                628
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We notice that debiasing has only a small effect on overall accuracy "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( 8 6 . 0 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "vs "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 4 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "), and that the debiased model indeed (nearly) obeys equality of odds: as shown in Table 4, with debiasing, the FNR and FPR values are approximately equal across sex subgroups: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 0 6 4 7 \\approx 0 . 0 7 0 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "0 . 4 4 5 8 \\approx 0 . 4 3 4 9"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                686,
+                477,
+                771
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Although the values don’t exactly reach equality, neither difference is statistically significant: a two-proportion twotail large sample "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-test yields "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-values 0.25 for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                771,
+                477,
+                814
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/a670a34fb79175675f388e5348270f7122f116ea7add225c3a76b1008f6e0d0b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 4: False Positive Rate (FPR) and False Negative Rate (FNR) for income bracket predictions for the two sex subgroups, with and without adversarial debiasing. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td></td><td colspan=\"2\">Female</td><td colspan=\"2\">Male</td></tr><tr><td></td><td></td><td>Without</td><td>With</td><td>Without</td><td>With</td></tr><tr><td rowspan=\"2\">Beutel et al. (2017)</td><td>FPR</td><td>0.1875</td><td>0.0308</td><td>0.1200</td><td>0.1778</td></tr><tr><td>FNR</td><td>0.0651</td><td>0.0822</td><td>0.1828</td><td>0.1520</td></tr><tr><td rowspan=\"2\">Current work</td><td>FPR</td><td>0.0248</td><td>0.0647</td><td>0.0917</td><td>0.0701</td></tr><tr><td>FNR</td><td>0.4492</td><td>0.4458</td><td>0.3667</td><td>0.4349</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                522,
+                65,
+                911,
+                137
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "0.62 for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y = 1"
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                213,
+                619,
+                227
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7 Conclusion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                653,
+                239,
+                777,
+                255
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this work, we demonstrate a general and powerful method for training unbiased machine learning models. We state and prove theoretical guarantees for our method under reasonable assumptions, demonstrating in theory that the method can enforce the constraints that we claim, across multiple definitions of fairness, regardless of the complexity of the predictor’s model, or the nature (discrete or continuous) of the predicted and protected variables in question. We apply the method in practice to two very different scenarios: a standard supervised learning task, and the task of debiasing word embeddings while still maintaining ability to perform a certain task (analogies). We demonstrate in both cases the ability to train a model that is demonstrably less biased than the original one, and yet still performs extremely well on the task at hand. We discuss difficulties in getting these models to converge. We propose, in the common case of discrete output and protected variables, a simple adversary that is usable regardless of the complexity of the underlying model. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                258,
+                911,
+                508
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "8 Future Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                645,
+                520,
+                785,
+                535
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This process yields many questions that require further work to answer. "
+                    }
+                ]
+            },
+            "bbox": [
+                519,
+                539,
+                911,
+                566
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "1. The debiased word embeddings we have trained are still useful in analogies. Are they still useful in other, more complex tasks? "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "2. The adversarial training method is hard to get right and often touchy, in that getting the hyperparameters wrong results in quick divergence of the algorithm. What ways can be used to stabilize training and ensure convergence, and thus ensure that the theoretical guarantees presented here can work? "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "3. There is a body of existing work for image recognition using adversarial networks. Image recognition in general can sometimes be subject to various biases such as being more or less successful at recognizing the faces of people of different races. Can multiple adversaries be combined to create high accuracy image recognition systems which do not exhibit such biases? "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "4. In general, do more complex predictors require more complex adversaries? It would appear that in the case of "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "y"
+                            },
+                            {
+                                "type": "text",
+                                "content": "and "
+                            },
+                            {
+                                "type": "equation_inline",
+                                "content": "z"
+                            },
+                            {
+                                "type": "text",
+                                "content": "discrete, a very simple adversary suffices no matter how complex the predictor. Does this also apply to continuous cases, or would a simple adversary be too easy to deceive for a complex predictor? "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                516,
+                570,
+                911,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "7This value added to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "| c |"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is an adjustable hyperparameter; we found reasonable results using the value 1 and thus not feel the need to experiment further. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                821,
+                477,
+                861
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "8If "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "z"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are multi-class, then the sigmoid becomes a softmax, but everything else remains the same. "
+                    }
+                ]
+            },
+            "bbox": [
+                86,
+                861,
+                477,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                233,
+                66,
+                330,
+                82
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Asuncion and Newman 2007] Asuncion, A., and Newman, D. 2007. Uci machine learning repository. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Beutel et al. 2017] Beutel, A.; Chen, J.; Zhao, Z.; and Chi, E. H. 2017. Data decisions and theoretical implications when adversarially learning fair representations. arXiv preprint arXiv:1707.00075. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Bolukbasi et al. 2016] Bolukbasi, T.; Chang, K.-W.; Zou, J. Y.; Saligrama, V.; and Kalai, A. T. 2016. Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In Advances in Neural Information Processing Systems, 4349–4357. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Goodfellow et al. 2014] Goodfellow, I.; Pouget-Abadie, J.; Mirza, M.; Xu, B.; Warde-Farley, D.; Ozair, S.; Courville, A.; and Bengio, Y. 2014. Generative adversarial nets. In Advances in neural information processing systems, 2672– 2680. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Hardt et al. 2016] Hardt, M.; Price, E.; Srebro, N.; et al. 2016. Equality of opportunity in supervised learning. In Advances in Neural Information Processing Systems, 3315– 3323. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Kingma and Ba 2014] Kingma, D., and Ba, J. 2014. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Kleinberg, Mullainathan, and Raghavan 2016] Kleinberg, J.; Mullainathan, S.; and Raghavan, M. 2016. Inherent trade-offs in the fair determination of risk scores. arXiv preprint arXiv:1609.05807. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Lum and Johndrow 2016] Lum, K., and Johndrow, J. 2016. A statistical framework for fair predictive algorithms. arXiv preprint arXiv:1610.08077. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "[Mikolov et al. 2013] Mikolov, T.; Sutskever, I.; Chen, K.; Corrado, G. S.; and Dean, J. 2013. Distributed representations of words and phrases and their compositionality. In Advances in neural information processing systems, 3111– 3119. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                76,
+                85,
+                480,
+                598
+            ]
+        }
+    ]
+]

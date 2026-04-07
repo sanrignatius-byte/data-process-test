@@ -1,0 +1,2988 @@
+[
+    {
+        "type": "text",
+        "text": "On Fairness and Calibration ",
+        "text_level": 1,
+        "bbox": [
+            323,
+            122,
+            671,
+            145
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Geoff Pleiss∗, Manish Raghavan∗, Felix Wu, Jon Kleinberg, Kilian Q. Weinberger ",
+        "bbox": [
+            205,
+            195,
+            794,
+            210
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Cornell University, Department of Computer Science ",
+        "bbox": [
+            323,
+            212,
+            673,
+            224
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "{geoff,manish,kleinber}@cs.cornell.edu, ",
+        "bbox": [
+            333,
+            224,
+            663,
+            238
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "{fw245,kwq4}@cornell.edu ",
+        "bbox": [
+            395,
+            239,
+            601,
+            252
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            459,
+            287,
+            537,
+            304
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "The machine learning community has become increasingly concerned with the potential for bias and discrimination in predictive models. This has motivated a growing line of work on what it means for a classification procedure to be “fair.” In this paper, we investigate the tension between minimizing error disparity across different population groups while maintaining calibrated probability estimates. We show that calibration is compatible only with a single error constraint (i.e. equal false-negatives rates across groups), and show that any algorithm that satisfies this relaxation is no better than randomizing a percentage of predictions for an existing classifier. These unsettling findings, which extend and generalize existing results, are empirically confirmed on several datasets. ",
+        "bbox": [
+            228,
+            319,
+            767,
+            458
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            482,
+            313,
+            498
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Recently, there has been growing concern about errors of machine learning algorithms in sensitive domains – including criminal justice, online advertising, and medical testing [33] – which may systematically discriminate against particular groups of people [2, 4, 8]. A recent high-profile example of these concerns was raised by the news organization ProPublica, who studied a riskassessment tool that is widely used in the criminal justice system. This tool assigns to each criminal defendant an estimated probability that they will commit a future crime. ProPublica found that the risk estimates assigned to defendants who did not commit future crimes were on average higher among African-American defendants than Caucasian defendants [1]. This is a form of false-positive error, and in this case it disproportionately affected African-American defendants. To mitigate issues such as these, the machine learning community has proposed different frameworks that attempt to quantify fairness in classification [2, 4, 8, 19, 26, 34, 37]. A recent and particularly noteworthy framework is Equalized Odds [19] (also referred to as Disparate Mistreatment [37]),1 which constrains classification algorithms such that no error type (false-positive or false-negative) disproportionately affects any population subgroup. This notion of non-discrimination is feasible in many settings, and researchers have developed tractable algorithms for achieving it [17, 19, 34, 37]. ",
+        "bbox": [
+            169,
+            513,
+            826,
+            720
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "When risk tools are used in practice, a key goal is that they are calibrated: if we look at the set of people who receive a predicted probability of $p$ , we would like a $p$ fraction of the members of this set to be positive instances of the classification problem [11]. Moreover, if we are concerned about fairness between two groups $G _ { 1 }$ and $G _ { 2 }$ (e.g. African-American defendants and white defendants) then we would like this calibration condition to hold simultaneously for the set of people within each of these groups as well [16]. Calibration is a crucial condition for risk tools in many settings. If a risk tool for evaluating defendants were not calibrated with respect to groups defined by race, for example, then a probability estimate of $p$ could carry different meaning for African-American and white defendants, and hence the tool would have the unintended and highly undesirable consequence of incentivizing judges to take race into account when interpreting its predictions. Despite the ",
+        "bbox": [
+            169,
+            726,
+            826,
+            867
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1709.02012v2 [cs.LG] 3 Nov 2017 ",
+        "bbox": [
+            22,
+            265,
+            57,
+            700
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "∗Equal contribution, alphebetical order. ",
+        "bbox": [
+            189,
+            873,
+            428,
+            886
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "1 For the remainder of the paper, we will use Equalized Odds to refer to this notion of non-discrimination. ",
+        "bbox": [
+            192,
+            887,
+            816,
+            901
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "footer",
+        "text": "31st Conference on Neural Information Processing Systems (NIPS 2017), Long Beach, CA, USA. ",
+        "bbox": [
+            171,
+            922,
+            751,
+            936
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "importance of calibration as a property, our understanding of how it interacts with other fairness properties is limited. We know from recent work that, except in the most constrained cases, it is impossible to achieve calibration while also satisfying Equalized Odds [8, 26]. However, we do not know how best to achieve relaxations of these guarantees that are feasible in practice. ",
+        "bbox": [
+            169,
+            90,
+            823,
+            148
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Our goal is to further investigate the relationship between calibration and error rates. We show that even if the Equalized Odds conditions are relaxed substantially – requiring only that weighted sums of the group error rates match – it is still problematic to also enforce calibration. We provide necessary and sufficient conditions under which this calibrated relaxation is feasible. When feasible, it has a unique optimal solution that can be achieved through post-processing of existing classifiers. Moreover, we provide a simple post-processing algorithm to find this solution: withholding predictive information for randomly chosen inputs to achieve parity and preserve calibration. However, this simple post-processing method is fundamentally unsatisfactory: although the post-processed predictions of our information-withholding algorithm are “fair” in expectation, most practitioners would object to the fact that a non-trivial portion of the individual predictions are withheld as a result of coin tosses – especially in sensitive settings such as health care or criminal justice. The optimality of this algorithm thus has troubling implications and shows that calibration and error-rate fairness are inherently at odds (even beyond the initial results by [8] and [26]). ",
+        "bbox": [
+            169,
+            152,
+            826,
+            333
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Finally, we evaluate these theoretical findings empirically, comparing calibrated notions of nondiscrimination against the (uncalibrated) Equalized Odds framework on several datasets. These experiments further support our conclusion that calibration and error-rate constraints are in most cases mutually incompatible goals. In practical settings, it may be advisable to choose only one of these goals rather than attempting to achieve some relaxed notion of both. ",
+        "bbox": [
+            169,
+            339,
+            826,
+            409
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 Related Work ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            434,
+            323,
+            450
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Calibrated probability estimates are considered necessary for empirical risk analysis tools [4, 10, 12, 16]. In practical applications, uncalibrated probability estimates can be misleading in the sense that the end user of these estimates has an incentive to mistrust (and therefore potentially misuse) them. We note however that calibration does not remove all potential for misuse, as the end user’s biases might cause her or him to treat estimates differently based on group membership. There are several post-processing methods for producing calibrated outputs from classification algorithms. For example, Platt Scaling [31] passes outputs through a learned sigmoid function, transforming them into calibrated probabilities. Histogram Binning and Isotonic Regression [35] learn a general monotonic function from outputs to probabilities. See [30] and [18] for empirical comparisons of these methods. ",
+        "bbox": [
+            169,
+            469,
+            826,
+            607
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Equalized Odds [19], also referred to as Disparate Mistreatment [37], ensures that no error type disproportionately affects any particular group. Hardt et al. [19] provide a post-processing technique to achieve this framework, while Zafar et al. [37] introduce optimization constraints to achieve non-discrimination at training time. Recently, this framework has received significant attention from the algorithmic fairness community. Researchers have found that it is incompatible with other notions of fairness [8, 9, 26]. Additionally, Woodworth et al. [34] demonstrate that, under certain assumptions, post-processing methods for achieving non-discrimination may be suboptimal. ",
+        "bbox": [
+            169,
+            614,
+            823,
+            712
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Alternative fairness frameworks exist and are continuously proposed. We highlight several of these works, though by no means offer a comprehensive list. (More thorough reviews can be found in [2, 4, 32]). It has been shown that, under most frameworks of fairness, there is a trade-off between algorithmic performance and non-discrimination [4, 9, 19, 39]. Several works approach fairness through the lens of Statistical Parity [6, 7, 14, 20, 22, 23, 29, 38]. Under this definition, group membership should not affect the prediction of a classifier, i.e. members of different groups should have the same probability of receiving a positive-class prediction. However, it has been argued that Statistical Parity may not be applicable in many scenarios [8, 13, 19, 26], as it attempts to guarantee equal representation. For example, it is inappropriate in criminal justice, where base rates differ across different groups. A related notion is Disparate Impact [15, 36], which states that the prediction rates for any two groups should not differ by more than $8 0 \\%$ (a number motivated by legal requirements). Dwork et al. [13] introduce a notion of fairness based on the idea that similar individuals should receive similar outcomes, though it challenging to achieve this notion in practice. Fairness has also been considered in online learning [21, 24], unsupervised learning [5], and causal inference [25, 27]. ",
+        "bbox": [
+            169,
+            718,
+            826,
+            912
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_number",
+        "text": "2 ",
+        "bbox": [
+            493,
+            935,
+            504,
+            946
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 Problem Setup ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            89,
+            330,
+            107
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The setup of our framework most follows the Equalized Odds framework [19, 37]; however, we extend their framework for use with probabilistic classifiers. Let $P \\subset \\mathbb { R } ^ { k } \\times \\{ \\bar { 0 } , 1 \\}$ be the input space of a binary classification task. In our criminal justice example, $( \\mathbf { x } , y ) \\sim P$ represents a person, with $\\mathbf { x }$ representing the individual’s history and $y$ representing whether or not the person will commit another crime. Additionally, we assume the presence of two groups $G _ { 1 } , G _ { 2 } \\subset P$ , which represent disjoint population subsets, such as different races. We assume that the groups have different base rates $\\mu _ { t }$ , or probabilities of belonging to the positive class: $\\mu _ { 1 } = \\mathrm { P } _ { ( \\mathbf { x } , y ) \\sim G _ { 1 } } \\boldsymbol { \\left[ y ^ { \\cdot } = 1 \\right] } \\neq \\mathrm { P } _ { ( \\mathbf { x } , y ) \\sim G _ { 2 } } \\boldsymbol { \\left[ y = 1 \\right] } = \\mu _ { 2 }$ . ",
+        "bbox": [
+            169,
+            119,
+            823,
+            220
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Finally, let $h _ { 1 } , h _ { 2 } : \\mathbb { R } ^ { k }  [ 0 , 1 ]$ be binary classifiers, where $h _ { 1 }$ classifies samples from $G _ { 1 }$ and $h _ { 2 }$ classifies samples from $G _ { 2 }$ .2 Each classifier outputs the probability that a given sample $\\mathbf { x }$ belongs to the positive class. The notion of Equalized Odds non-discrimination is based on the false-positive and false-negative rates for each group, which we generalize here for use with probabilistic classifiers: ",
+        "bbox": [
+            169,
+            226,
+            823,
+            282
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 1. The generalized false-positive rate of classifier $h _ { t }$ for group $G _ { t }$ is $c _ { f p } ( h _ { t } ) \\ =$ $\\mathbb { E } _ { ( \\mathbf { x } , y ) \\sim G _ { t } } \\left[ h _ { t } ( \\mathbf { x } ) \\ \\mathrm { ~ \\left| ~ \\ \\right]} y \\ = \\ 0  \\right.$ . Similarly, the generalized false-negative rate of classifier $h _ { t }$ is $c _ { f n } ( h _ { t } ) = \\mathbb { E } _ { ( \\mathbf { x } , y ) \\sim G _ { t } } \\left[ ( 1 - h _ { t } ( \\mathbf { x } ) ) \\mid y { = } 1 \\right]$ . ",
+        "bbox": [
+            169,
+            287,
+            823,
+            337
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "If the classifier were to output either 0 or 1, this represents the standard notions of false-positive and false-negative rates. We now define the Equalized Odds framework (generalized for probabilistic classifiers), which aims to ensure that errors of a given type are not biased against any group. ",
+        "bbox": [
+            169,
+            345,
+            823,
+            388
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 2 (Probabilistic Equalized Odds). Classifiers $h _ { 1 }$ and $h _ { 2 }$ exhibit Equalized Odds for groups $G _ { 1 }$ and $G _ { 2 }$ if $c _ { f p } ( h _ { 1 } ) = c _ { f p } ( h _ { 2 } )$ and $c _ { f n } ( h _ { 1 } ) = c _ { f n } ( h _ { 2 } )$ . ",
+        "bbox": [
+            169,
+            392,
+            823,
+            422
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Calibration Constraints. As stated in the introduction, these two conditions do not necessarily prevent discrimination if the classifier predictions do not represent well-calibrated probabilities. Recall that calibration intuitively says that probabilities should carry semantic meaning: if there are 100 people in $G _ { 1 }$ for whom $h _ { 1 } ( \\mathbf { \\bar { x } } ) \\stackrel { - } { = } 0 . 6$ , then we expect 60 of them to belong to the positive class. ",
+        "bbox": [
+            169,
+            431,
+            823,
+            489
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 3. A classifier $h _ { t }$ is perfectly calibrated $i f \\forall p \\in [ 0 , 1 ] , \\operatorname { P } _ { ( \\mathbf { x } , y ) \\sim G _ { t } } \\left[ y = 1 \\mid h _ { t } ( \\mathbf { x } ) = p \\right] = p .$ ",
+        "bbox": [
+            169,
+            493,
+            823,
+            512
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "It is commonly accepted amongst practitioners that both classifiers $h _ { 1 }$ and $h _ { 2 }$ should be calibrated with respect to groups $G _ { 1 }$ and $G _ { 2 }$ to prevent discrimination [4, 10, 12, 16]. Intuitively, this prevents the probability scores from carrying group-specific information. Unfortunately, Kleinberg et al. [26] (as well as [8], in a binary setting) prove that a classifier cannot achieve both calibration and Equalized Odds, even in an approximate sense, except in the most trivial of cases. ",
+        "bbox": [
+            169,
+            520,
+            823,
+            590
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "3.1 Geometric Characterization of Constraints ",
+        "text_level": 1,
+        "bbox": [
+            169,
+            608,
+            511,
+            622
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "We now will characterize the calibration and error-rate constraints with simple geometric intuitions. Throughout the rest of this paper, all of our results can be easily derived from this interpretation. We begin by defining the region of classifiers which are trivial, or those that output a constant value for all inputs (i.e. $h ^ { c } ( \\mathbf { x } ) = c$ , where $0 \\leq c \\leq 1$ is a constant). We can visualize these classifiers on a graph with generalized false-positive rates on one axis and generalized false-negatives on the other. It follows from the definitions of generalized false-positive/false-negative rates and calibration that all trivial classifiers $h$ lie on the diagonal defined by $c _ { f p } ( h ) + c _ { f n } ( h ) = 1$ (Figure 1a). Therefore, all classifiers that are “better than random” must lie below this diagonal in false-positive/false-negative space (the gray triangle in the figure). Any classifier that lies above the diagonal performs “worse than random,” as we can find a point on the trivial classifier diagonal with lower false-positive and false-negative rates. ",
+        "bbox": [
+            169,
+            633,
+            825,
+            787
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Now we will characterize the set of calibrated classifiers for groups $G _ { 1 }$ and $G _ { 2 }$ , which we denote as $\\mathcal { H } _ { 1 } ^ { \\ast }$ and $\\mathcal { H } _ { 2 } ^ { * }$ . Kleinberg et al. show that the generalized false-positive and false-negative rates of a calibrated classifier are linearly related by the base rate of the group:3 ",
+        "bbox": [
+            169,
+            792,
+            823,
+            835
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f n} \\left(h _ {t}\\right) = \\left(1 - \\mu_ {t}\\right) / \\mu_ {t} c _ {f p} \\left(h _ {t}\\right). \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            388,
+            843,
+            823,
+            859
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "2 In practice, $h _ { 1 }$ and $h _ { 2 }$ can be trained jointly (i.e. they are the same classifier). ",
+        "bbox": [
+            192,
+            869,
+            660,
+            883
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "3 Throughout this work we will treat the calibration constraint as holding exactly; however, our results generalize to approximate settings as well. See the Supplementary Materials for more details. ",
+        "bbox": [
+            169,
+            883,
+            823,
+            912
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_number",
+        "text": "3 ",
+        "bbox": [
+            493,
+            935,
+            503,
+            946
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/a5118ccae4d7d29242946187ebeeb0e5af1139c989869e8207e4685f19916bbc.jpg",
+        "image_caption": [
+            "(a) Possible cal. classifiers $\\mathcal { H } _ { 1 } ^ { \\ast } , \\mathcal { H } _ { 2 } ^ { \\ast }$ (blue/red). "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            179,
+            85,
+            330,
+            202
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/9cce2bc6c0c540aaa1abbcd27545f301ff2467bac9816441e9e46f59844407fe.jpg",
+        "image_caption": [
+            "(b) Satisfying cal. and equal F.P. rates. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            341,
+            85,
+            491,
+            202
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/10ae73651b82b42b04ff7120b6da26accd41d2cf6edacbbb15bbd9da884105cc.jpg",
+        "image_caption": [
+            "(c) Satisfying cal. and equal F.N. rates. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            504,
+            85,
+            653,
+            202
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/5d010759bdeb3106b17375ea5b2701f3b3670e0466853262a0b37c02bf548a5d.jpg",
+        "image_caption": [
+            "(d) Satisfying cal. and a general constraint. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            666,
+            85,
+            818,
+            202
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/ef36facf5e62857b140d2fd4432352c208e1a5e172774379ab15b24df9d4ada9.jpg",
+        "image_caption": [
+            "Figure 1: Calibration, trivial classifiers, and equal-cost constraints – plotted in the false-pos./false-neg. plane. $\\mathcal { H } _ { 1 } ^ { \\ast } , \\mathcal { H } _ { 2 } ^ { \\ast }$ are the set of cal. classifiers for the two groups, and $h ^ { \\mu _ { 1 } } , h ^ { \\mu _ { 2 } }$ are trivial classifiers. ",
+            "(a) Level-order curves of cost. Low cost implies low error rates. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            179,
+            284,
+            330,
+            400
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/5d28060787cd158a315fd7dac02c399f7f544ac5ea7a0f2332113988b657a50e.jpg",
+        "image_caption": [
+            "(b) Usually, there is a calibrated classifier $\\tilde { h } _ { 2 }$ with the same cost of $h _ { 1 }$ . "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            341,
+            282,
+            491,
+            398
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/49b1a4619607a8fe4bdda2c1df174c5242b8aa8d63ad0b93e4fb1739d40c38fb.jpg",
+        "image_caption": [
+            "(c) Cal. and equal-cost are incompatible if $h _ { 1 }$ has high error. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            504,
+            285,
+            653,
+            400
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/0dc07f85a5e72bbf5a9077d9a28124e3cfdbf1b5d8a7d07cafb1c65a498791c2.jpg",
+        "image_caption": [
+            "(d) Possible cal. classifiers for $G _ { 2 }$ (bold red) by mixing $h _ { 2 }$ and $h ^ { \\mu _ { 2 } }$ . ",
+            "Figure 2: Calibration-Preserving Parity through interpolation. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            666,
+            285,
+            818,
+            400
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In other words, $h _ { 1 }$ lies on a line with slope $( 1 - \\mu _ { 1 } ) / \\mu _ { 1 }$ and $h _ { 2 }$ lies on a line with slope $( 1 - \\mu _ { 2 } ) / \\mu _ { 2 }$ (Figure 1a). The lower endpoint of each line is the perfect classifier, which assigns the correct prediction with complete certainty to every input. The upper endpoint is a trivial classifier, as no calibrated classifier can perform “worse than random” (see Lemma 3 in Section S2). The only trivial classifier that satisfies the calibration condition for a group $G _ { t }$ is the one that outputs the base rate $\\mu _ { t }$ . We will refer to $h ^ { \\mu _ { 1 } }$ and $h ^ { \\mu _ { 2 } }$ as the trivial classifiers, calibrated for groups $G _ { 1 }$ and $G _ { 2 }$ respectively. It follows from the definitions that $c _ { f p } ( h ^ { \\mu _ { 1 } } ) = \\mu _ { 1 }$ and $c _ { f n } ( h ^ { \\mu _ { 1 } } ) = \\bar { 1 } - \\bar { \\mu _ { 1 } }$ , and likewise for $h ^ { \\mu _ { 2 } }$ . ",
+        "bbox": [
+            169,
+            493,
+            826,
+            593
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Finally, it is worth noting that for calibrated classifiers, a lower false-positive rate necessarily corresponds to a lower false-negative rate and vice-versa. In other words, for a given base rate, a “better” calibrated classifier lies closer to the origin on the line of calibrated classifiers. ",
+        "bbox": [
+            169,
+            597,
+            823,
+            640
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Impossibility of Equalized Odds with Calibration. With this geometric intuition, we can provide a simplified proof of the main impossibility result from [26]: ",
+        "bbox": [
+            169,
+            646,
+            823,
+            675
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Theorem (Impossibility Result [26]). Let $h _ { 1 }$ and $h _ { 2 }$ be classifiers for groups $G _ { 1 }$ and $G _ { 2 }$ with $\\mu _ { 1 } \\neq \\mu _ { 2 }$ . $h _ { 1 }$ and $h _ { 2 }$ satisfy the Equalized Odds and calibration conditions if and only if $h _ { 1 }$ and $h _ { 2 }$ are perfect predictors. ",
+        "bbox": [
+            169,
+            679,
+            825,
+            722
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Intuitively, the three conditions define a set of classifiers which is overconstrained. Equalized Odds stipulates that the classifiers $h _ { 1 }$ and $h _ { 2 }$ must lie on the same coordinate in the false-positive/falsenegative plane. As $h _ { 1 }$ must lie on the blue line of calibrated classifiers for $\\mathcal { H } _ { 1 } ^ { \\ast }$ and $h _ { 2 }$ on the red line $\\mathcal { H } _ { 2 } ^ { * }$ they can only satisfy EO at the unique intersection point — the origin (and location of the perfect classifier). This implies that unless the two classifiers achieve perfect accuracy, we must relax the Equalized Odds conditions if we want to maintain calibration. ",
+        "bbox": [
+            169,
+            732,
+            826,
+            816
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "4 Relaxing Equalized Odds to Preserve Calibration ",
+        "text_level": 1,
+        "bbox": [
+            169,
+            837,
+            617,
+            854
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In this section, we show that a substantially simplified notion of Equalized Odds is compatible with calibration. We introduce a general relaxation that seeks to satisfy a single equal-cost constraint while maintaining calibration for each group $G _ { t }$ . We begin with the observation that Equalized ",
+        "bbox": [
+            169,
+            869,
+            825,
+            912
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_number",
+        "text": "4 ",
+        "bbox": [
+            493,
+            935,
+            504,
+            946
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Odds sets constraints to equalize false-positives $c _ { f p } ( h _ { t } )$ and false-negatives $c _ { f n } ( h _ { t } )$ . To capture and generalize this, we define a cost function $g _ { t }$ to be a linear function in $c _ { f p } ( h _ { t } )$ and $c _ { f n } ( h _ { t } )$ with arbitrary dependence on the group’s base rate $\\mu _ { t }$ . More formally, a cost function for group $G _ { t }$ is ",
+        "bbox": [
+            169,
+            90,
+            823,
+            133
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\ng _ {t} \\left(h _ {t}\\right) = a _ {t} c _ {f p} \\left(h _ {t}\\right) + b _ {t} c _ {f n} \\left(h _ {t}\\right) \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            388,
+            136,
+            823,
+            152
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "where $a _ { t }$ and $b _ { t }$ are non-negative constants that are specific to each group (and thus may depend on $\\mu _ { t }$ ): see Figure 1d. We also make the assumption that for any $\\mu _ { t }$ , at least one of $a _ { t }$ and $b _ { t }$ is nonzero, meaning $g _ { t } ( h _ { t } ) = 0$ if and only if $c _ { f p } ( \\bar { h } _ { t } ) = c _ { f n } ( h _ { t } ) \\stackrel { . } { = } \\stackrel { . } { 0 }$ .4 This class of cost functions encompasses a variety of scenarios. As an example, imagine an application in which the equal false-positive condition is essential but not the false-negative condition. Such a scenario may arise in our recidivism-prediction example, if we require that non-repeat offenders of any race are not disproportionately labeled as high risk. If we plot the set of calibrated classifiers $\\mathcal { H } _ { 1 } ^ { \\ast }$ and $\\mathcal { H } _ { 2 } ^ { * }$ on the false-positive/false-negative plane, we can see that ensuring the false-positive condition requires finding classifiers $h _ { 1 } \\in \\mathcal { H } _ { 1 } ^ { * }$ and $h _ { 2 } \\in \\mathcal { H } _ { 2 } ^ { * }$ that fall on the same vertical line (Figure 1b). Conversely, if we instead choose to satisfy only the false-negative condition, we would find classifiers $h _ { 1 }$ and $h _ { 2 }$ that fall on the same horizontal (Figure 1c). Finally, if both false-positive and false-negative errors incur a negative cost on the individual, we may choose to equalize a weighted combination of the error rates [3, 4, 8], which can be graphically described by the classifiers lying on a convex and negatively-sloped level set (Figure 1d). With these definitions, we can formally define our relaxation: ",
+        "bbox": [
+            169,
+            155,
+            826,
+            349
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Definition 4 (Relaxed Equalized Odds with Calibration). Given a cost function $g _ { t }$ of the form in (2), classifiers $h _ { 1 }$ and $h _ { 2 }$ achieve Relaxed Equalized Odds with Calibration for groups $G _ { 1 }$ and $G _ { 2 }$ if both classifiers are calibrated and satisfy the constraint $g _ { 1 } ( h _ { 1 } ) = g _ { 2 } ( h _ { 2 } )$ . ",
+        "bbox": [
+            169,
+            351,
+            825,
+            393
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "It is worth noting that, for calibrated classifiers, an increase in cost strictly corresponds to an increase in both the false-negative and false-positive rate. This can be interpreted graphically, as the level-order cost curves lie further away from the origin as cost increases (Figure 2a). In other words, the cost function can always be used as a proxy for either error rate.5 ",
+        "bbox": [
+            169,
+            402,
+            823,
+            459
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Feasibility. It is easy to see that Definition 4 is always satisfiable – in Figures 1b, 1c, and 1d we see that there are many such solutions that would lie on a given level-order cost curve while maintaining calibration, including the case in which both classifiers are perfect. In practice, however, not all classifiers are achievable. For the rest of the paper, we will assume that we have access to “optimal” (but possibly discriminatory) calibrated classifiers $h _ { 1 }$ and $h _ { 2 }$ such that, due to whatever limitations there are on the predictability of the task, we are unable to find other classifiers that have lower cost with respect to $g _ { t }$ . We allow $h _ { 1 }$ and $h _ { 2 }$ to be learned in any way, as long as they are calibrated. Without loss of generality, for the remainder of the paper, we will assume that $g _ { 1 } ( h _ { 1 } ) \\ge g _ { 2 } ( h _ { 2 } )$ . ",
+        "bbox": [
+            169,
+            464,
+            826,
+            577
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Since by assumption we have no way to find a classifier for $G _ { 1 }$ with lower cost than $h _ { 1 }$ , our goal is therefore to find a classifier $\\tilde { h } _ { 2 }$ with cost equal to $h _ { 1 }$ . This pair of classifiers would represent the lowest cost (and therefore optimal) set of classifiers that satisfies calibration and the equal cost constraint. For a given base rate $\\mu _ { t }$ and value of the cost function $g _ { t }$ , a calibrated classifier’s position in the generalized false-positive/false-negative plane is uniquely determined (Figure 2a). This is because each level-order curve of the cost function $g _ { t }$ has negative slope in this plane, and each level order curve only intersects a group’s calibrated classifier line once. In other words, there is a unique solution in the false-positive/false-negative plane for classifier $\\tilde { h } _ { 2 }$ (Figure 2b). ",
+        "bbox": [
+            169,
+            580,
+            823,
+            696
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Consider the range of values that $g _ { t }$ can take. As noted above, $g _ { t } ( h _ { t } ) \\geq 0$ , with equality if and only if $h _ { t }$ is the perfect classifier. On the other hand, the trivial classifier (again, which outputs the constant $\\mu _ { t }$ for all inputs) is the calibrated classifier that achieves maximum cost for any $g _ { t }$ (see Lemma 3 in Section S2). As a result, the cost of a classifier for group $G _ { t }$ is between 0 and $g _ { t } ( h ^ { \\mu _ { t } } )$ . This naturally leads to a characterization of feasibility: Definition 4 can be achieved if and only if $h _ { 1 }$ incurs less cost than group $G _ { 2 }$ ’s trivial classifier $h ^ { \\mu _ { 2 } }$ ; i.e. if $g _ { 1 } ( h _ { 1 } ) \\leq g _ { 2 } ( h ^ { \\mu _ { 2 } } )$ . This can be seen graphically in Figure 2c, in which the level-order curve for $g _ { 1 } ( h _ { 1 } )$ does not intersect the set of calibrated classifiers for $G _ { 2 }$ . Since, by assumption, we cannot find a calibrated classifier for $G _ { 1 }$ with strictly smaller cost than $h _ { 1 }$ , there is no feasible solution. On the other hand, if $h _ { 1 }$ incurs less cost than $h ^ { \\mu _ { 2 } }$ , then we will show feasibility by construction with a simple algorithm. ",
+        "bbox": [
+            169,
+            702,
+            826,
+            842
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "An Algorithm. While it may be possible to encode the constraints of Definition 4 into the training procedure of $h _ { 1 }$ and $h _ { 2 }$ , it is not immediately obvious how to do so. Even naturally probabilistic ",
+        "bbox": [
+            169,
+            847,
+            823,
+            876
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "4 By calibration, we cannot have one of $c _ { f p } ( h _ { t } ) = 0$ or $c _ { f n } ( h _ { t } ) = 0$ without the other, see Figure 1a. ",
+        "bbox": [
+            189,
+            883,
+            792,
+            898
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "5 This holds even for approximately calibrated classifiers — see Section S3. ",
+        "bbox": [
+            192,
+            897,
+            640,
+            911
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_number",
+        "text": "5 ",
+        "bbox": [
+            493,
+            935,
+            503,
+            946
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "algorithms, such as logistic regression, can become uncalibrated in the presence of optimization constraints (as is the case in [37]). It is not straightforward to encode the calibration constraint if the probabilities are assumed to be continuous, and post-processing calibration methods [31, 35] would break equal-cost constraints by modifying classifier scores. Therefore, we look to achieve the calibrated Equalized Odds relaxation by post-processing existing calibrated classifiers. ",
+        "bbox": [
+            169,
+            90,
+            823,
+            161
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Again, given $h _ { 1 }$ and $h _ { 2 }$ with $g _ { 1 } ( h _ { 1 } ) \\ge g _ { 2 } ( h _ { 2 } )$ , we want to arrive at a calibrated classifier $\\tilde { h } _ { 2 }$ for group $G _ { 2 }$ such that $g _ { 1 } ( h _ { 1 } ) = g _ { 2 } ( \\tilde { h } _ { 2 } )$ . Recall that, under our assumptions, this would be the best possible solution with respect to classifier cost. We show that this cost constraint can be achieved by withholding predictive information for a randomly chosen subset of group $G _ { 2 }$ . In other words, rather than always returning $h _ { 2 } ( \\mathbf { x } )$ for all samples, we will occasionally return the group’s mean probability (i.e. the output of the trivial classifier $h ^ { \\mu _ { 2 } }$ ). In Lemma 4 in Section S2, we show that if ",
+        "bbox": [
+            169,
+            167,
+            823,
+            255
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\tilde {h} _ {2} (\\mathbf {x}) = \\left\\{ \\begin{array}{l l} h ^ {\\mu_ {2}} (\\mathbf {x}) = \\mu_ {2} & \\text {w i t h p r o b a b i l i t y} \\alpha \\\\ h _ {2} (\\mathbf {x}) & \\text {w i t h p r o b a b i l i t y} 1 - \\alpha \\end{array} \\right. \\tag {3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            330,
+            260,
+            823,
+            292
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "then the cost of $\\tilde { h } _ { 2 }$ is a linear interpolation between the costs of $h _ { 2 }$ and $h ^ { \\mu _ { 2 } }$ (Figure 2d). More formally, we have that $g _ { 2 } ( \\tilde { h } _ { 2 } ) = ( 1 - \\alpha ) g _ { 2 } ( h _ { 2 } ) + \\alpha g _ { 2 } ( h ^ { \\mu _ { 2 } } ) )$ , and thus setting $\\begin{array} { r } { \\alpha = \\frac { \\ J _ { 1 } \\left( h _ { 1 } \\right) - g _ { 2 } \\left( h _ { 2 } \\right) } { g _ { 2 } \\left( h ^ { \\mu _ { 2 } } \\right) - g _ { 2 } \\left( h _ { 2 } \\right) } } \\end{array}$ ensures that $g _ { 2 } ( { \\tilde { h } } _ { 2 } ) = g _ { 1 } ( h _ { 1 } )$ as desired (Figure 2b). Moreover, this randomization preserves calibration (see Section S4). Algorithm 1 summarizes this method. ",
+        "bbox": [
+            169,
+            300,
+            825,
+            366
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Algorithm 1 Achieving Calibration and an Equal-Cost Constraint via Information Withholding ",
+        "text_level": 1,
+        "bbox": [
+            173,
+            378,
+            797,
+            393
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Input: classifiers $h _ { 1 }$ and $h _ { 2 }$ s.t. $g _ { 2 } ( h _ { 2 } ) \\leq g _ { 1 } ( h _ { 1 } ) \\leq g _ { 2 } ( h ^ { \\mu _ { 2 } } )$ , holdout set $P _ { v a l i d }$ ",
+        "bbox": [
+            187,
+            398,
+            715,
+            414
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• Determine base rate $\\mu _ { 2 }$ of $G _ { 2 }$ (using $P _ { v a l i d } )$ to produce trivial classifier $h ^ { \\mu _ { 2 } }$ . ",
+            "• Construct $\\tilde { h } _ { 2 }$ using with $\\begin{array} { r } { \\alpha = \\frac { g _ { 1 } ( h _ { 1 } ) - g _ { 2 } ( h _ { 2 } ) } { g _ { 2 } ( h ^ { \\mu _ { 2 } } ) - g _ { 2 } ( h _ { 2 } ) } } \\end{array}$ , where $\\alpha$ is the interpolation parameter. "
+        ],
+        "bbox": [
+            230,
+            415,
+            799,
+            450
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "return h1, h˜2 — which are calibrated and satisfy $g _ { 1 } ( h _ { 1 } ) = g _ { 2 } ( \\tilde { h } _ { 2 } )$ ",
+        "bbox": [
+            187,
+            452,
+            635,
+            470
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Implications. In a certain sense, Algorithm 1 is an “optimal” method because it arrives at the unique false-negative/false-positive solution for $\\tilde { h } _ { 2 }$ , where $\\tilde { h } _ { 2 }$ is calibrated and has cost equal to $h _ { 1 }$ . Therefore (by our assumptions) we can find no better classifiers that satisfy Definition 4. This simple result has strong consequences, as the tradeoffs to satisfy both calibration and the equal-cost constraint are often unsatisfactory — both intuitively and experimentally (as we will show in Section 5). ",
+        "bbox": [
+            169,
+            494,
+            823,
+            566
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We find two primary objections to this solution. First, it equalizes costs simply by making a classifier strictly worse for one of the groups. Second, it achieves this cost increase by withholding information on a randomly chosen population subset, making the outcome inequitable within the group (as measured by a standard measure of inequality like the Gini coefficient). Due to the optimality of the algorithm, the former of these issues is unavoidable in any solution that satisfies Definition 4. The latter, however, is slightly more subtle, and brings up the question of individual fairness (what guarantees we would like an algorithm to make with respect to each individual) and how it interacts with group fairness (population-level guarantees). While this certainly is an important issue for future work, in this particular setting, even if one could find another algorithm that distributes the burden of additional cost more equitably, any algorithm will make at least as many false-positive/false-negative errors as Algorithm 1, and these misclassifications will always be tragic to the individuals whom they affect. The performance loss across the entire group is often significant enough to make this combination of constraints somewhat worrying to use in practice, regardless of the algorithm. ",
+        "bbox": [
+            169,
+            571,
+            825,
+            753
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Impossibility of Satisfying Multiple Equal-Cost Constraints. It is natural to argue there might be multiple cost functions that we would like to equalize across groups. However, satisfying more than one distinct equal-cost constraint (i.e. different curves in the F.P./F.N. plane) is infeasible. ",
+        "bbox": [
+            169,
+            758,
+            823,
+            801
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Theorem 1 (Generalized impossibility result). Let $h _ { 1 }$ and $h _ { 2 }$ be calibrated classifiers for $G _ { 1 }$ and $G _ { 2 }$ with equal cost with respect to $g _ { t }$ . If $\\mu _ { 1 } \\neq \\mu _ { 2 }$ , and if $h _ { 1 }$ and $h _ { 2 }$ also have equal cost with respect to a different cost function $g _ { t } ^ { \\prime }$ , then $h _ { 1 }$ and $h _ { 2 }$ must be perfect classifiers. ",
+        "bbox": [
+            169,
+            803,
+            825,
+            847
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "(Proof in Section S5). Note that this is a generalization of the impossibility result of [26]. Furthermore, we show in Theorem 9 (in Section S5) that this holds in an approximate sense: if calibration and multiple distinct equal-cost constraints are approximately achieved by some classifier, then that classifier must have approximately zero generalized false-positive and false-negative rates. ",
+        "bbox": [
+            169,
+            854,
+            825,
+            912
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_number",
+        "text": "6 ",
+        "bbox": [
+            493,
+            936,
+            504,
+            946
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/b2aca2bec023d12b37ca13d5888cabd85819ac153bfd243e4ed70d65f5f56f49.jpg",
+        "image_caption": [
+            "(a) Income Prediction. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            187,
+            107,
+            493,
+            227
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/e97ce6677d24229bf3a4b96847aef34b6ebd97b0e5c3d1f989895cb7828b63fa.jpg",
+        "image_caption": [
+            "(b) Health Prediction. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            506,
+            107,
+            810,
+            227
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/71ae1f1ff383ab78b919801f5d7c5bbd6691d9652442c14479575fb4d90a4b6c.jpg",
+        "image_caption": [
+            "(c) Recidivism Prediction. ",
+            "Figure 3: Generalized F.P. and F.N. rates for two groups under Equalized Odds and the calibrated relaxation. Diamonds represent post-processed classifiers. Points on the Equalized Odds (trained) graph represent classifiers achieved by modifying constraint hyperparameters. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            276,
+            258,
+            714,
+            369
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "5 Experiments ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            441,
+            313,
+            458
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In light of these findings, our goal is to understand the impact of imposing calibration and an equalcost constraint on real-world datasets. We will empirically show that, in many cases, this will result in performance degradation, while simultaneously increasing other notions of disparity. We perform experiments on three datasets: an income-prediction, a health-prediction, and a criminal recidivism dataset. For each task, we choose a cost function within our framework that is appropriate for the given scenario. We begin with two calibrated classifiers $h _ { 1 }$ and $h _ { 2 }$ for groups $G _ { 1 }$ and $G _ { 2 }$ . We assume that these classifiers cannot be significantly improved without more training data or features. We then derive $\\tilde { h } _ { 2 }$ to equalize the costs while maintaining calibration. The original classifiers are trained on a portion of the data, and then the new classifiers are derived using a separate holdout set. To compare against the (uncalibrated) Equalized Odds framework, we derive F.P./F.N. matching classifiers using the post-processing method of [19] (EO-Derived). On the criminal recidivism dataset, we additionally learn classifiers that directly encode the Equalized Odds constraints, using the methods of [37] (EO-Trained). (See Section S6 for detailed training and post-processing procedures.) We visualize model error rates on the generalized F.P. and F.N. plane. Additionally, we plot the calibrated classifier lines for $G _ { 1 }$ and $G _ { 2 }$ to visualize model calibration. ",
+        "bbox": [
+            169,
+            472,
+            826,
+            681
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Income Prediction. The Adult Dataset from UCI Machine Learning Repository [28] contains 14 demographic and occupational features for various people, with the goal of predicting whether a person’s income is above $\\$ 50$ , 000. In this scenario, we seek to achieve predictions with equalized cost across genders ( $G _ { 1 }$ represents women and $G _ { 2 }$ represents men). We model a scenario where the primary concern is ensuring equal generalized F.N. rates across genders, which would, for example, help job recruiters prevent gender discrimination in the form of underestimated salaries. Thus, we choose our cost constraint to require equal generalized F.N. rates across groups. In Figure 3a, we see that the original classifiers $h _ { 1 }$ and $h _ { 2 }$ approximately lie on the line of calibrated classifiers. In the left plot (EO-Derived), we see that it is possible to (approximately) match both error rates of the classifiers at the cost of $h _ { 1 } ^ { e o }$ deviating from the set of calibrated classifiers. In the right plot, we see that it is feasible to equalize the generalized F.N. rates while maintaining calibration. $h _ { 1 }$ and $\\tilde { h } _ { 2 }$ lie on the same level-order curve of $g _ { t }$ (represented by the dashed-gray line), and simultaneously remain on the “line” of calibrated classifiers. It is worth noting that achieving either notion of non-discrimination requires some cost to at least one of the groups. However, maintaining calibration further increases the difference in F.P. rates between groups. In some sense, the calibrated framework trades off one notion of disparity for another while simultaneously increasing the overall error rates. ",
+        "bbox": [
+            169,
+            686,
+            826,
+            912
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_number",
+        "text": "7 ",
+        "bbox": [
+            493,
+            935,
+            503,
+            946
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Health Prediction. The Heart Dataset from the UCI Machine Learning Repository contains 14 processed features from 906 adults in 4 geographical locations. The goal of this dataset is to accurately predict whether or not an individual has a heart condition. In this scenario, we would like to reduce disparity between middle-aged adults $( G _ { 1 } )$ and seniors $\\left( G _ { 2 } \\right)$ . In this scenario, we consider F.P. and F.N. to both be undesirable. A false prediction of a heart condition could result in unnecessary medical attention, while false negatives incur cost from delayed treatment. We therefore utilize the following cost function $g _ { t } ( h _ { t } ) = \\bar { r _ { f p } } h _ { t } ( \\mathbf { x } ) \\left( 1 - y \\right) + r _ { f n } \\left( 1 - h _ { t } ( \\mathbf { x } ) \\right) y$ , which essentially assigns a weight to both F.N. and F.P. predictions. In our experiments, we set $r _ { f p } = 1$ and $r _ { f n } = 3$ . In the right plot of Figure 3b, we can see that the level-order curves of the cost function form a curved line in the generalized F.P./F.N. plane. Because our original classifiers lie approximately on the same level-order curve, little change is required to equalize the costs of $h _ { 1 }$ and $\\tilde { h } _ { 2 }$ while maintaining calibration. This is the only experiment in which the calibrated framework incurs little additional cost, and therefore could be considered a viable option. However, it is worth noting that, in this example, the equal-cost constraint does not explicitly match either of the error types, and therefore the two groups will in expectation experience different types of errors. In the left plot of Figure 3b (EO-Derived), we see that it is alternatively feasible to explicitly match both the F.P. and F.N. rates while sacrificing calibration. ",
+        "bbox": [
+            169,
+            90,
+            826,
+            327
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Criminal Recidivism Prediction. Finally, we examine the frameworks in the context of our motivating example: criminal recidivism. As mentioned in the introduction, African Americans $( G _ { 1 } )$ receive a disproportionate number of F.P. predictions as compared with Caucasians $\\left( G _ { 2 } \\right)$ when automated risk tools are used in practice. Therefore, we aim to equalize the generalized F.P. rate. In this experiment, we modify the predictions made by the COMPAS tool [12], a risk-assessment tool used in practice by the American legal system. Additionally, we also see if it is possible to improve the classifiers with training-time Equalized Odds constraints using the methods of Zafar et al. [37] (EO-Trained). In Figure 3c, we first observe that the original classifiers $h _ { 1 }$ and $h _ { 2 }$ have large generalized F.P. and F.N. rates. Both methods of achieving Equalized Odds — training constraints (left plot) and postprocessing (middle plot) match the error rates while sacrificing calibration. However, we observe that, assuming $h _ { 1 }$ and $h _ { 2 }$ cannot be improved, it is infeasible to achieve the calibrated relaxation (Figure 3c right). This is an example where matching the F.P. rate of $h _ { 1 }$ would require a classifier worse than the trivial classifier $h ^ { \\mu _ { 2 } }$ . This example therefore represents an instance in which calibration is completely incompatible with any error-rate constraints. If the primary concern of criminal justice practitioners is calibration [12, 16], then there will inherently be discrimination in the form of F.P. and F.N. rates. However, if the Equalized Odds framework is adopted, the miscalibrated risk scores inherently cause discrimination to one group, as argued in the introduction. Therefore, the most meaningful change in such a setting would be an improvement to $h _ { 2 }$ (the classifier for African Americans) either through the collection of more data or the use of more salient features. A reduction in overall error to the group with higher cost will naturally lead to less error-rate disparity. ",
+        "bbox": [
+            169,
+            333,
+            826,
+            612
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "6 Discussion and Conclusion ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            635,
+            429,
+            651
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "We have observed cases in which calibration and relaxed Equalized Odds are compatible and cases where they are not. When it is feasible, the penalty of equalizing cost is amplified if the base rates between groups differ significantly. This is expected, as base rate differences are what give rise to cost-disparity in the calibrated setting. Seeking equality with respect to a single error rate (e.g. false-negatives, as in the income prediction experiment) will necessarily increase disparity with respect to the other error. This may be tolerable (in the income prediction case, some employees will end up over-paid) but could also be highly problematic (e.g. in criminal justice settings). Finally, we have observed that the calibrated relaxation is infeasible when the best (discriminatory) classifiers are not far from the trivial classifiers (leaving little room for interpolation). In such settings, we see that calibration is completely incompatible with an equalized error constraint. ",
+        "bbox": [
+            169,
+            669,
+            826,
+            808
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "In summary, we conclude that maintaining cost parity and calibration is desirable yet often difficult in practice. Although we provide an algorithm to effectively find the unique feasible solution to both constraints, it is inherently based on randomly exchanging the predictions of the better classifier with the trivial base rate. Even if fairness is reached in expectation, for an individual case, it may be hard to accept that occasionally consequential decisions are made by randomly withholding predictive information, irrespective of a particular person’s feature representation. In this paper we argue that, as long as calibration is required, no lower-error solution can be achieved. ",
+        "bbox": [
+            169,
+            813,
+            826,
+            912
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_number",
+        "text": "8 ",
+        "bbox": [
+            493,
+            935,
+            504,
+            946
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Acknowledgements ",
+        "text_level": 1,
+        "bbox": [
+            173,
+            89,
+            339,
+            108
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "GP, FW, and KQW are supported in part by grants from the National Science Foundation (III-1149882, III-1525919, III-1550179, III-1618134, and III-1740822), the Office of Naval Research DOD (N00014-17-1-2175), and the Bill and Melinda Gates Foundation. MR is supported by an NSF Graduate Research Fellowship (DGE-1650441). JK is supported in part by a Simons Investigator Award, an ARO MURI grant, a Google Research Grant, and a Facebook Faculty Research Grant. ",
+        "bbox": [
+            169,
+            119,
+            826,
+            191
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            173,
+            209,
+            267,
+            224
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[1] J. Angwin, J. Larson, S. Mattu, and L. Kirchner. Machine bias: There’s software used across the country to predict future criminals. And it’s biased against blacks. ProPublica, 2016. https://www.propublica.org/article/machine-bias-risk-assessments-in-criminal-sentencing. ",
+            "[2] S. Barocas and A. D. Selbst. Big data’s disparate impact. California Law Review, 104, 2016. ",
+            "[3] R. Berk. A primer on fairness in criminal justice risk assessments. Criminology, 41(6):6–9, 2016. ",
+            "[4] R. Berk, H. Heidari, S. Jabbari, M. Kearns, and A. Roth. Fairness in criminal justice risk assessments: The state of the art. arXiv preprint arXiv:1703.09207, 2017. ",
+            "[5] T. Bolukbasi, K.-W. Chang, J. Y. Zou, V. Saligrama, and A. T. Kalai. Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In NIPS, pages 4349–4357, 2016. ",
+            "[6] T. Calders and S. Verwer. Three naive bayes approaches for discrimination-free classification. KDD, 2012. ",
+            "[7] T. Calders, F. Kamiran, and M. Pechenizkiy. Building classifiers with independency constraints. In ICDM Workshops, 2009. ",
+            "[8] A. Chouldechova. Fair prediction with disparate impact: A study of bias in recidivism prediction instruments. arXiv preprint arXiv:1703.00056, 2017. ",
+            "[9] S. Corbett-Davies, E. Pierson, A. Feller, S. Goel, and A. Huq. Algorithmic decision making and the cost of fairness. In KDD, pages 797–806, 2017. ",
+            "[10] C. S. Crowson, E. J. Atkinson, and T. M. Therneau. Assessing calibration of prognostic risk scores. Statistical Methods in Medical Research, 25(4):1692–1706, 2016. ",
+            "[11] A. P. Dawid. The well-calibrated bayesian. Journal of the American Statistical Association, 77(379): 605–610, 1982. ",
+            "[12] W. Dieterich, C. Mendoza, and T. Brennan. COMPAS risk scales: Demonstrating accuracy equity and predictive parity. Technical report, Northpointe, July 2016. http://www.northpointeinc.com/northpointeanalysis. ",
+            "[13] C. Dwork, M. Hardt, T. Pitassi, O. Reingold, and R. Zemel. Fairness through awareness. In Innovations in Theoretical Computer Science, 2012. ",
+            "[14] H. Edwards and A. Storkey. Censoring representations with an adversary. In ICLR, 2016. ",
+            "[15] M. Feldman, S. A. Friedler, J. Moeller, C. Scheidegger, and S. Venkatasubramanian. Certifying and removing disparate impact. In KDD, pages 259–268, 2015. ",
+            "[16] A. Flores, C. Lowenkamp, and K. Bechtel. False positives, false negatives, and false analyses: A rejoinder to “machine bias: There’s software used across the country to predict future criminals. and it’s biased against blacks.”. Technical report, Crime & Justice Institute, September 2016. http://www.crj.org/cji/entry/falsepositives-false-negatives-and-false-analyses-a-rejoinder. ",
+            "[17] G. Goh, A. Cotter, M. Gupta, and M. P. Friedlander. Satisfying real-world goals with dataset constraints. In NIPS, pages 2415–2423. 2016. ",
+            "[18] C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger. On calibration of modern neural networks. In ICML, 2017. ",
+            "[19] M. Hardt, E. Price, and S. Nathan. Equality of opportunity in supervised learning. In Advances in Neural Information Processing Systems, 2016. "
+        ],
+        "bbox": [
+            173,
+            232,
+            828,
+            912
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "page_number",
+        "text": "9 ",
+        "bbox": [
+            493,
+            935,
+            504,
+            946
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[20] J. E. Johndrow and K. Lum. An algorithm for removing sensitive information: application to raceindependent recidivism prediction. arXiv preprint arXiv:1703.04957, 2017. ",
+            "[21] M. Joseph, M. Kearns, J. H. Morgenstern, and A. Roth. Fairness in learning: Classic and contextual bandits. In NIPS, 2016. ",
+            "[22] F. Kamiran and T. Calders. Classifying without discriminating. In International Conference on Computer Control and Communication, 2009. ",
+            "[23] T. Kamishima, S. Akaho, and J. Sakuma. Fairness-aware learning through regularization approach. In ICDM Workshops, 2011. ",
+            "[24] M. Kearns, A. Roth, and Z. S. Wu. Meritocratic fairness for cross-population selection. In International Conference on Machine Learning, pages 1828–1836, 2017. ",
+            "[25] N. Kilbertus, M. Rojas-Carulla, G. Parascandolo, M. Hardt, D. Janzing, and B. Schölkopf. Avoiding discrimination through causal reasoning. In NIPS, 2017. ",
+            "[26] J. Kleinberg, S. Mullainathan, and M. Raghavan. Inherent trade-offs in the fair determination of risk scores. In Innovations in Theoretical Computer Science. ACM, 2017. ",
+            "[27] M. J. Kusner, J. R. Loftus, C. Russell, and R. Silva. Counterfactual fairness. arXiv preprint arXiv:1703.06856, 2017. ",
+            "[28] M. Lichman. UCI machine learning repository, 2013. URL http://archive.ics.uci.edu/ml. ",
+            "[29] C. Louizos, K. Swersky, Y. Li, M. Welling, and R. Zemel. The variational fair auto encoder. In ICLR, 2016. ",
+            "[30] A. Niculescu-Mizil and R. Caruana. Predicting good probabilities with supervised learning. In ICML, 2005. ",
+            "[31] J. Platt. Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods. Advances in Large Margin Classifiers, 10(3):61–74, 1999. ",
+            "[32] A. Romei and S. Ruggieri. A multidisciplinary survey on discrimination analysis. The Knowledge Engineering Review, 29(05):582–638, 2014. ",
+            "[33] White-House. Big data: A report on algorithmic systems, opportunity, and civil rights. Technical report, May 2016. ",
+            "[34] B. Woodworth, S. Gunasekar, M. I. Ohannessian, and N. Srebro. Learning non-discriminatory predictors. In Proceedings of the 2017 Conference on Learning Theory, volume 65, pages 1920–1953, Amsterdam, Netherlands, 07–10 Jul 2017. PMLR. ",
+            "[35] B. Zadrozny and C. Elkan. Obtaining calibrated probability estimates from decision trees and naive bayesian classifiers. In ICML, pages 609–616, 2001. ",
+            "[36] M. B. Zafar, I. Valera, M. G. Rodriguez, and K. P. Gummadi. Learning fair classifiers. arXiv preprint arXiv:1507.05259, 2015. ",
+            "[37] M. B. Zafar, I. Valera, M. G. Rodriguez, and K. P. Gummadi. Fairness beyond disparate treatment & disparate impact: Learning classification without disparate mistreatment. In World Wide Web Conference, 2017. ",
+            "[38] R. S. Zemel, Y. Wu, K. Swersky, T. Pitassi, and C. Dwork. Learning fair representations. In ICML, 2013. ",
+            "[39] I. Zliobaite. On the relation between accuracy and fairness in binary classification. In ICML Workshop on Fairness, Accountability, and Transparency in Machine Learning, 2015. "
+        ],
+        "bbox": [
+            173,
+            90,
+            828,
+            787
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "page_number",
+        "text": "10 ",
+        "bbox": [
+            490,
+            935,
+            509,
+            946
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Supplementary Information for: On Fairness and Calibration ",
+        "text_level": 1,
+        "bbox": [
+            197,
+            122,
+            799,
+            170
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Geoff Pleiss∗, Manish Raghavan∗, Felix Wu, Jon Kleinberg, Kilian Q. Weinberger ",
+        "bbox": [
+            205,
+            220,
+            794,
+            236
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Cornell University, Department of Computer Science ",
+        "bbox": [
+            323,
+            236,
+            673,
+            250
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "{geoff,manish,kleinber}@cs.cornell.edu, ",
+        "bbox": [
+            331,
+            250,
+            663,
+            263
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "{fw245,kwq4}@cornell.edu ",
+        "bbox": [
+            395,
+            263,
+            601,
+            277
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "For simplicity, our focus thus far has been on classifiers that are perfectly calibrated. Here, we introduce an approximate notion of calibration, which we will use in subsequent proofs. ",
+        "bbox": [
+            169,
+            315,
+            823,
+            345
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Definition 5. The calibration gap $\\epsilon ( h _ { t } )$ of a classifier $h _ { t }$ with respect to a group $G _ { t }$ is ",
+        "bbox": [
+            169,
+            349,
+            736,
+            364
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\epsilon \\left(h _ {t}\\right) = \\int_ {0} ^ {1} \\left| \\underset {(\\mathbf {x}, y) \\sim G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h (\\mathbf {x}) = p ] - p \\right| \\underset {(\\mathbf {x}, y) \\sim G _ {t}} {\\mathrm {P}} [ h (\\mathbf {x}) = p ] d p. \\tag {S1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            272,
+            375,
+            823,
+            410
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Thus, a classifier $h _ { t }$ is perfectly calibrated $i f \\epsilon ( h _ { t } ) = 0$ . ",
+        "bbox": [
+            169,
+            420,
+            535,
+            436
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "A majority of this supplementary material is devoted to proving approximate versions of our major findings. In all cases, our results degrade smoothly as the calibration condition is relaxed. In addition, we also provide extended details on the experiments run in this paper. ",
+        "bbox": [
+            169,
+            448,
+            826,
+            491
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Note that we will use the notational abuse $\\mathrm { P } _ { G _ { t } }$ and $\\mathbb { E } { G } _ { t }$ in place of $\\mathrm { P } _ { ( \\mathbf { x } , y ) \\sim G _ { t } }$ and $\\mathbb { E } ( \\mathbf { x } , y ) \\sim G _ { t }$ ",
+        "bbox": [
+            169,
+            496,
+            784,
+            513
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "S1 Linearity of Calibrated Classifiers ",
+        "text_level": 1,
+        "bbox": [
+            169,
+            534,
+            501,
+            551
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "In Section 3, we claim that the set of all calibrated classifiers $\\mathcal { H } _ { t } ^ { * }$ for group $G _ { t }$ form a line in the generalized false-positive/false-negative plane. The following proof of this claim is adapted from [26]. ",
+        "bbox": [
+            169,
+            566,
+            823,
+            609
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Lemma 2. For a group $G _ { t }$ , if a classifier $h _ { t }$ has $\\epsilon ( h _ { t } ) \\leq \\delta _ { c a l }$ , then ",
+        "bbox": [
+            169,
+            614,
+            614,
+            631
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left| \\mu_ {t} c _ {f n} (h _ {t}) - (1 - \\mu_ {t}) c _ {f p} (h _ {t}) \\right| \\leq 2 \\delta_ {c a l}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            362,
+            641,
+            632,
+            660
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "where $c _ { f p } ( h _ { t } )$ and $c _ { f n } ( h _ { t } )$ are the generalized false-positive and false-negative and $\\mu _ { t }$ is the base rate of group $G _ { t }$ . ",
+        "bbox": [
+            169,
+            670,
+            823,
+            699
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Proof. First, note that ",
+        "bbox": [
+            171,
+            724,
+            320,
+            738
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} c _ {f p} (h _ {t}) = \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\mid y = 0 \\right] \\\\ = \\int_ {0} ^ {1} p \\underset {G _ {t}} {\\mathrm {P}} \\left[ h _ {t} (\\mathbf {x}) = p \\mid y = 0 \\right] d p \\\\ = \\int_ {0} ^ {1} p \\frac {1 - \\mathrm {P} _ {G _ {t}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ]}{1 - \\mathrm {P} _ {G _ {t}} [ y = 1 ]} \\mathrm {P} _ {G _ {t}} [ h _ {t} (\\mathbf {x}) = p ] d p \\\\ = \\frac {1}{1 - \\mu_ {t}} \\int_ {0} ^ {1} p \\left(1 - \\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ]\\right) \\underset {G _ {t}} {\\mathrm {P}} [ h _ {t} (\\mathbf {x}) = p ] d p \\tag {S2} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            272,
+            747,
+            823,
+            883
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "page_footnote",
+        "text": "∗Equal contribution, alphebetical order. ",
+        "bbox": [
+            191,
+            897,
+            426,
+            911
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Next, observe that ",
+        "bbox": [
+            171,
+            92,
+            295,
+            104
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\int_ {0} ^ {1} p \\cdot \\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ] \\cdot \\underset {G _ {t}} {\\mathrm {P}} [ h _ {t} (\\mathbf {x}) = p ] d p \\\\ = \\int_ {0} ^ {1} p (p + \\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ] - p) \\underset {G _ {t}} {\\mathrm {P}} [ h _ {t} (\\mathbf {x}) = p ] d p \\\\ \\leq \\int_ {0} ^ {1} \\left(p ^ {2} + | \\mathrm {P} _ {G _ {t}} [ y = 1 | h _ {t} (\\mathbf {x}) = p ] - p |\\right) \\mathrm {P} _ {G _ {t}} [ h _ {t} (\\mathbf {x}) = p ] d p \\\\ \\leq \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] + \\delta_ {c a l} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            289,
+            113,
+            709,
+            246
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Similarly, ",
+        "bbox": [
+            171,
+            253,
+            240,
+            268
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\int_ {0} ^ {1} p \\cdot \\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ] \\underset {G _ {t}} {\\mathrm {P}} [ h _ {t} (\\mathbf {x}) = p ] d p \\\\ \\geq \\int_ {0} ^ {1} \\left(p ^ {2} - | P _ {G _ {t}} [ y = 1 | h _ {t} (\\mathbf {x}) = p ] - p |\\right) P _ {G _ {t}} [ h _ {t} (\\mathbf {x}) = p ] d p \\\\ \\geq \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] - \\delta_ {c a l} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            289,
+            277,
+            709,
+            373
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Plugging these into (S2), we have ",
+        "bbox": [
+            171,
+            382,
+            395,
+            397
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\frac {1}{1 - \\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] - \\delta_ {c a l}\\right) \\leq c _ {f p} \\left(h _ {t}\\right) \\\\ \\leq \\frac {1}{1 - \\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] + \\delta_ {c a l}\\right) \\tag {S3} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            334,
+            405,
+            821,
+            468
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "We follow a similar procedure for $c _ { f n } ( h _ { t } )$ : ",
+        "bbox": [
+            171,
+            477,
+            455,
+            493
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} c _ {f n} \\left(h _ {t}\\right) = \\underset {G _ {t}} {\\mathbb {E}} \\left[ 1 - h _ {t} (\\mathbf {x}) \\mid y = 0 \\right] \\\\ = \\int_ {0} ^ {1} (1 - p) \\mathrm {P} _ {G _ {t}} \\left[ h _ {t} (\\mathbf {x}) = p \\mid y = 0 \\right] d p \\\\ = \\int_ {0} ^ {1} (1 - p) \\frac {\\mathrm {P} _ {G _ {t}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ]}{\\mathrm {P} _ {G _ {t}} [ y = 1 ]} \\mathrm {P} _ {G _ {t}} [ h _ {t} (\\mathbf {x}) = p ] d p. \\\\ = \\frac {1}{\\mu_ {t}} \\int_ {0} ^ {1} (1 - p) \\left(\\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ]\\right) \\underset {G _ {t}} {\\mathrm {P}} [ h _ {t} (\\mathbf {x}) = p ] d p. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            279,
+            501,
+            717,
+            633
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "We use the fact that ",
+        "bbox": [
+            171,
+            642,
+            303,
+            655
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} (1 - p) \\left(\\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ]\\right) \\\\ = (1 - p) \\left(p + \\underset {G _ {t}} {\\mathrm {P}} \\left[ y = 1 \\mid h _ {t} (\\mathbf {x}) = p \\right] - p\\right) \\\\ \\leq p (1 - p) + \\left| \\begin{array}{c} \\mathrm {P} \\\\ G _ {t} \\end{array} \\right. [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ] - p | \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            338,
+            665,
+            658,
+            737
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "and ",
+        "bbox": [
+            171,
+            744,
+            200,
+            758
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} (1 - p) \\left(\\underset {G _ {t}} {\\mathrm {P}} [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ]\\right) \\\\ \\geq p (1 - p) - \\left| \\begin{array}{c} \\mathrm {P} \\\\ G _ {t} \\end{array} \\right. [ y = 1 \\mid h _ {t} (\\mathbf {x}) = p ] - p | \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            338,
+            768,
+            658,
+            815
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "to get ",
+        "bbox": [
+            171,
+            823,
+            212,
+            835
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\frac {1}{\\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] - \\delta_ {c a l}\\right) \\leq c _ {f n} \\left(h _ {t}\\right) \\\\ \\leq \\frac {1}{\\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] + \\delta_ {c a l}\\right) \\tag {S4} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            348,
+            845,
+            821,
+            909
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "page_number",
+        "text": "12 ",
+        "bbox": [
+            490,
+            935,
+            508,
+            946
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Combining (S3) and (S4), we have ",
+        "bbox": [
+            171,
+            90,
+            403,
+            104
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} c _ {f n} \\left(h _ {t}\\right) \\leq \\frac {1}{\\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] + \\delta_ {c a l}\\right) \\\\ = \\frac {1}{\\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] - \\delta_ {c a l} + 2 \\delta_ {c a l}\\right) \\\\ \\leq \\frac {1}{\\mu_ {t}} \\left(\\left(1 - \\mu_ {t}\\right) c _ {f p} \\left(h _ {t}\\right) + 2 \\delta_ {c a l}\\right) \\\\ = \\frac {1 - \\mu_ {t}}{\\mu_ {t}} c _ {f p} (h _ {t}) + \\frac {2 \\delta_ {c a l}}{\\mu_ {t}} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            320,
+            116,
+            676,
+            244
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "We can get a similar lower bound for $c _ { f n } ( h _ { t } )$ as ",
+        "bbox": [
+            171,
+            253,
+            491,
+            270
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} c _ {f n} \\left(h _ {t}\\right) \\geq \\frac {1}{\\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right] - \\delta_ {c a l}\\right) \\\\ \\geq \\frac {1}{\\mu_ {t}} \\left(\\left(1 - \\mu_ {t}\\right) c _ {f p} \\left(h _ {t}\\right) - 2 \\delta_ {c a l}\\right) \\\\ = \\frac {1 - \\mu_ {t}}{\\mu_ {t}} c _ {f p} (h _ {t}) - \\frac {2 \\delta_ {c a l}}{\\mu_ {t}} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            279,
+            648,
+            376
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Multiplying these inequalities by $\\mu _ { t }$ completes this proof. ",
+        "bbox": [
+            171,
+            383,
+            552,
+            400
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "image",
+        "img_path": "images/731f5d228dee579371bf8f2faa372094cee18d0d4a1fa4c7bde2dccf777d2396.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            807,
+            385,
+            823,
+            396
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Corollary 2.1. Let $\\mathcal { H } _ { t }$ be the set of perfectly calibrated classifiers for group $G _ { t }$ — i.e. for any $h _ { t } ^ { * } \\in \\mathcal { H } _ { T }$ , we have $\\epsilon ( h _ { t } ^ { * } ) = 0$ . The generalized false-positive and false-negative rates of $h _ { t } ^ { * }$ are given by ",
+        "bbox": [
+            169,
+            412,
+            823,
+            454
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f p} \\left(h _ {t} ^ {*}\\right) = \\frac {1}{1 - \\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right]\\right) \\tag {S5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            464,
+            823,
+            496
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f n} \\left(h _ {t} ^ {*}\\right) = \\frac {1}{\\mu_ {t}} \\left(\\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) \\right] - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (\\mathbf {x}) ^ {2} \\right]\\right) \\tag {S6}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            500,
+            823,
+            531
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Proof. This is a direct consequence of (S3) and (S4). ",
+        "bbox": [
+            171,
+            549,
+            521,
+            565
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "image",
+        "img_path": "images/e47b5d0526b3c4cf38df649c8c6cafecb42f3d99f5a7dfc7fd0354b787f76467.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            807,
+            550,
+            823,
+            561
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Corollary 2.2. For a group $G _ { t }$ , any perfectly calibrated classifier $h _ { t } ^ { * }$ satisfies ",
+        "bbox": [
+            171,
+            577,
+            684,
+            593
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f n} \\left(h _ {t} ^ {*}\\right) = \\frac {1 - \\mu_ {t}}{\\mu_ {t}} c _ {f p} \\left(h _ {t}\\right). \\tag {S7}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            406,
+            601,
+            823,
+            632
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "In other words, all perfectly calibrated classifiers $h _ { t } ^ { * } \\in \\mathcal { H } _ { t }$ for group $G _ { t }$ lie on a line in the generalized false-positive/false-negative plane, where the slope of the line is uniquely determined by the group’s base-rate $\\mu _ { t }$ . ",
+        "bbox": [
+            169,
+            647,
+            823,
+            689
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "S2 Cost Functions ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            710,
+            341,
+            726
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "We will prove a few claims about cost functions $g _ { t }$ of the form given by (2) — i.e. ",
+        "bbox": [
+            171,
+            742,
+            710,
+            758
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\ng _ {t} \\left(h _ {t}\\right) = a _ {t} c _ {f p} \\left(h _ {t}\\right) + b _ {t} c _ {f n} \\left(h _ {t}\\right)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            388,
+            766,
+            606,
+            782
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "for some non-negative constants $a _ { t }$ and $b _ { t }$ . First, we show that $h ^ { \\mu _ { t } }$ is the calibrated classifier that maximizes $g _ { t }$ . ",
+        "bbox": [
+            169,
+            790,
+            823,
+            819
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Lemma 3. For any cost function $g _ { t }$ that follows the form of (2), the trivial classifier $h ^ { \\mu _ { t } }$ is the calibrated classifier for $G _ { t }$ with maximum cost. ",
+        "bbox": [
+            169,
+            824,
+            823,
+            853
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Proof. Again, let $g _ { t }$ be a cost function: ",
+        "bbox": [
+            171,
+            872,
+            431,
+            887
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "equation",
+        "text": "$$\ng _ {t} (h) = a _ {t} c _ {f p} (h _ {t}) + b _ {t} c _ {f n} (h _ {t}).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            388,
+            896,
+            604,
+            912
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            490,
+            935,
+            506,
+            946
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Using (S5) and (S6), we have that, for every classifier $h _ { t }$ that is perfectly calibrated for group $G _ { t }$ ",
+        "bbox": [
+            171,
+            90,
+            810,
+            107
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} g _ {t} (h _ {t}) = a _ {t} c _ {f p} (h _ {t}) + b _ {t} c _ {f n} (h _ {t}) \\\\ = \\left(\\frac {a _ {t}}{1 - \\mu_ {t}} + \\frac {b _ {t}}{\\mu_ {t}}\\right) \\left(\\underset {G _ {t}} {\\mathbb {E}} [ h _ {t} (x) ] - \\underset {G _ {t}} {\\mathbb {E}} [ h _ {t} (x) ^ {2} ]\\right) \\\\ = \\left(\\frac {a _ {t}}{1 - \\mu_ {t}} + \\frac {b _ {t}}{\\mu_ {t}}\\right) \\left(\\mu_ {t} - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h _ {t} (x) ^ {2} \\right]\\right). \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            316,
+            114,
+            676,
+            200
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "The last equation holds because $\\mathbb { E } _ { G _ { t } } \\left[ h _ { t } ( \\mathbf { x } ) \\right] = \\mu _ { t }$ for any calibrated classifier – a fact which can easily be derived from Definition 5. ",
+        "bbox": [
+            169,
+            209,
+            823,
+            238
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "We would like to find, $h _ { t } ^ { \\operatorname* { m a x } } \\in \\mathcal { H } _ { t } ^ { * }$ , the calibrated classifier with the highest weighted cost. Because $\\begin{array} { r } { \\left( { \\frac { a _ { t } } { 1 - \\mu _ { t } } } + { \\frac { b _ { t } } { \\mu _ { t } } } \\right) } \\end{array}$ and $\\mu _ { t }$ are non-negative constants, we have ",
+        "bbox": [
+            171,
+            243,
+            823,
+            282
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} h _ {t} ^ {\\max } = \\underset {h \\in \\mathcal {H} _ {t} ^ {*}} {\\operatorname {a r g m a x}} \\left[ \\left(\\frac {a _ {t}}{1 - \\mu_ {t}} + \\frac {b _ {t}}{\\mu_ {t}}\\right) \\left(\\mu_ {t} - \\underset {G _ {t}} {\\mathbb {E}} [ h (x) ^ {2} ]\\right) \\right] \\\\ = \\operatorname * {a r g m a x} _ {h \\in \\mathcal {H} _ {t} ^ {*}} \\left[ - \\underset {G _ {t}} {\\mathbb {E}} \\left[ h (x) ^ {2} \\right] \\right] \\\\ = \\operatorname * {a r g m i n} _ {h \\in \\mathcal {H} _ {t} ^ {*}} \\left[ \\underset {G _ {t}} {\\mathbb {E}} \\left[ h (x) ^ {2} \\right] \\right] \\\\ = \\operatorname * {a r g m i n} _ {h \\in \\mathcal {H} _ {t} ^ {*}} \\left[ \\underset {G _ {t}} {\\mathbb {E}} \\left[ h (x) ^ {2} \\right] - \\mu_ {t} ^ {2} \\right] \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            313,
+            292,
+            681,
+            426
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Thus, the calibrated classifier with minimum variance will have the highest cost. This translates to a classifier that outputs the same probability for every sample. By the calibration constraint, this constant must be equal to $\\mu _ { t }$ , so this classifier must be the trivial classifier $h ^ { \\mu _ { t } }$ — i.e. for all x ",
+        "bbox": [
+            169,
+            436,
+            823,
+            479
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\nh _ {t} ^ {\\max } (\\mathbf {x}) = h ^ {\\mu_ {t}} (\\mathbf {x}) = \\mu_ {t}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            411,
+            486,
+            584,
+            503
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/3ccc0a2f6b2fb4362fbda75d75c063754c5d8d667077bba1a1b3e9f0be7060db.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            807,
+            511,
+            823,
+            523
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Next, we show that $g _ { t }$ is linear under randomized interpolations. ",
+        "bbox": [
+            169,
+            542,
+            594,
+            558
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Lemma 4. Let $\\tilde { h } _ { 2 }$ be the classifier derived from (3) with interpolation parameter $\\alpha \\in [ 0 , 1 ]$ . The cost of $\\tilde { h } _ { 2 }$ is given by ",
+        "bbox": [
+            169,
+            564,
+            823,
+            595
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\ng _ {2} (\\tilde {h} _ {2}) = (1 - \\alpha) g _ {2} (h _ {2}) + \\alpha g _ {2} \\left(h ^ {\\mu_ {2}}\\right)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            375,
+            595,
+            620,
+            613
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Proof. The cost of $\\tilde { h } _ { 2 }$ can be calculated using linearity of expectation. Let $B$ be a Bernoulli random variable with parameter $\\alpha$ . ",
+        "bbox": [
+            169,
+            632,
+            823,
+            660
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} g _ {2} (\\tilde {h} _ {2}) = a _ {2} c _ {f p} (\\tilde {h} _ {2}) + b _ {2} c _ {f n} (\\tilde {h} _ {2}) \\\\ = a _ {2} \\underset {G _ {2}} {\\mathbb {E}} \\left[ 1 - \\tilde {h} _ {2} (\\mathbf {x}) \\mid y = 1 \\right] + b _ {2} \\underset {G _ {2}} {\\mathbb {E}} \\left[ \\tilde {h} _ {2} (\\mathbf {x}) \\mid y = 0 \\right] \\\\ = a _ {2} \\underset {B, G _ {2}} {\\mathbb {E}} \\left[ 1 - \\left[ (1 - B) h _ {2} (\\mathbf {x}) + B h ^ {\\mu_ {2}} (\\mathbf {x}) \\right] \\mid y = 1 \\right] + b _ {2} \\underset {B, G _ {2}} {\\mathbb {E}} \\left[ \\left[ (1 - B) h _ {2} (\\mathbf {x}) + B h ^ {\\mu_ {2}} (\\mathbf {x}) \\right] \\mid y = 0 \\right] \\\\ = a _ {2} \\underset {B, G _ {2}} {\\mathbb {E}} [ (1 - B) (1 - h _ {2} (\\mathbf {x})) \\mid y = 1 ] + a _ {2} \\underset {B, G _ {2}} {\\mathbb {E}} [ B (1 - h ^ {\\mu_ {2}} (\\mathbf {x})) \\mid y = 1 ] \\\\ + b _ {2} \\underset {B, G _ {2}} {\\mathbb {E}} [ (1 - B) h _ {2} (\\mathbf {x}) \\mid y = 0 ] + b _ {2} \\underset {B, G _ {2}} {\\mathbb {E}} \\left[ B h ^ {\\mu_ {2}} (\\mathbf {x}) \\mid y = 0 \\right] \\\\ = a _ {2} \\underset {B} {\\mathbb {E}} [ 1 - B ] \\underset {G _ {2}} {\\mathbb {E}} [ 1 - h _ {2} (\\mathbf {x}) \\mid y = 1 ] + a _ {2} \\underset {B} {\\mathbb {E}} [ B ] \\underset {G _ {2}} {\\mathbb {E}} [ 1 - h ^ {\\mu_ {2}} (\\mathbf {x}) \\mid y = 1 ] \\\\ + b _ {2} \\underset {B} {\\mathbb {E}} [ 1 - B ] \\underset {G _ {2}} {\\mathbb {E}} [ h _ {2} (\\mathbf {x}) \\mid y = 0 ] + b _ {2} \\underset {B} {\\mathbb {E}} [ B ] \\underset {G _ {2}} {\\mathbb {E}} [ h ^ {\\mu_ {2}} (\\mathbf {x}) \\mid y = 0 ] \\\\ = a _ {2} (1 - \\alpha) c _ {f p} (h _ {2}) + b _ {2} (1 - \\alpha) c _ {f n} (h _ {2}) + a _ {2} (\\alpha) c _ {f p} \\left(h ^ {\\mu_ {2}}\\right) + b _ {2} (\\alpha) c _ {f n} \\left(h ^ {\\mu_ {2}}\\right) \\\\ = (1 - \\alpha) g _ {2} \\left(h _ {2}\\right) + \\alpha g _ {2} \\left(h ^ {\\mu_ {2}}\\right). \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            174,
+            671,
+            867,
+            888
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "page_number",
+        "text": "14 ",
+        "bbox": [
+            488,
+            935,
+            508,
+            946
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "S3 Relationship Between Cost and Error ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            89,
+            529,
+            107
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "In Section 3, we claim that there is a tight connection between reducing any cost function $g _ { t } ( h _ { t } )$ and reducing the generalized error rates $c _ { f p } ( h _ { t } )$ and $c _ { f n } ( h _ { t } )$ for approximately calibrated classifiers. In other words, assuming we are approximately calibrated, improving cost will approximately improve our error rates. We formalize this notion in this section: ",
+        "bbox": [
+            169,
+            119,
+            823,
+            176
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Lemma 5. Let $h _ { t }$ be a classifier with $\\epsilon ( h _ { t } ) = \\delta _ { c a l }$ and cost $g _ { t } ( h _ { t } )$ . For any other classifier $h _ { t } ^ { \\prime }$ , if $\\begin{array} { r } { c _ { f p } ( h _ { t } ^ { \\prime } ) < c _ { f p } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { 1 - \\mu _ { t } } } \\end{array}$ or $\\begin{array} { r } { c _ { f n } ( h _ { t } ^ { \\prime } ) < c _ { f n } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { \\mu _ { t } } } \\end{array}$ 4δcalµ , then gt(h0t) < gt(ht) or \u000f(ht) > δcal. $g _ { t } ( h _ { t } ^ { \\prime } ) < g _ { t } ( h _ { t } )$ $\\epsilon ( h _ { t } ) > \\delta _ { c a l }$ t ",
+        "bbox": [
+            169,
+            179,
+            826,
+            215
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Proof. First, assume that $\\begin{array} { r } { c _ { f p } ( h _ { t } ^ { \\prime } ) < c _ { f p } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { 1 - \\mu _ { t } } } \\end{array}$ 1−µt . Then, there are two cases: either $c _ { f n } \\big ( h _ { t } ^ { \\prime } \\big ) <$ $c _ { f n } ( h _ { t } )$ or $c _ { f n } ( h _ { t } ^ { \\prime } ) \\geq c _ { f n } ( h _ { t } )$ . In the first case, $\\dot { g _ { t } } ( h _ { t } ^ { \\prime } ) < g _ { t } ( h _ { t } )$ because $c _ { f p } ( h _ { t } ^ { \\prime } ) < c _ { f p } ( h _ { t } )$ and $\\dot { c _ { f n } } ( h _ { t } ^ { \\prime } ) < \\dot { c _ { f n } } ( h _ { t } )$ . In the second case, if $\\epsilon ( h _ { t } ^ { \\prime } ) \\leq \\delta _ { c a l }$ , we can use Lemma 2 to get ",
+        "bbox": [
+            169,
+            229,
+            823,
+            277
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} c _ {f p} \\left(h _ {t} ^ {\\prime}\\right) \\geq \\frac {\\mu_ {t}}{1 - \\mu_ {t}} c _ {f n} \\left(h _ {t} ^ {\\prime}\\right) - \\frac {2 \\delta_ {c a l}}{1 - \\mu_ {t}} \\\\ \\geq \\frac {\\mu_ {t}}{1 - \\mu_ {t}} c _ {f n} (h _ {t}) - \\frac {2 \\delta_ {c a l}}{1 - \\mu_ {t}} \\\\ \\geq c _ {f p} (h _ {t}) - \\frac {4 \\delta_ {c a l}}{1 - \\mu_ {t}} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            377,
+            284,
+            616,
+            381
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Since this contradicts the initial assumption that $\\begin{array} { r } { c _ { f p } ( h _ { t } ^ { \\prime } ) < c _ { f p } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { 1 - \\mu _ { t } } } \\end{array}$ 4δcal1−µ , it cannot be the case that $\\epsilon ( h _ { t } ^ { \\prime } ) \\leq \\delta _ { c a l }$ . This proves the lemma when $\\begin{array} { r } { c _ { f p } ( h _ { t } ^ { \\prime } ) < c _ { f p } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { 1 - \\mu _ { t } } } \\end{array}$ . ",
+        "bbox": [
+            169,
+            388,
+            823,
+            428
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "To prove the second part, we now assume that $\\begin{array} { r } { c _ { f n } ( h _ { t } ^ { \\prime } ) < c _ { f n } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { \\mu _ { t } } } \\end{array}$ . We again break this into two cases. If $c _ { f p } ( h _ { t } ^ { \\prime } ) < c _ { f p } ( h _ { t } )$ , then $g _ { t } ( h _ { t } ^ { \\prime } ) < g _ { t } ( h _ { t } )$ . If $c _ { f p } ( h _ { t } ^ { \\prime } ) \\geq c _ { f p } ( h _ { t } )$ , then under the assumption that $\\epsilon ( h _ { t } ^ { \\prime } ) \\leq \\delta _ { c a l }$ , we can rearrange Lemma 2 to get ",
+        "bbox": [
+            169,
+            433,
+            825,
+            481
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} c _ {f n} \\left(h _ {t} ^ {\\prime}\\right) \\geq \\frac {1 - \\mu_ {t}}{\\mu_ {t}} c _ {f p} \\left(h _ {t} ^ {\\prime}\\right) - \\frac {2 \\delta_ {c a l}}{\\mu_ {t}} \\\\ \\geq \\frac {1 - \\mu_ {t}}{\\mu_ {t}} c _ {f p} (h _ {t}) - \\frac {2 \\delta_ {c a l}}{\\mu_ {t}} \\\\ \\geq c _ {f n} \\left(h _ {t}\\right) - \\frac {4 \\delta_ {c a l}}{\\mu_ {t}} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            383,
+            487,
+            612,
+            584
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Again, this contradicts the assumption that $\\begin{array} { r } { c _ { f n } ( h _ { t } ^ { \\prime } ) < c _ { f n } ( h _ { t } ) - \\frac { 4 \\delta _ { c a l } } { \\mu _ { t } } } \\end{array}$ 4δcal , so it cannot be the case that µt $\\epsilon ( h _ { t } ^ { \\prime } ) \\leq \\delta _ { c a l }$ . This completes the proof. 1 ",
+        "bbox": [
+            169,
+            592,
+            823,
+            626
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "From this result we can derive a stronger claim for perfectly calibrated classifiers. ",
+        "bbox": [
+            169,
+            638,
+            707,
+            654
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Lemma 6. Let $h _ { t }$ and $h _ { t } ^ { \\prime }$ be perfectly calibrated classifiers with cost $g _ { t } ( h _ { t } ) \\leq g _ { t } ( h _ { t } ^ { \\prime } )$ for some cost function $g _ { t }$ . Then $c _ { f p } ( h _ { t } ) \\leq c _ { f p } ( h _ { t } ^ { \\prime } )$ and $c _ { f n } ( h _ { t } ) \\leq c _ { f n } ( h _ { t } ^ { \\prime } )$ , with equality only if $g _ { t } ( h _ { t } ) = g _ { t } ( h _ { t } ^ { \\prime } )$ . ",
+        "bbox": [
+            168,
+            657,
+            823,
+            688
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "S4 Proof of Algorithm 1 Optimality and Approximate Optimality ",
+        "text_level": 1,
+        "bbox": [
+            169,
+            705,
+            733,
+            724
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "In Section 4, we claim that Algorithm 1 produces optimal non-discriminatory classifiers in exact calibration scenarios, and near-optimal classifiers in approximate calibration scenarios. ",
+        "bbox": [
+            169,
+            736,
+            823,
+            765
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "We begin with classifiers $h _ { 1 }$ and $h _ { 2 }$ be classifiers for groups $G _ { 1 }$ and $G _ { 2 }$ , with calibrations $\\epsilon ( h _ { 1 } ) \\leq \\delta _ { c a l }$ and $\\epsilon ( h _ { 2 } ) \\leq \\delta _ { c a l }$ . As before, assume that we cannot strictly improve the cost of either $h _ { 1 }$ or $h _ { 2 }$ without worsening calibration: i.e. $h _ { 1 }$ and $h _ { 2 }$ is $g _ { t }$ and calibration. We will now show that Algorithm 1 produces classifiers that are near-optimal with respect to both the false-positive and false-negative rates among calibrated classifiers satisfying the equal-cost constraint. ",
+        "bbox": [
+            169,
+            770,
+            823,
+            840
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "First, we show that interpolation preserves approximate calibration: ",
+        "bbox": [
+            171,
+            847,
+            616,
+            861
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Theorem 7 (Approximate Optimality of Algorithm 1). Given $\\tilde { h } _ { 2 }$ , which is the classifier produced by Algorithm 1, we have that $\\epsilon ( \\tilde { h } _ { 2 } ) \\leq ( 1 - \\alpha ) \\epsilon ( h _ { 2 } )$ , where $\\alpha \\in [ 0 , 1 ]$ is the interpolation parameter in (3). ",
+        "bbox": [
+            169,
+            867,
+            823,
+            912
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            490,
+            935,
+            506,
+            946
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Proof. We can calculate the calibration of $\\tilde { h } _ { 2 } ( \\mathbf { x } )$ as follows: ",
+        "bbox": [
+            171,
+            89,
+            568,
+            106
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\epsilon (\\tilde {h} _ {2}) = \\underset {B, G _ {2}} {\\mathbb {E}} \\left| \\underset {G _ {2}} {\\mathrm {P}} [ y = 1 \\mid \\tilde {h} _ {2} (\\mathbf {x}) = p ] - p \\right| \\\\ = \\int_ {0} ^ {1} \\left| _ {G _ {2}} \\left[ y = 1 \\mid \\tilde {h} _ {2} (\\mathbf {x}) = p \\right] - p \\right| _ {G _ {2}} \\left[ \\tilde {h} _ {2} (\\mathbf {x}) = p \\right] d p \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            310,
+            114,
+            687,
+            179
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "For $p \\neq \\mu _ { 2 }$ , $\\mid \\mathrm { P } _ { G _ { 2 } } \\big [ y = 1 \\mid \\tilde { h } _ { 2 } ( { \\bf x } ) = p \\big ] - p \\mid = \\mid \\mathrm { P } _ { G _ { 2 } } \\big [ y = 1 \\mid h _ { 2 } ( { \\bf x } ) = p \\big ] - p \\mid$ and $\\mathrm { P } _ { G _ { 2 } } \\big [ \\tilde { h } _ { 2 } ( { \\bf x } ) = p \\big ] =$ $\\left( 1 - \\alpha \\right) \\mathrm { P } _ { G _ { 2 } } \\left[ h _ { 2 } ( \\mathbf { x } ) = p \\right]$ . ",
+        "bbox": [
+            169,
+            186,
+            823,
+            222
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "For $p = \\mu _ { 2 }$ , let $\\beta = \\mathrm { P } _ { B , G _ { 2 } } \\big [ B = 1 \\mid \\tilde { h } _ { 2 } ( \\mathbf { x } ) = p \\big ] / \\mathrm { P } _ { G _ { 2 } } \\big [ \\tilde { h } _ { 2 } ( \\mathbf { x } ) = p \\big ] .$ . Note that $\\beta \\geq \\alpha$ . Then, ",
+        "bbox": [
+            169,
+            227,
+            772,
+            246
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\underset {G _ {2}} {\\mathrm {P}} [ y = 1 \\mid \\tilde {h} _ {2} (\\mathbf {x}) = p ] = (1 - \\beta) \\underset {G _ {2}} {\\mathrm {P}} [ y = 1 \\mid h _ {2} (\\mathbf {x}) = p ] + \\beta \\underset {G _ {2}} {\\mathrm {P}} [ y = 1 \\mid h ^ {\\mu_ {2}} (\\mathbf {x}) = p ] \\\\ = (1 - \\beta) \\underset {G _ {2}} {\\mathrm {P}} [ y = 1 \\mid h _ {2} (\\mathbf {x}) = p ] + \\beta p \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            225,
+            252,
+            766,
+            303
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "because $h ^ { \\mu _ { 2 } }$ is perfectly calibrated. Moreover, note that $\\mathrm { P } _ { G _ { 2 } } \\big [ \\tilde { h } _ { 2 } ( \\mathbf { x } ) { = } p \\big ] = \\mathrm { P } _ { G _ { 2 } } \\big [ h _ { 2 } ( \\mathbf { x } ) { = } p \\big ] / ( 1 - \\beta )$ Using this, we have $| \\mathrm { P } _ { G _ { 2 } } \\big [ y = 1 \\mid \\tilde { h } _ { 2 } ( { \\bf x } ) = p \\big ] - p | \\mathrm { P } _ { G _ { 2 } } \\big [ \\tilde { h } _ { 2 } ( { \\bf x } ) = p \\big ] = | \\mathrm { P } _ { G _ { 2 } } \\big [ y = 1 \\mid h _ { 2 } ( { \\bf x } ) =$ $p \\big ] - p | \\operatorname* { P } { } \\quad G _ { 2 } \\big [ h _ { 2 } ( \\mathbf { x } ) = p \\big ]$ . Thus, ",
+        "bbox": [
+            169,
+            311,
+            826,
+            364
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\epsilon (\\tilde {h} _ {2}) = \\int_ {0} ^ {1} \\left| \\mathrm {P} _ {G _ {2}} [ y = 1 | \\tilde {h} _ {2} (\\mathbf {x}) = p ] - p \\right| \\mathrm {P} _ {G _ {2}} [ \\tilde {h} _ {2} (\\mathbf {x}) = p ] d p \\\\ \\leq \\int_ {0} ^ {1} \\left| \\mathrm {P} _ {G _ {2}} [ y = 1 \\mid h _ {2} (\\mathbf {x}) = p ] - p \\right| \\mathrm {P} _ {G _ {2}} [ h _ {2} (\\mathbf {x}) = p ] d p \\\\ = \\epsilon (h _ {2}) \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            307,
+            371,
+            687,
+            459
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "image",
+        "img_path": "images/4869292709c5e487b74f54df351a96856b8a29b53db6cc6bc40f1dc566432a66.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            807,
+            465,
+            823,
+            478
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Next, we observe that by Lemma 5, for any classifiers $h _ { 1 } ^ { \\prime }$ and $h _ { 2 } ^ { \\prime }$ with $\\epsilon ( h _ { 1 } ^ { \\prime } ) \\leq \\delta _ { c a l }$ and $\\epsilon ( h _ { 2 } ^ { \\prime } ) \\leq \\delta _ { c a l }$ satisfying the equal-cost constraint, it must be the case that $\\begin{array} { r } { c _ { f p } ( h _ { t } ^ { \\prime } ) \\geq c _ { f p } ( \\tilde { h } _ { t } ) - \\frac { 4 \\delta _ { c a l } } { 1 - \\mu _ { t } } } \\end{array}$ 4δcal1−µ and cf n(h0t) ≥ 1-μt $c _ { f n } { \\left( h _ { t } ^ { \\prime } \\right) } \\geq$ $\\begin{array} { r } { c _ { f p } ( \\tilde { h } _ { t } ) - \\frac { 4 \\delta _ { c a l } } { \\mu _ { t } } } \\end{array}$ for $t = 1 , 2$ . ",
+        "bbox": [
+            169,
+            494,
+            823,
+            549
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Thus, approximately calibrated classifiers will be approximately optimal. From this result, it is easy to derive the optimality result for perfectly-calibrated classifiers. ",
+        "bbox": [
+            169,
+            553,
+            823,
+            583
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Theorem 8 (Exact Optimality of Algorithm 1). Algorithm 1 produces the classifiers $h _ { 1 }$ and $\\tilde { h } _ { 2 }$ that satisfy both perfect calibration and the equal-cost constraint with the lowest possible generalized false positive and false negative rates. ",
+        "bbox": [
+            169,
+            587,
+            826,
+            631
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "S5 Proof of Impossibility and Approximate Impossibility ",
+        "text_level": 1,
+        "bbox": [
+            169,
+            648,
+            663,
+            667
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "In this section, we prove that it is impossible to satisfy multiple equal-cost constraints while simultaneously satisfying calibration. We will first prove this in an exact sense, and then show that the result holds approximately as well. ",
+        "bbox": [
+            169,
+            680,
+            826,
+            723
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "S5.1 Exact Impossibility Theorem ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            738,
+            423,
+            753
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Theorem 1 (Restated). Let $h _ { 1 }$ and $h _ { 2 }$ be calibrated classifiers for $G _ { 1 }$ and $G _ { 2 }$ with equal cost with respect to $g _ { t }$ . If $\\mu _ { 1 } \\neq \\mu _ { 2 }$ , and if $h _ { 1 }$ and $h _ { 2 }$ have equal cost with respect to $g _ { t } ^ { \\prime }$ , then $h _ { 1 }$ and $h _ { 2 }$ must be perfect classifiers. ",
+        "bbox": [
+            169,
+            763,
+            825,
+            806
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "Proof. First, observe that the perfect classifier always satisfies any equal-cost constraint simply because if $c _ { f p } ( t ) = c _ { f n } ( t ) = 0$ , $g _ { t } ( h _ { t } ) = 0$ . Moreover, the perfect classifier is always calibrated. ",
+        "bbox": [
+            169,
+            821,
+            823,
+            851
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "For any classifier, as shown in [26], $c _ { f p } ( h _ { t } )$ and $c _ { f n } ( h _ { t } )$ are linearly related by (S7). Furthermore, each equal-cost constraint is linear in $c _ { f p } ( h _ { t } )$ and $c _ { f n } ( h _ { t } )$ . We define $g _ { t } ( h _ { t } )$ and $g _ { t } ^ { \\prime } ( h _ { t } )$ to be identical cost functions if the equal-cost constraints that they impose are identical, meaning one constraint is satisfied if and only if the other is satisfied. If this is not the case, then $g _ { t } ( h _ { t } )$ and $\\bar { g } _ { t } ^ { \\prime } ( h _ { t } )$ ",
+        "bbox": [
+            169,
+            854,
+            826,
+            912
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "page_number",
+        "text": "16 ",
+        "bbox": [
+            490,
+            935,
+            509,
+            946
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "are distinct, meaning that the equal-cost constraints are linearly independent for $\\mu _ { 1 } \\neq \\mu _ { 2 }$ . Moreover, these are also linearly independent from the calibration constraints because by assumption, they both have nonzero coefficients for at least one of $( c _ { f p } ( h _ { 1 } ) , c _ { f n } ( h _ { 1 } ) )$ and $( c _ { f p } ( \\bar { h } _ { 2 } ) , c _ { f n } ( \\bar { h } _ { 2 } ) )$ . As a result, we have four linearly independent constraints (2 from calibration and at least 2 equal-cost constraints) on 4 variables $( \\dot { c } _ { f p } ( h _ { 1 } ) \\dot { }$ , $c _ { f n } ( h _ { 1 } )$ , cfp(h2), $c _ { f n } ( h _ { 2 } ) )$ , meaning that these constraints yield a unique solution. From above, we know that all the constraints are simultaneously satisfied when $c _ { f p } ( \\bar { h _ { t } } ) = c _ { f n } ( h _ { t } ) = 0$ for $t = 1 , 2$ , meaning that the perfect classifier is the only classifier for which they are simultaneously satisfied. □ ",
+        "bbox": [
+            169,
+            90,
+            826,
+            203
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "S5.2 Approximate Impossibility Theorem ",
+        "text_level": 1,
+        "bbox": [
+            171,
+            218,
+            475,
+            233
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Now, we will show that this impossibility result holds in an approximate sense — i.e. approximately satisfying the calibration and equal-cost constraints is only possible if the classifiers approximately perfect. ",
+        "bbox": [
+            169,
+            243,
+            823,
+            286
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Since the calibration and equal-cost constraints are all linear, let $A$ be the matrix that encodes them. With two equal-cost constraints $g _ { t }$ and $g _ { t } ^ { \\prime }$ , ",
+        "bbox": [
+            169,
+            291,
+            825,
+            321
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\nA = \\left[ \\begin{array}{c c c c} 1 & - \\frac {\\mu_ {1}}{1 - \\mu_ {1}} & 0 & 0 \\\\ 0 & 0 & 1 & - \\frac {\\mu_ {2}}{1 - \\mu_ {2}} \\\\ a _ {1} & b _ {1} & - a _ {2} & - b _ {2} \\\\ a _ {1} ^ {\\prime} & b _ {1} ^ {\\prime} & - a _ {2} ^ {\\prime} & - b _ {2} ^ {\\prime} \\end{array} \\right].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            369,
+            325,
+            625,
+            390
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Note that the first two rows of $A$ encode the calibration conditions — see (S7). The bottom two rows encode two equal-cost constraints. Furthermore, let ",
+        "bbox": [
+            169,
+            393,
+            823,
+            422
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\vec {q} = \\left[ c _ {f p} (h _ {1}) c _ {f n} (h _ {1}) c _ {f p} (h _ {2}) c _ {f n} (h _ {2}) \\right] ^ {\\top}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            354,
+            429,
+            638,
+            448
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "If all constraints are required to hold exactly, then we have $A \\vec { q } = 0$ . Consider the case where the calibration and equal-cost constraints hold approximately. ",
+        "bbox": [
+            169,
+            452,
+            823,
+            481
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Theorem 9 (Generalized approximate impossibility result). Let $h _ { 1 }$ and $h _ { 2 }$ be classifiers with calibration $\\delta _ { c a l }$ and cost difference at most $\\delta _ { c o s t }$ with respect to distinct cost functions $g _ { t }$ and $g _ { t } ^ { \\prime }$ . Furthermore, assume that every entry of $A$ is rational with some common denominator $D$ and is upper bounded by some maximum value M. Then, there is a constant $L$ that depends on $D$ and $M$ such that ",
+        "bbox": [
+            169,
+            484,
+            825,
+            551
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f p} (h _ {t}) \\leq L \\cdot \\max  \\left\\{\\frac {2 \\delta_ {c a l}}{1 - \\mu_ {1}}, \\frac {2 \\delta_ {c a l}}{1 - \\mu_ {2}}, \\delta_ {c o s t} \\right\\}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            551,
+            647,
+            583
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "and ",
+        "bbox": [
+            171,
+            585,
+            202,
+            598
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f n} \\left(h _ {t}\\right) \\leq L \\cdot \\max  \\left\\{\\frac {2 \\delta_ {c a l}}{1 - \\mu_ {1}}, \\frac {2 \\delta_ {c a l}}{1 - \\mu_ {2}}, \\delta_ {c o s t} \\right\\}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            346,
+            595,
+            647,
+            628
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "for $t = 1 , 2$ . ",
+        "bbox": [
+            168,
+            631,
+            254,
+            645
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Proof. By Lemma 2, ",
+        "bbox": [
+            169,
+            660,
+            313,
+            674
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left| \\mu_ {t} c _ {f n} (h _ {t}) - \\left(1 - \\mu_ {t}\\right) c _ {f p} (h _ {t}) \\right| \\leq 2 \\delta_ {c a l}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            362,
+            672,
+            633,
+            690
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Since the first two rows in $A$ correspond to the calibration constraints, and the second to correspond to the equal-cost constraints, it must be the case that ",
+        "bbox": [
+            169,
+            691,
+            823,
+            720
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n| A \\vec {q} | \\leq \\left[ \\begin{array}{c} \\frac {2 \\delta_ {c a l}}{1 - \\mu_ {1}} \\\\ \\frac {2 \\delta_ {c a l}}{1 - \\mu_ {2}} \\\\ \\delta_ {c o s t} \\\\ \\delta_ {c o s t} \\end{array} \\right],\n$$",
+        "text_format": "latex",
+        "bbox": [
+            437,
+            724,
+            557,
+            790
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "i.e. the absolute value of each entry in $A \\vec { q }$ is bounded by the vector on the right hand side. Let $\\vec { \\nu } = [ 2 \\delta _ { c a l } / ( 1 - \\mu _ { 1 } ) 2 \\delta _ { c a l } / ( 1 - \\mu _ { 2 } ) \\delta _ { c o s t } \\delta _ { c o s t } ] ^ { \\top } .$ . Let ${ \\vec { s } } = s i g n ( A { \\vec { q } } )$ , and multiply the ith row of $A$ by the ith entry of $\\vec { s }$ to produce $\\widehat { A }$ This allows us to drop the absolute value, meaning we have ",
+        "bbox": [
+            169,
+            796,
+            823,
+            842
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\widehat {A} \\vec {q} \\leq \\vec {\\nu}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            470,
+            847,
+            527,
+            864
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Furthermore, since $g _ { t }$ and $g _ { t } ^ { \\prime }$ were assumed to be distinct, $\\widehat { A }$ is invertible, so this is equivalent to ",
+        "bbox": [
+            169,
+            871,
+            800,
+            888
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\vec {q} \\leq \\widehat {A} ^ {- 1} \\vec {\\nu}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            457,
+            893,
+            535,
+            912
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            490,
+            935,
+            506,
+            946
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "Taking $\\ell _ { \\infty }$ norms of both sides, ",
+        "bbox": [
+            169,
+            90,
+            382,
+            104
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\| \\vec {q} \\| _ {\\infty} \\leq \\| \\widehat {A} ^ {- 1} \\vec {v} \\| _ {\\infty} \\leq \\| \\widehat {A} ^ {- 1} \\| _ {\\infty} \\| \\vec {v} \\| _ {\\infty}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            369,
+            112,
+            625,
+            131
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The $( i , j )$ entry of $\\widehat { A } ^ { - 1 }$ can be expresed as $\\widehat { A } _ { j i } / \\operatorname* { d e t } ( \\widehat { A } )$ , where $\\widehat { A } _ { j i }$ is the $( j , i )$ cofactor. Note that $\\widehat { A } _ { j i }$ is a $3 \\times 3$ determinant, so it is the sum of 6 cubic polynomials in entries of $\\widehat { A }$ . However, since every $3 \\times 3$ submatrix of $\\widehat { A }$ has at least one 0 entry, only 4 of those cubics can be nonnegative. By assumption, the maximum value of any entry of $\\widehat { A }$ is $M$ , so $\\lvert \\widehat { A } _ { j i } \\rvert \\le 4 M ^ { 3 }$ . ",
+        "bbox": [
+            169,
+            136,
+            823,
+            205
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "We can lower bound $\\operatorname* { d e t } ( \\widehat { A } )$ by noting that since $\\widehat { A }$ is not singular, its determinant is nonzero. However, because the determinant can be expressed as a $4 \\times 4$ polynomial, and each term has common denominator $D$ by assumption, $| \\operatorname* { d e t } ( { \\widehat { \\hat { A } } } ) | \\geq 1 / D ^ { 4 }$ . As a result, $| \\widehat { A } _ { j i } / \\operatorname* { d e t } ( \\widehat { A } ) | \\leq 4 M ^ { 3 } D ^ { 4 }$ . ",
+        "bbox": [
+            169,
+            212,
+            825,
+            260
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Let $d _ { i j }$ be the $( i , j )$ entry of $\\widehat { A }$ . We know that ",
+        "bbox": [
+            169,
+            265,
+            473,
+            282
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\| \\widehat {A} ^ {- 1} \\| _ {\\infty} \\leq \\max  _ {j} \\sum_ {i = 1} ^ {4} | d _ {i j} | \\leq 1 6 M ^ {3} D ^ {4} = L\n$$",
+        "text_format": "latex",
+        "bbox": [
+            351,
+            290,
+            643,
+            330
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "As a result, ",
+        "bbox": [
+            171,
+            335,
+            250,
+            349
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\| \\tilde {q} \\| _ {\\infty} \\leq L \\| \\nu \\| _ {\\infty}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            441,
+            349,
+            553,
+            366
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "which proves the claim. ",
+        "bbox": [
+            169,
+            368,
+            331,
+            382
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/785be38f7785c3b78585fcde739e542e427c4161a348abaaa06918eff48218d5.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            807,
+            368,
+            823,
+            380
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Note that Theorem 9 is not intended to be a tight bound. It simply shows that impossibility result degrades smoothly for approximate constraints. ",
+        "bbox": [
+            169,
+            397,
+            823,
+            426
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "S6 Details on Experiments ",
+        "text_level": 1,
+        "bbox": [
+            169,
+            445,
+            411,
+            462
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Post-processing for Equalized Odds To derive classifiers that satisfy the Equalized Odds notion of fairness, we use the method introduced by Hardt et al. [19]. Essentially, the false-positive and false-negative constraints are satisfied by randomly flipping some of the predictions of the original classifiers. Let q(t)n2p $q _ { \\mathrm { n 2 p } } ^ { ( t ) }$ be the probability for group $G _ { t }$ of “flipping” a negative prediction to positive, and $q _ { \\mathrm { p 2 n } } ^ { ( t ) }$ be that of flipping a positive prediction to negative. The derived classifiers $h _ { 1 } ^ { e o }$ and $h _ { 2 } ^ { e o }$ essentially flip predictions according to these probabilities: ",
+        "bbox": [
+            169,
+            474,
+            823,
+            571
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\nh _ {t} ^ {e o} (\\mathbf {x}) = \\left\\{ \\begin{array}{l l} (1 - h _ {t} (\\mathbf {x})) B _ {\\mathrm {p 2 n}} ^ {(t)} + h _ {t} (\\mathbf {x}) \\left(1 - B _ {\\mathrm {p 2 n}} ^ {(t)}\\right) & h _ {t} (\\mathbf {x}) \\geq 0. 5 \\\\ (1 - h _ {t} (\\mathbf {x})) B _ {\\mathrm {n 2 p}} ^ {(t)} + h _ {t} (\\mathbf {x}) \\left(1 - B _ {\\mathrm {n 2 p}} ^ {(t)}\\right) & h _ {t} (\\mathbf {x}) <   0. 5 \\end{array} \\right.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            279,
+            575,
+            715,
+            625
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "where $B _ { \\mathrm { n 2 p } } ^ { ( t ) }$ )p nd B(t)p2n a $B _ { \\mathfrak { p } 2 \\mathrm { n } } ^ { ( t ) }$ are Bernoulli random variables with expectations $q _ { \\mathrm { n 2 p } } ^ { ( t ) }$ and q(t)p2n $q _ { \\mathrm { p 2 n } } ^ { ( t ) }$ respectively. Note that this is a probabilistic generalization of the derived classifiers presented in [19]. If all outputs of $h _ { t }$ were either 0 or 1 we would arrive at the original formulation. ",
+        "bbox": [
+            169,
+            631,
+            825,
+            678
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "We can find the best rates $q _ { \\mathtt { n 2 p } } ^ { \\mathtt { ( 1 ) } }$ , $q _ { \\mathtt { p } 2 \\mathtt { n } } ^ { ( 1 ) }$ , $q _ { \\mathrm { n 2 p } } ^ { ( 2 ) }$ , and $q _ { \\mathtt { p } 2 \\mathtt { n } } ^ { ( 2 ) }$ qp2n through the following optimization problem: ",
+        "bbox": [
+            169,
+            684,
+            825,
+            715
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ { \\begin{array}{c} q ^ {(1)}, q _ {\\mathrm {p 2 n}}, q _ {\\mathrm {n 2 p}}, q _ {\\mathrm {p 2 n}} ^ {(2)} \\end{array} } \\mathcal {L} (h _ {1} ^ {e o}) + \\mathcal {L} (h _ {2} ^ {e o})\n$$",
+        "text_format": "latex",
+        "bbox": [
+            352,
+            723,
+            612,
+            757
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "$\\begin{array} { r } { \\mathrm { s . t . } \\qquad c _ { f p } ( h _ { 1 } ^ { e o } ) = c _ { f n } ( h _ { 1 } ^ { e o } ) , } \\end{array}$ ",
+        "bbox": [
+            405,
+            761,
+            640,
+            777
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\nc _ {f p} (h _ {2} ^ {e o}) = c _ {f n} (h _ {2} ^ {e o})\n$$",
+        "text_format": "latex",
+        "bbox": [
+            495,
+            779,
+            635,
+            794
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "where $\\mathcal { L }$ represents the 0/1 loss of the classifier: ",
+        "bbox": [
+            169,
+            799,
+            488,
+            814
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathcal {L} \\left(h _ {t}\\right) = \\underset {G _ {t}} {\\mathrm {P}} \\left[ h _ {t} (\\mathbf {x}) \\geq 0. 5 \\mid y = 0 \\right] + \\underset {G _ {t}} {\\mathrm {P}} \\left[ h _ {t} (\\mathbf {x}) <   0. 5 \\mid y = 1 \\right].\n$$",
+        "text_format": "latex",
+        "bbox": [
+            297,
+            819,
+            697,
+            842
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "The two constraints enforce the Equalized Odds constraints. Hardt et al. [19] show that this can be solved via a linear program. ",
+        "bbox": [
+            169,
+            848,
+            823,
+            878
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "Constrained-learning for Equalized Odds Zafar et al. [37] introduce a method to achieve Equalized Odds (under the name Disparate Mistreatment) at training time using optimization constraints. The ",
+        "bbox": [
+            169,
+            883,
+            825,
+            912
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "page_number",
+        "text": "18 ",
+        "bbox": [
+            490,
+            935,
+            508,
+            946
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "problem is set up at learning a logistic classifier under the Equalized Odds constraints. While these constraints make the problem non-convex, Zafar et al. show how to formulate the problem as a disciplined convex-concave program. Though this is generally intractable, it can be solved in many instances. We refer the reader to [37] for details. ",
+        "bbox": [
+            169,
+            90,
+            823,
+            147
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Training Procedure for Income Prediction. We train three models: a random forest, a multi-layer perceptron, and a SVM with an RBF kernel. We convert the categorical features into one-hot enocodings. $1 0 \\%$ of the data is reserved for hyperparameter tuning and post-processing, and an additional $1 0 \\%$ is saved for final evaluation. The random forest and MLP are naturally probabilistic and well calibrated. We use Platt scaling to calibrate the SVM. The hyperparameters were tuned by grid search based on 3-fold cross validation. Figure 3a displays the average false-positive and false-negative costs across all models. ",
+        "bbox": [
+            169,
+            152,
+            823,
+            251
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Training Procedure for Health Prediction. We train a random forest and a linear SVM on this dataset. We use the same dataset split and hyperparameter selection as with Income Prediction. Figure 3b displays the average false-positive and false-negative costs across all models. ",
+        "bbox": [
+            169,
+            256,
+            826,
+            299
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "Training Procedure for Health Prediction. For the trained Equalized Odds baseline we train a constrained logistic classifier using the method proposed by [37]. We derive the post-processed classifiers (both for Equalized Odds and its calibrated relaxation) from the original COMPAS classifier [12]. ",
+        "bbox": [
+            169,
+            305,
+            823,
+            359
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "page_number",
+        "text": "19 ",
+        "bbox": [
+            490,
+            935,
+            508,
+            946
+        ],
+        "page_idx": 18
+    }
+]

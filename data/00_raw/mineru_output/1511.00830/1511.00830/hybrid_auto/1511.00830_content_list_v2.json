@@ -1,0 +1,3626 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "THE VARIATIONAL FAIR AUTOENCODER "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                99,
+                660,
+                119
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Christos Louizos∗, Kevin Swersky×, Yujia "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { L i } ^ { \\times }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", Max Welling∗†‡, Richard Zemel×† "
+                    }
+                ]
+            },
+            "bbox": [
+                181,
+                143,
+                754,
+                159
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "∗ Machine Learning Group, University of Amsterdam "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "×Department of Computer Science, University of Toronto "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "† Canadian Institute for Advanced Research (CIFAR) "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "‡ University of California, Irvine "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                183,
+                160,
+                563,
+                215
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "C.Louizos@uva.nl, {kswersky, yujiali}@cs.toronto.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                183,
+                218,
+                689,
+                229
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "M.Welling@uva.nl, zemel@cs.toronto.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                183,
+                231,
+                555,
+                244
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "ABSTRACT "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                450,
+                282,
+                545,
+                296
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We investigate the problem of learning representations that are invariant to certain nuisance or sensitive factors of variation in the data while retaining as much of the remaining information as possible. Our model is based on a variational autoencoding architecture (Kingma & Welling, 2014; Rezende et al., 2014) with priors that encourage independence between sensitive and latent factors of variation. Any subsequent processing, such as classification, can then be performed on this purged latent representation. To remove any remaining dependencies we incorporate an additional penalty term based on the “Maximum Mean Discrepancy” (MMD) (Gretton et al., 2006) measure. We discuss how these architectures can be efficiently trained on data and show in experiments that this method is more effective than previous work in removing unwanted sources of variation while maintaining informative latent representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                228,
+                311,
+                767,
+                479
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 INTRODUCTION "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                173,
+                503,
+                336,
+                517
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In “Representation Learning” one tries to find representations of the data that are informative for a particular task while removing the factors of variation that are uninformative and are typically detrimental for the task under consideration. Uninformative dimensions are often called “noise” or “nuisance variables” while informative dimensions are usually called latent or hidden factors of variation. Many machine learning algorithms can be understood in this way: principal component analysis, nonlinear dimensional reduction and latent Dirichlet allocation are all models that extract informative factors (dimensions, causes, topics) of the data which can often be used to visualize the data. On the other hand, linear discriminant analysis and deep (convolutional) neural nets learn representations that are good for classification. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                534,
+                826,
+                660
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper we consider the case where we wish to learn latent representations where (almost) all of the information about certain known factors of variation are purged from the representation while still retaining as much information about the data as possible. In other words, we want a latent representation z that is maximally informative about an observed random variable y (e.g., class label) while minimally informative about a sensitive or nuisance variable s. By treating s as a sensitive variable, i.e. s is correlated with our objective, we are dealing with “fair representations”, a problem previously considered by Zemel et al. (2013). If we instead treat s as a nuisance variable we are dealing with “domain adaptation”, in other words by removing the domain s from our representations we will obtain improved performance. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                666,
+                823,
+                792
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper we introduce a novel model based on deep variational autoencoders (VAE) (Kingma & Welling, 2014; Rezende et al., 2014). These models can naturally encourage separation between latent variables z and sensitive variables s by using factorized priors "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( \\mathbf { s } ) p ( \\mathbf { z } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". However, some dependencies may still remain when mapping data-cases to their hidden representation using the variational posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( \\mathbf { z } | \\mathbf { x } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which we stamp out using a “Maximum Mean Discrepancy” (Gretton et al., 2006) term that penalizes differences between all order moments of the marginal posterior distributions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( \\mathbf { z } | \\mathbf { s } = k )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( \\mathbf { z } | \\mathbf { s } = k ^ { \\prime } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(for a discrete RV s). In experiments we show that this combined approach is highly successful in learning representations that are devoid of unwanted information while retaining as much information as possible from what remains. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                797,
+                826,
+                924
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                480,
+                47
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1511.00830v6 [stat.ML] 10 Aug 2017 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                253,
+                60,
+                719
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "1 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 LEARNING INVARIANT REPRESENTATIONS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                102,
+                562,
+                118
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/39d6736bf39997a8b21b32e6a735eb381f344f12364157284e5f480c8a81dfc5.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Unsupervised model "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                284,
+                181,
+                385,
+                268
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/19fc41077324efb1da6d0b4ad34de94cf62cd3996378ce39e74f018b70f44179.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Semi-supervised model "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                614,
+                135,
+                714,
+                268
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.1 UNSUPERVISED MODEL "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                325,
+                380,
+                340
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Factoring out undesired variations from the data can be easily formulated as a general probabilistic model which admits two distinct (independent) “sources”; an observed variable s, which denotes the variations that we want to remove, and a continuous latent variable z which models all the remaining information. This generative process can be formally defined as: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                352,
+                823,
+                407
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbf {z} \\sim p (\\mathbf {z}); \\qquad \\mathbf {x} \\sim p _ {\\theta} (\\mathbf {x} | \\mathbf {z}, \\mathbf {s})",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2c757fed355c1bab27e8369dc106d85cbc0629777713a130c70c85662e07020b.jpg"
+                }
+            },
+            "bbox": [
+                395,
+                415,
+                599,
+                431
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\theta } ( \\mathbf { x } | \\mathbf { z } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is an appropriate probability distribution for the data we are modelling. With this formulation we explicitly encode a notion of ‘invariance’ in our model, since the latent representation is marginally independent of the factors of variation s. Therefore the problem of finding an invariant representation for a data point x and variation s can be cast as performing inference on this graphical model and obtaining the posterior distribution of z, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( \\mathbf { z } | \\mathbf { x } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                436,
+                823,
+                507
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For our model we will employ a variational autoencoder architecture (Kingma & Welling, 2014; Rezende et al., 2014); namely we will parametrize the generative model (decoder) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\theta } ( \\mathbf { x } | \\mathbf { z } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the variational posterior (encoder) "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } | \\mathbf { x } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as (deep) neural networks which accept as inputs z, s and x, s respectively and produce the parameters of each distribution after a series of non-linear transformations. Both the model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { \\eta } ^ { ( \\theta ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and variational "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( \\phi )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "parameters will be jointly optimized with the SGVB (Kingma & Welling, 2014) algorithm according to a lower bound on the log-likelihood. This parametrization will allow us to capture most of the salient information of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in our embedding z. Furthermore the distributed representation of a neural network would allow us to better resolve the dependencies between x and s thus yielding a better disentangling between the independent factors z and s. By choosing a Gaussian posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } | \\mathbf { x } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and standard isotropic Gaussian prior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( \\mathbf { z } ) = \\mathcal { N } ( \\mathbf { 0 } , \\mathbf { I } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "we can obtain the following lower bound: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                512,
+                826,
+                667
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\sum_ {n = 1} ^ {N} \\log p (\\mathbf {x} _ {n} | \\mathbf {s} _ {n}) \\geq \\sum_ {n = 1} ^ {N} \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {n} | \\mathbf {x} _ {n}, \\mathbf {s} _ {n})} [ \\log p _ {\\theta} (\\mathbf {x} _ {n} | \\mathbf {z} _ {n}, \\mathbf {s} _ {n}) ] - K L (q _ {\\phi} (\\mathbf {z} _ {n} | \\mathbf {x} _ {n}, \\mathbf {s} _ {n}) | | p (\\mathbf {z})) \\tag {1} \\\\ = \\mathcal {F} (\\phi , \\theta ; \\mathbf {x} _ {n}, \\mathbf {s} _ {n}) \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4a0b46839f861c7fa77bc9f0e035d3e1f22c1f4665e1d6e1d1f05d8d1925590b.jpg"
+                }
+            },
+            "bbox": [
+                212,
+                672,
+                823,
+                733
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } _ { n } | \\mathbf { x } _ { n } , \\mathbf { s } _ { n } ) = \\mathcal { N } ( \\mathbf { z } _ { n } | { \\boldsymbol { \\mu } } _ { n } = f _ { \\phi } ( \\mathbf { x } _ { n } , \\mathbf { s } _ { n } ) , \\pmb { \\sigma } _ { n } = e ^ { f _ { \\phi } ( \\mathbf { x } _ { n } , \\mathbf { s } _ { n } ) } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { p _ { \\theta } ( \\mathbf { x } _ { n } | \\mathbf { z } _ { n } , \\mathbf { s } _ { n } ) = f _ { \\theta } ( \\mathbf { z } _ { n } , \\mathbf { s } _ { n } ) } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { \\boldsymbol { \\theta } } ( \\mathbf { z } _ { n } , \\mathbf { s } _ { n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "being an appropriate probability distribution for the data we are modelling. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                739,
+                823,
+                771
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.2 SEMI-SUPERVISED MODEL "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                786,
+                401,
+                800
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Factoring out variations in an unsupervised way can however be harmful in cases where we want to use this invariant representation for a subsequent prediction task. In particular if we have a situation where the nuisance variable s and the actual label y are correlated, then training an unsupervised model could yield random or degenerate representations with respect to y. Therefore it is more appropriate to try to “inject” the information about the label during the feature extraction phase. This can be quite simply achieved by introducing a second “layer” of latent variables to our generative model where we try to correlate z with the prediction task. Assuming that the invariant features are now called "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "we enrich the generative story by similarly providing two distinct (independent) "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                811,
+                826,
+                925
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "2 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "sources for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "; a discrete (in case of classification)variable y which denotes the label of the data point "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and a continuous latent variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which encodes the variation on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that is not explained by y (x dependent noise). The process now can be formally defined as: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                103,
+                823,
+                146
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathbf {y}, \\mathbf {z} _ {2} \\sim \\operatorname {C a t} (\\mathbf {y}) p (\\mathbf {z} _ {2}); \\qquad \\mathbf {z} _ {1} \\sim p _ {\\theta} (\\mathbf {z} _ {1} | \\mathbf {z} _ {2}, \\mathbf {y}); \\qquad \\mathbf {x} \\sim p _ {\\theta} (\\mathbf {x} | \\mathbf {z} _ {1}, \\mathbf {s})",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/6c0f15573c8704af5d38fb692db1266ab7b33780be647f07efac268a5fc67f6a.jpg"
+                }
+            },
+            "bbox": [
+                272,
+                148,
+                718,
+                164
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Similarly to the unsupervised case we use a variational auto-encoder and jointly optimize the variational and model parameters. The lower bound now becomes: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                165,
+                823,
+                193
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\sum_ {n = 1} ^ {N} \\log p (\\mathbf {x} _ {n} | \\mathbf {s} _ {n}) \\geq \\sum_ {n = 1} ^ {N} \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {1 n}, \\mathbf {z} _ {2 n}, \\mathbf {y} _ {n} | \\mathbf {x} _ {n}, \\mathbf {s} _ {n})} [ \\log p (\\mathbf {z} _ {2}) + \\log p (\\mathbf {y} _ {n}) + \\log p _ {\\theta} (\\mathbf {z} _ {1 n} | \\mathbf {z} _ {2 n}, \\mathbf {y} _ {n}) + \\\\ + \\log p _ {\\theta} (\\mathbf {x} _ {n} | \\mathbf {z} _ {1 _ {n}}, \\mathbf {s} _ {n}) - \\log q _ {\\phi} (\\mathbf {z} _ {1 _ {n}}, \\mathbf {z} _ {2 _ {n}}, \\mathbf {y} _ {n} | \\mathbf {x} _ {n}, \\mathbf {s} _ {n}) ] \\tag {2} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/de70e0e03f3a06abf983548a12536b5c75469973a3594fdd4b93346acb96bcff.jpg"
+                }
+            },
+            "bbox": [
+                189,
+                195,
+                823,
+                253
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where we assume that the posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } _ { 1 n } , \\mathbf { z } _ { 2 n } , \\mathbf { y } _ { n } | \\mathbf { x } _ { n } , \\mathbf { s } _ { n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is factorized as "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( { \\bf z } _ { 1 n } , { \\bf z } _ { 2 n } , { \\bf y } _ { n } | { \\bf x } _ { n } , { \\bf s } _ { n } ) = q _ { \\phi } ( { \\bf z } _ { 1 n } | { \\bf x } _ { n } , { \\bf s } _ { n } ) q _ { \\phi } ( { \\bf y } _ { n } | { \\bf z } _ { 1 n } ) q _ { \\phi } ( { \\bf z } _ { 2 n } | { \\bf z } _ { 1 n } , { \\bf y } _ { n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and where: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                256,
+                823,
+                286
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "q _ {\\phi} \\left(\\mathbf {z} _ {1 n} \\mid \\mathbf {x} _ {n}, \\mathbf {s} _ {n}\\right) = \\mathcal {N} \\left(\\mathbf {z} _ {1 n} \\mid \\boldsymbol {\\mu} _ {n} = f _ {\\phi} \\left(\\mathbf {x} _ {n}, \\mathbf {s} _ {n}\\right), \\boldsymbol {\\sigma} _ {n} = e ^ {f _ {\\phi} \\left(\\mathbf {x} _ {n}, \\mathbf {s} _ {n}\\right)}\\right)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/43773f077ccee97f34c254665952bdf9de767b6d3f18903c62530470dd0c4a9e.jpg"
+                }
+            },
+            "bbox": [
+                287,
+                287,
+                700,
+                305
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "q _ {\\phi} (\\mathbf {y} _ {n} | \\mathbf {z} _ {1 n}) = \\operatorname {C a t} (\\mathbf {y} _ {n} | \\boldsymbol {\\pi} _ {n} = \\operatorname {s o f t m a x} (f _ {\\phi} (\\mathbf {z} _ {1 n})))",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/852d85196cacf8b117a2e26387dfd06466fbf100077b535153a1a6402eddae0f.jpg"
+                }
+            },
+            "bbox": [
+                310,
+                306,
+                633,
+                323
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "q _ {\\phi} \\left(\\mathbf {z} _ {2 n} \\mid \\mathbf {z} _ {1 n}, \\mathbf {y} _ {n}\\right) = \\mathcal {N} \\left(\\mathbf {z} _ {2 n} \\mid \\boldsymbol {\\mu} _ {n} = f _ {\\phi} \\left(\\mathbf {z} _ {1 n}, \\mathbf {y} _ {n}\\right), \\boldsymbol {\\sigma} _ {n} = e ^ {f _ {\\phi} \\left(\\mathbf {z} _ {1 n}, \\mathbf {y} _ {n}\\right)}\\right)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/b2fddd380c4ac9c4acb528fef304a79b242a465f305175f5d9ed047efd57a106.jpg"
+                }
+            },
+            "bbox": [
+                279,
+                325,
+                714,
+                344
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "p _ {\\theta} \\left(\\mathbf {z} _ {1 n} \\mid \\mathbf {z} _ {2 n}, \\mathbf {y} _ {n}\\right) = \\mathcal {N} \\left(\\mathbf {z} _ {1 n} \\mid \\boldsymbol {\\mu} _ {n} = f _ {\\theta} \\left(\\mathbf {z} _ {2 n}, \\mathbf {y} _ {n}\\right), \\boldsymbol {\\sigma} _ {n} = e ^ {f _ {\\theta} \\left(\\mathbf {z} _ {2 n}, \\mathbf {y} _ {n}\\right)}\\right)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/5fb77a907feea144d582050a81970fddabdf357a597bb142bb7ff790d1b58621.jpg"
+                }
+            },
+            "bbox": [
+                279,
+                347,
+                712,
+                364
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "p _ {\\theta} (\\mathbf {x} _ {n} | \\mathbf {z} _ {1 n}, \\mathbf {s} _ {n}) = f _ {\\theta} (\\mathbf {z} _ {1 n}, \\mathbf {s} _ {n})",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4709ac24df35e6621bbc23cca77c129b1c723f9f2bf551e9cb6c868bfe0db141.jpg"
+                }
+            },
+            "bbox": [
+                287,
+                367,
+                488,
+                382
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { \\theta } ( \\mathbf { z } _ { 1 } , \\mathbf { s } _ { n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "again being an appropriate probability distribution for the data we are modelling. The model proposed here can be seen as an extension to the ‘stacked "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { M } 1 { + } \\mathbf { M } 2 ^ { \\prime }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "model originally proposed from Kingma et al. (2014), where we have additionally introduced the nuisance variable s during the feature extraction. Thus following Kingma et al. (2014) we can also handle the ‘semisupervised’ case, i.e., missing labels. In situations where the label is observed the lower bound takes the following form (exploiting the fact that we can compute some Kullback-Leibler divergences explicitly in our case): "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                383,
+                823,
+                479
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\sum_ {n = 1} ^ {N} \\mathcal {L} _ {s} (\\phi , \\theta ; \\mathbf {x} _ {n}, \\mathbf {s} _ {n}, \\mathbf {y} _ {n}) = \\sum_ {n = 1} ^ {N _ {s}} \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {1 _ {n}} | \\mathbf {x} _ {n}, \\mathbf {s} _ {n})} [ - K L (q _ {\\phi} (\\mathbf {z} _ {2 _ {n}} | \\mathbf {z} _ {1 _ {n}}, \\mathbf {y} _ {n}) | | p (\\mathbf {z} _ {2})) + \\log p _ {\\theta} (\\mathbf {x} _ {n} | \\mathbf {z} _ {1 _ {n}}, \\mathbf {s} _ {n}) ] + \\\\ + \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {1 _ {n}} | \\mathbf {x} _ {n}, \\mathbf {s} _ {n}) q _ {\\phi} (\\mathbf {z} _ {2 _ {n}} | \\mathbf {z} _ {1 _ {n}}, \\mathbf {y} _ {n})} [ \\log p _ {\\theta} (\\mathbf {z} _ {1} | \\mathbf {z} _ {2 _ {n}}, \\mathbf {y} _ {n}) - \\log q _ {\\phi} (\\mathbf {z} _ {1 _ {n}} | \\mathbf {x} _ {n} \\mathbf {s} _ {n}) ] \\tag {3} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/60c761cdcf91832180fb588c981e81db0f415e9aad82c5e959adb10e0c4b283b.jpg"
+                }
+            },
+            "bbox": [
+                173,
+                483,
+                870,
+                556
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and in the case that it is not observed we use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( \\mathbf { y } _ { n } | \\mathbf { z } _ { 1 _ { n } } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to ‘impute’ our data: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                560,
+                676,
+                575
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\sum_ {m = 1} ^ {M} \\mathcal {L} _ {u} (\\phi , \\theta ; \\mathbf {x} _ {m}, \\mathbf {s} _ {m}) = \\sum_ {m = 1} ^ {M} \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {1 m} | \\mathbf {x} _ {m}, \\mathbf {s} _ {m})} [ - K L (q (\\mathbf {y} _ {m} | \\mathbf {z} _ {1 m}) | | p (\\mathbf {y} _ {m})) + \\log p _ {\\theta} (\\mathbf {x} _ {m} | \\mathbf {z} _ {1 m}, \\mathbf {s} _ {m}) ] + \\\\ + \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {1 m}, \\mathbf {y} _ {m} | \\mathbf {x} _ {m}, \\mathbf {s} _ {m})} [ - K L (q _ {\\phi} (\\mathbf {z} _ {2 m} | \\mathbf {z} _ {1 m}, \\mathbf {y} _ {m}) | | p (\\mathbf {z} _ {2})) ] + \\\\ + \\mathbb {E} _ {q _ {\\phi} (\\mathbf {z} _ {1 m}, \\mathbf {y} _ {m}, \\mathbf {z} _ {2 m} | \\mathbf {x} _ {m}, \\mathbf {s} _ {m})} [ \\log p _ {\\theta} (\\mathbf {z} _ {1 m} | \\mathbf {z} _ {2 m}, \\mathbf {y} _ {m}) - \\log q _ {\\phi} (\\mathbf {z} _ {1 m} | \\mathbf {x} _ {m}, \\mathbf {s} _ {m}) ] \\tag {4} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/b146e6aab9d2be71ec34188fd5bed1046910071a2d5d0bacd96054b915efa8c6.jpg"
+                }
+            },
+            "bbox": [
+                173,
+                578,
+                862,
+                671
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "therefore the final objective function is: "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                674,
+                433,
+                688
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\mathcal {F} _ {\\mathrm {V A E}} \\left(\\phi , \\theta ; \\mathbf {x} _ {n}, \\mathbf {x} _ {m}, \\mathbf {s} _ {n}, \\mathbf {s} _ {m}, \\mathbf {y} _ {n}\\right) = \\sum_ {n = 1} ^ {N} \\mathcal {L} _ {s} \\left(\\phi , \\theta ; \\mathbf {x} _ {n}, \\mathbf {s} _ {n}, \\mathbf {y} _ {n}\\right) + \\sum_ {m = 1} ^ {M} \\mathcal {L} _ {u} \\left(\\phi , \\theta ; \\mathbf {x} _ {m}, \\mathbf {s} _ {m}\\right) + \\\\ + \\alpha \\sum_ {n = 1} ^ {N} \\mathbb {E} _ {q \\left(\\mathbf {z} _ {1 n} \\mid \\mathbf {x} _ {n}, \\mathbf {s} _ {n}\\right)} [ - \\log q _ {\\phi} (\\mathbf {y} _ {n} \\mid \\mathbf {z} _ {1 n}) ] \\tag {5} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/f0598015f31e27ba768c966d5d5ce8df3a97d2d1cd85b65107d18e9b8a93a062.jpg"
+                }
+            },
+            "bbox": [
+                212,
+                690,
+                823,
+                773
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where the last term is introduced so as to ensure that the predictive posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { y } | \\mathbf { z } _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "learns from both labeled and unlabeled data. This semi-supervised model will be called “VAE” in our experiments. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                777,
+                823,
+                819
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "However, there is a subtle difference between the approach of Kingma et al. (2014) and our model. Instead of training separately each layer of stochastic variables we optimize the model jointly. The potential advantages of this approach are two fold: as we previously mentioned if the label y and the nuisance information s are correlated then training a (conditional) feature extractor separately poses the danger of creating a degenerate representation with respect to the label y. Furthermore the label information will also better guide the feature extraction towards the more salient parts of the data, thus maintaining most of the (predictive) information. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                825,
+                825,
+                925
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "3 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.3 FURTHER INVARIANCE VIA MAXIMUM MEAN DISCREPANCY "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                103,
+                635,
+                118
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Despite the fact that we have a model that encourages statistical independence between s and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "a-priori we might still have some dependence in the (approximate) marginal posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } _ { 1 } | \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In particular, this can happen if the label y is correlated with the sensitive variable s, which can allow information about s to “leak” into the posterior. Thus instead we could maximize a “penalized” lower bound where we impose some sort of regularization on the marginal "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } _ { 1 } | \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". In the following we will describe one way to achieve this regularization through the Maximum Mean Discrepancy (MMD) (Gretton et al., 2006) measure. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                128,
+                826,
+                227
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.3.1 MAXIMUM MEAN DISCREPANCY "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                242,
+                459,
+                257
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Consider the problem of determining whether two datasets "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ \\mathbf { X } \\} \\sim P _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ { \\bf X } ^ { \\prime } \\} \\sim P _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are drawn from the same distribution, i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { 0 } = P _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". A simple test is to consider the distance between empirical statistics "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\psi ( \\cdot )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the two datasets: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                266,
+                823,
+                309
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\left\\| \\frac {1}{N _ {0}} \\sum_ {i = 1} ^ {N _ {0}} \\psi \\left(\\mathbf {x} _ {i}\\right) - \\frac {1}{N _ {1}} \\sum_ {i = 1} ^ {N _ {1}} \\psi \\left(\\mathbf {x} _ {i} ^ {\\prime}\\right) \\right\\| ^ {2}. \\tag {6}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/cea9aa7f6f8f75ff69fe221f043e5e35f3acfd34825b798130f2946bad5bb51c.jpg"
+                }
+            },
+            "bbox": [
+                375,
+                315,
+                825,
+                359
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Expanding the square yields an estimator composed only of inner products on which the kernel trick can be applied. The resulting estimator is known as Maximum Mean Discrepancy (MMD) (Gretton et al., 2006): "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                364,
+                823,
+                407
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\ell_ {\\mathrm {M M D}} (\\mathbf {X}, \\mathbf {X} ^ {\\prime}) = \\frac {1}{N _ {0} ^ {2}} \\sum_ {n = 1} ^ {N _ {0}} \\sum_ {m = 1} ^ {N _ {0}} k \\left(\\mathbf {x} _ {n}, \\mathbf {x} _ {m}\\right) + \\frac {1}{N _ {1} ^ {2}} \\sum_ {n = 1} ^ {N _ {1}} \\sum_ {m = 1} ^ {N _ {1}} k \\left(\\mathbf {x} _ {n} ^ {\\prime}, \\mathbf {x} _ {m} ^ {\\prime}\\right) - \\frac {2}{N _ {0} N _ {1}} \\sum_ {n = 1} ^ {N _ {0}} \\sum_ {m = 1} ^ {N _ {1}} k \\left(\\mathbf {x} _ {n}, \\mathbf {x} _ {m} ^ {\\prime}\\right). \\tag {7}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2c9e7c3a6c20762c1148eb51a05984b8a6323c2d520127852442b72f0c03cffa.jpg"
+                }
+            },
+            "bbox": [
+                169,
+                414,
+                823,
+                470
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Asymptotically, for a universal kernel such as the Gaussian kernel "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ( x , x ^ { \\prime } ) ~ = ~ e ^ { - \\gamma \\| { \\bf x } - { \\bf x } ^ { \\prime } \\| ^ { 2 } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\ell _ { \\mathrm { M M D } } ( \\mathbf { X } , \\mathbf { X } ^ { \\prime } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is 0 if and only if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { 0 } = P _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Equivalently, minimizing MMD can be viewed as matching all of the moments of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Therefore, we can use it as an extra “regularizer” and force the model to try to match the moments between the marginal posterior distributions of our latent variables, i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\dot { q } _ { \\phi } ( \\mathbf { z } _ { 1 } | s = 0 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } _ { 1 } | s = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(in the case of binary nuisance information "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { s } ^ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "). By adding the MMD penalty into the lower bound of our aforementioned VAE architecture we obtain our proposed model, the “Variational Fair Autoencoder” (VFAE): "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                478,
+                823,
+                580
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathcal {F} _ {\\mathrm {V F A E}} \\left(\\phi , \\theta ; \\mathbf {x} _ {n}, \\mathbf {x} _ {m}, \\mathbf {s} _ {n}, \\mathbf {s} _ {m}, \\mathbf {y} _ {n}\\right) = \\mathcal {F} _ {\\mathrm {V A E}} \\left(\\phi , \\theta ; \\mathbf {x} _ {n}, \\mathbf {x} _ {m}, \\mathbf {s} _ {n}, \\mathbf {s} _ {m}, \\mathbf {y} _ {n}\\right) - \\beta \\ell_ {\\mathrm {M M D}} \\left(\\mathbf {Z} _ {1 \\mathrm {s} = 0}, \\mathbf {Z} _ {1 \\mathrm {s} = 1}\\right) \\tag {8}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/837c50212836280596dbaae9162610336a93923151d86d68edeb0841315fe26e.jpg"
+                }
+            },
+            "bbox": [
+                179,
+                585,
+                823,
+                603
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where: "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                608,
+                220,
+                621
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\ell_ {\\mathrm {M M D}} (\\mathbf {Z} _ {1 \\mathbf {s} = 0}, \\mathbf {Z} _ {1 \\mathbf {s} = 1}) = \\| \\mathbb {E} _ {\\tilde {p} (\\mathbf {x} | \\mathbf {s} = 0)} [ \\mathbb {E} _ {q (\\mathbf {z} _ {1} | \\mathbf {x}, \\mathbf {s} = 0)} [ \\psi (\\mathbf {z} _ {1}) ] ] - E _ {\\tilde {p} (\\mathbf {x} | \\mathbf {s} = 1)} [ \\mathbb {E} _ {q (\\mathbf {z} _ {1} | \\mathbf {x}, \\mathbf {s} = 1)} [ \\psi (\\mathbf {z} _ {1}) ] ] \\| ^ {2} (9)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/705312e8e97bfe8b90820ea2077a13c57e8d276d55d22e8b7e41494096511c76.jpg"
+                }
+            },
+            "bbox": [
+                179,
+                627,
+                825,
+                647
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.4 FAST MMD VIA RANDOM FOURIER FEATURES "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                660,
+                540,
+                674
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "A naive implementation of MMD in minibatch stochastic gradient descent would require computing the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M \\times M"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Gram matrix for each minibatch during training, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the minibatch size. Instead, we can use random kitchen sinks (Rahimi & Recht, 2009) to compute a feature expansion such that computing the estimator (6) approximates the full MMD (7). To compute this, we draw a random "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "K \\times D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "matrix W, where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "K"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the dimensionality of x, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the number of random features and each entry of W is drawn from a standard isotropic Gaussian. The feature expansion is then given as: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                686,
+                823,
+                782
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\psi_ {\\mathbf {W}} (\\mathbf {x}) = \\sqrt {\\frac {2}{D}} \\cos \\left(\\sqrt {\\frac {2}{\\gamma}} \\mathbf {x} \\mathbf {W} + \\mathbf {b}\\right). \\tag {10}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/7a0cf1a9067320cfd6b63c3ae63c0f5c43642f78600e535f541df5e0ad72f348.jpg"
+                }
+            },
+            "bbox": [
+                369,
+                787,
+                823,
+                824
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { b }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-dimensional uniform random vector with entries in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "[ 0 , 2 \\pi ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Zhao & Meng (2015) have successfully applied the idea of using random kitchen sinks to approximate MMD. This estimator is fairly accurate, and is typically much faster than the full MMD penalty. We use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "D = 5 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in our experiments. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                829,
+                823,
+                886
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1In case that we have more than two states for the nuisance information s, we minimize the MMD penalty between each marginal "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( \\mathbf { z } | \\mathbf { s } = k )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q ( \\mathbf { z } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\sum _ { k = 1 } ^ { K } \\ell _ { \\mathrm { M M D } } ( \\mathbf { Z } _ { 1 \\leq = k } , \\mathbf { Z } _ { 1 } ) } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for all possible states "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "K"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of s. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                895,
+                823,
+                926
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "4 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 EXPERIMENTS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                102,
+                328,
+                118
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We performed experiments on the three datasets that correspond to a “fair” classification scenario and were previously used by Zemel et al. (2013). In these datasets the “nuisance” or sensitive variable s is significantly correlated with the label y thus making the proper removal of s challenging. Furthermore, we also experimented with the Amazon reviews dataset to make a connection with the “domain-adaptation” literature. Finally, we also experimented with a more general task on the extended Yale B dataset; that of learning invariant representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                133,
+                826,
+                219
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1 DATASETS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                237,
+                290,
+                251
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the fairness task we experimented with three datasets that were previously used by Zemel et al. (2013). The German dataset is the smallest one with 1000 data points and the objective is to predict whether a person has a good or bad credit rating. The sensitive variable is the gender of the individual. The Adult income dataset contains 45, 222 entries and describes whether an account holder has over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\$ 50"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", 000 dollars in their account. The sensitive variable is age. Both of these are obtained from the UCI machine learning repository (Frank & Asuncion, 2010). The health dataset is derived from the Heritage Health "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { P r i z e } ^ { \\overline { { 2 } } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". It is the largest of the three datasets with 147, 473 entries. The task is to predict whether a patient will spend any days in the hospital in the next year and the sensitive variable is the age of the individual. We use the same train/test/validation splits as Zemel et al. (2013) for our experiments. Finally we also binarized the data and used a multivariate Bernoulli distribution for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\theta } ( \\mathbf { x } _ { n } | \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } ) = \\mathrm { B e r n } ( \\mathbf { x } _ { n } | \\boldsymbol { \\pi } _ { n } = \\sigma ( f _ { \\theta } ( \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } ) ) )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\sigma ( \\cdot )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the sigmoid function 3. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                263,
+                826,
+                419
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the domain adaptation task we used the Amazon reviews dataset (with similar preprocessing) that was also employed by Chen et al. (2012) and Ganin et al. (2015). It is composed from text reviews about particular products, where each product belongs to one out of four different domains: “books”, “dvd”, “electronics” and “kitchen”. As a result we performed twelve domain adaptation tasks. The labels y correspond to the sentiment of each review, i.e. either positive or negative. Since each feature vector "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is composed from counts of unigrams and bigrams we used a Poisson distribution for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\theta } ( \\mathbf { x } _ { n } | \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } ) = \\bar { \\mathrm { P o i s s o n } } ( \\mathbf { x } _ { n } | \\mathbf { \\lambda } _ { n } = e ^ { f _ { \\theta } ( \\mathbf { z } _ { 1 n } , \\mathbf { \\bar { s } } _ { n } ) } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". It is also worthwhile to mention that we can fully exploit the semi-supervised nature of our model in this dataset, and thus for training we only use the source domain labels and consider the labels of the target domain as “missing”. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                424,
+                823,
+                551
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the general task of learning invariant representations we used the Extended Yale B dataset, which was also employed in a similar fashion by Li et al. (2014). It is composed from face images of 38 people under different lighting conditions (directions of the light source). Similarly to Li et al. (2014), we created 5 states for the nuisance variable s: light source in upper right, lower right, lower left, upper left and the front. The labels y correspond to the identity of the person. Following Li et al. (2014), we used the same training, test set and no validation set. For the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( \\mathbf { x } _ { n } | \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "distribution we used a Gaussian with means constrained in the 0-1 range (since we have intensity images) by a sigmoid, i.e. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p _ { \\theta } ( \\mathbf { x } _ { n } | \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } ) = \\mathcal { N } ( \\mathbf { x } _ { n } | \\boldsymbol { \\mu } _ { n } = \\sigma ( f _ { \\theta } ( \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } ) ) , \\boldsymbol { \\sigma } _ { n } = e ^ { f _ { \\theta } ( \\mathbf { z } _ { 1 n } , \\mathbf { s } _ { n } ) } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                556,
+                826,
+                672
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2 EXPERIMENTAL SETUP "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                688,
+                377,
+                703
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For the Adult dataset both encoders, for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and both decoders, for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", had one hidden layer of 100 units. For the Health dataset we had one hidden layer of 300 units for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "encoder and x decoder and one hidden layer of 150 units for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "encoder and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "decoder. For the much smaller German dataset we used 60 hidden units for both encoders and decoders. Finally, for the Amazon reviews and Extended Yale B datasets we had one hidden layer with 500, 400 units respectively for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "encoder, x decoder, and 300, 100 units respectively for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "encoder and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "decoder. On all of the datasets we used 50 latent dimensions for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", except for the small German dataset, where we used 30 latent dimensions for both variables. For the predictive posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { y } | \\mathbf { z } _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "we used a simple Logistic regression classifier. Optimization of the objective function was done with Adam (Kingma & Ba, 2015) using the default values for the hyperparameters, minibatches of 100 data points and temporal averaging. The MMD penalty was simply multiplied by the minibatch size so as to keep the scale of the penalty similar to the lower bound. Furthermore, the extra strength "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                715,
+                826,
+                883
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2www.heritagehealthprize.com "
+                    }
+                ]
+            },
+            "bbox": [
+                189,
+                895,
+                439,
+                909
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3σ(t) = 11+e−t "
+                    }
+                ]
+            },
+            "bbox": [
+                192,
+                909,
+                285,
+                926
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "5 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "of the MMD, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", was tuned according to a validation set. The scaling of the supervised cost was low "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": ") for the Adult, Health and German datasets due to the correlation of s with y. On the Amazon reviews and Extended Yale B datasets however the scaling of the supervised cost was higher: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\begin{array} { r } { \\alpha = 1 0 0 \\cdot \\frac { N _ { \\mathrm { b a t c h \\mathrm { - } s o u r c e } } + N _ { \\mathrm { b a t c h \\mathrm { - } t a r g e t } } } { N _ { \\mathrm { b a t c h \\mathrm { - } s o u r c e } } } } \\end{array}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Nbatch source for the Amazon reviews dataset (empirically determined after observing the classification loss on the first few iterations on the first source-target pair) and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha = 2 0 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the Extended Yale B dataset. Similarly, the scaling of the MMD penalty was "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta = 1 0 0 \\cdot N _ { \\mathrm { b a t c h } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the Amazon reviews dataset and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\beta = 2 0 0 \\cdot N _ { \\mathrm { b a t c h } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the Extended Yale B. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                103,
+                826,
+                205
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our evaluation is geared towards two fronts; removing information about s and classification accuracy for y. To measure the information about s in our new representation we simply train a classifier to predict s from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". We utilize both Logistic Regression (LR) which is a simple linear classifier, and Random Forest (RF) which is a powerful non-linear classifier. Since on the datasets that we experimented with the nuisance variable s is binary we can easily find the random chance accuracy for s and measure the discriminatory information of s in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Furthermore, we also used the discrimination metric from Zemel et al. (2013) as well a more “informed” version of the discrimination metric that instead of the predictions, takes into account the probabilities of the correct class. They are provided in the appendix A. Finally, for the classification performance on y we used the predictive posterior "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { y } | \\mathbf { z } _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the VAE/VFAE and a simple Logistic Regression for the original representations x. It should be noted that for the VFAE and VAE models we use a sample from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { z } _ { 1 } | \\mathbf { x } , \\mathbf { s } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to make predictions, instead of using the mean. We found that the extra noise helps with invariance. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                212,
+                826,
+                381
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We implemented the Learning Fair Representations (Zemel et al., 2013) method (LFR) as a baseline using "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "K = 5 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "dimensions for the latent space. To measure the accuracy on y in the results below we similarly used the LFR model predictions. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                385,
+                823,
+                429
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3 RESULTS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                450,
+                279,
+                464
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3.1 FAIR CLASSIFICATION "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                479,
+                382,
+                492
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The results for all three datasets can be seen in Figure 3. Since we are dealing with the “fair” classification scenario here, low accuracy and discrimination against s is more important than the accuracy on y (as long as we do not produce degenerate representations). "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                505,
+                823,
+                549
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "On the Adult dataset, the highest accuracy on the label y and the lowest discrimination against s is obtained by our LFR baseline. Despite the fact that LFR appears to give the best tradeoff between accuracy and discrimination, it appears to retain information about s in its representation, which is discovered from the random forest classifier. In that sense, the VFAE method appears to do the best job in actually removing the sensitive information and maintaining most of the predictive information. Furthermore, the introduction of the MMD penalty in the VFAE model seems to provide a significant benefit with respect to our discrimination metrics, as both were reduced considerably compared to the regular VAE. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                554,
+                825,
+                667
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "On the German dataset, all methods appear to be invariant with respect to the sensitive information s. However this is not the case for the discrimination metric, since LFR does appear to retain information compared to the VAE and VFAE. The MMD penalty in VFAE did seem improve the discrimination scores over the original VAE, while the accuracy on the labels y remained similar. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                672,
+                823,
+                729
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As for the Health dataset; this dataset is extremely imbalanced, with only "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "15 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of the patients being admitted to a hospital. Therefore, each of the classifiers seems to predict the majority class as the label y for every point. For the invariance against s however, the results were more interesting. On the one hand, the VAE model on this dataset did maintain some sensitive information, which could be identified both linearly and non-linearly. On the other hand, VFAE and the LFR methods were able to retain less information in their latent representation, since only Random Forest was able to achieve higher than random chance accuracy. This further justifies our choice for including the MMD penalty in the lower bound of the VAE. . "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                734,
+                825,
+                848
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In order to further assess the nature of our new representations, we visualized two dimensional Barnes-Hut SNE (van der Maaten, 2013) embeddings of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "representations, obtained from the model trained on the Adult dataset, in Figure 4. As we can see, the nuisance/sensitive variables s can be identified both on the original representation x and on a latent representation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that does not have the MMD penalty and the independence properties between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and s in the prior. By "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                854,
+                825,
+                926
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "6 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/31a5b3eef7163da015990c38b2975800248ca0d539c2a1a57d9a52c0e6938d1e.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                178,
+                108,
+                390,
+                213
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8790d221fe69372db912418b183aa873c36ca2c60fccd9a0d8a747d864cb645f.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                395,
+                107,
+                607,
+                213
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/11d073d034ec1ba6446b8b856fc2aec892df419a1fae34551d52717908e01ac7.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                612,
+                109,
+                828,
+                213
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/28bb62694401e6e0a458a272b12580f344f9a46aac3b9862804e60311b639845.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Adult dataset "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                178,
+                241,
+                390,
+                347
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/14b1b00b7b8ff4f3b25f3d90adf528f05e444ca10f95173255af56ff50a572f3.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                392,
+                241,
+                602,
+                347
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/313387b29abd9a26f1bb839091dc35bd743a37e106fe5af269f59778ca0aa29b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) German dataset "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                604,
+                244,
+                821,
+                347
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8423ddd9aa249c3a56934c9828a21321fab3741da9aae99d23dbaa865e6eca27.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                178,
+                376,
+                390,
+                482
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e0c638691b8ddc71d6bbf5aafcc32739212addb38cf16779d19ff320f0e371b2.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                392,
+                376,
+                602,
+                482
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e8da14c3018f870ca6851e49df11b96dff4a94583ce72b793b19dd8f5b694143.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c) Health dataset "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Fair classification results. Columns correspond to each evaluation scenario (in order): Random/RF/LR accuracy on s, Discrimination/Discrimination prob. against s and Random/Model accuracy on y. Note that the objective of a “fair” encoding is to have low accuracy on S (where LR is a linear classifier and RF is nonlinear), low discrimination against S and high accuracy on Y. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                604,
+                378,
+                821,
+                482
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "introducing these independence properties as well as the MMD penalty the nuisance variable groups become practically indistinguishable. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                598,
+                823,
+                627
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/361bec27eb8b4f823715c9e0166c49829b6720ab421afaaff2dc6b3e2fada3bd.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                189,
+                645,
+                323,
+                715
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f6ab50940da280294d711e524565f2a31d9efe2bee4f286bb8d416faf4f6e17b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                349,
+                645,
+                485,
+                714
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/ca9ed5e24f7a4219f0c8d5497d748556cdc1f38d2681255e4ff3c9f00d1e455f.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                513,
+                645,
+                647,
+                714
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2d4400c8eebc268938105fccefe1b761662320c8d25973fb9f401ea4f70205c3.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(d) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 4: t-SNE (van der Maaten, 2013) visualizations from the Adult dataset on: (a): original x , (b): latent "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "without s and MMD, (c): latent "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with s and without MMD, (d): latent "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "with s and MMD. Blue colour corresponds to males whereas red colour corresponds to females. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                674,
+                645,
+                808,
+                714
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3.2 DOMAIN ADAPTATION "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                816,
+                382,
+                829
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As for the domain adaptation scenario and the Amazon reviews dataset, the results of our VFAE model can be seen in Table 1. Our model was successful in factoring out the domain information, since the accuracy, measured both linearly (LR) and non-linearly (RF), was towards random chance (which for this dataset is 0.5). We should also mention that, on this dataset at least, completely removing information about the domain does not guarantee a better performance on y. The same effect was also observed by Ganin et al. (2015) and Chen et al. (2012). As far as the accuracy on y "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                839,
+                823,
+                925
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                173,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "7 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                503,
+                958
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "is concerned, we compared against a recent neural network based state of the art method for domain adaptation, Domain Adversarial Neural Network (DANN) (Ganin et al., 2015). As we can observe in table 1, our accuracy on the labels y is higher on 9 out of the 12 domain adaptation tasks whereas on the remaining 3 it is quite similar to the DANN architecture. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                103,
+                823,
+                160
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/fdf6c7c916149f26dac10569971359e954c5a0d7c91f2cd6d863483a273ca7f7.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Results on the Amazon reviews dataset. The DANN column is taken directly from Ganin et al. (2015) (the column that uses the original representation as input). "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td rowspan=\"2\">Source - Target</td><td colspan=\"2\">S</td><td colspan=\"2\">Y</td></tr><tr><td>RF</td><td>LR</td><td>VFAE</td><td>DANN</td></tr><tr><td>books -DVD</td><td>0.535</td><td>0.564</td><td>0.799</td><td>0.784</td></tr><tr><td>books -electronics</td><td>0.541</td><td>0.562</td><td>0.792</td><td>0.733</td></tr><tr><td>books -kitchen</td><td>0.537</td><td>0.583</td><td>0.816</td><td>0.779</td></tr><tr><td>dvd -books</td><td>0.537</td><td>0.563</td><td>0.755</td><td>0.723</td></tr><tr><td>dvd -electronics</td><td>0.538</td><td>0.566</td><td>0.786</td><td>0.754</td></tr><tr><td>dvd -kitchen</td><td>0.543</td><td>0.589</td><td>0.822</td><td>0.783</td></tr><tr><td>electronics -books</td><td>0.562</td><td>0.590</td><td>0.727</td><td>0.713</td></tr><tr><td>electronics -DVD</td><td>0.556</td><td>0.586</td><td>0.765</td><td>0.738</td></tr><tr><td>electronics -kitchen</td><td>0.536</td><td>0.570</td><td>0.850</td><td>0.854</td></tr><tr><td>kitchen -books</td><td>0.560</td><td>0.593</td><td>0.720</td><td>0.709</td></tr><tr><td>kitchen -DVD</td><td>0.561</td><td>0.599</td><td>0.733</td><td>0.740</td></tr><tr><td>kitchen -electronics</td><td>0.533</td><td>0.565</td><td>0.838</td><td>0.843</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                300,
+                219,
+                697,
+                417
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.4 LEARNING INVARIANT REPRESENTATIONS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                448,
+                511,
+                462
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Regarding the more general task of learning invariant representations; our results on the Extended Yale B dataset also demonstrate our model’s ability to learn such representations. As expected, on the original representation x the lighting conditions, s, are well identifiable with almost perfect accuracy from both RF and LR. This can also be seen in the two dimensional embeddings of the original space x in Figure 5a: the images are mostly clustered according to the lighting conditions. As soon as we utilize our VFAE model we simultaneously decrease the accuracy on s, from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "96 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "50 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and increase our accuracy on y, from "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "78 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "85 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This effect can also be seen in Figure 5b: the images are now mostly clustered according to the person ID (the label y). It is clear that in this scenario the information about s is purely “nuisance” with respect to the labels y. Therefore, by using our VFAE model we are able to obtain improved generalization and classification performance by effectively removing s from our representations. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                474,
+                826,
+                628
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/445f1437429b794f8f4956a8323d1965c0e90d46c90f124eb2948385f2b41d36.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Results on the Extended Yale B dataset. We also included the best result from Li et al. (2014) under the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { N N } + \\mathrm { M M D }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "row. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td rowspan=\"2\">Method</td><td colspan=\"2\">S</td><td rowspan=\"2\">Y</td></tr><tr><td>RF</td><td>LR</td></tr><tr><td>Original x</td><td>0.952</td><td>0.961</td><td>0.78</td></tr><tr><td>NN + MMD</td><td>-</td><td>-</td><td>0.82</td></tr><tr><td>VFAE</td><td>0.435</td><td>0.565</td><td>0.846</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                359,
+                686,
+                638,
+                762
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 RELATED WORK "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                794,
+                346,
+                810
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Most related to our “fair” representations view is the work from Zemel et al. (2013). They proposed a neural network based semi-supervised clustering model for learning fair representations. The idea is to learn a localised representation that maps each datapoint to a cluster in such a way that each cluster gets assigned roughly equal proportions of data from each group in s. Although their approach was successfully applied on several datasets, the restriction to clustering means that it cannot leverage the representational power of a distributed representation. Furthermore, this penalty does not account for higher order moments in the latent distribution. For example, if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( z _ { k } ^ { - } = 1 | x _ { i } , s = 0 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "always "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                825,
+                826,
+                926
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "8 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/bcb761040b0dee86038430df55e1d2d592e4b7e088329f32669d6ca04429f212.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                202,
+                106,
+                480,
+                276
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/257dbbd46331fb29b1002ac83a2b61795718895383de2ec8557547496262ca66.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 5: t-SNE (van der Maaten, 2013) visualizations of the Extended Yale B training set. (a): original x , (b): latent "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from VFAE. Each example is plotted with the person ID and the image. Zoom in to see details. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                526,
+                107,
+                795,
+                275
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "returns 1 or 0, while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( z _ { k } = 1 | x _ { i } , s = 1 )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "returns values between values 0 and 1, then the penalty could still be satisfied, but information could still leak through. We addressed both of these issues in this paper. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                409,
+                823,
+                453
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Domain adaptation can also be cast as learning representations that are “invariant” with respect to a discrete variable s, the domain. Most similar to our work are neural network approaches which try to match the feature distributions between the domains. This was performed in an unsupervised way with mSDA (Chen et al., 2012) by training denoising autoencoders jointly on all domains, thus implicitly obtaining a representation general enough to explain both the domain and the data. This is in contrast to our approach where we instead try to learn representations that explicitly remove domain information during the learning process. For the latter we find more similarities with “domain-regularized” supervised approaches that simultaneously try to predict the label for a data point and remove domain specific information. This is done with either MMD (Long & Wang, 2015; Tzeng et al., 2014) or adversarial (Ganin et al., 2015) penalties at the hidden layers of the network. In our model however the main “domain-regularizer” stems from the independence properties of the prior over the domain and latent representations. We also employ MMD on our model but from a different perspective since we consider a slightly more difficult case where the domain s and label y are correlated; we need to ensure that we remain as “invariant” as possible since "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "q _ { \\phi } ( \\mathbf { y } | \\mathbf { z } _ { 1 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "might ‘leak’ information about s. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                458,
+                826,
+                667
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 CONCLUSION "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                710,
+                320,
+                724
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We introduce the Variational Fair Autoencoder (VFAE), an extension of the semi-supervised variational autoencoder in order to learn representations that are explicitly invariant with respect to some known aspect of a dataset while retaining as much remaining information as possible. We further use a Maximum Mean Discrepancy regularizer in order to further promote invariance in the posterior distribution over latent variables. We apply this model to tasks involving developing fair classifiers that are invariant to sensitive demographic information and show that it produces a better tradeoff with respect to accuracy and invariance. As a second application, we consider the task of domain adaptation, where the goal is to improve classification by training a classifier that is invariant to the domain. We find that our model is competitive with recently proposed adversarial approaches. Finally, we also consider the more general task of learning invariant representations. We can observe that our model provides a clear improvement against a neural network that incorporates a Maximum Mean Discrepancy penalty. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                757,
+                826,
+                925
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "9 "
+                    }
+                ]
+            },
+            "bbox": [
+                493,
+                948,
+                504,
+                959
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "REFERENCES "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                174,
+                102,
+                287,
+                117
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ben-David, Shai, Blitzer, John, Crammer, Koby, Pereira, Fernando, et al. Analysis of representations for domain adaptation. Advances in neural information processing systems, 19:137, 2007. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ben-David, Shai, Blitzer, John, Crammer, Koby, Kulesza, Alex, Pereira, Fernando, and Vaughan, Jennifer Wortman. A theory of learning from different domains. Machine learning, 79(1-2): 151–175, 2010. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Chen, Minmin, Xu, Zhixiang, Weinberger, Kilian, and Sha, Fei. Marginalized denoising autoencoders for domain adaptation. International Conference on Machine Learning (ICML), 2012. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Frank, A. and Asuncion, A. UCI machine learning repository, 2010. URL http://archive. ics.uci.edu/ml. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ganin, Y., Ustinova, E., Ajakan, H., Germain, P., Larochelle, H., Laviolette, F., Marchand, M., and Lempitsky, V. Domain-Adversarial Training of Neural Networks. ArXiv e-prints, May 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Gretton, Arthur, Borgwardt, Karsten M, Rasch, Malte, Scholkopf, Bernhard, and Smola, Alex J. ¨ A kernel method for the two-sample-problem. In Advances in neural information processing systems, pp. 513–520, 2006. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kifer, Daniel, Ben-David, Shai, and Gehrke, Johannes. Detecting change in data streams. In Proceedings of the Thirtieth international conference on Very large data bases-Volume 30, pp. 180– 191. VLDB Endowment, 2004. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kingma, Diederik P and Ba, Jimmy. Adam: A method for stochastic optimization. International Conference on Learning Representations (ICLR), 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kingma, Diederik P and Welling, Max. Auto-encoding variational bayes. International Conference on Learning Representations (ICLR), 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kingma, Diederik P, Mohamed, Shakir, Rezende, Danilo Jimenez, and Welling, Max. Semisupervised learning with deep generative models. In Advances in Neural Information Processing Systems, pp. 3581–3589, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Li, Yujia, Swersky, Kevin, and Zemel, Richard. Learning unbiased features. arXiv preprint arXiv:1412.5244, 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Long, Mingsheng and Wang, Jianmin. Learning transferable features with deep adaptation networks. arXiv preprint arXiv:1502.02791, 2015. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Rahimi, Ali and Recht, Benjamin. Weighted sums of random kitchen sinks: Replacing minimization with randomization in learning. In Advances in neural information processing systems, pp. 1313– 1320, 2009. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Rezende, Danilo Jimenez, Mohamed, Shakir, and Wierstra, Daan. Stochastic backpropagation and approximate inference in deep generative models. International Conference on Machine Learning (ICML), 2014. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tzeng, Eric, Hoffman, Judy, Zhang, Ning, Saenko, Kate, and Darrell, Trevor. Deep domain confusion: Maximizing for domain invariance. CoRR, abs/1412.3474, 2014. URL http: //arxiv.org/abs/1412.3474. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "van der Maaten, L. Barnes-Hut-SNE. ArXiv e-prints, January 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zemel, Rich, Wu, Yu, Swersky, Kevin, Pitassi, Toni, and Dwork, Cynthia. Learning fair representations. In Proceedings of the 30th International Conference on Machine Learning (ICML-13), pp. 325–333, 2013. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhao, Ji and Meng, Deyu. Fastmmd: Ensemble of circular discrepancy for efficient two-sample test. Neural computation, 2015. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                125,
+                825,
+                893
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "10 "
+                    }
+                ]
+            },
+            "bbox": [
+                490,
+                946,
+                509,
+                960
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A DISCRIMINATION METRICS "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                102,
+                434,
+                118
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The Discrimination metric (Zemel et al., 2013) and the Discrimination metric that takes into account the probabilities of the correct class are mathematically formalized as: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                133,
+                823,
+                162
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\text {D i s c r i m i n a t i o n} = \\left| \\frac {\\sum_ {n = 1} ^ {N} \\mathbb {I} \\left[ y _ {n} ^ {s = 0} \\right]}{N _ {s = 0}} - \\frac {\\sum_ {n = 1} ^ {N} \\mathbb {I} \\left[ y _ {n} ^ {s = 1} \\right]}{N _ {s = 1}} \\right|",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9603655747ff1938295858a9a4ad799e862445a57b6651bd1cd4112448fdd042.jpg"
+                }
+            },
+            "bbox": [
+                334,
+                186,
+                683,
+                224
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\text {D i s c r i m i n a t i o n} = \\left| \\frac {\\sum_ {n = 1} ^ {N} p \\left(y _ {n} ^ {s = 0}\\right)}{N _ {s = 0}} - \\frac {\\sum_ {n = 1} ^ {N} p \\left(y _ {n} ^ {s = 1}\\right)}{N _ {s = 1}} \\right|",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9a2b5978cd9cbd520169f80902c412f2eed8d6c8140ecdb21f039efa264e7eaf.jpg"
+                }
+            },
+            "bbox": [
+                300,
+                226,
+                694,
+                262
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbb { I } [ y _ { n } ^ { s = 0 } ] = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the predictions "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that were done on the datapoints with nuisance variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "N _ { s = 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes the total amount of datapoints that had nuisance variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( y _ { n } ^ { s = 0 } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes the probability of the prediction "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { n }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for the datapoints with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For the predictions and their respective probabilities we used a Logistic Regression classifier. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                268,
+                823,
+                327
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "B PROXY A-DISTANCE (PAD) FOR AMAZON REVIEWS DATASET "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                171,
+                347,
+                725,
+                364
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Similarly to Ganin et al. (2015), we also calculated the Proxy A-distance (PAD) (Ben-David et al., 2007; 2010) scores for the raw data x and for the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { z } _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "representations of VFAE. Briefly, Proxy Adistance is an approximation to the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { H }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-divergence measure of domain distinguishability proposed in Kifer et al. (2004) and Ben-David et al. (2007; 2010). To compute it we first need to train a learning algorithm on the task of discriminating examples from the source and target domain. Afterwards we can use the test error "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\epsilon"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of that algorithm in the following formula: "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                378,
+                823,
+                462
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\mathrm {P A D} (\\epsilon) = 2 (1 - 2 \\epsilon)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/3df15873b886b37a177316f06f870fc706242a9b5e6199cce7557af959fdcca4.jpg"
+                }
+            },
+            "bbox": [
+                426,
+                469,
+                568,
+                486
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "It is clear that low PAD scores correspond to low discrimination of the source and target domain examples from the classifier. To obtain "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\epsilon"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for our model we used Logistic Regression. The resulting plot can be seen in Figure 6, where we have also added the plot from DANN (Ganin et al., 2015), where they used a linear Support Vector Machine for the classifier, as a reference. It can be seen that our VFAE model can factor out the information about s better, since the PAD scores on our new representation are, overall, lower than the ones obtained from the DANN architecture. "
+                    }
+                ]
+            },
+            "bbox": [
+                169,
+                492,
+                823,
+                577
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/75c5f1fb1398b86e74fa2d44f857b5ece22128a7bbac08142ac12d0f13b1e39c.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                181,
+                601,
+                488,
+                787
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c9fdd99955197d207ad64210ae344f0c7395e9560447c47c7008b73d241accf6.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 6: Proxy A-distances (PAD) for the Amazon reviews dataset: left from our VFAE model, right from the DANN model (taken from Ganin et al. (2015)) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                509,
+                599,
+                805,
+                773
+            ]
+        },
+        {
+            "type": "page_header",
+            "content": {
+                "page_header_content": [
+                    {
+                        "type": "text",
+                        "content": "Published as a conference paper at ICLR 2016 "
+                    }
+                ]
+            },
+            "bbox": [
+                171,
+                32,
+                478,
+                47
+            ]
+        },
+        {
+            "type": "page_number",
+            "content": {
+                "page_number_content": [
+                    {
+                        "type": "text",
+                        "content": "11 "
+                    }
+                ]
+            },
+            "bbox": [
+                490,
+                946,
+                506,
+                959
+            ]
+        }
+    ]
+]

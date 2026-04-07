@@ -1,0 +1,206 @@
+% !TeX root = writeup.tex 
+
+
+\section{Introduction}
+
+Machine learning commonly considers static objectives defined on a snapshot of
+the population at one instant in time; consequential decisions, in contrast,
+reshape the population over time. Lending practices, for example, can shift the
+distribution of debt and wealth in the population. Job advertisements 
+allocate opportunity. School admissions shape the level of education in
+a community.
+
+Existing scholarship on fairness in automated decision-making criticizes
+unconstrained machine learning for its potential to \emph{harm} historically
+underrepresented or disadvantaged groups in the
+population~\citep{whitehouse16,barocasselbst16}. Consequently, a variety of
+\emph{fairness criteria} have been proposed as constraints on standard learning
+objectives. Even though, in each case, these constraints are clearly intended to
+\emph{protect} the disadvantaged group by an appeal to intuition, a rigorous
+argument to that effect is often lacking.
+
+In this work, we formally examine under what circumstances fairness criteria do
+indeed promote the long-term well-being of disadvantaged groups measured in
+terms of a temporal variable of interest. Going beyond the standard
+classification setting, we introduce a one-step feedback model of decision-making
+that exposes how decisions change the underlying population over time.
+
+Our running example is a hypothetical lending scenario. There are two groups in
+the population with features described by a summary statistic, such as a
+\emph{credit score}, whose distribution differs between the two groups. The bank can
+choose thresholds for each group at which loans are offered. While
+group-dependent thresholds may face legal challenges \citep{ross2006}, they are
+generally inevitable for some of the criteria we examine. The impact of a
+lending decision has multiple facets. A default event not only diminishes profit for
+the bank, it also worsens the financial situation of the borrower as reflected
+in a subsequent decline in credit score. A successful lending outcome leads to
+profit for the bank and also to an increase in credit score for the borrower.
+
+When thinking of one of the two groups as disadvantaged, it makes sense to ask
+what lending policies (choices of thresholds) lead to an expected improvement in
+the score distribution within that group. An unconstrained bank would maximize
+profit, choosing thresholds that meet a break-even point above which it is
+profitable to give out loans. One frequently proposed fairness criterion,
+sometimes called demographic parity, requires the bank to lend to both groups at
+an equal rate. Subject to this requirement the bank would continue to maximize
+profit to the extent possible. 
+Another criterion, originally called equality of opportunity, equalizes
+the \emph{true positive rates} between the two groups, thus requiring the bank to lend in
+both groups at an equal rate among individuals who repay their loan. Other
+criteria are natural, but for clarity we restrict our attention to these three.
+
+Do these fairness criteria benefit the disadvantaged group? When do they show a
+clear advantage over unconstrained classification? Under what circumstances does
+profit maximization work in the interest of the individual? These are important
+questions that we begin to address in this work.
+
+\subsection{Contributions}
+We introduce a one-step feedback model that allows us to quantify the long-term
+impact of classification on different groups in the population. We represent
+each of the two groups~$\popa$ and~$\popb$ by a \emph{score}
+distribution~$\dist\supa$ and~$\dist\supb,$ respectively. The support of these
+distributions is a finite set~$\X$ corresponding to the possible values that the
+score can assume. We think of the score as highlighting one variable of interest
+in a specific domain such that higher score values correspond to a
+higher probability of a positive outcome.  
+An \emph{institution} chooses selection policies~$\pola,
+\polb\colon\X\to[0,1]$ that assign to each value in~$\X$ a number representing
+the rate of selection for that value. In our example, these policies specify
+the lending rate at a given credit score within a given group. The institution
+will always maximize their utility (defined formally later) subject to either
+(a) no constraint, or (b) equality of selection rates, or (c) equality of true
+positive rates.
+
+We assume the availability of a function~$\chg\colon\X\to\R$ such that $\chg(x)$ provides the
+expected change in score for a selected individual at score $x$.  The
+central quantity we study is the expected difference in the mean
+score in group~$j\in\{\popa, \popb\}$ that results from an institutions policy, $\delmean\supj$ defined formally in Equation~\eqref{eqn:delmean}. 
+When modeling the problem, the expected mean difference can also absorb external
+factors such as ``reversion to the mean'' so long as they are mean-preserving.
+Qualitatively, we distinguish between \emph{long-term improvement}
+($\delmean\supj>0$), \emph{stagnation} ($\delmean\supj=0$), and \emph{decline}
+($\delmean\supj<0$).
+Our findings can be summarized as follows:
+
+\begin{enumerate} 
+	\item Both fairness criteria (equal selection rates, equal true
+	positive rates) can lead to all possible outcomes (improvement, stagnation, and decline) in natural parameter regimes.  We provide a complete characterization of when each criterion
+	leads to each outcome in Section \ref{sec:results}.
+	\begin{itemize}
+		\item There are a class of settings where equal
+		selection rates cause decline, whereas equal true positive rates do not (Corollary \ref{cor:avoid_harm}),
+		\item Under a mild assumption, the institution's optimal unconstrained selection policy can never lead to decline (Proposition \ref{prop:mp_noharm}). 
+	\end{itemize}
+
+\item We introduce the notion of an \emph{outcome curve} (Figure~\ref{fig:outcome_curve}) which succinctly describes the different regimes in which one criterion is preferable over the others. 
+
+\item We perform experiments on FICO credit score data from 2003 and show that under various models of bank utility and score change, the outcomes of applying fairness criteria are in line with our theoretical predictions.
+
+\item
+We discuss how certain types of measurement error (e.g., the bank
+underestimating the repayment ability of the disadvantaged group) affect our
+comparison. We find that measurement error narrows the regime in which fairness
+criteria cause decline, suggesting that measurement should be a factor when
+motivating these criteria.
+\item We consider alternatives to hard fairness constraints.
+\begin{itemize}
+	\item We evaluate the optimization problem where fairness criterion is a regularization term in the objective. Qualitatively, this leads to the
+	same findings.
+	\item We discuss the possibility of optimizing for group score improvement $\delmean\supj$ directly subject to institution utility constraints. The
+	resulting solution provides an interesting possible alternative to existing fairness criteria.
+\end{itemize}
+
+\end{enumerate}
+
+We focus on the impact of a selection policy over a single epoch. The
+motivation is that the designer of a system usually has an understanding of the
+time horizon after which the system is evaluated and possibly redesigned.
+Formally, nothing prevents us from repeatedly applying our model and tracing
+changes over multiple epochs. In reality, however, it is plausible that over greater time
+periods, economic background variables might dominate the effect of selection.
+
+
+Reflecting on our findings, we argue that careful temporal modeling is necessary
+in order to accurately evaluate the impact of different fairness criteria on the
+population. Moreover, an understanding of measurement error is important in
+assessing the advantages of fairness criteria relative to unconstrained
+selection. Finally, the nuances of our characterization underline how
+intuition may be a poor guide in judging the long-term impact of fairness
+constraints.
+
+\subsection{Related work}
+
+%\lydia{Add references}
+
+Recent work by \citet{hu18shortterm} considers a model for long-term outcomes and fairness in the labor market. They propose imposing the demographic parity constraint in a \emph{temporary} labor market in order to provably achieve an equitable long-term equilibrium in the \emph{permanent} labor market, reminiscent of economic arguments for affirmative action~\citep{foster1992economic}. The equilibrium analysis of the labor market dynamics model allows for specific conclusions relating fairness criteria to long term outcomes. Our general framework is complementary to this type of domain specific approach.
+
+\citet{fuster2017predictably}
+consider the problem of fairness in credit markets from a different perspective. Their goal is to study the effect of machine learning on interest rates in different groups at an equilibrium, under a static model without feedback.
+
+\citet{ensign2017runaway} consider feedback loops in predictive
+policing, where the police more heavily monitor high crime neighborhoods,
+thus further increasing the measured number of crimes in those neighborhoods.
+While the work addresses an important temporal phenomenon using the theory of urns, it is rather different from our one-step feedback model both conceptually and technically.
+
+Demographic parity and its related formulations have been considered in numerous
+papers~\citep[e.g.][]{Calders2009,zafar17a}. \citet{hardt16equality} introduced the equality of
+opportunity constraint that we consider and demonstrated limitations of a broad
+class of criteria. \citet{kleinberg16inherent} and~\citet{chould16fair} point out
+the tension between ``calibration by group'' and equal true/false positive
+rates. These trade-offs carry over to some extent to the case where we only
+equalize true positive rates~\citep{weinberger2017calibration}.
+
+A growing literature on fairness in the ``bandits'' setting of learning~\citep[see][\emph{et sequelae}]{roth2016bandits} deals with online decision making that ought not
+to be confused with our one-step feedback setting. Finally, there has been much work in the social sciences on analyzing the effect
+of affirmative action \citep[see e.g.,][]{keith1985,Kaley2006}.
+
+\subsection{Discussion}
+
+%We now discuss the implications of an outcome-based view towards fairness in machine learning that this paper pursues. In particular, we center our discussion around the following two questions.
+
+In this paper, we advocate for a view toward long-term outcomes in the
+discussion of ``fair'' machine learning. 
+%
+We argue that without a careful model of delayed outcomes, we cannot foresee the
+impact a fairness criterion would have if enforced as a constraint on a
+classification system.  However, if such an accurate outcome model is available,
+we show that there are more direct ways to optimize for positive outcomes than
+via existing fairness criteria. We outline such an outcome-based solution 
+in Section \ref{sec:outcome_based}. Specifically, in the credit setting, the
+outcome-based solution corresponds to giving out more loans to the protected
+group in a way that reduces profit for the bank compared to unconstrained profit
+maximization, but avoids loaning to those who are unlikely to benefit, resulting
+in a maximally improved group average credit score. The extent to which such a
+solution could form the basis of successful regulation depends on the accuracy
+of the available outcome model.
+
+This raises the question if our model of outcomes is rich enough to faithfully
+capture realistic phenomena.  By focusing on the impact that selection has on
+individuals at a given score, we model the effects for those \emph{not} selected
+as zero-mean. For example, not getting a loan in our model has no negative
+effect on the credit score of an individual.\footnote{In reality, a denied
+credit inquiry may lower one's credit score, but the effect is small compared to
+a default event.} This does not mean that wrongful rejection (i.e., a false
+negative) has no visible manifestation in our model. If a classifier has a
+higher false negative rate in one group than in another, we expect the
+classifier to increase the disparity between the two groups (under natural
+assumptions). In other words, in our outcome-based model, the harm of denied
+opportunity manifests as growing disparity between the groups.  The cost of a
+false negative could also be incorporated directly into the outcome-based model by a simple modification (see
+Footnote~\ref{footnote:negative_dec_outcomes}). This may be fitting in some
+applications where the immediate impact of a false negative to the individual is
+not zero-mean, but significantly reduces their future success probability.
+
+In essence, the formalism we propose requires us to understand the two-variable
+causal mechanism that translates decisions to outcomes.  This can be seen as
+relaxing the requirements compared with recent work 
+on avoiding discrimination through causal reasoning that often required stronger
+assumptions~\citep{Kusner17,Nabi17,Kilbertus17}. In particular, these works required knowledge of how
+sensitive attributes (such as gender, race, or proxies thereof) causally relate
+to various other variables in the data. Our model avoids the delicate modeling
+step involving the sensitive attribute, and instead focuses on an arguably more
+tangible economic mechanism. Nonetheless, depending on the application, such an
+understanding might necessitate greater domain knowledge and additional research
+into the specifics of the application. This is consistent with much scholarship
+that points to the context-sensitive nature of fairness in machine learning. 
+

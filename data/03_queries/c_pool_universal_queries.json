@@ -1,0 +1,1017 @@
+{
+  "_meta": {
+    "version": "2.0",
+    "created": "2026-03-15",
+    "description": "C-Pool: 万金油通用查询库。每条 query 适用于任意学术论文文档，不依赖论文具体内容。QC 策略：只验证 evidence localization（能否召回正确 node），不验证 answer 质量。",
+    "categories": [
+      "summary",
+      "motivation",
+      "method",
+      "results",
+      "cross_doc"
+    ],
+    "total_queries": 78,
+    "evidence_type": "node_ids",
+    "note": "expected_evidence_types 字段说明该 query 应召回哪些类型的 node，用于 evidence localization 验证。"
+  },
+  "queries": [
+    {
+      "id": "cpool_summary_001",
+      "category": "summary",
+      "query": "What is this paper about?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_general",
+      "expected_evidence_types": [
+        "section:abstract",
+        "section:introduction",
+        "figure:overview"
+      ],
+      "note": "超短口语问法，懒人用户"
+    },
+    {
+      "id": "cpool_summary_002",
+      "category": "summary",
+      "query": "Give me a quick summary of this paper.",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_general",
+      "expected_evidence_types": [
+        "section:abstract",
+        "section:introduction"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_003",
+      "category": "summary",
+      "query": "What does this article do in one sentence?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_general",
+      "expected_evidence_types": [
+        "section:abstract"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_004",
+      "category": "summary",
+      "query": "Can you summarize the key contributions of this work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_contributions",
+      "expected_evidence_types": [
+        "section:abstract",
+        "section:introduction"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_005",
+      "category": "summary",
+      "query": "What are the main takeaways from this paper?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_contributions",
+      "expected_evidence_types": [
+        "section:abstract",
+        "section:conclusion"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_006",
+      "category": "summary",
+      "query": "What problem does this paper solve and how?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_contributions",
+      "expected_evidence_types": [
+        "section:abstract",
+        "section:introduction",
+        "section:method"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_007",
+      "category": "summary",
+      "query": "Briefly describe the novelty of this approach.",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_novelty",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:method"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_008",
+      "category": "summary",
+      "query": "What distinguishes this paper from prior work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_novelty",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:related_work"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_009",
+      "category": "summary",
+      "query": "Summarize the conclusion of this paper.",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_conclusion",
+      "expected_evidence_types": [
+        "section:conclusion"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_summary_010",
+      "category": "summary",
+      "query": "What limitations does the paper acknowledge?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_conclusion",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_motivation_001",
+      "category": "motivation",
+      "query": "Why was this research done?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_general",
+      "expected_evidence_types": [
+        "section:introduction"
+      ],
+      "note": "最简短，口语"
+    },
+    {
+      "id": "cpool_motivation_002",
+      "category": "motivation",
+      "query": "What is the motivation behind this paper?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_general",
+      "expected_evidence_types": [
+        "section:introduction"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_motivation_003",
+      "category": "motivation",
+      "query": "What gap in existing research does this work address?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_gap",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:related_work"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_motivation_004",
+      "category": "motivation",
+      "query": "What problem in practice motivated this study?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_gap",
+      "expected_evidence_types": [
+        "section:introduction"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_motivation_005",
+      "category": "motivation",
+      "query": "What shortcomings of previous methods does this paper aim to fix?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_gap",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:related_work"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_motivation_006",
+      "category": "motivation",
+      "query": "What are the core research questions this paper tries to answer?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_research_question",
+      "expected_evidence_types": [
+        "section:introduction"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_motivation_007",
+      "category": "motivation",
+      "query": "What real-world impact does the authors claim this work will have?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_impact",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:conclusion"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_method_001",
+      "category": "method",
+      "query": "How does the proposed method work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_general",
+      "expected_evidence_types": [
+        "section:method",
+        "figure:architecture"
+      ],
+      "note": "最常用的方法问法"
+    },
+    {
+      "id": "cpool_method_002",
+      "category": "method",
+      "query": "What is the model architecture?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_architecture",
+      "expected_evidence_types": [
+        "figure:architecture",
+        "section:method"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_method_003",
+      "category": "method",
+      "query": "Describe the main components of the system.",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_architecture",
+      "expected_evidence_types": [
+        "figure:architecture",
+        "section:method"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_method_004",
+      "category": "method",
+      "query": "Walk me through the pipeline of this approach.",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_pipeline",
+      "expected_evidence_types": [
+        "section:method",
+        "figure:overview"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_method_005",
+      "category": "method",
+      "query": "What are the key design decisions in this method?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_design",
+      "expected_evidence_types": [
+        "section:method"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_method_006",
+      "category": "method",
+      "query": "What training procedure or optimization strategy is used?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_training",
+      "expected_evidence_types": [
+        "section:method",
+        "section:experiments"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_method_007",
+      "category": "method",
+      "query": "What datasets were used to train or evaluate the model?",
+      "query_intent": "objective",
+      "paraphrase_group": "method_data",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:dataset"
+      ],
+      "note": "客观题"
+    },
+    {
+      "id": "cpool_method_008",
+      "category": "method",
+      "query": "What are the inputs and outputs of the model?",
+      "query_intent": "objective",
+      "paraphrase_group": "method_io",
+      "expected_evidence_types": [
+        "section:method",
+        "figure:architecture"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_001",
+      "category": "results",
+      "query": "What are the main experimental results?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_general",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_002",
+      "category": "results",
+      "query": "How does this method compare to baselines?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_comparison",
+      "expected_evidence_types": [
+        "table:main_results",
+        "figure:comparison"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_003",
+      "category": "results",
+      "query": "What is the performance improvement over state-of-the-art?",
+      "query_intent": "objective",
+      "paraphrase_group": "results_comparison",
+      "expected_evidence_types": [
+        "table:main_results"
+      ],
+      "note": "客观题，明确数值"
+    },
+    {
+      "id": "cpool_results_004",
+      "category": "results",
+      "query": "Show me the ablation study results.",
+      "query_intent": "objective",
+      "paraphrase_group": "results_ablation",
+      "expected_evidence_types": [
+        "table:ablation",
+        "section:ablation"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_005",
+      "category": "results",
+      "query": "Which components of the model contribute most to performance?",
+      "query_intent": "objective",
+      "paraphrase_group": "results_ablation",
+      "expected_evidence_types": [
+        "table:ablation",
+        "section:ablation"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_006",
+      "category": "results",
+      "query": "Are there any failure cases or error analysis?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_analysis",
+      "expected_evidence_types": [
+        "section:analysis",
+        "figure:error_analysis"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_007",
+      "category": "results",
+      "query": "What benchmarks were used and what scores did this method achieve?",
+      "query_intent": "objective",
+      "paraphrase_group": "results_benchmark",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_008",
+      "category": "results",
+      "query": "Does this method show consistent gains across all experimental settings?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_robustness",
+      "expected_evidence_types": [
+        "table:main_results",
+        "figure:results"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_009",
+      "category": "results",
+      "query": "What is the computational cost or efficiency of this approach?",
+      "query_intent": "objective",
+      "paraphrase_group": "results_efficiency",
+      "expected_evidence_types": [
+        "table:efficiency",
+        "section:experiments"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_results_010",
+      "category": "results",
+      "query": "Is there a qualitative analysis or visualization of results?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_qualitative",
+      "expected_evidence_types": [
+        "figure:visualization",
+        "section:analysis"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cpool_cross_doc_001",
+      "category": "cross_doc",
+      "query": "How does this paper relate to or build on [PAPER_B]?",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_relation",
+      "expected_evidence_types": [
+        "section:related_work",
+        "section:introduction"
+      ],
+      "note": "[PAPER_B] 为占位符，实际使用时替换为具体论文标题",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_002",
+      "category": "cross_doc",
+      "query": "What method from [PAPER_B] does this work extend or challenge?",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_relation",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:related_work"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_003",
+      "category": "cross_doc",
+      "query": "Compare the experimental setup of this paper with [PAPER_B].",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_comparison",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:main_results"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_004",
+      "category": "cross_doc",
+      "query": "Which of these two papers performs better on [DATASET] and why?",
+      "query_intent": "objective",
+      "paraphrase_group": "crossdoc_comparison",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_005",
+      "category": "cross_doc",
+      "query": "Do these papers make contradictory claims? Identify any disagreements.",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_conflict",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:related_work",
+        "section:conclusion"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_006",
+      "category": "cross_doc",
+      "query": "Can the technique from [PAPER_B] be applied to improve this paper's approach?",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_synthesis",
+      "expected_evidence_types": [
+        "section:method",
+        "section:conclusion"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_007",
+      "category": "cross_doc",
+      "query": "Summarize the shared motivation across these papers.",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_synthesis",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:abstract"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_cross_doc_008",
+      "category": "cross_doc",
+      "query": "What future work direction is suggested, and does [PAPER_B] address it?",
+      "query_intent": "subjective",
+      "paraphrase_group": "crossdoc_future",
+      "expected_evidence_types": [
+        "section:conclusion"
+      ],
+      "note": "",
+      "requires_multi_doc": true
+    },
+    {
+      "id": "cpool_summary_011",
+      "category": "summary",
+      "query": "Core contribution in plain terms?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_contributions",
+      "expected_evidence_types": [
+        "section:abstract",
+        "section:introduction"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_summary_012",
+      "category": "summary",
+      "query": "Promising directions for follow-up work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_future",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_summary_013",
+      "category": "summary",
+      "query": "What directions emerge for future academic research?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_future",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_summary_014",
+      "category": "summary",
+      "query": "What research directions follow from this work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_future",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_summary_015",
+      "category": "summary",
+      "query": "Where's the room for improvement?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_improvements",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_summary_016",
+      "category": "summary",
+      "query": "How can this particular methodology be further optimized or improved?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_improvements",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_summary_017",
+      "category": "summary",
+      "query": "What changes could strengthen this work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "summary_improvements",
+      "expected_evidence_types": [
+        "section:conclusion",
+        "section:discussion"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_motivation_008",
+      "category": "motivation",
+      "query": "Problem being solved here?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_general",
+      "expected_evidence_types": [
+        "section:introduction"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_motivation_009",
+      "category": "motivation",
+      "query": "Practical or real-world applications?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_applications",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:conclusion"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_motivation_010",
+      "category": "motivation",
+      "query": "What is the broader practical application or industrial impact?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_applications",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:conclusion"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_motivation_011",
+      "category": "motivation",
+      "query": "What matters most for practical use?",
+      "query_intent": "subjective",
+      "paraphrase_group": "motivation_applications",
+      "expected_evidence_types": [
+        "section:introduction",
+        "section:conclusion"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_method_009",
+      "category": "method",
+      "query": "How does the method work step by step?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_general",
+      "expected_evidence_types": [
+        "section:method",
+        "figure:architecture"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_method_010",
+      "category": "method",
+      "query": "What is the main insight behind the approach?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_design",
+      "expected_evidence_types": [
+        "section:method",
+        "section:introduction"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_method_011",
+      "category": "method",
+      "query": "What assumptions does this rely on?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_assumptions",
+      "expected_evidence_types": [
+        "section:method",
+        "section:introduction"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_method_012",
+      "category": "method",
+      "query": "What are the critical underlying assumptions of this approach?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_assumptions",
+      "expected_evidence_types": [
+        "section:method",
+        "section:introduction"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_method_013",
+      "category": "method",
+      "query": "How do those assumptions shape the method?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_assumptions",
+      "expected_evidence_types": [
+        "section:method",
+        "section:introduction"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_method_014",
+      "category": "method",
+      "query": "Why does this approach work?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_why_works",
+      "expected_evidence_types": [
+        "section:method",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_method_015",
+      "category": "method",
+      "query": "Why exactly does this specific approach yield these results?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_why_works",
+      "expected_evidence_types": [
+        "section:method",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_method_016",
+      "category": "method",
+      "query": "What intuition motivates the design?",
+      "query_intent": "subjective",
+      "paraphrase_group": "method_why_works",
+      "expected_evidence_types": [
+        "section:method",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_results_011",
+      "category": "results",
+      "query": "What do the results show?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_general",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_012",
+      "category": "results",
+      "query": "Which baselines were compared?",
+      "query_intent": "objective",
+      "paraphrase_group": "results_comparison",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_013",
+      "category": "results",
+      "query": "How well does this scale?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_scalability",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:efficiency"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_014",
+      "category": "results",
+      "query": "How does the proposed framework address scalability concerns?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_scalability",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:efficiency"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_results_015",
+      "category": "results",
+      "query": "Where does the approach face the greatest difficulty?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_scalability",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:efficiency"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_results_016",
+      "category": "results",
+      "query": "Any unaddressed edge cases or failure modes?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_edge_cases",
+      "expected_evidence_types": [
+        "section:experiments",
+        "section:discussion",
+        "figure:error_analysis"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_017",
+      "category": "results",
+      "query": "What potential edge cases or failure modes remain unaddressed?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_edge_cases",
+      "expected_evidence_types": [
+        "section:experiments",
+        "section:discussion",
+        "figure:error_analysis"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_results_018",
+      "category": "results",
+      "query": "What aspects remain insufficiently explored?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_edge_cases",
+      "expected_evidence_types": [
+        "section:experiments",
+        "section:discussion",
+        "figure:error_analysis"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_results_019",
+      "category": "results",
+      "query": "How well do experiments support the claims?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_claim_support",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_020",
+      "category": "results",
+      "query": "To what extent do the experiments justify the theoretical claims?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_claim_support",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_results_021",
+      "category": "results",
+      "query": "How persuasive is the evaluation?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_claim_support",
+      "expected_evidence_types": [
+        "table:main_results",
+        "section:experiments"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    },
+    {
+      "id": "cpool_results_022",
+      "category": "results",
+      "query": "Biggest technical strengths?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_strengths",
+      "expected_evidence_types": [
+        "section:method",
+        "section:experiments",
+        "table:main_results"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_023",
+      "category": "results",
+      "query": "What stand out as the main technical strengths of this paper?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_strengths",
+      "expected_evidence_types": [
+        "section:method",
+        "section:experiments",
+        "table:main_results"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_results_024",
+      "category": "results",
+      "query": "How were the experiments set up?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_experiment_setup",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:main_results"
+      ],
+      "note": "",
+      "formality_tier": "colloquial"
+    },
+    {
+      "id": "cpool_results_025",
+      "category": "results",
+      "query": "How was the theoretical approach empirically evaluated?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_experiment_setup",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:main_results"
+      ],
+      "note": "",
+      "formality_tier": "academic"
+    },
+    {
+      "id": "cpool_results_026",
+      "category": "results",
+      "query": "What supports the main claims?",
+      "query_intent": "subjective",
+      "paraphrase_group": "results_experiment_setup",
+      "expected_evidence_types": [
+        "section:experiments",
+        "table:main_results"
+      ],
+      "note": "",
+      "formality_tier": "insight"
+    }
+  ],
+  "qc_policy": {
+    "strategy": "evidence_localization_only",
+    "skip_checks": [
+      "single_element_answer",
+      "weak_reasoning_connector",
+      "anchor_leakage",
+      "yes_no_answer"
+    ],
+    "apply_checks": [
+      "evidence_node_recall",
+      "evidence_type_coverage"
+    ],
+    "evidence_node_recall_threshold": 0.5,
+    "note": "C-Pool query 不验证 answer 质量，只验证 evidence localization：给定 query，系统能否从文档图中召回 expected_evidence_types 中的至少一类节点（Recall@k）。"
+  },
+  "usage_notes": {
+    "single_doc": "summary / motivation / method / results 四类直接使用，query 保持原文。",
+    "multi_doc": "cross_doc 类需要将 [PAPER_B] 和 [DATASET] 替换为实际论文名/数据集名，可由脚本在 hub candidate 枚举阶段自动填充。",
+    "paraphrase_expansion": "同一 paraphrase_group 内的多条 query 互为 paraphrase，训练时可视为同义表述。",
+    "evidence_localization_baseline": "BM25 + dense retrieval，对每条 query 检索 top-k 段落/图表节点，计算 Recall@{1,5,10} 和 MRR。"
+  }
+}

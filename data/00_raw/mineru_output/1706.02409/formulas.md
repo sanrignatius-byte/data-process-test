@@ -1,0 +1,19 @@
+$$
+f _ {1} (\mathbf {w}, S) = \frac {1}{n _ {1} n _ {2}} \sum_ {\substack {(\mathbf {x} _ {i}, y _ {i}) \in S _ {1} \\ (\mathbf {x} _ {j}, y _ {j}) \in S _ {2}}} d (y _ {i}, y _ {j}) \left(\mathbf {w} \cdot \mathbf {x} _ {i} - \mathbf {w} \cdot \mathbf {x} _ {j}\right) ^ {2}, \tag{1}
+$$
+
+$$
+f _ {2} (\mathbf {w}, S) = \left(\frac {1}{n _ {1} n _ {2}} \sum_ {\substack {(\mathbf {x} _ {i}, y _ {i}) \in S _ {1} \\ (\mathbf {x} _ {j}, y _ {j}) \in S _ {2}}} d (y _ {i}, y _ {j}) \left(\mathbf {w} \cdot \mathbf {x} _ {i} - \mathbf {w} \cdot \mathbf {x} _ {j}\right)\right) ^ {2}. \tag{2}
+$$
+
+$$
+f _ {3} (\mathbf {w}, S) = \left(\sum_ {\substack {(\mathbf {x} _ {i}, y _ {i}) \in S _ {1} \\ (\mathbf {x} _ {j}, y _ {j}) \in S _ {2} \\ y _ {i} = y _ {j} = 1}} \frac {d (y _ {i} , y _ {j}) \left(\mathbf {w} \cdot \mathbf {x} _ {i} - \mathbf {w} \cdot \mathbf {x} _ {j}\right)}{n _ {1 , 1} n _ {2 , 1}}\right) ^ {2} + \left(\sum_ {\substack {(\mathbf {x} _ {i}, y _ {i}) \in S _ {1} \\ (\mathbf {x} _ {j}, y _ {j}) \in S _ {2} \\ y _ {i} = y _ {j} = - 1}} \frac {d (y _ {i} , y _ {j}) \left(\mathbf {w} \cdot \mathbf {x} _ {i} - \mathbf {w} \cdot \mathbf {x} _ {j}\right)}{n _ {1 , - 1} n _ {2 , - 1}}\right) ^ {2}, \tag{3}
+$$
+
+$$
+\mathrm {P o F} (\alpha) = \frac {\min _ {\mathbf {w}} \ell_ {\mathcal {P}} (\mathbf {w}) \mathrm {s u b j e c t t o} f _ {\mathcal {P}} (\mathbf {w}) \leq \alpha f _ {\mathcal {P}} (\mathbf {w} ^ {*})}{\ell_ {\mathcal {P}} (\mathbf {w} ^ {*})}.
+$$
+
+$$
+\min _ {w} \ell (w, S) + \lambda f (w, S) + \gamma_ {\lambda} \| w \|
+$$

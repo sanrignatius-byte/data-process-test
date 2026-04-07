@@ -1,0 +1,215 @@
+$$
+\mathbb {P} (\hat {Y} = 1 | \boldsymbol {A} = \boldsymbol {a}) = \mathbb {P} (\hat {Y} = 1 | \boldsymbol {A} = \bar {\boldsymbol {a}}), \forall \boldsymbol {a}, \bar {\boldsymbol {a}} \in \mathcal {A}.
+$$
+
+$$
+p _ {S _ {\boldsymbol {a}}} = p _ {S _ {\bar {\boldsymbol {a}}}}, \quad \forall \boldsymbol {a}, \bar {\boldsymbol {a}} \in \mathcal {A}.
+$$
+
+$$
+\mathbb {E} _ {\tau \sim U (\Omega)} | \mathbb {P} (S _ {\boldsymbol {a}} > \tau) - \mathbb {P} (S _ {\bar {\boldsymbol {a}}} > \tau) | = 0, \forall \boldsymbol {a}, \bar {\boldsymbol {a}} \in \mathcal {A},
+$$
+
+$$
+\sum_{\substack{\boldsymbol {a},\bar{\boldsymbol{a}}\in \mathcal{A}\\ s.t.\boldsymbol {a}\neq \bar{\boldsymbol{a}}}}\mathbb{E}_{\tau \sim U(\Omega)}|\mathbb{P}(S_{\boldsymbol{a}} > \tau) - \mathbb{P}(S_{\bar{\boldsymbol{a}}} > \tau)|  ,
+$$
+
+$$
+T ^ {*} = \underset {T \in \mathcal {T}} {\arg \min } \int_ {x \in \mathcal {X}} \mathrm {c} (x, T (x)) p _ {X} (x) d x.
+$$
+
+$$
+\gamma^ {*} = \underset {\gamma \in \Gamma (f _ {X}, f _ {Y})} {\arg \min } \int_ {\mathcal {X} \times \mathcal {Y}} \mathfrak {c} (x, y) p _ {X \times Y} d x d y.
+$$
+
+$$
+\mathcal {W} _ {p} (p _ {X}, p _ {Y}) = \min  _ {\gamma \in \Gamma (f _ {X}, f _ {Y})} \left(\int_ {\mathcal {X} \times \mathcal {Y}} \mathrm {d} (x, y) ^ {p} p _ {X \times Y} d x d y\right) ^ {\frac {1}{p}},
+$$
+
+$$
+\mathbb {E} _ {\tau \sim U (\Omega), x \sim p _ {S _ {1}}} \mathbb {P} \left(\tau \in \left(m _ {x} ^ {T ^ {*}}, M _ {x} ^ {T ^ {*}}\right)\right).
+$$
+
+$$
+\begin{array}{l} \mathcal {W} _ {1} \left(p _ {S _ {1}}, p _ {S _ {2}}\right) = ^ {4} \int_ {x = 0} ^ {1} \left| P _ {S _ {1}} ^ {- 1} (x) - P _ {S _ {2}} ^ {- 1} (x) \right| d x \\ = \int_ {\tau = 0} ^ {1} | P _ {S _ {1}} (\tau) - P _ {S _ {2}} (\tau) | d \tau \\ = \mathbb {E} _ {\tau \sim U (\Omega)} | \mathbb {P} (S _ {1} \leq \tau) - \mathbb {P} (S _ {2} \leq \tau) | \\ = \mathbb {E} _ {\tau \sim U (\Omega)} | \mathbb {P} (S _ {1} > \tau) - \mathbb {P} (S _ {2} > \tau) |, \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \mathbb{E}_{\substack{\tau \sim U(\Omega)\\ x\sim p_{S_{1}}}}\mathbb{P}\big(\tau \in (m^{T}_{x},M^{T}_{x})\big) \\ = \int_ {\tau = 0} ^ {1} \int_ {x} | x - T (x) | p _ {S _ {1}} (x) d x d \tau \\ = \int_ {x} | x - T (x) | p _ {S _ {1}} (x) d x. \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \mathcal {W} _ {1} \left(p _ {S _ {1}}, p _ {S _ {2}}\right) = \min  _ {T \in \mathcal {T}} \int_ {x} | x - T (x) | p _ {S _ {1}} (x) d x \\ = \int_ {x} | x - T ^ {*} (x) | p _ {S _ {1}} (x) d x \\ = \mathop{\mathbb{E}}_{\substack{\tau \sim U(\Omega)\\ x\sim p_{S_{1}}}}\mathbb{P}\big(\tau \in \big(m_{x}^{T^{*}},M_{x}^{T^{*}}\big)\big). \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \min  _ {\left. \begin{array}{l} T \in \mathbb {T} (M _ {*}) ^ {*} \end{array} \right.} \quad \mathbb {E} _ {(0)} \mathbb {P} (\tau \in \left(m _ {x} ^ {T}, M _ {x} ^ {T}\right)) \\ \begin{array}{l} I \in \mathbb {1} (p) \quad \tau \sim U (\Omega) \\ p ^ {*} \in \mathcal {P} (\Omega) \quad x \sim p _ {\Sigma} \end{array} \\ = \min_{\substack{T\in \mathbb{T}(p^{*})\\ p^{*}\in \mathcal{P}(\Omega)}}\sum_{\boldsymbol {a}\in \mathcal{A}}\underbrace{p(A = \boldsymbol{a})}_{p_{\boldsymbol{a}}}\underset {\tau \sim U(\Omega)}{\mathbb{E}}_{x\sim p_{S_{\boldsymbol{a}}}}\mathbb{P}(\tau \in (m_{x}^{T},M_{x}^{T})) \\ = \min_{p^{*}\in \mathcal{P}(\Omega)}\sum_{\boldsymbol {a}\in \mathcal{A}}p_{\boldsymbol{a}}\min_{T\in \mathcal{T}_{\boldsymbol{a}}}\underset { \begin{array}{c}\tau \sim U(\Omega)\\ x\sim p_{S_{\boldsymbol{a}}} \end{array} }{\mathbb{E}}\mathbb{P}(\tau \in (m_{x}^{T},M_{x}^{T})) \\ = \min  _ {p ^ {*} \in \mathcal {P} (\Omega)} \sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \min  _ {T \in \mathcal {T} _ {\boldsymbol {a}}} \int_ {x \in \Omega} | x - T (x) | p _ {S _ {\boldsymbol {a}}} (x) d x \\ = \min  _ {p ^ {*} \in \mathcal {P} (\Omega)} \sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p ^ {*}\right). \\ \end{array}
+$$
+
+$$
+p _ {\bar {S}} = \underset {p ^ {*} \in \mathcal {P} (\Omega)} {\arg \min } \sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p ^ {*}\right), \tag {1}
+$$
+
+$$
+\begin{array}{l} \operatorname {S P D D} \leq 2 (| \mathcal {A} | - 1) \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathbb {E} _ {\tau \sim U (\Omega)} | \mathbb {P} (S _ {\boldsymbol {a}} > \tau) - \mathbb {P} (\bar {S} > \tau) | \\ = 2 (| \mathcal {A} | - 1) \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right). \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathbb {E} _ {\tau \sim U (\Omega)} | \mathbb {P} (S _ {\boldsymbol {a}} > \tau) - \mathbb {P} (\bar {S} > \tau) | \\ = \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {S ^ {0}}\right) \\ = \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathbb {E} _ {\tau \sim U (\Omega)} | \mathbb {P} (S _ {\boldsymbol {a}} > \tau) - \mathbb {P} (S ^ {0} > \tau) |, \\ \end{array}
+$$
+
+$$
+\begin{array}{l} p_{S_{\boldsymbol{a}}^{*}} = \operatorname *{arg  min}_{\substack{p^{*}\in \mathcal{P}(\Omega) s.t.\\ \mathcal{W}_{1}(p^{*},p_{\mathcal{S}})\leq \lambda -\gamma}}p_{\boldsymbol{a}}\mathcal{W}_{1}(p_{S_{\boldsymbol{a}}},p^{*}) \\ = \operatorname *{arg  min}_{\substack{p^{*}\in \mathcal{P}(\Omega) s.t.\\ \mathcal{W}_{1}(p^{*},p_{\bar{S}})\leq \lambda -\gamma}}\mathcal{W}_{1}(p_{S_{a}},p^{*}), \\ \end{array}
+$$
+
+$$
+J _ {\mathcal {D}} (\boldsymbol {\theta}) = \frac {1}{N} \sum_ {n = 1} ^ {N} - y ^ {n} \log s ^ {n} - (1 - y ^ {n}) \log (1 - s ^ {n}),
+$$
+
+$$
+\nabla_ {\boldsymbol {\theta}} J _ {\mathcal {D}} (\boldsymbol {\theta}) = \frac {1}{N} \sum_ {n = 1} ^ {N} \boldsymbol {w} ^ {n} \left(\sigma \left(\boldsymbol {\theta} ^ {\top} \boldsymbol {w} ^ {n}\right) - y ^ {n}\right).
+$$
+
+$$
+\mathcal {W} _ {1} \left(\hat {p} _ {b}, \hat {p} _ {c}\right) = \min  _ {T _ {b, c} \in U (b, c)} \left\langle T _ {b, c}, \mathbf {C} \right\rangle , \tag {2}
+$$
+
+$$
+\left(\mathbf {C} _ {\boldsymbol {a}} ^ {\boldsymbol {\theta}}\right) _ {i, j} = \left| s _ {\boldsymbol {a}} ^ {i} - \bar {s} ^ {j} \right|,
+$$
+
+$$
+J _ {\mathcal {W} _ {1}} (\boldsymbol {\theta}) = \alpha J _ {\mathcal {D}} (\boldsymbol {\theta}) + (1 - \alpha) \beta \sum_ {\boldsymbol {a} \in \mathcal {A}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right), \tag {3}
+$$
+
+$$
+\nabla_ {C} \mathcal {W} _ {1} (\hat {p} _ {b}, \hat {p} _ {c}) = T _ {b, c} ^ {*},
+$$
+
+$$
+\alpha \nabla_ {\boldsymbol {\theta}} J _ {\mathcal {D}} (\boldsymbol {\theta}) + (1 - \alpha) \beta \big (\sum_ {\boldsymbol {a} \in \mathcal {A}} \sum_ {i, j} T _ {\boldsymbol {a}} ^ {*} (\boldsymbol {\theta}) \nabla_ {\boldsymbol {\theta}} \left| s _ {\boldsymbol {a}} ^ {i} - \bar {s} ^ {i} \right| \big),
+$$
+
+$$
+q _ {\mathcal {D} _ {\boldsymbol {a}}} (i) := \sup  \left\{s: \frac {1}{N _ {\boldsymbol {a}}} \sum_ {n s. t. \boldsymbol {a} ^ {n} = \boldsymbol {a}} \mathbb {1} _ {s ^ {n} \leq s} \leq \frac {i - 1}{| \mathcal {B} |} \right\},
+$$
+
+$$
+\mathcal {W} _ {1} \left(p _ {S _ {a}}, p _ {\bar {S}}\right) = \int_ {\tau = 0} ^ {1} \left| P _ {S _ {a}} ^ {- 1} (\tau) - P _ {\bar {S}} ^ {- 1} (\tau) \right| d \tau .
+$$
+
+$$
+\sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right) + \epsilon .
+$$
+
+$$
+\sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) \leq \sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right) + \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right), \tag {4}
+$$
+
+$$
+\sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right) \leq \sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) + p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right). \tag {5}
+$$
+
+$$
+\sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) \leq \sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right), \tag {6}
+$$
+
+$$
+\sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right) \leq \sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right). \tag {7}
+$$
+
+$$
+\begin{array}{l} \sum_ {\pmb {a}} p _ {\pmb {a}} \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\pmb {a}}}) \leq \sum_ {\pmb {a}} p _ {\pmb {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\pmb {a}}}) + p _ {\pmb {a}} \mathcal {W} _ {1} (p _ {S _ {\pmb {a}}}, \hat {p} _ {S _ {\pmb {a}}}) \\ \leq \sum_ {\pmb {a}} \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\pmb {a}}}) + | \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\pmb {a}}}) - p _ {\pmb {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\pmb {a}}}) | + p _ {\pmb {a}} \mathcal {W} _ {1} (p _ {S _ {\pmb {a}}}, \hat {p} _ {S _ {\pmb {a}}}) \\ \leq \sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}) + | \hat {p} _ {\boldsymbol {a}} - p _ {\boldsymbol {a}} | \cdot | \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}) | + p _ {\boldsymbol {a}} \mathcal {W} _ {1} (p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}) \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \sum_ {\pmb {a}} \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\pmb {a}}}) \leq \sum_ {\pmb {a}} \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\pmb {a}}}) + \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (p _ {S _ {\pmb {a}}}, \hat {p} _ {S _ {\pmb {a}}}) \\ \leq \sum_ {\pmb {a}} p _ {\pmb {a}} \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\pmb {a}}}) + | p _ {\pmb {a}} \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\pmb {a}}}) - \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\pmb {a}}}) | + \hat {p} _ {\pmb {a}} \mathcal {W} _ {1} (p _ {S _ {\pmb {a}}}, \hat {p} _ {S _ {\pmb {a}}}) \\ \leq \sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) + \left| p _ {\boldsymbol {a}} - \hat {p} _ {\boldsymbol {a}} \right| \cdot \left| \mathcal {W} _ {1} \left(p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) \right| + \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right). \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \left| \sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) - \sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right) \right| \leq \sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}\right) + | p _ {\boldsymbol {a}} - \hat {p} _ {\boldsymbol {a}} | \cdot \mathcal {W} _ {1} \left(p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}\right) \\ \leq \sum_ {\boldsymbol {a}} \mathcal {W} _ {1} (p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}) + | p _ {\boldsymbol {a}} - \hat {p} _ {\boldsymbol {a}} | \cdot \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}) \\ \leq \sum_ {\boldsymbol {a}} \mathcal {W} _ {1} (p _ {S _ {\boldsymbol {a}}}, \hat {p} _ {S _ {\boldsymbol {a}}}) + | p _ {\boldsymbol {a}} - \hat {p} _ {\boldsymbol {a}} | \cdot \mathcal {W} _ {1} (p _ {S}, p _ {S _ {\boldsymbol {a}}}). \\ \end{array}
+$$
+
+$$
+\lim  \sum_ {\boldsymbol {a}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, \hat {p} _ {S _ {\boldsymbol {a}}}) \rightarrow \sum_ {\boldsymbol {a}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} (p _ {\bar {S}}, p _ {S _ {\boldsymbol {a}}}),
+$$
+
+$$
+\sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right) + \epsilon .
+$$
+
+$$
+\hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right) + \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {\bar {S}}, p _ {\bar {S}}\right) + \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, p _ {S _ {\boldsymbol {a}}}\right). \tag {8}
+$$
+
+$$
+\mathcal {W} _ {1} \left(\hat {p} _ {S _ {*}}, p _ {S _ {*}}\right) = \int_ {0} ^ {1} | \hat {P} (x) - P (x) | d x. \tag {9}
+$$
+
+$$
+\mathbb{P}\left(\sup_{x\in [0,1]}|\hat{P} (x) - P(x)|\geq \frac{\epsilon}{4}\right)\leq \frac{\delta}{2|\mathcal{A}|}.
+$$
+
+$$
+\mathbb {P} \left(\mathcal {W} _ {1} (\hat {p} _ {S _ {*}}, p _ {S _ {*}}) \geq \frac {\epsilon}{4}\right) \leq \frac {\delta}{2 | \mathcal {A} |}.
+$$
+
+$$
+\hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} (\hat {p} _ {\bar {S}}, p _ {\bar {S}}) \leq \frac {\hat {p} _ {\boldsymbol {a}} \epsilon}{4}, \quad \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} (\hat {p} _ {S _ {\boldsymbol {a}}}, p _ {S _ {\boldsymbol {a}}}) \leq \frac {\hat {p} _ {\boldsymbol {a}} \epsilon}{4}. \tag {10}
+$$
+
+$$
+\sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right) + \frac {\epsilon}{2}.
+$$
+
+$$
+\mathcal {W} _ {1} \left(p _ {S _ {a}}, p _ {\bar {S}}\right) \leq L.
+$$
+
+$$
+\left| p _ {\boldsymbol {a}} - \hat {p} _ {\boldsymbol {a}} \right| \leq \frac {\epsilon}{4 | \mathcal {A} | \max  [ L , 1 ]}. \tag {11}
+$$
+
+$$
+\sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right) + \epsilon .
+$$
+
+$$
+\sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {a}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {a}}, \hat {p} _ {\bar {S}}\right).
+$$
+
+$$
+\begin{array}{l} \sum_ {\boldsymbol {a} \in \mathcal {A}} p _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(p _ {S _ {\boldsymbol {a}}}, p _ {\bar {S}}\right) + \frac {\epsilon}{2} \\ \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} (\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}) + \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} (\hat {p} _ {S _ {\boldsymbol {a}}}, p _ {S _ {\boldsymbol {a}}}) + \frac {\epsilon}{2} \\ \leq \sum_ {\boldsymbol {a} \in \mathcal {A}} \hat {p} _ {\boldsymbol {a}} \mathcal {W} _ {1} \left(\hat {p} _ {S _ {\boldsymbol {a}}}, \hat {p} _ {\bar {S}}\right) + \epsilon \\ \end{array}
+$$
+
+$$
+\int_ {s = 0} ^ {1} | f ^ {- 1} (s) - g ^ {- 1} (s) | d s = \int_ {\tau = 0} ^ {1} | f (\tau) - g (\tau) | d \tau . \tag {12}
+$$
+
+$$
+\int_ {x = x _ {1}} ^ {x _ {2}} f (x) d x + \int_ {y = y _ {1}} ^ {y _ {2}} f ^ {- 1} (y) d y = x _ {2} y _ {2} - x _ {1} y _ {1}. \tag {13}
+$$
+
+$$
+\begin{array}{l} f ^ {- 1} (f (x)) = x \\ \Longrightarrow f ^ {\prime} (x) f ^ {- 1} (f (x)) = f ^ {\prime} (x) x \quad (\text {m u l t i p l y b o t h s i d e s b y} f ^ {\prime} (x)) \\ \Rightarrow \int_ {x = x _ {1}} ^ {x _ {2}} f ^ {\prime} (x) f ^ {- 1} (f (x)) d x = \int_ {x = x _ {1}} ^ {x _ {2}} f ^ {\prime} (x) x d x \quad (\text {i n t e g r a t e b o t h s i d e s}) \\ \Rightarrow \int_ {y = y _ {1}} ^ {y _ {2}} f ^ {- 1} (y) d y = \int_ {x = x _ {1}} ^ {x _ {2}} f ^ {\prime} (x) x d x \quad \text {(a p p l y c h a n g e o f v a r i a b l e} y = f (x) \text {o n t h e l e f t s i d e)} \\ \Rightarrow \int_ {y = y _ {1}} ^ {y _ {2}} f ^ {- 1} (y) d y = x f (x) \Big | _ {x = x _ {1}} ^ {x _ {2}} - \int_ {x = x _ {1}} ^ {x _ {2}} f (x) d x \quad (\text {i n t e g r a t e b y p a r t s o n t h e r i g h t s i d e}) \\ \Rightarrow \int_ {y = y _ {1}} ^ {y _ {2}} f ^ {- 1} (y) d y + \int_ {x = x _ {1}} ^ {x _ {2}} f (x) d x = x _ {2} y _ {2} - x _ {1} y _ {1}. \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \int_ {\tau = a _ {i}} ^ {b _ {i}} f (\tau) d \tau + \int_ {s = f (a _ {i})} ^ {f (b _ {i})} f ^ {- 1} (s) d s = b _ {i} f (b _ {i}) - a _ {i} f (a _ {i}) \\ = b _ {i} g \left(b _ {i}\right) - a _ {i} g \left(a _ {i}\right) = \int_ {\tau = a _ {i}} ^ {b _ {i}} g (\tau) d \tau + \int_ {s = g \left(a _ {i}\right)} ^ {g \left(b _ {i}\right)} g ^ {- 1} (s) d s. \\ \end{array}
+$$
+
+$$
+\int_ {\tau = a _ {i}} ^ {b _ {i}} f (\tau) - g (\tau) d \tau = \int_ {s = f (a _ {i})} ^ {f (b _ {i})} g ^ {- 1} (s) - f ^ {- 1} (s) d s.
+$$
+
+$$
+\int_ {\tau = a _ {i}} ^ {b _ {i}} | f (\tau) - g (\tau) | d \tau = \int_ {s = f (a _ {i})} ^ {f (b _ {i})} | g ^ {- 1} (s) - f ^ {- 1} (s) | d s,
+$$
+
+$$
+\sum_ {i = 0} ^ {N} \int_ {\tau = a _ {i}} ^ {b _ {i}} | f (\tau) - g (\tau) | d \tau = \sum_ {i = 0} ^ {N} \int_ {s = f (a _ {i})} ^ {f (b _ {i})} | g ^ {- 1} (s) - f ^ {- 1} (s) | d s,
+$$
+
+$$
+\int_ {s = 0} ^ {1} | f ^ {- 1} (s) - g ^ {- 1} (s) | d s = \int_ {\tau = 0} ^ {1} | f (\tau) - g (\tau) | d \tau .
+$$

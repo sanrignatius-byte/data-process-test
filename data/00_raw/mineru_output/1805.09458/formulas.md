@@ -1,0 +1,67 @@
+$$
+\min  _ {q} \mathcal {L} (q, x) + \lambda I (z, c) \tag {1}
+$$
+
+$$
+I (z, c | x) = H (z | x) - H (z | x, c) = H (z | x) - H (z | x) = 0. \tag {2}
+$$
+
+$$
+\begin{array}{l} I (z, c) = I (z, x) - I (z, x \mid c) (3) \\ = I (z, x) - H (x \mid c) + H (x \mid z, c) (4) \\ \leq I (z, x) - H (x \mid c) - \mathbb {E} _ {x, c, z \sim q} [ \log p (x \mid z, c) ] (5) \\ = \mathbb {E} _ {z, x} [ \log q (z | x) - \log q (z) ] - H (x | c) - \mathbb {E} _ {x, c, z \sim q} [ \log p (x | z, c) ] (6) \\ = \mathbb {E} _ {x} [ K L [ q (z | x) \| q (z) ] ] - H (x | c) - \mathbb {E} _ {x, c, z \sim q} [ \log p (x | z, c) ]. (7) \\ \end{array}
+$$
+
+$$
+\log p (x) \geq - K L [ q (z | x) \| p (z) ] + \mathbb {E} _ {z \sim q (z | x)} [ \log p (x | z) ]. \tag {8}
+$$
+
+$$
+q (z | x) = g _ {\theta} (x) + \varepsilon , \quad \varepsilon \sim \mathcal {N} (0, \sigma (\theta)) \tag {9}
+$$
+
+$$
+p (x, z, c) = p (z, c) p (x \mid z, c). \tag {10}
+$$
+
+$$
+\max  \mathbb {E} _ {(x, c)} [ \log p (x | c) ] - \lambda I (z, c). \tag {11}
+$$
+
+$$
+\begin{array}{l} \log p (x \mid c) = \log \int p (x, z \mid c) d z (12) \\ = \log \int \frac {p (x , z \mid c)}{q (z \mid x)} q (z \mid x) d z = \log \mathbb {E} _ {z \sim q} \left[ \frac {p (x , z \mid c)}{q (z \mid x)} \right] (13) \\ \geq \mathbb {E} _ {z \sim q} [ \log p (x, z | c) - \log q (z | x) ] (14) \\ = \mathbb {E} _ {z \sim q} [ \log p (z | c) - \log q (z | x) + \log p (x | z, c) ]. (15) \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \log p (x | c) \geq \mathbb {E} _ {z \sim q} [ \log p (z) - \log q (z | x) ] + \mathbb {E} _ {z \sim q} [ \log p (x | z, c) ] (16) \\ = - K L [ q (z | x) \| p (z) ] + \mathbb {E} _ {z \sim q} [ \log p (x | z, c) ]. (17) \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \mathbb {E} _ {(x, c)} [ \log P (x | c) ] - \lambda I (z, c) \geq \\ \mathbb {E} _ {(x, c)} \left[ - K L [ q (z | x) \| p (z) ] - \lambda K L [ q (z | x) \| q (z) ] + (1 + \lambda) \mathbb {E} _ {z \sim q} [ \log p (x | z, c) ] \right]. \tag {18} \\ \end{array}
+$$
+
+$$
+\begin{array}{l} K L [ q (z | x) \| q (z) ] = - H (q (z | x)) - \int q (z | x) \log \int q (z | x ^ {\prime}) p \left(x ^ {\prime}\right) d x ^ {\prime} d z (19) \\ = - H (q (z | x)) - \int q (z | x) \log \mathbb {E} _ {x ^ {\prime}} [ q (z | x ^ {\prime}) ] d z (20) \\ \leq - H (q (z | x)) - \mathbb {E} _ {z \sim q | x} [ \mathbb {E} _ {x ^ {\prime}} [ \log q (z | x ^ {\prime}) ] ] (21) \\ \approx - H \left(q (z | x)\right) - \sum_ {x ^ {\prime}} \mathbb {E} _ {z \sim q | x} \left[ \log q \left(z \mid x ^ {\prime}\right) \right] (22) \\ = \sum_ {x ^ {\prime}} \left[ - H \left(q (z | x)\right) - \mathbb {E} _ {z \sim q | x} \left[ \log q \left(z \mid x ^ {\prime}\right) \right] \right] (23) \\ \approx \sum_ {x} \sum_ {x ^ {\prime}} \underbrace {K L [ q (z | x) \| q (z | x ^ {\prime}) ]} _ {\text {K L b e t w e e n G a u s s i a n s}} (24) \\ \end{array}
+$$
+
+$$
+\begin{array}{l} H (c | z) = \mathbb {E} _ {c, z \sim q} [ - \log p (c | z) ] (25) \\ = \inf  _ {r (c | z)} \mathbb {E} _ {c, z \sim q} [ - \log r (c | z) ] (26) \\ \end{array}
+$$
+
+$$
+\begin{array}{l} \mathbb {E} _ {(x, c)} [ \log P (x | c) ] - \lambda I (z, c) \geq \\ \mathbb {E} _ {(x, c)} [ - K L [ q (z | x) \| p (z) ] + \mathbb {E} _ {z \sim q} [ \log p (x | z, c) ] ] + \lambda \inf  _ {r (c | z)} \mathbb {E} _ {c, z \sim q} [ - \log r (c | z) ] \tag {27} \\ \end{array}
+$$
+
+$$
+x \xrightarrow {q (z | x)} z \xrightarrow {p (y | z)} y \tag {28}
+$$
+
+$$
+\max  _ {p, q} I (z, y) - \beta I (x, z) - \lambda I (z, c) \tag {29}
+$$
+
+$$
+\max  _ {p, q} I (z, y) - (\beta + \lambda) I (x, z) + \lambda \mathbb {E} [ \log p (x | z, c) ]. \tag {30}
+$$
+
+$$
+\begin{array}{l} I (z, y) - (\beta + \lambda) I (x, z) + \lambda \mathbb {E} [ \log p (x | z, c) ] \geq \\ \mathbb {E} _ {(x, c)} \left[ \mathbb {E} _ {z, y} [ \log p (y | z) ] - (\beta + \lambda) K L \left[ q (z | x) \| q (z) \right] + \lambda \mathbb {E} _ {z} [ \log p (x | z, c) ] \right]. \tag {31} \\ \end{array}
+$$

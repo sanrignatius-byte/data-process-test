@@ -1,0 +1,2600 @@
+[
+    {
+        "type": "text",
+        "text": "FairGAN: Fairness-aware Generative Adversarial Networks ",
+        "text_level": 1,
+        "bbox": [
+            119,
+            101,
+            879,
+            123
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Depeng Xu ",
+        "bbox": [
+            250,
+            135,
+            344,
+            152
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "University of Arkansas ",
+        "bbox": [
+            220,
+            152,
+            375,
+            166
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "depengxu@uark.edu ",
+        "bbox": [
+            227,
+            167,
+            367,
+            181
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Lu Zhang ",
+        "bbox": [
+            256,
+            194,
+            336,
+            210
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "University of Arkansas ",
+        "bbox": [
+            218,
+            212,
+            375,
+            224
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "lz006@uark.edu ",
+        "bbox": [
+            241,
+            227,
+            352,
+            239
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Shuhan Yuan ",
+        "bbox": [
+            645,
+            135,
+            754,
+            150
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "University of Arkansas ",
+        "bbox": [
+            622,
+            152,
+            777,
+            166
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "sy005@uark.edu ",
+        "bbox": [
+            643,
+            167,
+            756,
+            181
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Xintao Wu ",
+        "bbox": [
+            653,
+            194,
+            743,
+            208
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "University of Arkansas ",
+        "bbox": [
+            622,
+            210,
+            777,
+            224
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "xintaowu@uark.edu ",
+        "bbox": [
+            630,
+            227,
+            767,
+            239
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "ABSTRACT ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            250,
+            184,
+            263
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Fairness-aware learning is increasingly important in data mining. Discrimination prevention aims to prevent discrimination in the training data before it is used to conduct predictive analysis. In this paper, we focus on fair data generation that ensures the generated data is discrimination free. Inspired by generative adversarial networks (GAN), we present fairness-aware generative adversarial networks, called FairGAN, which are able to learn a generator producing fair data and also preserving good data utility. Compared with the naive fair data generation models, FairGAN further ensures the classifiers which are trained on generated data can achieve fair classification on real data. Experiments on a real dataset show the effectiveness of FairGAN. ",
+        "bbox": [
+            81,
+            268,
+            482,
+            434
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "KEYWORDS ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            448,
+            191,
+            462
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "fairness-aware learning, generative adversarial networks, FairGAN ",
+        "bbox": [
+            83,
+            467,
+            482,
+            481
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 INTRODUCTION ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            501,
+            256,
+            515
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Discrimination refers to unjustified distinctions in decisions against individuals based on their membership in a certain group. Currently, many organizations or institutes adopt machine learning models trained on historical data to automatically make decisions, including hiring, lending and policing [12]. However, many studies have shown that machine learning models have biased performance against the protected group [1–3]. In principle, if a dataset has discrimination against the protected group, the predictive model simply trained on the dataset will incur discrimination. ",
+        "bbox": [
+            81,
+            520,
+            482,
+            643
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Many approaches aim to mitigate discrimination from historical datasets. A general requirement of modifying datasets is to preserve the data utility while removing the discrimination. Some methods mainly modify the labels of the dataset [13, 26]. Some methods also revise the attributes of data other than the label, such as the Preferential Sampling [14] and the Disparate Impact Removal [9]. In addition, some methods prevent discrimination by learning fair representations from a dataset [8, 18, 23]. ",
+        "bbox": [
+            81,
+            645,
+            482,
+            755
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "In this work, instead of removing the discrimination from the existing dataset, we focus on generating fair data. Generative adversarial networks (GAN) have demonstrated impressive performance on modeling the real data distribution and generating high quality synthetic data that are similar to real data [10, 21]. After generating high quality synthetic data, many approaches adopt the synthetic dataset to conduct predictive analysis instead of using the real data, especially when the real data is very limited [5]. However, due to high similarity between the real data and synthetic data, if the real data incur discrimination, the synthetic data can also incur ",
+        "bbox": [
+            81,
+            756,
+            482,
+            893
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "discrimination. The following predictive analysis which is based on the synthetic data can be subject to discrimination. ",
+        "bbox": [
+            513,
+            250,
+            913,
+            277
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Throughout the paper, for ease of representation, we assume that there is only one protected attribute, which is a binary attribute associated with the domain values of the unprotected group and the protected group. We also assume there is one binary decision attribute associated with the domain values of the positive decision and the negative decision. Formally, let $\\mathcal { D } = \\{ \\boldsymbol { X } , \\boldsymbol { y } , \\boldsymbol { S } \\}$ be a historical dataset where $\\boldsymbol { \\chi } \\in \\mathbb { R } ^ { n }$ , ,is the unprotected attributes, $y \\in \\{ 0 , 1 \\}$ is the decision, and $S \\in \\{ 0 , 1 \\}$ ,is the protected attribute. We aim to generate a fair dataset $\\hat { \\mathcal { D } } = \\{ \\hat { X } , \\hat { y } , \\hat { S } \\}$ . In principle, the generated fair data $\\hat { \\mathcal { D } }$ , ,should meet following requirements: 1) data utility which indicates the generated data should preserve the general relationship between attributes and decision in the real data; 2) data fairness which indicates there is no discrimination in the generated data; 3) classification utility which indicates classifiers trained on the generated data should achieve high accuracy when deployed for decision prediction of future real data; 4) classification fairness which indicates classifiers trained on the generated data should not incur discrimination when predicting on real data. ",
+        "bbox": [
+            511,
+            279,
+            913,
+            527
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "To achieve high data utility and classification utility, the generated data should be close to the real data, i.e., $\\mathcal { D } \\approx \\hat { \\mathcal { D } }$ . To achieve data fairness and classification fairness, the generated data should be free from discrimination. In particular, there are two types of discrimination in the literature, disparate treatment and disparate impact. Disparate treatment indicates the discriminatory outcomes are due to explicitly using the protected attribute to make decisions. Hence, data fairness can be achieved if the generated decision has no correlation with the generated protected attribute. Disparate impact indicates the discriminatory outcomes are not explicitly from the protected attribute but from the proxy unprotected attributes. Theoretical analysis shows that the disparate impact is caused by the correlation between the unprotected attributes and the protected attribute [9]. Hence, to achieve classification fairness, a certifying framework proposed in [9] indicates that the dataset adopted to train classifiers should be free from the disparate impact. ",
+        "bbox": [
+            511,
+            530,
+            913,
+            750
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "It is nontrivial to achieve the four requirements simultaneously. For example, a naive approach keeps the generated unprotected attributes and decision close to the real data $\\{ \\hat { X } , \\hat { y } \\} \\stackrel { - } { = } \\{ X , y \\}$ but randomly sets the protected attribute $\\hat { s }$ , ,. With this strategy, the disparate treatment in the dataset $\\hat { \\mathcal { D } } = \\{ \\hat { X } , \\hat { y } , \\hat { S } \\}$ is removed, so the , ,data fairness can be achieved. However, the classification fairness on real data cannot be ensured since the classifier may preserve the potential disparate impact from unprotected attributes. This is because when $\\boldsymbol { \\hat { \\chi } } = \\boldsymbol { \\chi }$ , given the generated unprotected attributes ",
+        "bbox": [
+            511,
+            751,
+            913,
+            878
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1805.11202v1 [cs.LG] 28 May 2018 ",
+        "bbox": [
+            22,
+            255,
+            58,
+            707
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "$\\hat { X }$ , their corresponding real protected attribute $s$ is predictable. The disparate impact is not mitigated from the generated dataset. ",
+        "bbox": [
+            83,
+            106,
+            480,
+            133
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We develop fairness-aware generative adversarial networks (Fair-GAN) for fair data generation. Besides generating synthetic samples that match the distribution of real data, we also aim to prevent discrimination in the generated dataset. In particular, the generated data should be free from disparate treatment and disparate impact. FairGAN consists of one generator and two discriminators. The generator generates fake samples $\\{ \\hat { X } , \\hat { y } \\}$ conditioned on the protected attribute $s$ . One discriminator aims to ensure the generated data $\\{ \\hat { X } , \\hat { y } , \\hat { S } \\}$ close to the real data $\\{ \\chi , y , s \\}$ while the other , , , ,discriminator aims to ensure there are no correlation between $\\hat { X }$ and $\\hat { s }$ and no correlation between $\\hat { y }$ and $\\hat { s }$ Note that $\\hat { S } = S$ since generator is conditioned on $s$ . Hence, unlike the naive method, which has $\\hat { \\chi } = \\chi$ and randomly generates $\\hat { s }$ , FairGAN generates revised unprotected attributes $\\hat { X }$ and decision $\\hat { y }$ given the protected attribute $\\hat { \\cal S } \\left( { \\cal S } \\right)$ and achieves $\\hat { X } \\perp \\perp s$ and $\\hat { y } _ { \\perp } s$ . Therefore, the generated data can meet requirements of data fairness and classification fairness. The experimental results show that FairGAN can achieve fair data generation with good data utility and free from disparate impact, so the classifiers trained on the synthetic datasets can achieve fair classification on the real data with high accuracy. ",
+        "bbox": [
+            81,
+            135,
+            482,
+            431
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 RELATED WORK ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            446,
+            259,
+            459
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "With the widely adoption of automated decision making systems, fairness-aware learning or anti-discrimination learning becomes an increasingly important task. In fairness-aware learning, discrimination prevention aims to remove discrimination by modifying the biased data and/or the predictive algorithms built on the data. Many approaches have been proposed for constructing discriminationfree classifiers, which can be broadly classified into three categories: the pre-process approaches that modify the training data to remove discriminatory effect before conducting predictive analytics [4, 7, 9, 26], the in-process approaches that enforce fairness to classifiers by introducing constraints or regularization terms to the objective functions [16, 22], and the post-process approaches that directly change the predicted labels [11, 15]. ",
+        "bbox": [
+            81,
+            464,
+            482,
+            643
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The pre-process approaches that modify the training data are widely studied. The fundamental assumption of the pre-process methods is that, once a classifier is trained on a discrimination-free dataset, the prediction made by the classifier will also be discrimination free [13]. Research in [14] proposed several methods for modifying data including Massaging, which corrects the labels of some individuals in the data, Reweighting, which assigns weights to individuals to balance the data, and Sampling, which changes the sample sizes of different subgroups to remove the discrimination in the data. In [9], authors further studied how to remove disparate impact by modifying the distribution of the unprotected attributes such that the protected attribute cannot be estimated from the unprotected attributes. Research in [25] proposed a causal graph based approach that removes discrimination based on the block set and ensures that there is no discrimination in any meaningful partition. For the in-process approaches, some tweak or regularizers are applied to the classifier to penalize discriminatory prediction during the training process. In principle, preventing discrimination when ",
+        "bbox": [
+            81,
+            645,
+            482,
+            893
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "training a classifier consists of balancing two contrasting objectives: maximizing the accuracy of the extracted predictive model and minimizing the number of predictions that are discriminatory. Research in [7] proposed a predictive model for maximizing utility subject to the fair constraint that achieves both statistical parity and individual fairness, i.e., similar individuals should be treated similarly. In [11], authors proposed a framework for optimally adjusting any predictive model so as to remove discrimination. ",
+        "bbox": [
+            511,
+            106,
+            913,
+            217
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Recently, several studies have been proposed to remove discrimination through adversarial training. Research in [8] incorporated an adversarial model to learn a discrimination free representation. Based on that, research in [1] studies how the choice of data for the adversarial training affects the fairness. Studies in [19, 24] further proposed various adversarial objectives to achieve different levels of group fairness including demographic parity, equalized odds and equal opportunity. This paper studies how to generate a discrimination free dataset while still preserving the data generation utility. Fair data generation is in line with the pre-process approaches. The classical pre-process methods like Massaging cannot remove disparate treatment and disparate impact, and the certifying framework, which can remove the disparate impact, can only apply on numerical attributes. On the contrary, FairGAN can remove the disparate treatment and disparate impact from both numerical and categorical data. Meanwhile, compared with the pre-process methods, FairGAN can generate more data for training predictive models, especially when the original training data is very limited. ",
+        "bbox": [
+            511,
+            218,
+            913,
+            467
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 PRELIMINARY ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            478,
+            671,
+            491
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3.1 Fairness and Discrimination ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            498,
+            790,
+            512
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In fairness-aware learning, the literature has studied notions of group fairness on dataset and classification [11, 14]. ",
+        "bbox": [
+            513,
+            516,
+            913,
+            544
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Definition 1 (Statistical Parity/Fairness in a Labeled Dataset). Given a labeled dataset $\\mathcal { D }$ , the property of statistical parity or fairness in the labeled dataset is defined as: ",
+        "bbox": [
+            513,
+            550,
+            919,
+            590
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\nP (y = 1 | s = 1) = P (y = 1 | s = 0)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            617,
+            597,
+            808,
+            611
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The discrimination in a labeled dataset w.r.t the protected attribute $s$ is evaluated by the risk difference: $d i s c ( \\mathcal { D } ) = P ( y = 1 | s =$ $1 ) - P ( y = 1 | s = 0 )$ . ",
+        "bbox": [
+            513,
+            617,
+            913,
+            659
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Definition 2 (Statistical Parity/Fairness in a Classifier). Given a labeled dataset $\\mathcal { D }$ and a classifier $\\eta :  { \\mathcal { X } } \\to  { \\mathcal { Y } }$ , the property of ηstatistical parity or fairness in a classifier is defined as: ",
+        "bbox": [
+            513,
+            665,
+            913,
+            707
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\nP (\\eta (\\mathbf {x}) = 1 | s = 1) = P (\\eta (\\mathbf {x}) = 1 | s = 0)\n$$",
+        "text_format": "latex",
+        "bbox": [
+            599,
+            710,
+            826,
+            726
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "We can then derive the discrimination in a classifier in terms of risk difference as $d i s c ( \\eta ) = P ( \\eta ( \\mathbf { x } ) = 1 | s = 1 ) - P ( \\eta ( \\mathbf { x } ) = 1 | s = 0 )$ . ",
+        "bbox": [
+            513,
+            732,
+            913,
+            760
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "disc η P η s P η sThe classification fairness on a dataset is achieved if both the disparate treatment and disparate impact are removed from the data. To remove the disparate treatment, the classifier cannot use the protected attribute to make decisions. As for the disparate impact, research in [9] proposed the concept of $\\epsilon$ -fairness to examine the potential disparate impact. ",
+        "bbox": [
+            513,
+            760,
+            913,
+            843
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Definition 3 $\\epsilon$ -fairness [9]). A labeled dataset $\\mathcal { D } = ( \\boldsymbol { \\chi } , \\boldsymbol { y } , \\boldsymbol { s } )$ is said to be $\\epsilon$ ϵ-fair if for any classification algorithm $f : X \\to S$ ",
+        "bbox": [
+            513,
+            848,
+            911,
+            877
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\nB E R (f (\\mathcal {X}), \\mathcal {S}) > \\epsilon\n$$",
+        "text_format": "latex",
+        "bbox": [
+            656,
+            881,
+            769,
+            896
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_number",
+        "text": "2 ",
+        "bbox": [
+            493,
+            900,
+            503,
+            907
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "image",
+        "img_path": "images/92217694c62e646906bf11f7a25fd385d3a68fb8191660b34c55e2e2d1639671.jpg",
+        "image_caption": [
+            "Figure 1: Illustration of generative adversarial networks "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            124,
+            102,
+            436,
+            176
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "with empirical probabilities estimated from $\\mathcal { D }$ , where  (balanced error rate) is defined as ",
+        "bbox": [
+            81,
+            227,
+            482,
+            255
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nB E R (f (\\mathcal {X}), \\mathcal {S}) = \\frac {P [ f (\\mathcal {X}) = 0 | \\mathcal {S} = 1 ] + P [ f (\\mathcal {X}) = 1 | \\mathcal {S} = 0 ]}{2}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            104,
+            258,
+            457,
+            285
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "indicates the average class-conditioned error of $f$ on distribu-BERtion $\\mathcal { D }$ over the pair $( \\chi , s )$ . ",
+        "bbox": [
+            83,
+            287,
+            483,
+            316
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The $\\epsilon$ -fairness quantifies the fairness of data through the error ϵrate of predicting the protected attribute $s$ given the unprotected attributes $\\chi$ . If the error rate is low, it means $s$ is predictable by $\\chi$ . In the fair data generation scenario, for a classifier trained on the synthetic dataset and tested on the real dataset, the classification fairness is achieved if disparate impact in terms of the real protected attribute is removed from the synthetic dataset, i.e. $\\hat { X } \\perp \\perp s$ . ",
+        "bbox": [
+            81,
+            321,
+            483,
+            420
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "3.2 Generative Adversarial Network ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            431,
+            390,
+            446
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Generative adversarial nets (GAN) are generative models that consist of two components: a generator $G$ and a discriminator $D$ . Typically, both $G$ and $D$ Gare multilayer neural networks. $G ( \\mathbf { z } )$ Dgenerates fake samples from a prior distribution $P _ { \\mathbf { z } }$ on a noise variable z and learns a generative distribution $P _ { G }$ Pto match the real data distribution $P _ { \\mathrm { d a t a } }$ PG. The discriminative component $D$ is a binary classifier Pthat predicts whether an input is real data $\\mathbf { x }$ Dor fake data generated from $G ( \\mathbf { z } )$ . The objective function of $D$ is defined as: ",
+        "bbox": [
+            81,
+            450,
+            483,
+            561
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\max  _ {D} \\quad \\mathbb {E} _ {\\mathbf {x} \\sim P _ {\\mathrm {d a t a}}} [ \\log D (\\mathbf {x}) ] + \\mathbb {E} _ {\\mathbf {z} \\sim P _ {\\mathbf {z}}} [ \\log (1 - D (G (\\mathbf {z}))) ], \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            125,
+            566,
+            480,
+            585
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $D ( \\cdot )$ outputs the probability that $\\cdot$ is from the real data rather Dthan the generated fake data. In order to make the generative distribution $P _ { G }$ close to the real data distribution $P _ { \\mathrm { d a t a } }$ , $G$ is trained by PG P Gfooling the discriminator unable to distinguish the generated data from the real data. Thus, the objective function of $G$ is defined as: ",
+        "bbox": [
+            81,
+            590,
+            482,
+            659
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {G} \\quad \\mathbb {E} _ {\\mathbf {z} \\sim P _ {\\mathbf {z}}} [ \\log (1 - D (G (\\mathbf {z}))) ]. \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            187,
+            664,
+            480,
+            684
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Minimization of Equation 2 ensures that the discriminator is fooled by $G ( \\mathbf { z } )$ and $D$ predicts high probability that $G ( \\mathbf { z } )$ is real data. ",
+        "bbox": [
+            81,
+            686,
+            482,
+            715
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "G D GOverall, GAN is formalized as a minimax game min max $V ( G , D )$ G D with the value function: ",
+        "bbox": [
+            81,
+            715,
+            480,
+            746
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nV (G, D) = \\mathbb {E} _ {\\mathbf {x} \\sim P _ {\\mathrm {d a t a}}} [ \\log D (\\mathbf {x}) ] + \\mathbb {E} _ {\\mathbf {z} \\sim P _ {\\mathbf {z}}} [ \\log (1 - D (G (\\mathbf {z}))) ]. \\tag {3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            114,
+            752,
+            480,
+            768
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Figure 1 illustrates the structure of GAN. Theoretical analysis shows that GAN aims to minimize the Jensen-Shannon divergence (JSD) between $P _ { \\mathrm { d a t a } }$ and $P _ { G }$ [10]. Minimization of the JSD is achieved when $P _ { G } = P _ { \\mathrm { d a t a } }$ . ",
+        "bbox": [
+            81,
+            771,
+            482,
+            825
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "PG PGAN for discrete data generation. The generator of a regular GAN cannot generate discrete samples because $G$ is trained by the loss from $D$ Gvia backpropagation [10]. In order to tackle this Dlimitation, medGAN incorporates an autoencoder model in a regular GAN model to generate high-dimensional discrete variables [5]. ",
+        "bbox": [
+            81,
+            827,
+            482,
+            896
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/ce72c62bdc2c97b3aa61e8f0e3b2585cc0065ec0ea257e803638314c4be484ff.jpg",
+        "image_caption": [
+            "Figure 2: The Structure of FairGAN "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            581,
+            102,
+            851,
+            300
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Autoencoder is a feedforward neural network used for unsupervised learning. A basic autoencoder consists of an encoder and Enca decoder . Both the encoder and decoder are multilayer neural networks. Given an input $\\mathbf { x } \\in \\mathbb { R } ^ { n }$ , the encoder computes the hidden representation of an input $E n c ( \\mathbf { x } ) \\in \\mathbb { R } ^ { h }$ , and the decoder computes the reconstructed input $D e c ( E n c ( \\mathbf { x } ) ) \\in \\mathbb { R } ^ { n }$ based on the hidden rep-Dec Encresentation. To train the autoencoder model, the objective function of the autoencoder is to make the reconstructed input close to the original input: ",
+        "bbox": [
+            511,
+            356,
+            913,
+            481
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathcal {L} _ {A E} = \\left\\| \\mathbf {x} ^ {\\prime} - \\mathbf {x} \\right\\| _ {2} ^ {2}, \\tag {4}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            656,
+            482,
+            911,
+            500
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $\\mathbf { x } ^ { \\prime } = D e c ( E n c ( \\mathbf { x } ) )$ . Because the hidden representation can Dec Encbe used to reconstruct the original input, it captures the salient information of the input. ",
+        "bbox": [
+            511,
+            501,
+            913,
+            542
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "To generate the dataset which contains discrete attributes, the generator $G _ { D e c }$ in medGAN consists of two components, the generator $G$ GDecand the decoder . The generator $G$ is trained to generate the salient representations. The decoder  from autoencoder Decseeks to construct the synthetic data from the salient representations $D e c ( G ( \\mathbf { z } ) )$ . Hence, the generator of medGAN $G _ { D e c } ( \\mathbf { z } )$ is Dedefined as: ",
+        "bbox": [
+            511,
+            542,
+            913,
+            638
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nG _ {D e c} (\\mathbf {z}) = D e c (G (\\mathbf {z})),\n$$",
+        "text_format": "latex",
+        "bbox": [
+            645,
+            642,
+            779,
+            656
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where z is a noise variable. The discriminator $D$ aims to distinguish whether the input is from real data or $D e c ( G ( \\mathbf { z } ) )$ . With playing the adversarial game with $D$ Dec G, the gradient backpropagates from $D$ to Dthe decoder  and further to the generator $G$ Din an end-to-end Decmanner. Hence, the generator $G _ { D e c }$ Gcan be viewed as a regular Decgenerator  with extra hidden layers that maps continuous salient representations to discrete samples. ",
+        "bbox": [
+            511,
+            660,
+            913,
+            757
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4 FAIRGAN ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            768,
+            627,
+            782
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4.1 Problem Statement ",
+        "text_level": 1,
+        "bbox": [
+            513,
+            789,
+            715,
+            803
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Given a dataset $\\{ X , y , S \\} \\sim P _ { \\mathrm { d a t a } }$ , FairGAN aims to generate a fair dataset $\\{ \\hat { X } , \\hat { \\pmb { y } } , \\hat { S } \\} \\sim P _ { G }$ Pwhich achieves the statistical parity w.r.t , , PGthe protected attribute $\\hat { s }$ , i.e., $P ( \\hat { y } = 1 | \\hat { s } = 1 ) = P ( \\hat { y } = 1 | \\hat { s } = 0 )$ . P y s P y sMeanwhile, our goal is to ensure that given a generated dataset $\\{ \\hat { X } , \\hat { y } \\}$ as training samples, a classification model seeks an accurate ,function $\\eta : \\hat { X } \\to \\hat { y }$ while satisfying fair classification with respect ",
+        "bbox": [
+            513,
+            806,
+            913,
+            896
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_number",
+        "text": "3 ",
+        "bbox": [
+            493,
+            900,
+            501,
+            907
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "to the protected attribute on the real dataset, i.e., $P ( \\eta ( \\mathbf { x } ) = 1 | s =$ $\\mathbf { \\eta } _ { 1 } ) = P ( \\eta ( \\mathbf { x } = 1 ) | s = 0 )$ . ",
+        "bbox": [
+            81,
+            106,
+            482,
+            135
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "4.2 Model ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            146,
+            181,
+            159
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "FairGAN consists of one generator $G _ { D e c }$ and two discriminators $D _ { 1 }$ and $D _ { 2 }$ GDec. We adopt the revised generator from medGAN [5] to D Dgenerate both discrete and continuous data. Figure 2 shows the structure of FairGAN. In FairGAN, every generated sample has a corresponding value of the protected attribute $s \\sim P _ { \\mathrm { d a t a } } ( s )$ . The generator $G _ { D e c }$ generates a fake pair $( \\hat { \\mathbf { x } } , \\hat { y } )$ s P sfollowing the condi-Dectional distribution $P _ { G } ( \\mathbf { x } , y | s )$ . The fake pair $( \\hat { \\mathbf { x } } , \\hat { y } )$ is generated by a noise variable $\\mathbf { z }$ Ggiven the protected attribute , namely, ",
+        "bbox": [
+            81,
+            165,
+            482,
+            276
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}} = G _ {D e c} (\\mathbf {z}, s), \\mathbf {z} \\sim P _ {\\mathbf {z}} (\\mathbf {z}), \\tag {5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            197,
+            282,
+            480,
+            297
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where $P _ { \\mathbf { z } } ( \\mathbf { z } )$ is a prior distribution. Hence, the generated fake sample $( \\hat { \\mathbf { x } } , \\hat { y } , \\hat { s } )$ is from the joint distribution $P _ { G } ( \\mathbf { x } , y , s ) = P _ { G } ( \\mathbf { x } , y | s ) P _ { G } ( s )$ , , y, swhere $P _ { G } ( s ) = P _ { \\mathrm { d a t a } } ( s )$ PG ,. The discriminator $D _ { 1 }$ PG , y s PG sis trained to distin-PG s P sguish between the real data from $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s )$ and the generated fake data from $P _ { G } ( \\mathbf { x } , y , s )$ . ",
+        "bbox": [
+            81,
+            301,
+            482,
+            369
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "PG ,y, sMeanwhile, in order to make the generated dataset achieve fairness, a constraint is applied to the generated samples, which aims to keep $P _ { G } ( \\mathbf { x } , y | s = 1 ) = P _ { G } ( \\mathbf { x } , y | s = 0 )$ . Therefore, another discriminator $D _ { 2 }$ G ,y s PG ,y sis incorporated into the FairGAN model and trained to Ddistinguish the two categories of generated samples, $P _ { G } ( \\mathbf { x } , y | s = 1 )$ and $P _ { G } ( \\mathbf { x } , y | s = 0 )$ . ",
+        "bbox": [
+            81,
+            371,
+            482,
+            455
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "PG ,y sThe value function of the minimax game is described as: ",
+        "bbox": [
+            98,
+            455,
+            442,
+            468
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {G _ {D e c}} \\max  _ {D _ {1}, D _ {2}} V \\left(G _ {D e c}, D _ {1}, D _ {2}\\right) = V _ {1} \\left(G _ {D e c}, D _ {1}\\right) + \\lambda V _ {2} \\left(G _ {D e c}, D _ {2}\\right), \\tag {6}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            93,
+            474,
+            480,
+            497
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "where ",
+        "bbox": [
+            83,
+            501,
+            125,
+            513
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} V _ {1} (G _ {D e c}, D _ {1}) \\\\ = \\mathbb {E} _ {s \\sim P _ {\\text {d a t a}} (s), (\\mathbf {x}, y) \\sim P _ {\\text {d a t a}} (\\mathbf {x}, y | s)} [ \\log D _ {1} (\\mathbf {x}, y, s) ] (7) \\\\ + \\mathbb {E} _ {\\hat {s} \\sim P _ {G} (s), (\\hat {x}, \\hat {y}) \\sim P _ {G} (x, y | s)} [ \\log (1 - D _ {1} (\\hat {x}, \\hat {y}, \\hat {s})) ], \\\\ V _ {2} \\left(G _ {D e c}, D _ {2}\\right) = \\mathbb {E} _ {(\\hat {\\mathbf {x}}, \\hat {y}) \\sim P _ {G} (\\mathbf {x}, y | s = 1)} \\left[ \\log D _ {2} (\\hat {\\mathbf {x}}, \\hat {y}) \\right] (8) \\\\ + \\mathbb {E} _ {(\\hat {\\mathbf {x}}, \\hat {y}) \\sim P _ {G} (\\mathbf {x}, y | s = 0)} [ \\log (1 - D _ {2} (\\hat {\\mathbf {x}}, \\hat {y})) ], (6) \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            125,
+            517,
+            480,
+            614
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "$\\lambda$ is a hyperparameter that specifies a trade off between utility and λfairness of data generation. ",
+        "bbox": [
+            81,
+            618,
+            482,
+            646
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "The first value function $V _ { 1 }$ is similar to a conditional GAN model [20], where the generator $G$ seeks to learn the joint distribution $P _ { G } ( \\mathbf { x } , y , s )$ over real data $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s )$ by first drawing ˆ from $P _ { G } ( s )$ PG ,y, sand then drawing $\\{ \\hat { { \\mathbf x } } , \\hat { y } \\}$ from $P _ { G } ( \\mathbf { x } , y | s )$ s PG s given a noise variable. ,y PGNote that in the generated sample $\\{ \\hat { \\mathbf { x } } , \\hat { y } , \\hat { s } \\}$ , the protected attribute $\\hat { s } = s$ ,y, sdue to the generator conditioning on  to generate $\\{ \\hat { \\mathbf x } , \\hat { y } \\}$ . The second value function $V _ { 2 }$ aims to make the generated samples not encode any information supporting to predict the value of protected attribute . Therefore, $D _ { 2 }$ is trained to correctly predict s Dgiven a generated sample while the generator $G$ aims to fool sthe discriminator $D _ { 2 }$ . Once the generated sample $\\{ \\hat { { \\mathbf x } } , \\hat { y } \\}$ cannot be used to predict the protected attribute $\\hat { s } \\left( s \\right)$ , the correlation between $\\{ \\hat { { \\mathbf x } } , \\hat { y } \\}$ and $s$ is removed, i.e., $\\{ \\hat { \\mathbf { x } } , \\hat { y } \\} \\perp s$ s. FairGAN can ensure that ,y s ,y sthe generated samples do not have the disparate impact. ",
+        "bbox": [
+            81,
+            646,
+            482,
+            839
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "For the decoder  to convert the representations to data samples, FairGAN first pre-trains the autoencoder model. The decoder then can generate samples given the representation from $G ( \\mathbf { z } , s )$ . G , sMeanwhile, since the autoencoder is pre-trained by the original ",
+        "bbox": [
+            81,
+            839,
+            482,
+            895
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "dataset that may contain discrimination information, we further fine-tune the decoder  to remove the discrimination informa-Dection when optimizing the generator . The procedure of training GFairGAN is shown in Algorithm 1, where $\\theta _ { a e }$ , $\\theta _ { d _ { 1 } }$ , $\\theta _ { d _ { 2 } }$ and $\\theta _ { g }$ are trainable parameters in autoencoder, $D _ { 1 }$ , $D _ { 2 }$ aeand $G _ { D e c }$ дrespectively. D D GDecFairGAN first pretrains the autoencoder (from Line 1 to 4). For training the generator $G _ { D e c }$ and discriminators $D _ { 1 }$ and $D _ { 2 }$ , FairGAN GDec D Dfirst samples a batch of real data and a batch of fake data to train $G _ { D e c }$ and $D _ { 1 }$ (from Line 6 to 9) and then applies the fair constraint GDecto train $G _ { D e c }$ and $D _ { 2 }$ (from Line 10 to 12). ",
+        "bbox": [
+            511,
+            106,
+            913,
+            244
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Algorithm 1 Minibatch stochastic gradient descent training of FairGAN. ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            255,
+            913,
+            281
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1: for number of pre-training iterations do ",
+            "2: Sample a batch of $m$ examples $( { \\bf x } , y , s ) \\sim P _ { \\mathrm { d a t a } } ( { \\bf x } , y , s )$ ",
+            "3: m , y, s P , y, sUpdate Autoencoder by descending its stochastic gradient: "
+        ],
+        "bbox": [
+            524,
+            285,
+            913,
+            327
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nabla_ {\\theta_ {a e}} \\frac {1}{m} \\sum_ {i = 1} ^ {m} | | \\mathbf {x} ^ {\\prime} - \\mathbf {x} | | _ {2} ^ {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            647,
+            330,
+            779,
+            366
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "4: end for ",
+        "text_level": 1,
+        "bbox": [
+            524,
+            369,
+            591,
+            381
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "5: for number of training iterations do ",
+            "6: Sample a batch of $m$ examples $( { \\bf x } , y , s ) \\sim P _ { \\mathrm { d a t a } } ( { \\bf x } , y , s )$ ",
+            "7: Sample a batch of $m$ examples $( \\hat { \\mathbf { x } } , \\hat { y } , \\hat { s } ) \\sim P _ { G } ( \\mathbf { x } , y , s )$ from generator $G _ { D e c } ( \\mathbf { z } , s )$ m by first drawing $s \\sim P _ { G } ( s )$ G ,y, sand noise samples $\\mathbf { z } \\sim P _ { \\mathbf { z } } ( \\mathbf { z } )$ e ",
+            "8: PUpdate $D _ { 1 }$ by ascending its stochastic gradient: "
+        ],
+        "bbox": [
+            524,
+            383,
+            913,
+            465
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nabla_ {\\theta_ {d _ {1}}} \\frac {1}{m} \\sum_ {i = 1} ^ {m} \\left[ \\log D _ {1} (\\mathbf {x}, y, s) + \\log (1 - D _ {1} (\\hat {\\mathbf {x}}, \\hat {y}, \\hat {s})) \\right]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            566,
+            470,
+            859,
+            506
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "9: Update $G _ { D e c }$ by descending along its stochastic gradient: ",
+        "bbox": [
+            524,
+            508,
+            908,
+            523
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nabla_ {\\theta_ {g}} \\frac {1}{m} \\sum_ {i = 1} ^ {m} \\log (1 - D _ {1} (\\hat {\\mathbf {x}}, \\hat {y}, \\hat {s}))\n$$",
+        "text_format": "latex",
+        "bbox": [
+            624,
+            527,
+            803,
+            561
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "10: Sample a batch of $m$ examples $( \\hat { \\mathbf { x } } , \\hat { y } | \\hat { s } = 1 ) \\sim P _ { G } ( \\mathbf { x } , y | s =$ m1) and sample another batch of $m$ ,y sexamples $( \\hat { \\mathbf { x } } , \\hat { y } | \\hat { s } ~ = ~ 0 ) ~ \\sim$ $P _ { G } ( \\mathbf { x } , y | s = 0 )$ ",
+            "11: ,y sUpdate $D _ { 2 }$ by ascending its stochastic gradient: "
+        ],
+        "bbox": [
+            519,
+            571,
+            913,
+            627
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nabla_ {\\theta_ {d _ {2}}} \\frac {1}{2 m} \\sum_ {i = 1} ^ {2 m} \\left[ \\log D _ {2} (\\hat {\\mathbf {x}}, \\hat {y}) + \\log (1 - D _ {2} (\\hat {\\mathbf {x}}, \\hat {y})) \\right]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            575,
+            631,
+            849,
+            667
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "12: Update $G _ { D e c }$ by descending along its stochastic gradient: ",
+        "bbox": [
+            519,
+            670,
+            908,
+            685
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\nabla_ {\\theta_ {g}} \\frac {1}{2 m} \\sum_ {i = 1} ^ {2 m} \\left[ \\log D _ {2} (\\hat {\\mathbf {x}}, \\hat {y}) + \\log (1 - D _ {2} (\\hat {\\mathbf {x}}, \\hat {y})) \\right]\n$$",
+        "text_format": "latex",
+        "bbox": [
+            576,
+            689,
+            848,
+            724
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "13: end for ",
+        "text_level": 1,
+        "bbox": [
+            519,
+            734,
+            591,
+            746
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "4.3 Theoretical analysis ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            773,
+            723,
+            789
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We conduct the similar theoretical analysis as the traditional GAN model [10]. We first consider the optimal discriminators $D _ { 1 }$ and $D _ { 2 }$ for any given generator $G$ . ",
+        "bbox": [
+            513,
+            791,
+            913,
+            833
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Proposition 1. For $G$ fixed, the optimal discriminators $D _ { 1 }$ and $D _ { 2 }$ Gby the value function $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } )$ are ",
+        "bbox": [
+            513,
+            837,
+            911,
+            866
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nD _ {1} ^ {*} (\\mathbf {x}, y, s) = \\frac {P _ {\\mathrm {d a t a}} (\\mathbf {x} , y , s)}{P _ {\\mathrm {d a t a}} (\\mathbf {x} , y , s) + P _ {G} (\\mathbf {x} , y , s)},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            594,
+            869,
+            831,
+            898
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_number",
+        "text": "4 ",
+        "bbox": [
+            495,
+            900,
+            501,
+            907
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\nD _ {2} ^ {*} (\\mathbf {x}, y) = \\frac {P _ {G} (\\mathbf {x} , y | s = 1)}{P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            153,
+            102,
+            410,
+            133
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Proof. The training criteria for the discriminators $D _ { 1 }$ and $D _ { 2 }$ , given any generator $G _ { D e c }$ , are to maximize $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } )$ : ",
+        "bbox": [
+            81,
+            137,
+            483,
+            165
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} V (G _ {D e c}, D _ {1}, D _ {2}) \\\\ = \\int_ {x} \\int_ {y} P _ {\\text {d a t a}} (\\mathbf {x}, y, s) \\log D _ {1} (\\mathbf {x}, y, s) + \\int_ {x} \\int_ {y} P _ {G} (\\mathbf {x}, y, s) \\log (1 - D _ {1} (\\mathbf {x}, y, s)) \\\\ + \\lambda \\int_ {x} \\int_ {y} P _ {G} (\\mathbf {x}, y | s = 1) \\log \\left(D _ {2} (\\mathbf {x}, y)\\right) + \\lambda \\int_ {x} \\int_ {y} P _ {G} (\\mathbf {x}, y | s = 0) \\log \\left(1 - D _ {2} (\\mathbf {x}, y)\\right) \\tag {9} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            91,
+            169,
+            506,
+            250
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Following [10], for any $( a , b ) \\in \\mathbb { R } ^ { 2 } \\ \\backslash \\ \\{ 0 , 0 \\}$ , the function $y $ $a \\log ( y ) + b \\log ( 1 - y )$ a, b ,achieves its maximum in [0 1] at $\\frac { a } { a + b }$ · y. This a y b yconcludes the proof. □ ",
+        "bbox": [
+            81,
+            252,
+            483,
+            294
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Theorem 1. The minimax game of FairGAN can be reformulated as $\\begin{array} { r } { C ( G _ { D e c } ) = - ( 2 + \\lambda ) \\log 4 + 2 \\cdot J S D ( P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s ) | | P _ { G } ( \\mathbf { x } , y , s ) ) + } \\end{array}$ $2 \\lambda \\cdot J S D ( P _ { G } ( \\mathbf { x } , y | s = 1 ) | | P _ { G } ( \\mathbf { x } , y | s = 0 ) )$ P ,), where $J S D$ PG , y, sindicates the λ JSD PG ,y s PG ,y s JSDJensen-Shannon divergence between two distributions. The minimum value is $- ( 2 + \\lambda ) \\log { 4 } + \\Delta$ , where $\\Delta$ is the minimum value λ ∆ ∆when the two JSD terms are converged to a global optimal point due to convexity of JSD. ",
+        "bbox": [
+            81,
+            301,
+            483,
+            398
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Proof. Given $D _ { 1 } ^ { * }$ and $D _ { 2 } ^ { * }$ , we reformulate Equation 6 as: ",
+        "bbox": [
+            98,
+            406,
+            441,
+            422
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} C (G _ {D e c}) \\\\ = \\max  _ {D _ {1}, D _ {2}} V (G _ {D e c}, D _ {1}, D _ {2}) \\\\ = \\mathbb {E} _ {(\\mathbf {x}, y, s) \\sim P _ {\\mathrm {d a t a}} (\\mathbf {x}, y, s)} [ \\log \\frac {P _ {\\mathrm {d a t a}} (\\mathbf {x} , y , s)}{P _ {\\mathrm {d a t a}} (\\mathbf {x} , y , s) + P _ {G} (\\mathbf {x} , y , s)} ] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, y, s) \\sim P _ {G} (\\mathbf {x}, y, s)} [ \\log \\frac {P _ {G} (\\mathbf {x} , y , s)}{P _ {\\mathrm {d a t a}} (\\mathbf {x} , y , s) + P _ {G} (\\mathbf {x} , y , s)} ] \\tag {10} \\\\ + \\lambda \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {G} (\\mathbf {x}, y | s = 1)} [ \\log \\frac {P _ {G} (\\mathbf {x} , y | s = 1)}{P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ + \\lambda \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {G} (\\mathbf {x}, y | s = 0)} [ \\log \\frac {P _ {G} (\\mathbf {x} , y | s = 0)}{P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ = - (2 + \\lambda) \\log 4 + 2 \\cdot J S D \\left(P _ {\\text {d a t a}} (\\mathbf {x}, y, s) | | P _ {G} (\\mathbf {x}, y, s)\\right) \\\\ + 2 \\lambda \\cdot J S D (P _ {G} (\\mathbf {x}, y | s = 1) | | P _ {G} (\\mathbf {x}, y | s = 0)), \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            122,
+            426,
+            485,
+            614
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "λ JSD PG , y s PG ,While the two pairs of distributions $\\bar { P } _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s ) = P _ { G } ( \\hat { \\mathbf { x } } , \\hat { y } , s )$ and $P _ { G } ( \\hat { \\mathbf { x } } , \\hat { y } | s = 1 ) = P _ { G } ( \\hat { \\mathbf { x } } , \\hat { y } | s = 0 )$ P ,y, s PG ,y, s cannot be achieved simultaneously PG ,y s PG ,y sin Equation 10, the two JSD terms can still be converged to a global optimal point due to convexity of JSD. Hence, the optimum value of $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } ) = - ( 2 + \\lambda ) \\log 4 + \\Delta$ , where $\\Delta$ is the minimum V GDec , D , D λ ∆ ∆value when the two JSD terms are converged to a point. ",
+        "bbox": [
+            81,
+            616,
+            482,
+            699
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/4c9e435944256cd0daf6aafc1df47d5be81e3b6864ae80559a291c28d5478799.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            467,
+            700,
+            480,
+            710
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "4.4 NaïveFairGAN models ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            724,
+            308,
+            738
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In this subsection, we discuss two naive approaches which can only achieve fair data generation (disparate treatment) but cannot achieve fair classification (disparate impact). ",
+        "bbox": [
+            81,
+            743,
+            482,
+            784
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "NaïveFairGAN-I ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            785,
+            196,
+            796
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "To mitigate the disparate treatment, a straightforward approach is to remove $s$ from the dataset. Hence, if a GAN model ensures the generated samples have the same distribution as the real data with unprotected attributes and decision, i.e., $P _ { G } ( \\mathbf { x } , y ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y )$ , and Grandomly assigns the values of protected attribute with only preserving the ratio of protected group to unprotected group the same as the real data, the completely generated dataset could achieve ",
+        "bbox": [
+            81,
+            799,
+            483,
+            896
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "the statistical parity in the dataset. Because there is no additional fair constraint in data generation, the NaïveFairGAN-I model is a regular GAN model which consists of one generator and one discriminator. The value function of NaïveFairGAN-I is defined as: ",
+        "bbox": [
+            513,
+            106,
+            915,
+            161
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} \\min  _ {G _ {D e c}} \\max  _ {D} V (G _ {D e c}, D) = \\mathbb {E} _ {\\mathbf {x}, y \\sim P _ {\\mathrm {d a t a}} (\\mathbf {x}, y)} [ \\log D _ {1} (\\mathbf {x}, y) ] \\\\ + \\mathbb {E} _ {\\hat {\\mathbf {x}}, \\hat {y} \\sim P _ {G} (\\mathbf {x}, y)} [ \\log (1 - D _ {1} (\\hat {\\mathbf {x}}, \\hat {y})) ], \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            547,
+            176,
+            879,
+            215
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In principle, NaïveFairGAN-I achieves the fair data generation by randomly generating the protected attribute $\\hat { s }$ . However, due to the property $P _ { G } ( \\mathbf { x } ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } )$ , the disparate impact caused by the Gcorrelation between generated unprotected attributes $\\hat { X }$ and the real protected attribute $s$ is not removed. The classifier trained on the generated dataset cannot achieve fair prediction when tested on real data. ",
+        "bbox": [
+            511,
+            219,
+            913,
+            316
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "NaïveFairGAN-II ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            316,
+            633,
+            329
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We can extend the NaïveFairGAN-I to NaïveFairGAN-II by considering the protected attribute. NaïveFairGAN-II consists of one generator and two discriminators. Given the protected attribute $s$ , the real data can be seen as from two sub-domains, $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 )$ and $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 0 )$ . The discriminator $D _ { 1 }$ P , y sis used to detect whether P ,y sa pair of sample $( { \\bf x } , y )$ Dis from the real data. If the sample is from ,ythe generator, then another discriminator $D _ { 2 }$ is used to distinguish whether this sample is from $P _ { G } ( \\mathbf { x } , y | s = 0 )$ D or $P _ { G } ( \\mathbf { x } , y | s = 1 )$ ). Hence, PG ,y s PG ,y sby playing this three-player game with value function shown in Equation 11, the first discriminator is to ensure the generated sample be close to the real sample while the second discriminator is to ensure the demographic parity of the generated data. ",
+        "bbox": [
+            513,
+            330,
+            915,
+            498
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {G _ {D e c}} \\max  _ {D _ {1}, D _ {2}} V \\left(G _ {D e c}, D _ {1}, D _ {2}\\right) = V _ {1} \\left(G _ {D e c}, D _ {1}\\right) + V _ {2} \\left(G _ {D e c}, D _ {2}\\right) \\tag {11}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            526,
+            516,
+            911,
+            537
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "where ",
+        "bbox": [
+            514,
+            542,
+            557,
+            553
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} V _ {1} \\left(G _ {D e c}, D _ {1}\\right) = \\mathbb {E} _ {\\left(\\mathbf {x}, y\\right) \\sim P _ {\\mathrm {d a t a}} \\left(\\mathbf {x}, y \\mid s = 1\\right)} \\left[ \\log D _ {1} (\\mathbf {x}, y) \\right] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {\\text {d a t a}} (\\mathbf {x}, y | s = 0)} [ \\log D _ {1} (\\mathbf {x}, y) ] \\\\ + \\mathbb {E} _ {(\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}}) \\sim P _ {G} (\\mathbf {x}, \\mathbf {y} | s = 1)} [ \\log (1 - D _ {1} (\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}})) ] \\\\ + \\mathbb {E} _ {(\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}}) \\sim P _ {G} (\\mathbf {x}, \\mathbf {y} | s = 0)} [ \\log (1 - D _ {1} (\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}})) ], \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            558,
+            556,
+            870,
+            625
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} V _ {2} \\left(G _ {D e c}, D _ {2}\\right) = \\mathbb {E} _ {(\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}}) \\sim P _ {G} (\\mathbf {x}, \\mathbf {y} | s = 1)} \\left[ \\log D _ {2} (\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}}) \\right] \\\\ + \\mathbb {E} _ {(\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}}) \\sim P _ {G} (\\mathbf {x}, \\mathbf {y} | s = 0)} [ \\log (1 - D _ {2} (\\hat {\\mathbf {x}}, \\hat {\\mathbf {y}})) ], \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            558,
+            635,
+            870,
+            667
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Following the similar theoretical analysis as FairGAN, the global minimum of NaïveFairGAN-II $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } )$ is achieved if and only if $P _ { G } ( \\mathbf { x } , y | s = 1 ) \\ = \\ P _ { G } ( \\mathbf { x } , y | s = 0 ) \\ = \\ ( P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 ) \\ + $ $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s ~ = ~ 0 ) \\big ) / 2$ with $D _ { 1 } ^ { * } ~ = ~ \\frac { 1 } { 2 }$ and $D _ { 2 } ^ { * } ~ = ~ \\frac { 1 } { 2 }$ . At that point, $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } )$ Dachieves the value $- 4 \\log 4$ . The detailed proof V GDec , D , Dis described in the appendix. ",
+        "bbox": [
+            513,
+            671,
+            913,
+            755
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Although NaïveFairGAN-II considers the protected attribute, it achieves $P _ { G } ( \\mathbf { x } , y | s = 1 ) = P _ { G } ( \\mathbf { x } , y | s = 0 ) = \\left( P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 ) + \\right.$ $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 0 ) ) / 2$ s PG ,y without ensuring $P _ { G } ( \\mathbf { x } , y | s = 1 ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s =$ 1) or $P _ { G } ( \\mathbf { x } , y | s = 0 ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 0 )$ . Hence, NaïveFairGAN-II PG ,y s P ,y sachieves the fair data generation by randomly shuffling the protected attribute $\\hat { s }$ . Similar to the data from NaïveFairGAN-I, the generated data from NaïveFairGAN-II also incurs disparate impact because the correlation between generated unprotected attributes $\\hat { X }$ and the real protected attribute $s$ is not removed. ",
+        "bbox": [
+            513,
+            755,
+            915,
+            880
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "FairGAN vs. NaïveFairGAN-I vs. NaïveFairGAN-II ",
+        "bbox": [
+            514,
+            882,
+            849,
+            893
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_number",
+        "text": "5 ",
+        "bbox": [
+            493,
+            900,
+            501,
+            907
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/14a8ff25b218322ab64e8255923e5116f8c63c4902eaa952291548a0ac0df3d3.jpg",
+        "image_caption": [
+            "(a) Toy Dataset "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            107,
+            118,
+            279,
+            244
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/1ce67be46272ab587ae3ba0ad5da6136579b4e6b7be2df74bd2bc0c7f36575c4.jpg",
+        "image_caption": [
+            "(b) NaïveFairGAN-I "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            308,
+            118,
+            483,
+            244
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/b0dd85ad8aaef015efd1411dcf28c66c8e24e8116da9e78171333b3597263594.jpg",
+        "image_caption": [
+            "(c) NaïveFairGAN-II "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            516,
+            118,
+            687,
+            244
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/01ae2fc06096bab1343f8889dd2da468793789be9d2e8b29e561a2ae686c93aa.jpg",
+        "image_caption": [
+            "(d) FairGAN ",
+            "Figure 3: Comparing FairGAN, NaïveFairGAN-I and NaïveFairGAN-II on a toy dataset. (a) shows the distributions $P _ { \\mathbf { d a t a } } ( x )$ (black), $P _ { \\bf d a t a } ( x | s = 1 )$ (green) and $P _ { \\bf d a t a } ( x | s = 0 )$ (red) of real data; (b), (c) and (d) are distributions $P _ { G } ( x ) , P _ { G } ( x | s = 1 )$ and $P _ { G } ( x | s = 0 )$ P x s P x s Pof synthetic datasets generated by NaïveFairGAN-I, NaïveFairGAN-II and FairGAN separately. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            707,
+            118,
+            880,
+            244
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We compare FairGAN with NaïveFairGAN-I and NaïveFairGAN-II on a toy dataset which consists of one unprotected attribute $x \\in \\mathbb { R }$ and one protected attribute $s \\in \\{ 0 , 1 \\}$ . The toy dataset is drawn from $x \\sim 0 . 5 * N ( 1 , 0 . 5 ) + 0 . 5 * N ( 3 , 0 . 5 )$ , where $P _ { \\mathrm { d a t a } } ( x | s = 1 ) = N ( 1 , 0 . 5 )$ xand $P _ { \\mathrm { d a t a } } ( x | s = 0 ) = N ( 3 , 0 . 5 )$ . P x s , .. Hence, the unprotected attribute $x$ P x s , .is strong correlated with the protected attribute . ",
+        "bbox": [
+            81,
+            345,
+            482,
+            428
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "sWe train FairGAN and NaïveFairGAN models to approximate the distribution of $P _ { \\mathrm { d a t a } } ( x )$ . Figure 3 shows the data probability $P ( x )$ P xand two conditional probabilities $P ( x | s = 1 )$ and $P ( x | s = 0 )$ P x of the P x s P x stoy dataset (shown in Figure 3a) and synthetic datasets (Figures 3b to 3d) from FairGAN and NaïveFairGAN models. ",
+        "bbox": [
+            81,
+            428,
+            480,
+            497
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "For NaïveFairGAN-I, it is a regular GAN model which aims to make $P _ { G } ( x ) = P _ { \\mathrm { d a t a } } ( x )$ while is independently generated. There-PG x P x sfore, in this toy example, as shown in Figure 3b, we can observe that $P _ { G } ( x )$ is similar to $P _ { \\mathrm { d a t a } } ( x )$ . Meanwhile, because $s$ is independently PG x P x sassigned instead of generated from the GAN model, $P _ { G } ( x | s = 1 )$ and $P _ { G } ( x | s = 0 )$ G are almost identical to each other, which avoids PG x sdisparate treatment. However, due to the high similarity between $P _ { G } ( x )$ and $P _ { \\mathrm { d a t a } } ( x )$ , given the generated $\\hat { x }$ and the real , the poten-Gtial disparate impact isn’t mitigated. ",
+        "bbox": [
+            81,
+            497,
+            482,
+            622
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "For NaïveFairGAN-II, in the ideal situation, it has $P _ { G } ( x | s = 1 ) =$ $P _ { G } ( x | s = 0 ) = \\left( P _ { \\mathrm { d a t a } } ( x | s = 1 ) + P _ { \\mathrm { d a t a } } ( x | s = 0 ) \\right) / 2$ PG x s. As shown in PG x s P x s P x sFigure 3c, the empirical results are close to the theoretical analysis. Hence, the generated dataset from NaïveFairGAN-II achieves statistical parity. However, similar to the dataset from NaïveFairGAN-I, the dataset from NaïveFairGAN-II also has $P _ { G } ( x ) = P _ { \\mathrm { d a t a } } ( x )$ , so the PG x Pdisparate impact in terms of the real  isn’t mitigated. ",
+        "bbox": [
+            81,
+            622,
+            482,
+            719
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "sFor FairGAN, in this toy example, the discriminator $D _ { 1 }$ in Fair-GAN aims to ensure $P _ { G } ( x , s ) = P _ { \\mathrm { d a t a } } ( x , s )$ . For $s \\ = \\ 1$ D, we have $P _ { G } ( s = 1 ) P _ { G } ( x | s = 1 ) = P _ { \\mathrm { d a t a } } ( s = 1 ) P _ { \\mathrm { d a t a } } ( x | s = 1 )$ . Since $P _ { G } ( s =$ $1 ) = P _ { \\mathrm { d a t a } } ( s = 1 )$ P s, FairGAN ensures $P _ { G } ( x | s = 1 ) = P _ { \\mathrm { d a t a } } ( x | s = 1 )$ . P sSimilarly, FairGAN also ensures $P _ { G } ( x | s = 0 ) = P _ { \\mathrm { d a t a } } ( x | s = 0 )$ . Hence, $D _ { 1 }$ PG x s P x sin FairGAN makes the two conditional distributions of Dsynthetic data are close to those of the real data. Meanwhile, the discriminator $D _ { 2 }$ in FairGAN aims to make $P _ { G } ( x | s = 1 ) = P _ { G } ( x | s = 0 )$ . D PG x s PG x sThe statistical parity of synthetic data is achieved by making two conditional distributions close to each other. Figure 3d shows that $P _ { G } ( x | s = 1 )$ and $P _ { G } ( x | s = 0 )$ are close to Gaussian distributions, ",
+        "bbox": [
+            81,
+            719,
+            482,
+            872
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "especially compared with the data distributions from two Naïve-FairGAN models. In addition, the mean values of $P _ { G } ( x | s = 1 )$ and $P _ { G } ( x | s = 0 )$ PG x s are similar, which ensures the real  is unpredictable PG x sgiven the generated $\\hat { x }$ s, i.e., free from disparate impact. ",
+        "bbox": [
+            511,
+            345,
+            913,
+            400
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "For fair data generation, the statistical parity in datasets can be achieved by adopting FairGAN and NaïveFairGAN models. For fair classification on the real data, we should remove both disparate treatment and disparate impact. The disparate treatment can be removed by shuffling or removing the protected attribute while the disparate impact can be removed only when correlations between unprotected attributes and the protected attribute are removed by modifying the unprotected attributes [9]. Especially, in data generation scenario, the generated $\\hat { X }$ should be unable to predict the real $s$ . For NaïveFairGAN-I and NaïveFairGAN-II, $P _ { G } ( x )$ are close to $P _ { \\mathrm { d a t a } } ( x )$ G. The potential disparate impact is still preserved since $\\hat { X }$ P xhave correlations with the real $s$ . A classifier trained on the synthetic dataset from NaïveFairGAN-I or NaïveFairGAN-II would capture the disparate impact, so the statistical parity in the classifier cannot be achieved when predicting on the real dataset. On the contrary, FairGAN revises $P _ { G } ( x )$ to ensure $P _ { G } ( x | s = 1 ) =$ $P _ { G } ( x | s = 0 )$ G G, and the protected attribute from FairGAN is the same Gas the real data, $\\hat { S } = \\bar { S }$ . Once the correlations between $\\hat { \\chi }$ and $\\hat { s }$ are removed, the correlations between $\\hat { X }$ and $s$ are also removed. A classifier trained on the synthetic dataset from FairGAN can achieve statistical parity when tested on the real dataset. ",
+        "bbox": [
+            511,
+            401,
+            913,
+            694
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "5 EXPERIMENTS ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            707,
+            671,
+            720
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We evaluate the performance of FairGAN on fair data generation and fair classification. ",
+        "bbox": [
+            513,
+            724,
+            913,
+            752
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "5.1 Experimental Setup ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            765,
+            720,
+            781
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Baselines. To evaluate the effectiveness of FairGAN, we compare the performance of FairGAN with the regular GAN model and two NaïveFairGAN models. GAN aims to generate the synthetic samples that have the same distribution as the real data, i.e., $P _ { G } ( \\mathbf { x } , y , s ) ~ = ~ P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s )$ . The regular GAN model cannot Gachieve fair data generation. We adopt GAN as a baseline to evaluate the utility of data generation. NaïveFairGAN models include NaïveFairGAN-I and NaïveFairGAN-II. ",
+        "bbox": [
+            511,
+            784,
+            913,
+            893
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_number",
+        "text": "6 ",
+        "bbox": [
+            493,
+            901,
+            501,
+            907
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/ce602b6d47dbf4437ee2cc6bc9874fea0be6c1e98e827d7e9079b33340ffd648.jpg",
+        "image_caption": [
+            "(a) Real Dataset "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            94,
+            116,
+            240,
+            224
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/155c059c54f6803c5f93e2ec34c139ff0c6735002c2c53134a34128a6f40de79.jpg",
+        "image_caption": [
+            "(b) SYN1-GAN "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            258,
+            116,
+            405,
+            224
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/f1efcddd79ff6b6da719a37e23366321d3a80b03a8479f9e91a0c8cdb2439094.jpg",
+        "image_caption": [
+            "(c) SYN2-NFGANI "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            424,
+            116,
+            570,
+            224
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/2d4f913b0f27862eee255af27995b7f6c0acf807dae7812f0e63a0856cdb9085.jpg",
+        "image_caption": [
+            "(d) SYN3-NFGANII "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            584,
+            116,
+            728,
+            224
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/6d90390d43db3c5cd9b2144bbfd57324e7151d7f3baee24fa24a9e1e17868ab2.jpg",
+        "image_caption": [
+            "(e) SYN4-FairGAN ",
+            "Figure 4: Dimension-wise conditional probability distributions $P ( \\mathbf { x } , y | s = 1 )$ vs. $P ( \\mathbf { x } , y | s = 0 )$ ). Each dot represents one attribute. The $\\mathbf { x }$ -axis represents the conditional probability given $s = 1$ P ,y s P ,y s. The y-axis represents the conditional probability given $s = 0$ . sThe diagonal line indicates the ideal fairness, where data have identical conditional probability distributions given . "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            743,
+            116,
+            888,
+            224
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we don’t compare with the pre-process methods, because the classical methods like Massaging cannot remove disparate treatment and disparate impact [14]. Although the certifying framework proposed algorithms to remove disparate impact, they only work on numerical attributes [9]. ",
+        "bbox": [
+            81,
+            320,
+            482,
+            388
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Datasets. We evaluate FairGAN and baselines on the UCI Adult income dataset which contains 48,842 instances [6]. The decision indicates whether the income is higher than $\\$ 50 k$ per year, and the protected attribute is gender. Each instance in the dataset consists of 14 attributes. We convert each attribute to a one-hot vector and combine all of them to a feature vector with 57 dimensions. ",
+        "bbox": [
+            81,
+            388,
+            480,
+            472
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In our experiments, besides adopting the original Adult dataset, we also generate four types of synthetic data, SYN1-GAN that is generated by a regular GAN model, SYN2-NFGANI that is generated by NaïveFairGAN-I, SYN3-NFGANII that is generated by NaïveFairGAN-II, and SYN4-FairGAN that is generated by Fair-GAN with $\\lambda = 1$ . For each type of synthetic data, we generate five λdatasets to evaluate the data fairness and classification fairness. We then report the mean and stand deviation of evaluation results. The sizes of the synthetic datasets are same as the real dataset. ",
+        "bbox": [
+            81,
+            473,
+            482,
+            597
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Implementation Details. We first pretrain the autoencoder for 200 epochs. Both the encoder and the decoder have one Enc Dechidden layer with the dimension size as 128. The generator $G$ is a Gfeedforward neural network with two hidden layers, each having 128 dimensions. The discriminator $D$ is also a feedforward network Dwith two hidden layers where the first layer has 256 dimensions and the second layer has 128 dimensions. NaïveFairGAN-II and FairGAN are first trained without the fair constraint for 2,000 epochs $[ D _ { 1 }$ and $G _ { D e c , \\ l }$ ) and then trained with the fair constraint for another 2,000 GDecepochs $( D _ { 1 } , D _ { 2 }$ and $G _ { D e c }$ ). The regular GAN and NaïveFairGAN-I D D GDecare trained for 2,000 epochs. We adopt Adam [17] with the learning rate as 0.001 for stochastic optimization. ",
+        "bbox": [
+            81,
+            598,
+            482,
+            763
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "5.2 Fair Data Generation ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            779,
+            297,
+            792
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We evaluate FairGAN on data generation from two perspectives, fairness and utility. Fairness is to check whether FairGAN can generate fair data, while the utility is to check whether FairGAN can learn the distribution of real data precisely. ",
+        "bbox": [
+            81,
+            797,
+            480,
+            852
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Fairness. We adopt the risk difference in a labeled dataset $( d i s c ( \\mathscr { D } ) =$ $P ( y = 1 | s = 1 ) - P ( y = 1 | s = 0 ) ,$ disc as the metric to compare the per-P y s P y sformance of different GAN models on fair data generation. Table 1 ",
+        "bbox": [
+            83,
+            852,
+            482,
+            893
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "table",
+        "img_path": "images/e04a8e814aa1d5583860a4f45bddac8907e0f98d4d9d4462ad6f04470699f3b5.jpg",
+        "table_caption": [
+            "Table 1: Risk differences of real and synthetic datasets "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Real Data</td><td>SYN1-GAN</td><td>SYN2-NFGANI</td><td>SYN3-NFGANII</td><td>SYN4-FairGAN</td></tr><tr><td>\\( disk(D) \\)</td><td>0.1989</td><td>0.1798±0.0026</td><td>0.0025±0.0007</td><td>0.0062±0.0037</td><td>0.0411±0.0295</td></tr></table>",
+        "bbox": [
+            516,
+            345,
+            911,
+            369
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "shows the risk differences in the real and synthetic datasets. The risk difference in the Adult dataset is 0.1989, which indicates discrimination against female. The SYN-GAN, which is trained to be close to the real dataset, has the similar risk difference to the real dataset. On the contrary, SYN2-NFGANI, SYN3-NFGANII, and SYN4-FairGAN have lower risk differences than the real dataset. In particular, both SYN2-NFGANI and SYN3-NFGANII have extremely small risk differences. This is because the protected attribute of SYN2-NFGANI and SYN3-NFGANII is independently assigned, i.e., $\\hat { y } \\perp \\perp \\hat { s }$ . Hence, the synthetic datasets from SYN2-NFGANI and SYN3-NFGANII are free from disparate treatment. FairGAN prevents the disparate treatment by generating revised $\\hat { y }$ to make $\\hat { y } \\perp \\perp \\hat { s } .$ . The risk differy y sence of SYN4-FairGAN is 0.0411, which shows the effectiveness of FairGAN on fair data generation. ",
+        "bbox": [
+            511,
+            396,
+            913,
+            589
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In Figure 4, we compare the dimension-wise conditional probability distributions between $P ( \\mathbf { x } , y | s = 1 )$ and $P ( \\mathbf { x } , y | s = 0 )$ . Each P ,y s P ,y sdot indicates one attribute. The diagonal line indicates the ideal fairness, where the conditional probability distributions of each attribute given $s = 1$ and $s = 0$ are identical. We can observe that the dimension-wise distributions of datasets with lower risk differences are closer to the diagonal line. For example, dimension-wise conditional probabilities of real dataset and SYN1-GAN are spread around the diagonal line (shown in Figures 4a and 4b), while conditional probabilities of SYN2-NFGANI and SYN3-NFGANII with the lowest risk difference are just on the diagonal line (shown in Figure 4c). SYN4-FairGAN also achieves reasonable risk difference, so the attribute dots are close to the diagonal line. Overall, the synthetic datasets from SYN2-NFGANI, SYN3-NFGANII, and SYN4-FairGAN can prevent the disparate treatment. ",
+        "bbox": [
+            511,
+            590,
+            913,
+            797
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We further evaluate the $\\epsilon$ -fairness (disparate impact) by calcuϵlating the balanced error rates (BERs) in the real data and SYN4- FairGAN. Because the protected attribute in SYN2-NFGANI and SYN3-NFGANII are randomly assigned, the real  given xˆ is unsknown. The BERs in SYN2-NFGANI and SYN3-NFGANII cannot be calculated. The BER in the real dataset is 0.1538, which means a classifier can predict  given x with high accuracy. Hence, there is ",
+        "bbox": [
+            511,
+            797,
+            913,
+            893
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_number",
+        "text": "7 ",
+        "bbox": [
+            493,
+            900,
+            501,
+            907
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/9ad619ff9485af3148bf495035324e5a50bdc194f0845e74c91205834d99bcdc.jpg",
+        "image_caption": [
+            "(a) SYN1-GAN: $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y )$ vs. $P _ { G } ( \\mathbf { x } , y )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            113,
+            207,
+            200
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/dd98960515cb499db5169dc996068c719c7ca241a7e049019fa789ba8b97280a.jpg",
+        "image_caption": [
+            "(b) SYN1-GAN:$P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 )$ vs.$P _ { G } ( \\mathbf { x } , y | s = 1 )$ )"
+        ],
+        "image_footnote": [],
+        "bbox": [
+            220,
+            113,
+            334,
+            199
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/cd449211091e3c7fd9a4c4f4a0d1ac5cbe7222eeb280653445435d73447a9c9c.jpg",
+        "image_caption": [
+            "(c) SYN1-GAN: $P _ { \\bf d a t a } ( { \\bf x } , y | s = 0 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 0 )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            348,
+            113,
+            464,
+            199
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/b6cc2cfded5a7255769c561dccdd5d6d869e86535f5ae0cf311872f924139e95.jpg",
+        "image_caption": [
+            "(d) SYN2-NFGANI: $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y )$ vs. $P _ { G } ( \\mathbf { x } , y )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            252,
+            205,
+            339
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/b888d2b04f710e08ff5cb27f47bca09ed0d40edaaa65dfd3a73101338018f008.jpg",
+        "image_caption": [
+            "(e) SYN2-NFGANI: $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 1 )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            220,
+            253,
+            334,
+            339
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/fb6fb620b8a16790b4485f3efc429b950dd5f8389c73f02ac4bb094a2653c072.jpg",
+        "image_caption": [
+            "(f) SYN2-NFGANI: $P _ { \\bf d a t a } ( { \\bf x } , y | s = 0 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 0 )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            349,
+            253,
+            464,
+            339
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/b837d12b921b3d9acb0757eb125be131ab5a8d4bed3dad063bec6f1a8e615625.jpg",
+        "image_caption": [
+            "(g) SYN3-NFGANII: $\\bar { P } _ { \\mathbf { d a t a } } ( \\mathbf { x } , y )$ vs. $P _ { G } ( \\mathbf { x } , y )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            392,
+            205,
+            477
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/cffeeefcba048d6189f7d12d9f4d0fe367b572394de44ce1443a336027f1667c.jpg",
+        "image_caption": [
+            "(h) SYN3-NFGANII: $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 1 )$ ) "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            220,
+            392,
+            334,
+            477
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/83af8459b5ec429d43b76fe5e4f06bd2507a192fd13653c143669f78fb25b02b.jpg",
+        "image_caption": [
+            "(i) SYN3-NFGANII: $P _ { \\bf d a t a } ( { \\bf x } , y | s = 0 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 0 )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            349,
+            392,
+            464,
+            477
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/4875c6290b9e2d9a1e8b38d4c21e858b455fe47d9d1d5fe280e9e06a21c46f35.jpg",
+        "image_caption": [
+            "(j) SYN4-FairGAN: $P _ { \\mathrm { { d a t a } } } ( \\mathbf { x } , y )$ vs. $P _ { G } ( \\mathbf { x } , y )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            532,
+            205,
+            617
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/459d4e3e2d74dbb6b55cad10f6a738a7e2d78557591aca7e5435e01f1bdf99c3.jpg",
+        "image_caption": [
+            "(k) SYN4-FairGAN: $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 1 )$ "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            220,
+            532,
+            334,
+            617
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/5cb6e99e2b802a11eeb4b221a5938bdbb913d1f20f404a492d85a94f66f88dc4.jpg",
+        "image_caption": [
+            "(l) SYN4-FairGAN: $P _ { \\bf d a t a } ( { \\bf x } , y | s = 0 )$ vs. $P _ { G } ( \\mathbf { x } , y | s = 0 )$ ) ",
+            "Figure 5: Dimension-wise probability distributions. Each dot represents one attribute. The $\\mathbf { x }$ -axis represents the Bernoulli success probability for the real dataset. The y-axis represents the probability for the synthetic dataset generated by each model. The diagonal line indicates the ideal case, where the real and synthetic data show identical quality. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            349,
+            532,
+            464,
+            617
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "disparate impact in the real dataset. On the contrary, the BER in SYN4-FairGAN is $0 . 3 8 6 2 { \\scriptstyle \\pm 0 . 0 0 3 6 }$ , which indicates using the generated xˆ in SYN4-FairGAN to predict the real has much higher error srate. The disparate impact in SYN4-FairGAN is small. It shows the effectiveness of FairGAN on removal of the disparate impact in terms of the real . Note that we adopt a linear SVM as a classifier to predict . ",
+        "bbox": [
+            81,
+            796,
+            482,
+            893
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Utility. We then evaluate the data utility of synthetic datasets. We adopt the dimension-wise probability to check whether the generated data have the similar distribution to the real data on each dimension. Figure 5 compares dimension-wise probability distributions of different GAN models in both joint probability $P ( \\mathbf { x } , y )$ and conditional probability $P ( \\mathbf { x } , y | s )$ P ,y. From Figures 5a, 5d, 5g and P ,y s5j, we can observe that the four synthetic datasets generated by different GAN models have similar $P ( \\mathbf { x } , y )$ to the real dataset. Meanwhile, $P _ { G } ( \\mathbf { x } , y | s = 1 )$ and $P _ { G } ( \\mathbf { x } , y | s = 0 )$ ) on SYN1-GAN perfectly PG ,y s PG ,y smatch the real dataset (shown in Figures 5b and 5c), which indicates the effectiveness of the regular GAN model on data generation. We can also observe that SYN4-FariGAN better preserves $P ( \\mathbf { x } , y | s )$ P ,y sthan SYN2-NFGANI and SYN3-NFGANII by comparing the Figures 5k and 5l with Figures 5e, 5f, 5h and 5i. This is because neither NaïveFairGAN-I nor NaïveFairGAN-II ensures the generated samples have the same conditional probability distribution given  as the real data. ",
+        "bbox": [
+            511,
+            106,
+            913,
+            340
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "In Table 2, we further evaluate the closeness between each synthetic dataset and the real dataset by calculating the Euclidean distance of joint and conditional probabilities $( P ( \\mathbf { x } , y ) , P ( \\mathbf { x } , y , s )$ , and $P ( \\mathbf { x } , y | s ) )$ P ,y P ,y, s. The Euclidean distance is calculated between the estimated probability vectors (probability mass function) on the sample space from the synthetic dataset and the real dataset. A smaller distance indicates better closeness between the real data and the synthetic data. As expected, SYN1-GAN has the smallest distance to the real dataset for joint and conditional probabilities. For synthetic datasets generated by FairGAN and NaïveFair-GAN models, SYN2-NFGANI has the smallest distance in terms of $| | P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y ) - P _ { G } ( \\mathbf { x } , y ) | | _ { 2 }$ since its objective is $P _ { G } ( \\mathbf { x } , y ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y )$ P ,y PG ,y PG ,y P ,ywhile SYN4-FairGAN has the smallest distance in terms of conditional probability $| | P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s ) - P _ { G } ( \\mathbf { x } , y | s ) | | _ { 2 }$ and joint probability $| | P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s ) - P _ { G } ( \\mathbf { x } , y , s ) | | _ { 2 }$ since only FairGAN aims to ensure $P _ { G } ( \\mathbf { x } , y , s ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s )$ . Overall, without considering the PG , y, s P , y, sprotected attribute, all the synthetic datasets from FairGAN and NaïveFairGAN models are close to the real dataset. When considering the protected attribute, FairGAN has better performance than NaïveFairGAN models. Therefore, after removing disparate impact, FairGAN still achieves good data utility. ",
+        "bbox": [
+            513,
+            342,
+            913,
+            633
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "table",
+        "img_path": "images/f7292ad4b93a243e252756e4f5181f42f624b01d4e8e8ce40ff1b813d55322ab.jpg",
+        "table_caption": [
+            "Table 2: Euclidean distances of joint and conditional probabilities between synthetic datasets and real dataset "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Euclidean Distance</td><td>SYN1-GAN</td><td>SYN2-NFGANI</td><td>SYN3-NFGANII</td><td>SYN4-FairGAN</td></tr><tr><td>||Pdata(x,y)-PG(x,y)||2</td><td>0.0231±0.0003</td><td>0.0226±0.0003</td><td>0.0227±0.0003</td><td>0.0233±0.0004</td></tr><tr><td>||Pdata(x,y|s=1)-PG(x,y|s=1)||2</td><td>0.0108±0.0002</td><td>0.0118±0.0003</td><td>0.0118±0.0005</td><td>0.0111±0.0004</td></tr><tr><td>||Pdata(x,y|s=0)-PG(x,y|s=0)||2</td><td>0.0166±0.0002</td><td>0.0194±0.0003</td><td>0.0200±0.0007</td><td>0.0176±0.0005</td></tr><tr><td>||Pdata(x,y,s)-PG(x,y,s)||2</td><td>0.0198±0.0002</td><td>0.0227±0.0003</td><td>0.0232±0.0006</td><td>0.0208±0.0005</td></tr></table>",
+        "bbox": [
+            516,
+            688,
+            910,
+            781
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "5.3 Fair Classification ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            806,
+            707,
+            821
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "In this subsection, we adopt the real and synthetic datasets to train several classifiers and check whether the classifiers can achieve fairness. We evaluate the classifiers with three settings: 1) the classifiers are trained and tested on the real dataset, called REAL2REAL; 2) the classifiers are trained and tested on the synthetic datasets, called ",
+        "bbox": [
+            511,
+            825,
+            913,
+            895
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_number",
+        "text": "8 ",
+        "bbox": [
+            493,
+            900,
+            501,
+            907
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "table",
+        "img_path": "images/746b172e73430c8eadbfe872c52f7680ce8d6455337c2aba97dab3b9d6d2a893.jpg",
+        "table_caption": [
+            "Table 3: Risk differences in classifiers and classification accuracies on various training and testing settings "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td rowspan=\"2\"></td><td rowspan=\"2\">Classifier</td><td>REAL2REAL</td><td colspan=\"4\">SYN2SYN</td><td colspan=\"4\">SYN2REAL</td></tr><tr><td></td><td>SYN1-GAN</td><td>SYN2-NFGANI</td><td>SYN3-NFGANII</td><td>SYN4-FairGAN</td><td>SYN1-GAN</td><td>SYN2-NFGANI</td><td>SYN3-NFGANII</td><td>SYN4-FairGAN</td></tr><tr><td rowspan=\"3\">Risk Difference</td><td>SVM (Linear)</td><td>0.1784</td><td>0.1341±0.0023</td><td>0.0018±0.0021</td><td>0.0073±0.0039</td><td>0.0371±0.0189</td><td>0.1712±0.0062</td><td>0.1580±0.0076</td><td>0.1579±0.0079</td><td>0.0461±0.0424</td></tr><tr><td>SVM (RBF)</td><td>0.1788</td><td>0.1292±0.0049</td><td>0.0018±0.0025</td><td>0.0074±0.0028</td><td>0.0354±0.0206</td><td>0.1623±0.0050</td><td>0.1602±0.0053</td><td>0.1603±0.0087</td><td>0.0526±0.0353</td></tr><tr><td>Decision Tree</td><td>0.1547</td><td>0.1396±0.0089</td><td>0.0015±0.0035</td><td>0.0115±0.0061</td><td>0.0535±0.0209</td><td>0.1640±0.0077</td><td>0.1506±0.0070</td><td>0.1588±0.0264</td><td>0.0754±0.0641</td></tr><tr><td rowspan=\"3\">Accuracy</td><td>SVM (Linear)</td><td>0.8469</td><td>0.8281±0.0103</td><td>0.8162±0.0133</td><td>0.8226±0.0126</td><td>0.8247±0.0115</td><td>0.8363±0.0108</td><td>0.8340±0.0091</td><td>0.8356±0.0018</td><td>0.8217±0.0093</td></tr><tr><td>SVM (RBF)</td><td>0.8433</td><td>0.8278±0.0099</td><td>0.8160±0.0100</td><td>0.8215±0.0130</td><td>0.8233±0.0103</td><td>0.8342±0.0036</td><td>0.8337±0.0060</td><td>0.8349±0.0012</td><td>0.8178±0.0128</td></tr><tr><td>Decision Tree</td><td>0.8240</td><td>0.8091±0.0059</td><td>0.7926±0.0083</td><td>0.8055±0.0102</td><td>0.8077±0.0144</td><td>0.8190±0.0051</td><td>0.8199±0.0041</td><td>0.8158±0.0069</td><td>0.8044±0.0140</td></tr></table>",
+        "bbox": [
+            84,
+            132,
+            911,
+            233
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "SYN2SYN; 3) the classifiers are trained on the synthetic datasets and tested on the real dataset, called SYN2REAL. The ratio of the training set to testing set in these three settings is 1:1. We emphasize that only SYN2REAL is meaningful in practice as the classifiers are trained from the generated data and are adopted for decision making on the real data. ",
+        "bbox": [
+            81,
+            252,
+            480,
+            335
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "We adopt the following classifiers to evaluate the fair classification: 1) SVM (linear) which is a linear support vector machine with $C = 1$ ; 2) SVM (RBF) which is a support vector machine with Cthe radial basis kernel function; 3) Decision Tree with maximum tree depth as 5; Note that we do not adopt the protected attribute and only use the unprotected attributes to train classifiers, which ensures there is no disparate treatment in classifiers. ",
+        "bbox": [
+            81,
+            335,
+            480,
+            431
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Fairness. We adopt the risk difference in a classifier $( d i s c ( \\eta ) =$ $P ( \\eta ( \\mathbf { x } ) = 1 | s = 1 ) - P ( \\eta ( \\mathbf { x } ) = 1 | s = 0 ) \\}$ disc η) to evaluate the performance P η s P η sof classifier on fair prediction. Table 3 shows the risk differences in classifiers on various training and testing settings. We can observe that when the classifiers are trained and tested on real datasets (i.e., REAL2REAL), the risk differences in classifiers are high. It indicates that if there is disparate impact in the training dataset, the classifiers also incur discrimination for prediction. Since SYN1- GAN is close to the real dataset, classifiers trained on SYN1-GAN also have discrimination in both SYN2SYN and SYN2REAL settings. ",
+        "bbox": [
+            81,
+            431,
+            482,
+            571
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Although SYN2-NFGANI and SYN3-NFGANII have similar distributions as the real dataset on unprotected attributes and decision, i.e., $P _ { G } ( \\mathbf { x } , y ) = P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y )$ , classifiers which are trained and tested PG ,y P ,yin SYN2SYN settings achieve low risk differences. This is because the values of the protected attribute in SYN2-NFGANI or SYN3- NFGANII are independently generated or shuffled. Since both xˆ and $\\hat { y }$ have no correlations with the generated ˆ in SYN2-NFGANI and y sSYN3-NFGANII, the statistical parity in classifiers can be achieved when trained and tested on synthetic datasets. ",
+        "bbox": [
+            81,
+            571,
+            482,
+            695
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "However, when classifiers are trained on SYN2-NFGANI and SYN3-NFGANII and tested on the real dataset (i.e., SYN2REAL), the classifiers still have significant discrimination against the protected group. Because the unprotected attributes of SYN2-NFGANI and SYN3-NFGANII are close to the real dataset, the correlations between the generated $\\hat { \\mathbf { x } }$ and the real  are still preserved. The sdisparate impact in terms of the real  on SYN2-NFGANI and SYN3- sNFGANII is not removed. When classifiers are tested on the real dataset where the correlations between x and  are preserved, the sclassification results indicate discrimination. On the contrary, when the classifiers are trained on SYN4-FairGAN and tested on the real dataset, we can observe that the risk differences in classifiers are small. Since the FairGAN prevents the discrimination by generating ",
+        "bbox": [
+            81,
+            696,
+            482,
+            875
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "xˆ that don’t have correlations with the real , i.e. free from the dissparate impact, the classifier trained on SYN4-FairGAN can achieve fair classification on the real dataset. It demonstrates the advantage of FairGAN over the NaïveFairGAN models on fair classification. ",
+        "bbox": [
+            511,
+            252,
+            913,
+            306
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Classification accuracy. Table 3 further shows the classification accuracies of different classifiers on various training and testing settings. We can observe that the accuracies of classifiers on the SYN2REAL setting are close to the results on the REAL2REAL setting. It indicates synthetic datasets generated by different GAN models are similar to the real dataset, showing the good data generation utility of GAN models. Meanwhile, accuracies of classifiers which are trained on SYN4-FairGAN and tested on real dataset are only slightly lower than those trained on SYN1-GAN, which means the FairGAN model can achieve a good balance between utility and fairness. The small utility loss is caused by modifying unprotected attributes to remove disparate impact in terms of the real . ",
+        "bbox": [
+            511,
+            308,
+            913,
+            474
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "5.4 Parameter Sensitivity ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            488,
+            733,
+            503
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/fc7c828f218b85f60640754efe8720cc7a8669799d363e83f755d38d8f9e5bcf.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            524,
+            527,
+            707,
+            614
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/a444c1709350089273bc6600663ee0c73ee6bdb63829c388be00124604b9192d.jpg",
+        "image_caption": [
+            "(a) Utility and fairness in synthetic datasets from FairGAN with various . ",
+            "(b) Accuracy and fairness in a linear SVM which is trained on synthetic datasets from FairGAN with various and tested on real dataset. ",
+            "Figure 6: The sensitivity analysis of FairGAN with various "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            722,
+            527,
+            903,
+            614
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "We evaluate how the  in FairGAN affects the synthetic datasets λfor fair data generation and fair classification. For fair data generation, we evaluate risk differences of the generated datasets and the Euclidean distances of joint probabilities $| | P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s ) -$ $P _ { G } ( \\mathbf { x } , y , s ) | | _ { 2 }$ P ,y, sbetween real and synthetic datasets. From Figure 6a, PG ,y, swe can observe that the risk differences of the generated datasets decrease significantly when  increases. Meanwhile, the Euclidean λdistances of joint probabilities $| | P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y , s ) - P _ { G } ( \\mathbf { x } , y , s ) | | _ { 2 }$ keep Psteady with slightly increases while $\\lambda$ ,y, s PG ,y, schanges from 0 to 2. Meanλwhile, the standard deviations of Euclidean distances with various are smaller than $1 0 ^ { - 3 }$ . Overall, with the increase of  from 0 to 2, λ λthe discrimination in the synthetic datasets becomes smaller while data generation utility keeps steady. ",
+        "bbox": [
+            511,
+            714,
+            913,
+            895
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "page_number",
+        "text": "9 ",
+        "bbox": [
+            493,
+            900,
+            501,
+            907
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "For fair classification, we train a linear SVM on different synthetic datasets generated by FairGAN with various and evaluate on the λreal dataset. Figure 6b shows how the accuracies and risk differences vary with different  values. We can observe that the risk difference λin SVM when predicting on the real dataset decreases as  increases. λMeanwhile, the prediction accuracy keeps relatively steady with a slightly decrease. The standard deviations of accuracies with various  are smaller than $1 0 ^ { - 2 }$ . Overall, it indicates that increasing $\\lambda$ can prevent the classification discrimination on the real dataset λwhile achieving good classification utility. ",
+        "bbox": [
+            81,
+            106,
+            480,
+            244
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "6 CONCLUSIONS AND FUTURE WORK ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            257,
+            423,
+            272
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "In this paper, we have developed FairGAN to generate fair data, which is free from disparate treatment and disparate impact in terms of the real protected attribute, while retaining high data utility. As a result, classifiers trained on the generated fair data are not subject to discrimination when making decision of the real data. FairGAN consists of one generator and two discriminators. In particular, the generator generates fake samples conditioned on the protected attribute. One discriminator is trained to identify whether samples are real or fake, while the other discriminator is trained to distinguish whether the generated samples are from the protected group or unprotected group. The generator can generate fair data with high utility by playing the adversarial games with these two discriminators. The experimental results showed the effectiveness of FairGAN. In future, we plan to improve FairGAN to make classifiers trained on synthetic datasets achieve equalized odds or equal opportunity on the real dataset besides statistical parity. We emphasize this is the first work to study the use GAN for generating fair data, which is different from pre-process approaches [9, 13, 14, 25] widely studied in fairness aware learning. In our future work, we will conduct comprehensive comparisons both theoretically and empirically in terms of fairness-utility tradeoff. ",
+        "bbox": [
+            81,
+            276,
+            482,
+            566
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "ACKNOWLEDGMENTS ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            579,
+            281,
+            593
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "This work was supported in part by NSF 1646654 and 1564250. ",
+        "bbox": [
+            83,
+            598,
+            460,
+            612
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "REFERENCES ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            625,
+            202,
+            638
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[1] Alex Beutel, Jilin Chen, Zhe Zhao, and Ed H. Chi. 2017. Data Decisions and Theoretical Implications when Adversarially Learning Fair Representations. In FAT/ML. ",
+            "[2] Reuben Binns. 2017. Fairness in Machine Learning: Lessons from Political Philosophy. arXiv:1712.03586 [cs] (2017). ",
+            "[3] Tolga Bolukbasi, Kai-Wei Chang, James Zou, Venkatesh Saligrama, and Adam Kalai. 2016. Man is to Computer Programmer as Woman is to Homemaker? Debiasing Word Embeddings. arXiv:1607.06520 [cs, stat] (2016). ",
+            "[4] T. Calders, F. Kamiran, and M. Pechenizkiy. 2009. Building Classifiers with Independency Constraints. In 2009 IEEE International Conference on Data Mining Workshops. 13–18. ",
+            "[5] Edward Choi, Siddharth Biswal, Bradley Malin, Jon Duke, Walter F. Stewart, and Jimeng Sun. 2017. Generating Multi-label Discrete Patient Records using Generative Adversarial Networks. In MLHC. ",
+            "[6] Dua Dheeru and Efi Karra Taniskidou. 2017. UCI Machine Learning Repository. University of California, Irvine, School of Information and Computer Sciences. ",
+            "[7] Cynthia Dwork, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Rich Zemel. 2011. Fairness Through Awareness. arXiv:1104.3913 [cs] (2011). ",
+            "[8] Harrison Edwards and Amos Storkey. 2015. Censoring Representations with an Adversary. arXiv:1511.05897 [cs, stat] (2015). ",
+            "[9] Michael Feldman, Sorelle Friedler, John Moeller, Carlos Scheidegger, and Suresh Venkatasubramanian. 2015. Certifying and removing disparate impact. In KDD. ",
+            "[10] Ian J. Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and Yoshua Bengio. 2014. Generative Adversarial Networks. In NIPS. "
+        ],
+        "bbox": [
+            86,
+            641,
+            482,
+            893
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[11] Moritz Hardt, Eric Price, and Nathan Srebro. 2016. Equality of Opportunity in Supervised Learning. In NIPS. ",
+            "[12] Matthew Joseph, Michael Kearns, Jamie H Morgenstern, and Aaron Roth. 2016. Fairness in Learning: Classic and Contextual Bandits. In NIPS. ",
+            "[13] F. Kamiran and T. Calders. 2009. Classifying without discriminating. In Control and Communication 2009 2nd International Conference on Computer. 1–6. ",
+            "[14] Faisal Kamiran and Toon Calders. 2012. Data preprocessing techniques for classification without discrimination. Knowledge and Information Systems 33, 1 (2012), 1–33. ",
+            "[15] F. Kamiran, T. Calders, and M. Pechenizkiy. 2010. Discrimination Aware Decision Tree Learning. In 2010 IEEE International Conference on Data Mining. 869–874. ",
+            "[16] T. Kamishima, S. Akaho, and J. Sakuma. 2011. Fairness-aware Learning through Regularization Approach. In 2011 IEEE 11th International Conference on Data Mining Workshops. 643–650. ",
+            "[17] Diederik P. Kingma and Jimmy Ba. 2015. Adam: A Method for Stochastic Optimization. In ICLR. ",
+            "[18] Christos Louizos, Kevin Swersky, Yujia Li, Max Welling, and Richard Zemel. 2016. The Variational Fair Autoencoder. In ICLR. ",
+            "[19] David Madras, Elliot Creager, Toniann Pitassi, and Richard Zemel. 2018. Learning Adversarially Fair and Transferable Representations. arXiv:1802.06309 [cs, stat] (2018). ",
+            "[20] Mehdi Mirza and Simon Osindero. 2014. Conditional Generative Adversarial Nets. arXiv:1411.1784 [cs, stat] (2014). ",
+            "[21] Alec Radford, Luke Metz, and Soumith Chintala. 2015. Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks. arXiv:1511.06434 [cs] (2015). ",
+            "[22] Muhammad Bilal Zafar, Isabel Valera, Manuel Gomez Rodriguez, and Krishna P. Gummadi. 2017. Fairness Constraints: Mechanisms for Fair Classification. In AISTATS. ",
+            "[23] Rich Zemel, Yu Wu, Kevin Swersky, Toni Pitassi, and Cynthia Dwork. 2013. Learning Fair Representations. In International Conference on Machine Learning. 325–333. ",
+            "[24] Brian Hu Zhang, Blake Lemoine, and Margaret Mitchell. 2018. Mitigating Unwanted Biases with Adversarial Learning. In AAAI Conference on AI, Ethics and Society. ",
+            "[25] Lu Zhang, Yongkai Wu, and Xintao Wu. 2017. Achieving Non-Discrimination in Data Release. In KDD. 1335–1344. ",
+            "[26] Lu Zhang, Yongkai Wu, and Xintao Wu. 2017. A Causal Framework for Discovering and Removing Direct and Indirect Discrimination (IJCAI’17). 3929–3935. "
+        ],
+        "bbox": [
+            517,
+            109,
+            913,
+            502
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "APPENDIX ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            527,
+            611,
+            541
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Theoretical analysis of NaiveFairGAN-II ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            546,
+            787,
+            559
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "For $G$ fixed, the optimal discriminators $D _ { 1 }$ and $D _ { 2 }$ by the value Gfunction $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } )$ are ",
+        "bbox": [
+            513,
+            560,
+            911,
+            587
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\nD _ {1} ^ {*} (\\mathbf {x}, y) = \\frac {P _ {\\text {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\text {d a t a}} (\\mathbf {x} , y | s = 0)}{P _ {\\text {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\text {d a t a}} (\\mathbf {x} , y | s = 0) + P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)},\n$$",
+        "text_format": "latex",
+        "bbox": [
+            535,
+            587,
+            916,
+            609
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\nD _ {2} ^ {*} (\\mathbf {x}, y) = \\frac {P _ {G} (\\mathbf {x} , y | s = 1)}{P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            586,
+            627,
+            839,
+            657
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The proof procedure is a straightforward extension of the proof in Proposition 1. ",
+        "bbox": [
+            513,
+            669,
+            911,
+            695
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Given $D _ { 1 } ^ { * }$ and $D _ { 2 } ^ { * }$ , we can reformulate the minimax game of D  D NaïveFairGAN-II as: ",
+        "bbox": [
+            513,
+            696,
+            913,
+            722
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} C ^ {\\prime} (G) = \\max  _ {D _ {1}, D _ {2}} V (G _ {D e c}, D _ {1}, D _ {2}) \\\\ = \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {\\mathrm {d a t a}} (\\mathbf {x}, y | s = 1)} [ \\log \\frac {P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 0)}{P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 0) + P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {\\mathrm {d a t a}} (\\mathbf {x}, y | s = 0)} [ \\log \\frac {P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 0)}{P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 0) + P _ {G} (\\mathbf {x} , \\hat {y} | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {G} (\\mathbf {x}, y | s = 1)} [ \\log \\frac {P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)}{P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 1) + P _ {\\mathrm {d a t a}} (\\mathbf {x} , y | s = 0) + P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, \\mathcal {Y}) \\sim P _ {G} (\\mathbf {x}, \\mathcal {Y} | s = 0)} [ \\log \\frac {P _ {G} (\\mathbf {x} , \\mathcal {Y} | s = 1) + P _ {G} (\\mathbf {x} , \\mathcal {Y} | s = 0)}{P _ {\\text {d a t a}} (\\mathbf {x} , \\mathcal {Y} | s = 1) + P _ {\\text {d a t a}} (\\mathbf {x} , \\mathcal {Y} | s = 0) + P _ {G} (\\mathbf {x} , \\mathcal {Y} | s = 1) + P _ {G} (\\mathbf {x} , \\mathcal {Y} | s = 0)} ] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {G} (\\mathbf {x}, y | s = 1)} [ \\log \\frac {P _ {G} (\\mathbf {x} , y | s = 1)}{P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ + \\mathbb {E} _ {(\\mathbf {x}, y) \\sim P _ {G} (\\mathbf {x}, y | s = 0)} [ \\log \\frac {P _ {G} (\\mathbf {x} , y | s = 0)}{P _ {G} (\\mathbf {x} , y | s = 1) + P _ {G} (\\mathbf {x} , y | s = 0)} ] \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            537,
+            727,
+            916,
+            868
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Follow the proof of GAN [10], $C ^ { \\prime } ( G )$ can be rewritten as ",
+        "bbox": [
+            529,
+            878,
+            870,
+            892
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "page_number",
+        "text": "10 ",
+        "bbox": [
+            493,
+            900,
+            504,
+            907
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} C ^ {\\prime} (G) = - 4 \\log 4 + 2 \\cdot J S D \\left(P _ {G} (\\mathbf {x}, y | s = 1) \\mid \\mid P _ {G} (\\mathbf {x}, y | s = 0)\\right) \\\\ + 2 J S D \\left(P _ {\\text {d a t a}} (\\mathbf {x}, y | s = 1) + P _ {\\text {d a t a}} (\\mathbf {x}, y | s = 0) \\| P _ {G} (\\mathbf {x}, y | s = 1) + P _ {G} (\\mathbf {x}, y | s = 0)\\right). \\tag {12} \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            107,
+            111,
+            488,
+            156
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "Since Jensen-Shannon divergence between two distributions is non-negative and zero only when they are equal, the only solution of $C ^ { \\prime } ( G )$ reaching the global minimum is that the two JSD terms in Equation 12 are both zeros, i.e., $P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 ) + P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 0 ) =$ $P _ { G } ( \\mathbf { x } , y | s = 1 ) + P _ { G } ( \\mathbf { x } , y | s = 0 )$ Pand $P _ { G } ( \\mathbf { x } , y | s = 1 ) = P _ { G } ( \\mathbf { x } , y | s = 0 )$ PG ,y s PG ,y s PG ,y s PG ,y ssimultaneously. Hence, the global minimum of NaïveFairGAN-II is $P _ { G } ( \\mathbf { x } , y | s = 1 ) = P _ { G } ( \\mathbf { x } , y | s = 0 ) = \\left( P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 ) + P _ { \\mathrm { d a t a } } ( \\mathbf { x } , y | s = 1 ) \\right) .$ $0 ) ) / 2$ , y s PG. At that point, $V ( G _ { D e c } , D _ { 1 } , D _ { 2 } )$ ,y s P achieves the value $- 4 \\log 4$ . ",
+        "bbox": [
+            81,
+            157,
+            482,
+            268
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "page_number",
+        "text": "",
+        "bbox": [
+            493,
+            901,
+            503,
+            907
+        ],
+        "page_idx": 10
+    }
+]

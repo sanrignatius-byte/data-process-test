@@ -1,0 +1,105 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2016_conference,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath,amssymb,float}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{todonotes}
+\usepackage{caption}
+\usepackage{subcaption}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\def\!#1{\boldsymbol{#1}}
+\def\*#1{\mathbf{#1}}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+
+
+\title{The Variational Fair Autoencoder}
+  
+\author{Christos Louizos$^*$, Kevin Swersky$^\times$, Yujia Li$^\times$, Max Welling$^{*\dagger\ddagger}$, Richard Zemel$^{\times\dagger}$\\
+	$^*$ Machine Learning Group, University of Amsterdam\\
+	$^\times$Department of Computer Science, University of Toronto\\
+	$^\dagger$ Canadian Institute for Advanced Research (CIFAR)\\
+	$^\ddagger$ University of California, Irvine\\
+	\texttt{C.Louizos@uva.nl, \{kswersky, yujiali\}@cs.toronto.edu}\\
+	\texttt{M.Welling@uva.nl, zemel@cs.toronto.edu}}
+	
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\iclrfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We investigate the problem of learning representations that are invariant to certain nuisance or sensitive factors of variation in the data while retaining as much of the remaining information as possible. Our model is based on a variational autoencoding architecture~\citep{kingma2013auto, rezende2014stochastic} with priors that encourage independence between sensitive and latent factors of variation. Any subsequent processing, such as classification, can then be performed on this purged latent representation. To remove any remaining dependencies we incorporate an additional penalty term based on the ``Maximum Mean Discrepancy'' (MMD)~\citep{gretton2006kernel} measure. We discuss how these architectures can be efficiently trained on data and show in experiments that this method is more effective than previous work in removing unwanted sources of variation while maintaining informative latent representations. 
+\end{abstract}
+
+\section{Introduction} 
+In ``Representation Learning'' one tries to find representations of the data that are informative for a particular task while removing the factors of variation that are uninformative and are typically detrimental for the task under consideration. Uninformative dimensions are often called ``noise'' or ``nuisance variables'' while informative dimensions are usually called latent or hidden factors of variation. Many machine learning algorithms can be understood in this way: principal component analysis, nonlinear dimensional reduction and latent Dirichlet allocation are all models that extract informative factors (dimensions, causes, topics) of the data which can often be used to visualize the data. On the other hand, linear discriminant analysis and deep (convolutional) neural nets learn representations that are good for classification. 
+
+In this paper we  consider the case where we wish to learn latent representations where (almost) all of the information about certain known factors of variation are purged from the representation while still retaining as much information about the data as possible. In other words, we want a latent representation $\*z$ that is maximally informative about an observed random variable $\*y$ (e.g., class label) while minimally informative about a \emph{sensitive} or \emph{nuisance} variable $\*s$. By treating $\*s$ as a sensitive variable, i.e. $\*s$ is correlated with our objective, we are dealing with ``fair representations'', a problem previously considered by~\cite{zemel2013learning}. If we instead treat $\*s$ as a nuisance variable we are dealing with ``domain adaptation'', in other words by removing the domain $\*s$ from our representations we will obtain \emph{improved} performance.
+
+In this paper we introduce a novel model based on deep variational autoencoders (VAE)~\citep{kingma2013auto, rezende2014stochastic}. These models can naturally encourage separation between latent variables $\*z$ and sensitive variables $\*s$ by using factorized priors $p(\*s)p(\*z)$. However, some dependencies may still remain when mapping data-cases to their hidden representation using the variational posterior $q(\*z|\*x,\*s)$, which we stamp out using a ``Maximum Mean Discrepancy"~\citep{gretton2006kernel} term that penalizes differences between all order moments of the marginal posterior distributions $q(\*z|\*s=k)$ and $q(\*z|\*s=k')$ (for a discrete RV $\*s$). In experiments we show that this combined approach is highly successful in learning representations that are devoid of unwanted information while retaining as much information as possible from what remains. 
+
+\section{Learning Invariant Representations}
+\input{learning}
+
+\subsection{Further invariance via Maximum Mean Discrepancy}
+Despite the fact that we have a model that encourages statistical independence between $\*s$ and $\*z_1$ a-priori we might still have some dependence in the (approximate) marginal posterior $q_{\phi}(\*z_1|\*s)$. In particular, this can happen if the label $\*y$ is correlated with the sensitive variable $\*s$, which can allow information about $\*s$ to ``leak'' into the posterior. Thus instead we could maximize a ``penalized'' lower bound where we impose some sort of regularization on the marginal $q_{\phi}(\*z_1|\*s)$. In the following we will describe one way to achieve this regularization through the Maximum Mean Discrepancy (MMD)~\citep{gretton2006kernel} measure.
+
+ 
+\input{mmd}
+
+\section{Experiments}
+\input{experiments}
+
+\section{Related Work}
+\input{related}
+
+\section{Conclusion}
+\input{conclusion}
+
+
+%\subsubsection*{Acknowledgments}
+
+\bibliography{bibliography}
+\bibliographystyle{iclr2016_conference}
+
+\newpage
+\appendix
+
+\section{Discrimination metrics}
+The Discrimination metric~\citep{zemel2013learning} and the Discrimination metric that takes into account the probabilities of the correct class are mathematically formalized as:
+ 
+\begin{align*}
+ \text{Discrimination} & = \bigg|\frac{\sum_{n=1}^{N}\mathbb{I}[y_n^{s=0}]}{N_{s = 0}} - \frac{\sum_{n=1}^{N}\mathbb{I}[y_n^{s=1}]}{N_{s=1}}\bigg| \\  
+  \text{Discrimination prob.} & = \bigg|\frac{\sum_{n=1}^{N}p(y_n^{s=0})}{N_{s = 0}} - \frac{\sum_{n=1}^{N}p(y_n^{s=1})}{N_{s=1}}\bigg|
+\end{align*}
+where $\mathbb{I}[y_n^{s=0}] = 1$ for the predictions $y_n$ that were done on the datapoints with nuisance variable $s = 0$, $N_{s=0}$ denotes the total amount of datapoints that had nuisance variable $s = 0$ and $p(y_n^{s=0})$ denotes the probability of the prediction $y_n$ for the datapoints with $s=0$. For the predictions and their respective probabilities we used a Logistic Regression classifier.
+
+\section{Proxy A-Distance (PAD) for Amazon Reviews dataset}
+Similarly to~\cite{2015arXiv150507818G}, we also calculated the Proxy A-distance (PAD)~\citep{ben2007analysis,ben2010theory} scores for the raw data $\*x$ and for the $\*z_1$ representations of VFAE. Briefly, Proxy A-distance is an approximation to the $\mathcal{H}$-divergence measure of domain distinguishability proposed in~\cite{kifer2004detecting} and~\cite{ben2007analysis,ben2010theory}. To compute it we first need to train a learning algorithm on the task of discriminating examples from the source and target domain. Afterwards we can use the test error $\epsilon$ of that algorithm in the following formula:
+\begin{align*}
+  \text{PAD}(\epsilon)  = 2(1 - 2\epsilon) 
+\end{align*}
+It is clear that low PAD scores correspond to low discrimination of the source and target domain examples from the classifier. To obtain $\epsilon$ for our model we used Logistic Regression. The resulting plot can be seen in Figure~\ref{fig:pad_reviews}, where we have also added the plot from DANN~\citep{2015arXiv150507818G}, where they used a linear Support Vector Machine for the classifier, as a reference. It can be seen that our VFAE model can factor out the information about $\*s$ better, since the PAD scores on our new representation are, overall, lower than the ones obtained from the DANN architecture.
+
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}{.49\textwidth}
+    \centering
+        \includegraphics[width=1.\textwidth]{pad_vfae_x_reviews.pdf}
+  \end{subfigure} %
+    \begin{subfigure}{.49\textwidth}
+      \centering
+        \includegraphics[width=.9\textwidth]{PAD_DANN.pdf}
+     \end{subfigure} % 
+    \caption{Proxy A-distances (PAD) for the Amazon reviews dataset: left from our VFAE model, right from the DANN model (taken from~\cite{2015arXiv150507818G})}
+    \label{fig:pad_reviews}
+\end{figure}
+
+\end{document}

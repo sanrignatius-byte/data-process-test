@@ -1,0 +1,3325 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Attributing Fair Decisions with Attention Interventions "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                218,
+                119,
+                779,
+                142
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Ninareh Mehrabi, Umang Gupta, Fred Morstatter, Greg Ver Steeg, Aram Galstyan "
+                    }
+                ]
+            },
+            "bbox": [
+                151,
+                161,
+                849,
+                181
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Information Sciences Institute, University of Southern California {ninarehm,umanggup,morstatt}@usc.edu, {gregv,galstyan}@isi.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                200,
+                186,
+                795,
+                217
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                248,
+                273,
+                316,
+                287
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The widespread use of Artificial Intelligence (AI) in consequential domains, such as healthcare and parole decisionmaking systems, has drawn intense scrutiny on the fairness of these methods. However, ensuring fairness is often insufficient as the rationale for a contentious decision needs to be audited, understood, and defended. We propose that the attention mechanism can be used to ensure fair outcomes while simultaneously providing feature attributions to account for how a decision was made. Toward this goal, we design an attention-based model that can be leveraged as an attribution framework. It can identify features responsible for both performance and fairness of the model through attention interventions and attention weight manipulation. Using this attribution framework, we then design a post-processing bias mitigation strategy and compare it with a suite of baselines. We demonstrate the versatility of our approach by conducting experiments on two distinct data types, tabular and textual. "
+                    }
+                ]
+            },
+            "bbox": [
+                98,
+                297,
+                464,
+                513
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                210,
+                535,
+                352,
+                551
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Machine learning algorithms that optimize for performance (e.g., accuracy) often result in unfair outcomes (Mehrabi et al. 2021). These algorithms capture biases present in the training datasets causing discrimination toward different groups. As machine learning continues to be adopted into fields where discriminatory treatments can lead to legal penalties, fairness and interpretability have become a necessity and a legal incentive in addition to an ethical responsibility (Barocas and Selbst 2016; Hacker et al. 2020). Existing methods for fair machine learning include applying complex transformations to the data so that resulting representations are fair (Gupta et al. 2021; Moyer et al. 2018; Roy and Boddeti 2019; Jaiswal et al. 2020; Song et al. 2019), adding regularizers to incorporate fairness (Zafar et al. 2017; Kamishima et al. 2012; Mehrabi, Huang, and Morstatter 2020), or modifying the outcomes of unfair machine learning algorithms to ensure fairness (Hardt et al. 2016), among others. Here we present an alternative approach 1, which works by identifying the significance of different features in causing unfairness and reducing their effect on the outcomes using an attention-based mechanism. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                556,
+                478,
+                849
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "With the advancement of transformer models and the attention mechanism (Vaswani et al. 2017), recent research in Natural Language Processing (NLP) has tried to analyze the effects and the interpretability of the attention weights on the decision making process (Wiegreffe and Pinter 2019; Jain and Wallace 2019; Serrano and Smith 2019; Hao et al. 2021). Taking inspiration from these works, we propose to use an attention-based mechanism to study the fairness of a model. The attention mechanism provides an intuitive way to capture the effect of each attribute on the outcomes. Thus, by introducing the attention mechanism, we can analyze the effect of specific input features on the model’s fairness. We form visualizations that explain model outcomes and help us decide which attributes contribute to accuracy vs. fairness. We also show and confirm the observed effect of indirect discrimination in previous work (Zliobaite 2015; Hajian and Domingo-Ferrer 2013; Zhang, Wu, and Wu 2017) in which even with the absence of the sensitive attribute, we can still have an unfair model due to the existence of proxy attributes. Furthermore, we show that in certain scenarios those proxy attributes contribute more to the model unfairness than the sensitive attribute itself. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                273,
+                913,
+                578
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Based on the above observations, we propose a postprocessing bias mitigation technique by diminishing the weights of features most responsible for causing unfairness. We perform studies on datasets with different modalities and show the flexibility of our framework on both tabular and large-scale text data, which is an advantage over existing interpretable non-neural and non-attention-based models. Furthermore, our approach provides a competitive and interpretable baseline compared to several recent fair learning techniques. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                580,
+                913,
+                719
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To summarize, the contributions of this work are as follows: (1) We propose a new framework for attention-based classification in tabular data, which is interpretable in the sense that it allows to quantify the effect of each attribute on the outcomes; (2) We then use these attributions to study the effect of different input features on the fairness and accuracy of the models; (3) Using this attribution framework, we propose a post-processing bias mitigation technique that can reduce unfairness and provide competitive accuracy vs. fairness trade-offs; (4) Lastly, we show the versatility of our framework by applying it to large-scale non-tabular data such as text. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                720,
+                913,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1Code can be found at: https://github.com/Ninarehm/ Attribution "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                861,
+                482,
+                888
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:2109.03952v1 [cs.AI] 8 Sep 2021 "
+                    }
+                ]
+            },
+            "bbox": [
+                22,
+                279,
+                60,
+                700
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Approach "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                220,
+                66,
+                341,
+                84
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we describe our classification model that incorporates the attention mechanism. It can be applied to both text and tabular data and is inspired by works in attentionbased models in text-classification (Zhou et al. 2016). We incorporate attention over the input features. Next, we describe how this attention over features can attribute the model’s unfairness to certain features. Finally, using this attribution framework, we propose a post-processing approach for mitigating unfairness. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                85,
+                478,
+                210
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this work, we focus on binary classification tasks. We assume access to a dataset of triplets "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathcal { D } = \\{ x _ { i } , y _ { i } , a _ { i } \\} _ { i = 1 } ^ { N }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x _ { i } , y _ { i } , a _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are i.i.d. samples from data distribution "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "p ( \\mathbf { x } , \\mathbf { y } , \\mathbf { a } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { \\lambda } \\mathbf { 1 } \\in \\{ a _ { 1 } , \\ldots \\lfloor a _ { l } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a discrete variable with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "l"
+                    },
+                    {
+                        "type": "text",
+                        "content": "possible values and denotes the sensitive or protected attributes with respect to which we want to be fair, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { y } \\in \\{ 0 , 1 \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the true label, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbf { x } \\in \\mathbb { R } ^ { m }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are features of the sample which may include sensitive attributes. We use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { o }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to denote the binary outcome of the original model, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z } ^ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "will represent the binary outcome of a model in which the attention weights corresponding to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { \\mathrm { { t h } } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature are zeroed out. Our framework is flexible and general that it can be used to find attribution for any fairness notion. More particularly, we work with the group fairness measures like Statistical Parity (Dwork et al. 2012), Equalized Odds (Hardt et al. 2016), and Equality of Opportunity (Hardt et al. 2016), which are defined as:2 "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                210,
+                480,
+                431
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Statistical Parity Difference (SPD): "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                431,
+                331,
+                446
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname {S P D} (\\hat {\\mathbf {y}}, \\mathbf {a}) = \\max  _ {a _ {i}, a _ {j}} | P (\\hat {\\mathbf {y}} = 1 \\mid \\mathbf {a} = a _ {i}) - P (\\hat {\\mathbf {y}} = 1 \\mid \\mathbf {a} = a _ {j}) |",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/64f864651b02490bf66ee79e7fd7d9946a55c0611804688155ed8923408a3a9a.jpg"
+                }
+            },
+            "bbox": [
+                83,
+                449,
+                482,
+                472
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Equality of Opportunity Difference (EqOpp): "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                476,
+                403,
+                491
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\operatorname {E q O p p} (\\hat {\\mathbf {y}}, \\mathbf {a}, \\mathbf {y}) = \\max  _ {a _ {i}, a _ {j}} | P (\\hat {\\mathbf {y}} = 1 \\mid \\mathbf {a} = a _ {i}, \\mathbf {y} = 1) \\\\ - P (\\hat {\\mathbf {y}} = 1 \\mid \\mathbf {a} = a _ {j}, \\mathbf {y} = 1) | \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/304947e8cf92cc9d3b38e21c72a1ae56a505ac30fd853c0ef6475826528488bf.jpg"
+                }
+            },
+            "bbox": [
+                109,
+                493,
+                449,
+                536
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Equalized Odds Difference (EqOdd): "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                539,
+                346,
+                554
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\operatorname {EqOdd} (\\hat {\\mathbf {y}}, \\mathbf {a}, \\mathbf {y}) = \\max  _ {a _ {i}, a _ {j}} \\max  _ {y \\in \\{0, 1 \\}} | P (\\hat {\\mathbf {y}} = 1 \\mid \\mathbf {a} = a _ {i}, \\mathbf {y} = y) \\\\ - P (\\hat {\\mathbf {y}} = 1 \\mid \\mathbf {a} = a _ {j}, \\mathbf {y} = y) | \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/6c26076bc878c97eb967cc9c1664aa627a5c927b40a2be4d7e9bf9db4ef6d586.jpg"
+                }
+            },
+            "bbox": [
+                84,
+                556,
+                473,
+                599
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.1 General Model: Incorporating Attention over Inputs in Classifiers "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                613,
+                473,
+                643
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We consider each feature value as an individual entity (like the words are considered in text-classification) and learn a fixed-size embedding "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ e _ { k } \\} _ { k = 1 } ^ { m }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { k } \\in \\mathbb { R } ^ { d ^ { e } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for each feature, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ f _ { k } \\} _ { k = 1 } ^ { m }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". These vectors are passed to the attention layer. The Computation of attention weights and the final representation for a sample is described in Eq. 1. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E = [ e _ { 1 } \\ldots e _ { m } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "E \\in"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathbb { R } ^ { d ^ { e } \\times m }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the concatenation of all the embeddings, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w \\in \\mathbb { R } ^ { d ^ { e } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a learnable parameter, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r \\in \\mathbb { R } ^ { d ^ { e } }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes the overall sample representation, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha \\in \\mathbb { R } ^ { m }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "denotes the attention weights. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                646,
+                478,
+                773
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "H = \\tanh  (E) \\quad \\alpha = \\operatorname {s o f t m a x} \\left(w ^ {T} H\\right) \\quad r = \\tanh  \\left(E \\alpha^ {T}\\right) \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/0cdbd6c316425895b0eeb8e62cf59371740f74eee3b92ec132af241cf09b175e.jpg"
+                }
+            },
+            "bbox": [
+                93,
+                777,
+                478,
+                806
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The resulting representation, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is passed to the feed-forward layers for classification. In this work, we have used two feedforward layers (See Fig. 1 for overall architecture). "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                811,
+                478,
+                854
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/8ef90b3f85ab5a50e227b336bb0783fe9416ef408e9bed91d973a68a0cb7d290.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Classification model. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                529,
+                65,
+                694,
+                218
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/d27d8dec6052a7605c1da58a9c8da48ab2248861ef689916a32c4e9228174c76.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Attribution framework. "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 1: (a) In general classification model, for each feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "a vector representation "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "e _ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of length "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { e }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is learned. This is passed to the attention layer which produces a "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d ^ { e }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "- dimensional vector representation for the sample instance "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which is passed to two dense layers to get the final classification output. (b) The Attribution framework has the same architecture as the general model. One outcome is obtained through the original model and another through the model that has some attention weights zeroed. The observed difference in accuracy and fairness measures will indicate the effect of the zeroed out features on accuracy and fairness. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                702,
+                66,
+                903,
+                218
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.2 Fairness Attribution with Attention Weights "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                514,
+                431,
+                898,
+                448
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The aforementioned classification model with the attention mechanism combines input feature embeddings by taking a weighted combination. By manipulating the weights, we can intuitively capture the effects of specific features on the output. To this end, we observe the effect of each attribute on the fairness of outcomes by zeroing out or reducing its attention weights and recording the change. Other works have used similar ideas to understand the effect of attention weights on accuracy and evaluate interpretability of the attention weights by comparing the difference in outcomes in terms of measures such as Jensen-Shannon Divergence (Serrano and Smith 2019) but not for fairness. We are interested in the effect of features on fairness measures. Thus, we measure the difference in fairness of the outcomes based on the desired fairness measure. A large change in fairness measure and a small change in performance of the model would indicate that this feature is mostly responsible for unfairness, and it can be dropped without causing large impacts on performance. The overall framework is shown in Fig. 1. First, the outcomes are recorded with the original attention weights intact (Fig. 1a). Next, attention weights corresponding to a particular feature are zeroed out, and the difference in performance and fairness measures is recorded (Fig. 1b). Based on the observed differences, one may conclude how incorporating this feature contributes to fairness/unfairness. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                455,
+                911,
+                803
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To measure the effect of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature on different fairness measures, we consider the difference in the fairness of outcomes of the original model and model with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature’s effect removed. For example, for statistical parity difference, we will consider "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { S P D } ( \\hat { \\mathbf { y } } _ { o } , \\mathbf { a } ) - \\mathrm { S P D } ( \\hat { \\mathbf { y } } _ { z } ^ { k } , \\mathbf { a } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". A negative value will indicate that the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\dot { k } ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature helps mitigate unfairness, "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                804,
+                913,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2We describe and use the definition of these fairness measures as implemented in Fairlearn package (Bird et al. 2020). "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                861,
+                478,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "algorithm",
+            "content": {
+                "algorithm_caption": [
+                    {
+                        "type": "text",
+                        "content": "Algorithm 1: Bias Mitigation with Attention "
+                    }
+                ],
+                "algorithm_content": [
+                    {
+                        "type": "text",
+                        "content": "Input: decay rate  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "d_r"
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "(0\\leq d_r < 1)"
+                    },
+                    {
+                        "type": "text",
+                        "content": " n test samples indexed by variable i.   \nOutput: final predictions, unfair features.   \nCalculate the attention weights  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha_{ki}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " for  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k^{\\mathrm{th}}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " feature in sample i using the attention layer as in Eq. 1.   \nunfair_feature_set = {}   \nfor each feature (index) k do if  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "SPD(\\hat{y}_o,\\mathbf{a}) - SPD(\\hat{y}_z^k,\\mathbf{a})\\geq 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": " then unfair_feature_set  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\equiv"
+                    },
+                    {
+                        "type": "text",
+                        "content": " unfair_feature_set  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\cup \\{k\\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " end   \nend   \nfor each feature (index) k do if  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k"
+                    },
+                    {
+                        "type": "text",
+                        "content": " in unfair_feature_set then Set  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\alpha_{ki}\\gets (d_r\\times \\alpha_{ki})"
+                    },
+                    {
+                        "type": "text",
+                        "content": " for all n samples end   \nend   \nUse new attention weights to obtain the final predictions  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat{Y}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "   \nreturn  "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat{Y}"
+                    },
+                    {
+                        "type": "text",
+                        "content": " , unfair_feature_set "
+                    }
+                ]
+            },
+            "bbox": [
+                89,
+                88,
+                477,
+                362
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "and a positive value will indicate that the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature contributes to unfairness. This is because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z } ^ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "captures the exclusion of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature (zeroed out attention weight for that feature) from the decision-making process. If the value is positive, it indicates that not having this feature makes the bias lower than when we include it. Notice here, we focus on global attribution, so we measure this over all the samples; however, this can also be turned into local attribution by focusing on individual sample "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "only. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                393,
+                478,
+                521
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2.3 Mitigating Bias by Removing Unfair Features "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                534,
+                475,
+                550
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As discussed in the previous section, we can identify features that contribute to unfair outcomes according to different fairness measures. A simple technique to mitigate or reduce bias is to reduce the attention weights of these features. This mitigation technique is outlined in Algorithm 1. In this algorithm, we first individually set attention weights for each of the features in all the samples to zero and monitor the effect on the desired fairness measure. We have demonstrated the algorithm for SPD, but other measures, such as EqOdd, EqOpp, and even accuracy can be used (in which case the “unfair feature set” can be re-named to feature set which harms accuracy instead of fairness). If the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature contributes to unfairness, we reduce its attention weight using decay rate value. This is because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { \\mathbf { y } } _ { z } ^ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "captures the exclusion of the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature (zeroed attention weight for that feature) compared to the original outcome "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { \\mathbf { y } } _ { o }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for when all the feature weights are intact; otherwise, we use the original attention weight. We can also control the fairness-accuracy trade-off by putting more attention weight on features that boost accuracy while keeping the fairness of the model the same and down-weighting features that hurt accuracy, fairness, or both. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                555,
+                478,
+                859
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This post-processing technique has a couple of advantages over previous works in bias mitigation or fair classi-"
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                861,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "fication approaches. First, the post-processing approach is computationally efficient as it does not require model retraining to ensure fairness for each sensitive attribute separately. Instead, the model is trained once by incorporating all the attributes, and then one manipulates attention weights during test time according to particular needs and use-cases. Second, the proposed mitigation method provides an explanation and can control the fairness-accuracy trade-off. This is because manipulating the attention weights reveals which features are important for getting the desired outcome, and by how much. This provides an explanation for the outcome and also a mechanism to control the fairness-accuracy tradeoff by the amount of the manipulation. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                69,
+                911,
+                250
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Experimental Setup "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                612,
+                261,
+                815,
+                279
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We perform a suite of experiments on synthetic and realworld datasets to evaluate our attention based interpretable fairness framework. The experiments on synthetic data are intended to elucidate interpretability in controlled settings, where we can manipulate the relations between input and output feature. The experiments on real-world data aim to validate the effectiveness of the proposed approach on both tabular and non-tabular (textual) data. Below we describe the experiments, datasets, and respective baselines. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                281,
+                911,
+                406
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.1 Types of Experiments "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                417,
+                728,
+                431
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We enumerate the experiments and their goals as follows: Experiment 1: Attributing Fairness with Attention The purpose of this experiment is to demonstrate that our attribution framework can capture correct attributions of features to fairness outcomes. We present our results for tabular data in Sec. 4.1. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                435,
+                911,
+                517
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Experiment 2: Bias Mitigation via Attention Weight Manipulation In this experiment, we seek to validate the proposed post-processing bias mitigation framework and compare it with various recent mitigation approaches. The results for real-world tabular data are presented in Sec. 4.2. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                518,
+                911,
+                587
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Experiment 3: Validation on Textual Data The goal of this experiment is to demonstrate the flexibility of the proposed attention-based method by conducting experiments on nontabular, textual data. The results are presented in Sec. 4.3. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                588,
+                911,
+                643
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.2 Datasets "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                654,
+                625,
+                667
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Synthetic Data To validate the attribution framework, we created two synthetic datasets in which we control how features interact with each other and contribute to the accuracy and fairness of the outcome variable. These datasets capture some of the common scenarios, namely the data imbalance (skewness) and indirect discrimination issues, arising in fair decision or classification problems. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                672,
+                911,
+                771
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Scenario 1: First, we create a simple scenario to demonstrate that our framework identifies correct feature attributions for fairness and accuracy. We create a feature that is correlated with the outcome (responsible for accuracy), a discrete feature that causes the prediction outcomes to be biased (responsible for fairness), and a continuous feature that is independent of the label or the task (irrelevant for the task). For intuition, suppose the attention-based attribution "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                777,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "framework works correctly. In this case, we expect to see a reduction in accuracy upon removing (i.e., making the attention weight zero) the feature responsible for the accuracy, reduction in bias upon removing the feature responsible for bias, and very little or no change upon removing the irrelevant feature. With this objective, we generated a synthetic dataset with three features, i.e., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x = [ \\bar { f _ { 1 } } , f _ { 2 } , f _ { 3 } ]"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as follows3: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                68,
+                478,
+                167
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "f _ {1} \\sim \\operatorname {B e r} (0. 9) \\quad f _ {2} \\sim \\operatorname {B e r} (0. 5) \\quad f _ {3} \\sim \\mathcal {N} (0, 1)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/ae3b21ca0e7c22a7b059eaacffcc1cba0744511404190c1b1b389bf31ace4bc0.jpg"
+                }
+            },
+            "bbox": [
+                122,
+                167,
+                437,
+                184
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "y \\sim \\left\\{ \\begin{array}{l l} \\operatorname {B e r} (0. 9) & \\text {i f} f _ {2} = 1 \\\\ \\operatorname {B e r} (0. 1) & \\text {i f} f _ {2} = 0 \\end{array} \\right.",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/f81e65bac12dae1bfc3d1e484783e9e5f2653ef6dee881fd1c9eb543d0ea1f72.jpg"
+                }
+            },
+            "bbox": [
+                202,
+                188,
+                385,
+                220
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Clearly, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "has the most predictive information for the task and is responsible for accuracy. Here, we consider "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as the sensitive attribute. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is an imbalanced feature that can bias the outcome and is generated such that there is no intentional correlation between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the outcome, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or f2. f3 is sampled from a normal distribution independent of the outcome "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", or the other features, making it irrelevant for the task. Thus, an ideal classifier would be fair if it captures the correct outcome without being affected by the imbalance in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". However, due to limited data and skew in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", there will be some undesired bias — few errors when "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 } = 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can lead to large statistical parity. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                223,
+                478,
+                390
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Scenario 2: Using features that are not identified as sensitive attributes can result in unfair decisions due to their implicit relations or correlations with the sensitive attributes. This phenomenon is called indirect discrimination (Zliobaite 2015; Hajian and Domingo-Ferrer 2013; Zhang, Wu, and Wu 2017). We designed this synthetic dataset to demonstrate and characterize the behavior of our framework under indirect discrimination. Similar to the previous scenario, we consider three features. Here, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is considered as the sensitive attribute, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the outcome, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The generative process is as follows: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                396,
+                480,
+                549
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} f _ {1} \\sim \\left\\{ \\begin{array}{l l} \\operatorname {B e r} (0. 9) & \\text {i f} f _ {2} = 1 \\\\ \\operatorname {B e r} (0. 1) & \\text {i f} f _ {2} = 0 \\end{array} \\right. \\quad f _ {2} \\sim \\operatorname {B e r} (0. 5) \\quad f _ {3} \\sim \\mathcal {N} (0, 1) \\\\ y \\sim \\left\\{ \\begin{array}{l l} \\operatorname {B e r} (0. 7) & \\text {i f} f _ {2} = 1 \\\\ \\operatorname {B e r} (0. 3) & \\text {i f} f _ {2} = 0 \\end{array} \\right. \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/e89f883cfc9ced25ecb877b3aa0fbe433ff5a942dffa6af39fb7b89adabf61f1.jpg"
+                }
+            },
+            "bbox": [
+                81,
+                551,
+                488,
+                625
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this case "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The model should mostly rely on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for its decisions. However, due to the correlation between "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we expect "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to affect both the accuracy and fairness of the model. Thus, in this case, indirect discrimination is possible. Using such a synthetic dataset, we demonstrate a) indirect discrimination and b) the need to have an attribution framework to reason about unfairness and not blindly focus on the sensitive attributes for bias mitigation. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                626,
+                478,
+                751
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Real-world Datasets We demonstrate our approach on the following real-world datasets: "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                756,
+                478,
+                784
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Tabular Datasets: We conduct our experiments on two realworld tabular datasets often used to benchmark fair classification techniques — UCI Adult (Dua and Graff 2017) and Heritage Health4 datasets. The UCI Adult dataset contains "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                785,
+                478,
+                842
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "census information about individuals, with the prediction task being whether the income of the individual is higher than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\$ 50\\mathbf { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "or not. The sensitive attribute, in this case, is gender (male/female). The Heritage Health dataset contains patient information, and the task is to predict the Charleson Index (comorbidity index, which is a patient survival indicator). Each patient is grouped into one of the 9 possible age groups, and we consider this as the sensitive attribute. We used the same pre-processing and train-test splits as in Gupta et al. (2021). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                68,
+                911,
+                205
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Non-Tabular or Text Dataset: To demonstrate the flexibility of our approach, we also experiment with a non-tabular, text dataset. We used the biosbias dataset (De-Arteaga et al. 2019). The dataset contains short bios of individuals. The task is to predict the occupation of the individual from their bio. We utilized the bios from the year 2018 from the 2018 34 archive and considered two occupations for our experiments, namely, nurse and dentist. The dataset was split into 70-15-15 train, validation, and test splits. De-Arteaga et al. (2019) has demonstrated the existence of gender bias in this prediction task and showed that certain gender words are associated with certain job types (e.g., she to nurse and he to dentist). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                207,
+                913,
+                387
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3.3 Bias Mitigation Baselines "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                402,
+                756,
+                417
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We compared our bias mitigation approach to a number of recent state of the art methods. For our experiments with tabular data, we focus on methods that are specifically optimized to achieve statistical parity. Results for other fairness notions can be found in the appendix. For our baselines, we consider methods that learn representations of data so that information about sensitive attributes is eliminated. CVIB (Moyer et al. 2018) realizes this objective through a conditional variational autoencoder, whereas MIFR (Song et al. 2019) uses a combination of information bottleneck term and adversarial learning to optimize the fairness objective. FCRL (Gupta et al. 2021) optimizes information theoretic objectives that can be used to achieve good tradeoffs between fairness and accuracy by using specialized contrastive information estimators. In addition to informationtheoretic approaches, we also considered baselines that use adversarial learning such as MaxEnt-ARL (Roy and Boddeti 2019), LAFTR (Madras et al. 2018), and Adversarial Forgetting (Jaiswal et al. 2020). Note that in contrast to our approach, the baselines described above are not interpretable as they are incapable of directly attributing features to fairness outcomes. For the textual data, we compare our approach with the debiasing technique proposed in De-Arteaga et al. (2019), which works by masking the gender-related words and then training the model on this masked data. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                422,
+                913,
+                771
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Results "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                666,
+                787,
+                764,
+                801
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.1 Attributing Fairness with Attention "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                810,
+                831,
+                825
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "First, we test our method’s ability to capture correct attributions in controlled experiments with synthetic data (described in Sec. 3.2). We also conduct a similar experiment with UCI Adult and Heritage Health datasets which can be "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                832,
+                913,
+                888
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3We use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x \\sim \\operatorname { B e r } ( p )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to denote that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a Bernoulli random variable with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "P ( x = 1 ) = p"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                847,
+                478,
+                875
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "4https://www.kaggle.com/c/hhp "
+                    }
+                ]
+            },
+            "bbox": [
+                106,
+                875,
+                294,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "found in the appendix. Fig. 2 summarizes our results by visualizing the attributions, which we now discuss. "
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                68,
+                477,
+                95
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In Scenario 1, as expected, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is correctly attributed to being responsible for the accuracy and removing it hurts the accuracy drastically. Similarly, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is correctly shown to be responsible for unfairness and removing it creates a fairer outcome. Ideally, the model should not be using any information about "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as it is independent of the task, but it does. Therefore, by removing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we can ensure that information is not used and hence outcomes are fair. Lastly, as expected, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 3 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "was the irrelevant feature, and its effects on accuracy and fairness are negligible. Another interesting observation is that "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is helping the model achieve fairness since its exclusion means that the model should rely on "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for decision making, resulting in more bias; thus, removing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "harms accuracy and fairness as expected. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                95,
+                477,
+                290
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In Scenario 2, our framework captures the effect of indirect discrimination. We can see that removing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "reduces bias as well as accuracy drastically. This is because "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 2 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the predictive feature, but due to its correlation with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", it can also indirectly affect the model’s fairness. More interestingly, although "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the sensitive feature, removing it does not play a drastic role in fairness or the accuracy. This is an important finding as it shows why removing "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on its own can not give us a fairer model due to the existence of correlations to other features and indirect discrimination. Overall, our results are intuitive and thus validate our assumption that attention-based framework can provide reliable feature attributions for the fairness and accuracy of the model. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                290,
+                478,
+                470
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.2 Attention as a Mitigation Technique "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                481,
+                403,
+                498
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As we have highlighted earlier, understanding how the information within features interact and contribute to the decision making can be used to design effective bias mitigation strategies. One such example was shown in Sec. 4.1. Often realworld datasets have features which cause indirect discrimination, due to which fairness can not be achieved by simply eliminating the sensitive feature from the decision process. Using the attributions derived from our attention-based attribution framework, we propose a post-processing mitigation strategy. Our strategy is to intervene on attention weights as discussed in Sec. 2.3. We first attribute and identify the features responsible for the unfairness of the outcomes, i.e., all the features whose exclusion will decrease the bias compared to the original model’s outcomes and gradually decrease their attention weights to zero as also outlined in Algorithm 1. We do this by first using the whole fraction of the attention weights learned and gradually use less fraction of the weights until the weights are completely zeroed out. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                500,
+                478,
+                750
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "For all the baselines described in Sec. 3.3, we used the approach outlined in Gupta et al. (2021) for training a downstream classifier and evaluating the accuracy/fairness tradeoffs. The downstream classifier was a 1-hidden-layer MLP with 50 neurons along with ReLU activation function. Our experiments were performed on Nvidia GeForce RTX 2080. Each method was trained with five different seeds, and we report the average accuracy and fairness measure as statistical parity difference (SPD). Results for other fairness notions can be found in the appendix. CVIB, MaxEnt-ARL, "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                750,
+                480,
+                888
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f3e15a22417530a7823809cf76b52776d44b046de56c91b054a9276469541809.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                570,
+                71,
+                856,
+                224
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/3301e185e6e08e50e2cc0813adee54860522a92d4eaa143ce677fac56d12bd09.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Results from the synthetic datasets. Following the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { o }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "notations, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { o }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents the original model outcome with all the attention weights intact, while "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z } ^ { k }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents the outcome of the model in which the attention weights corresponding to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "k ^ { t h }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "feature are zeroed out (e.g. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z } ^ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents when attention weights of feature "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are zeroed out). The results show how the accuracy and fairness of the model (in terms of statistical parity difference) change by exclusion of each feature. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                568,
+                227,
+                859,
+                382
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Adversarial Forgetting and FCRL are designed for statistical parity notion of fairness and are not applicable for other measures like Equalized Odds and Equality of Opportunity. LAFTR can only deal with binary sensitive attributes and thus not applicable for Heritage Health dataset. Notice that our approach does not have these limitations. For our approach, we vary the attention weights and report the resulting fairness-accuracy trade offs. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                551,
+                911,
+                664
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Fig. 3 compares fairness-accuracy trade-offs of different bias mitigation approaches. We desire outcomes to be fairer, i.e., lower values of SPD and to be more accurate, i.e., towards the right. The results show that using attention attributions can indeed be beneficial for reducing bias. Moreover, our mitigation framework based on the manipulation of the attention weights is competitive with state-of-the-art mitigation strategies. However, most of these approaches are specifically designed and optimized to achieve parity and do not provide any interpretability. Our model can not only achieve comparable and competitive results, but it is also able to provide explanation such that the users exactly know what feature and by how much it was manipulated to get the corresponding outcome. Another advantage of our model is that it needs only one round of training. The adjustments to attention weights are made post-training; thus, it is possi-"
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                666,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e192c58ead60cf533f659fd6c4948e4f2064bb858b29e7b798f27a464520d63b.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                140,
+                66,
+                496,
+                313
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/43fde5672dee3c80d95d43c09b5a2b6e51dc2753cf2be8048fc8fc8689716612.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Accuracy vs parity curves for UCI Adult and Heritage Health datasets. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                504,
+                66,
+                854,
+                313
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "ble to achieve different trade-offs. Moreover, our approach does not need to know sensitive attributes while training; thus, it could work with other sensitive attributes not known beforehand or during training. Lastly, here we merely focused on mitigating bias (as our goal was to show that the attribution framework can identify problematic features and their removal would result in bias mitigation) and did not focus too much on improving accuracy and achieving the best trade-off curve which can be considered as the current limitation of our work. We manipulated attention weights of all the features that contributed to unfairness irrespective of if they helped maintaining high accuracy or not. However, the trade-off results can be improved by carefully considering the trade-off each feature contributes to with regards to both accuracy and fairness (e.g., using results from Fig. 2) to achieve better trade-off results which can be investigated as a future direction (e.g., removing problematic features that contribute to unfairness only if their contribution to accuracy is below a certain threshold value). The advantage of our work is that this trade-off curve can be controlled by controlling how many features and by how much to be manipulated which is not the case for most existing work. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                368,
+                478,
+                674
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4.3 Experiments with Non-Tabular Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                686,
+                408,
+                702
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In addition to providing interpretability, our approach is flexible and useful for controlling fairness in modalities other than tabular datasets. To put this to the test, we applied our model to mitigate bias in text-based data. We consider the biosbias dataset (De-Arteaga et al. 2019), and use our mitigation technique to reduce observed biases in the classification task performed on this dataset. We compare our approach with the debiasing technique proposed in the original paper (De-Arteaga et al. 2019), which works by masking the gender-related words and then training the model on this masked data. As discussed earlier, such a method is computationally inefficient. It requires re-training the model or creating a new masked dataset, each time it is required to de-"
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                708,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "bias the model against different attributes, such as gender vs. race. For the baseline pre-processing method, we masked the gender-related words, such as names and gender words, as provided in the biosbias dataset and trained the model on the filtered dataset. On the other hand, we trained the model on the raw bios for our post-processing method and only manipulated attention weights of the gender words during the testing process as also provided in the biosbias dataset. In order to measure the bias, we used the same measure as in (De-Arteaga et al. 2019) which is based on the equality of opportunity notion of fairness (Hardt et al. 2016) and reported the True Positive Rate Difference (TPRD) for each occupation amongst different genders. As shown in Table 1, our post-processing mitigation technique provides lower TRPD while being more accurate, followed by the technique that masks the gendered words before training. Although both methods reduce the bias compared to a model trained on raw bios without applying any mask or invariance to gendered words, our post-processing method is more effective. Fig. 4 also highlights qualitative differences between models in terms of their most attentive features for the prediction task. As shown in the results, our post-processing technique is able to use more meaningful words, such as R.N. (registered nurse) to predict the outcome label nurse compared to both baselines, while the non-debiased model focuses on gendered words. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                368,
+                913,
+                729
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                638,
+                739,
+                790,
+                755
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Fairness. The research in fairness concerns itself with various topics, such as defining fairness metrics, proposing solutions for bias mitigation, and analyzing existing harms in various systems (Mehrabi et al. 2021). In this work, we utilized different metrics that were introduced previously, such as statistical parity (Dwork et al. 2012), equality of opportunity and equalized odds (Hardt et al. 2016), to measure the amount of bias. We also used different bias mitigation strategies to compare against our mitigation strategy, such "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                762,
+                911,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/bfaa91540e94ca2032a9e2a511b21f164f9c101bead9c08ff4cf3fb2e57f4c2c.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Difference of the True Positive Rates (TPRD) amongst different genders for the dentist and nurse occupations on the biosbias dataset. Our introduced post-processing method is the most effective in reducing the disparity for both occupations compared to the pre-processing technique. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Method</td><td>Dentist TPRD (stdev)</td><td>Nurse TPRD (stdev)</td><td>Accuracy (stdev)</td></tr><tr><td>Post-Processing (Ours)</td><td>0.0202 (0.010)</td><td>0.0251 (0.020)</td><td>0.951 (0.013)</td></tr><tr><td>Pre-Processing</td><td>0.0380 (0.016)</td><td>0.0616 (0.025)</td><td>0.946 (0.011)</td></tr><tr><td>Not Debiased Model</td><td>0.0474 (0.025)</td><td>0.1905 (0.059)</td><td>0.958 (0.011)</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                173,
+                65,
+                823,
+                147
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/ea1d03a8968980c3648dd29d3eecd5481fe903c708084cca9ba7572a6a6df6c5.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 4: Qualitative results from the non-tabular data experiment on the job classification task based on bio texts. Green regions are the top three words used by the model for its prediction based on the attention weights. While the Not Debiased Model mostly focuses on gendered words, our method focused on profession-based words, such as R.N. (Registered Nurse), to correctly predict “nurse.” "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                109,
+                210,
+                890,
+                358
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "as FCRL (Gupta et al. 2021), CVIB (Moyer et al. 2018), MIFR (Song et al. 2019), adversarial forgetting (Jaiswal et al. 2020), MaxEnt-ARL (Roy and Boddeti 2019), and LAFTR (Madras et al. 2018). We also utilized concepts and datasets that were analyzing existing biases in NLP systems, such as (De-Arteaga et al. 2019) which studied the existing biases in NLP systems on the occupation classification task on the bios dataset. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                450,
+                478,
+                563
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Interpretability. In this work, we introduced an attribution framework based on the attention weights that can analyze fairness and accuracy of the models at the same time and reason about the importance of each feature on fairness and accuracy. There is a body of work in NLP literature that tried to analyze the effect of the attention weights on interpretability of the model (Wiegreffe and Pinter 2019; Jain and Wallace 2019; Serrano and Smith 2019). Other work also utilized attention weights to define an attribution score to be able to reason about how transformer models such as BERT work (Hao et al. 2021). Notice that although Jain and Wallace (2019) claim that attention might not be explanation, a body of work has proved otherwise including (Wiegreffe and Pinter 2019) in which authors directly target the work in Jain and Wallace (2019) and analyze in detail the problems associated with this study. In our work, we also find that attention can be useful and can extract meaningful information which can be beneficial in many aspects. In addition, Vig et al. (2020) analyze the effect of the attention weights in transformer models for bias analysis in language models. However, their approach is different and has a more causal take on investigating the bias. Their study is specific to language models and does not necessarily apply to broader tasks and "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                569,
+                480,
+                891
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "existing fairness definitions. Aside from interpretability and fairness, we utilized concepts from the NLP literature for designing our attention-based model that can be applicable to tabular data (Vaswani et al. 2017; Zhou et al. 2016). "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                452,
+                913,
+                510
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                653,
+                522,
+                774,
+                537
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this work, we analyzed how attention weights contribute to fairness and accuracy of a predictive model. To do so, we proposed an attribution method that leverages the attention mechanism and showed the effectiveness of this approach on both tabular and text data. Using this interpretable attribution framework we then introduced a post-processing bias mitigation strategy based on attention weight manipulation. We validated the proposed framework by conducting experiments with different baselines, as well as fairness metrics, and different data modalities. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                541,
+                911,
+                680
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Although our work can have a positive impact in allowing to reason about fairness and accuracy of models and reduce their bias, it can also have negative societal consequences if used unethically. For instance, it has been previously shown that interpretability frameworks can be used as a means for fairwashing which is when malicious users generate fake explanations for their unfair decisions to justify them (Anders et al. 2020). In addition, previously it has been shown that interpratability frameworks are vulnerable against adversarial attacks (Slack et al. 2020). We acknowledge that our framework may also be targeted by malicious users for malicious intent that can manipulate attention weights to either generate fake explanations or unfair outcomes. An important future direction can be to analyze and improve robustness of our framework along with others. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                680,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                233,
+                66,
+                330,
+                82
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Anders, C.; Pasliev, P.; Dombrowski, A.-K.; Muller, K.-R.;¨ and Kessel, P. 2020. Fairwashing explanations with offmanifold detergent. In III, H. D.; and Singh, A., eds., Proceedings of the 37th International Conference on Machine Learning, volume 119 of Proceedings of Machine Learning Research, 314–323. PMLR. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Barocas, S.; and Selbst, A. D. 2016. Big data’s disparate impact. Calif. L. Rev., 104: 671. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bird, S.; Dud´ık, M.; Edgar, R.; Horn, B.; Lutz, R.; Milan, V.; Sameki, M.; Wallach, H.; and Walker, K. 2020. Fairlearn: A toolkit for assessing and improving fairness in AI. Technical Report MSR-TR-2020-32, Microsoft. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "De-Arteaga, M.; Romanov, A.; Wallach, H.; Chayes, J.; Borgs, C.; Chouldechova, A.; Geyik, S.; Kenthapadi, K.; and Kalai, A. T. 2019. Bias in bios: A case study of semantic representation bias in a high-stakes setting. In proceedings of the Conference on Fairness, Accountability, and Transparency, 120–128. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Dua, D.; and Graff, C. 2017. UCI Machine Learning Repository. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Dwork, C.; Hardt, M.; Pitassi, T.; Reingold, O.; and Zemel, R. 2012. Fairness Through Awareness. In Proceedings of the 3rd Innovations in Theoretical Computer Science Conference, ITCS ’12, 214–226. New York, NY, USA: ACM. ISBN 978-1-4503-1115-1. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Gupta, U.; Ferber, A. M.; Dilkina, B.; and Ver Steeg, G. 2021. Controllable Guarantees for Fair Outcomes via Contrastive Information Estimation. In Proceedings of the AAAI Conference on Artificial Intelligence, volume 35, 7610– 7619. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hacker, P.; Krestel, R.; Grundmann, S.; and Naumann, F. 2020. Explainable AI under contract and tort law: legal incentives and technical challenges. Artificial Intelligence and Law, 1–25. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hajian, S.; and Domingo-Ferrer, J. 2013. A Methodology for Direct and Indirect Discrimination Prevention in Data Mining. IEEE Transactions on Knowledge and Data Engineering, 25(7): 1445–1459. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hao, Y.; Dong, L.; Wei, F.; and Xu, K. 2021. Self-Attention Attribution: Interpreting Information Interactions Inside Transformer. In Proceedings of the AAAI Conference on Artificial Intelligence, volume 35, 12963–12971. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Hardt, M.; Price, E.; Price, E.; and Srebro, N. 2016. Equality of Opportunity in Supervised Learning. In Lee, D.; Sugiyama, M.; Luxburg, U.; Guyon, I.; and Garnett, R., eds., Advances in Neural Information Processing Systems, volume 29. Curran Associates, Inc. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jain, S.; and Wallace, B. C. 2019. Attention is not Explanation. In Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), 3543–3556. Minneapolis, Minnesota: Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jaiswal, A.; Moyer, D.; Ver Steeg, G.; AbdAlmageed, W.; and Natarajan, P. 2020. Invariant Representations through "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                84,
+                85,
+                478,
+                888
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Adversarial Forgetting. Proceedings of the AAAI Conference on Artificial Intelligence, 34(04): 4272–4279. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kamishima, T.; Akaho, S.; Asoh, H.; and Sakuma, J. 2012. Fairness-aware classifier with prejudice remover regularizer. In Joint European Conference on Machine Learning and Knowledge Discovery in Databases, 35–50. Springer. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Madras, D.; Creager, E.; Pitassi, T.; and Zemel, R. 2018. Learning Adversarially Fair and Transferable Representations. In Dy, J.; and Krause, A., eds., Proceedings of the 35th International Conference on Machine Learning, volume 80 of Proceedings of Machine Learning Research, 3384–3393. PMLR. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Mehrabi, N.; Huang, Y.; and Morstatter, F. 2020. Statistical Equity: A Fairness Classification Objective. arXiv preprint arXiv:2005.07293. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Mehrabi, N.; Morstatter, F.; Saxena, N.; Lerman, K.; and Galstyan, A. 2021. A Survey on Bias and Fairness in Machine Learning. ACM Comput. Surv., 54(6). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Moyer, D.; Gao, S.; Brekelmans, R.; Galstyan, A.; and Ver Steeg, G. 2018. Invariant Representations without Adversarial Training. In Bengio, S.; Wallach, H.; Larochelle, H.; Grauman, K.; Cesa-Bianchi, N.; and Garnett, R., eds., Advances in Neural Information Processing Systems, volume 31. Curran Associates, Inc. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Roy, P. C.; and Boddeti, V. N. 2019. Mitigating information leakage in image representations: A maximum entropy approach. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2586–2594. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Serrano, S.; and Smith, N. A. 2019. Is Attention Interpretable? In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, 2931–2951. Florence, Italy: Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Slack, D.; Hilgard, S.; Jia, E.; Singh, S.; and Lakkaraju, H. 2020. Fooling lime and shap: Adversarial attacks on post hoc explanation methods. In Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society, 180–186. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Song, J.; Kalluri, P.; Grover, A.; Zhao, S.; and Ermon, S. 2019. Learning Controllable Fair Representations. In Chaudhuri, K.; and Sugiyama, M., eds., Proceedings of Machine Learning Research, volume 89 of Proceedings of Machine Learning Research, 2164–2173. PMLR. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Vaswani, A.; Shazeer, N.; Parmar, N.; Uszkoreit, J.; Jones, L.; Gomez, A. N.; Kaiser, L. u.; and Polosukhin, I. 2017. Attention is All you Need. In Guyon, I.; Luxburg, U. V.; Bengio, S.; Wallach, H.; Fergus, R.; Vishwanathan, S.; and Garnett, R., eds., Advances in Neural Information Processing Systems, volume 30. Curran Associates, Inc. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Vig, J.; Gehrmann, S.; Belinkov, Y.; Qian, S.; Nevo, D.; Singer, Y.; and Shieber, S. 2020. Investigating Gender Bias in Language Models Using Causal Mediation Analysis. In Larochelle, H.; Ranzato, M.; Hadsell, R.; Balcan, M. F.; and Lin, H., eds., Advances in Neural Information Processing Systems, volume 33, 12388–12401. Curran Associates, Inc. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Wiegreffe, S.; and Pinter, Y. 2019. Attention is not not Explanation. In Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                517,
+                69,
+                913,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "International Joint Conference on Natural Language Processing (EMNLP-IJCNLP), 11–20. Hong Kong, China: Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zafar, M. B.; Valera, I.; Rogriguez, M. G.; and Gummadi, K. P. 2017. Fairness Constraints: Mechanisms for Fair Classification. In Singh, A.; and Zhu, J., eds., Proceedings of the 20th International Conference on Artificial Intelligence and Statistics, volume 54 of Proceedings of Machine Learning Research, 962–970. Fort Lauderdale, FL, USA: PMLR. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhang, L.; Wu, Y.; and Wu, X. 2017. A Causal Framework for Discovering and Removing Direct and Indirect Discrimination. In Proceedings of the Twenty-Sixth International Joint Conference on Artificial Intelligence, IJCAI-17, 3929– 3935. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zhou, P.; Shi, W.; Tian, J.; Qi, Z.; Li, B.; Hao, H.; and Xu, B. 2016. Attention-Based Bidirectional Long Short-Term Memory Networks for Relation Classification. In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers), 207–212. Berlin, Germany: Association for Computational Linguistics. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Zliobaite, I. 2015. A survey on measuring indirect discrimination in machine learning. arXiv preprint arXiv:1511.00148. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                83,
+                68,
+                478,
+                412
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A Appendix "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                220,
+                66,
+                343,
+                85
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We included additional bias mitigation results using other fairness metrics, such as equality of opportunity and equalized odds on both of the Adult and Heritage Health datasets in this supplementary material. We also included additional post-processing results along with additional qualitative results both for the tabular and non-tabular dataset experiments. More details can be found under each sub-section. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                90,
+                480,
+                189
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A.1 Results on Tabular Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                83,
+                205,
+                318,
+                222
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Here, we show the results of our mitigation framework considering equality of opportunity and equalized odds notions of fairness. We included baselines that were applicable for these notions. Notice not all the baselines we used in our previous analysis for statistical parity were applicable for equality of opportunity and equalized odds notions of fairness; thus, we only included the applicable ones. In addition, LAFTR is only applicable when the sensitive attribute is a binary variable, so it was not applicable to be included in the analysis for the heritage health data where the sensitive attribute is non-binary. Results of these analysis is shown in Figures 6 and 7. We once again show competitive and comparable results to other baseline methods, while having the advantage of being interpretable and not requiring multiple trainings to satisfy different fairness notions or fairness on different sensitive attributes. Our framework is also flexible for different fairness measures and can be applied to binary or non-binary sensitive features. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                229,
+                478,
+                479
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In addition, we show how different features contribute differently under different fairness notions. Fig. 8 demonstrates the top three features that contribute to unfairness the most along with the percentages of the fairness improvement upon their removal for each of the fairness notions. As observed from the results, while equality of opportunity and equalized odds are similar in terms of their problematic features, statistical parity has different trends. This is also expected as equality of opportunity and equalized odds are similar fairness notions in nature compared to statistical parity. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                479,
+                478,
+                619
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We also compared our mitigation strategy with the Hardt etl al. post-processing approach (Hardt et al. 2016). Using this post-processing implementation 5, we obtained the optimal solution that tries to satisfy different fairness notions subject to accuracy constraints. For our results, we put the results from zeroing out all the attention weights corresponding to the problematic features that were detected from our interpretability framework. However, notice that since our mitigation strategy can control different trade-offs we can have different results depending on the scenario. Here, we reported the results from zeroing out the problematic attention weights that is targeting fairness mostly. From the results demonstrated in Tables 3 and 4, we can see comparable numbers to those obtained from (Hardt et al. 2016). This again shows that our interpretability framework yet again captures the correct responsible features and that the mitigation strategy works as expected. "
+                    }
+                ]
+            },
+            "bbox": [
+                81,
+                621,
+                480,
+                858
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A.2 Results on non-tabular Data "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                68,
+                782,
+                82
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We also included some additional qualitative results from the experiments on non-tabular data in Fig. 5. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                85,
+                911,
+                116
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A.3 Interpreting Fairness with Attention "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                126,
+                844,
+                141
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Fig. 9 shows results on a subset of the features from the UCI Adult and Heritage Health datasets (to keep the plots uncluttered and readable, we incorporated the most interesting features in the plot), and provide some intuition about how different features in these datasets contribute to the model fairness and accuracy. While features such as capital gain and capital loss in the UCI Adult dataset are responsible for improving accuracy and reducing bias, we can observe that features such as relationship or marital status, which can be indirectly correlated with the feature sex, have a negative impact on fairness. For the Heritage Health dataset, including the features drugCount ave and dsfs max provide accuracy gains but at the expense of fairness, while including no Claims and no Specialities negatively impact both accuracy and fairness. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                143,
+                913,
+                351
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "A.4 Information on Datasets and Features "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                516,
+                363,
+                856,
+                378
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "More details about each of the datasets along with the descriptions of each feature for the Adult dataset can be found "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\mathrm { a t } ^ { 6 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and for the Heritage Health dataset can be found at 7. In our qualitative results, we used the feature names as marked in these datasets. If the names or acronyms are unclear kindly reference to the references mentioned for more detailed description for each of the features. Although most of the features in the Adult datasets are self-descriptive, Heritage Health dataset includes some abbreviations that we list in Table 2 for the ease of interpreting each feature’s meaning. "
+                    }
+                ]
+            },
+            "bbox": [
+                514,
+                381,
+                911,
+                534
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/4e1c17194cf759adbc783dca48daf90a0edd66fd43ca02a9aa736aecf203a87b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Some abbreviations used in Heritage Health dataset’s feature names. These abbreviations are listed for clarity of interpreting each feature’s meaning specifically in our qualitative analysis or attribution visualizations. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Abbreviation</td><td>Meaning</td></tr><tr><td>PlaceSvcs</td><td>Place where the member was treated.</td></tr><tr><td>LOS</td><td>Length of stay.</td></tr><tr><td>dsfs</td><td>Days since first service that year.</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                527,
+                547,
+                903,
+                608
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "5https://fairlearn.org "
+                    }
+                ]
+            },
+            "bbox": [
+                104,
+                873,
+                228,
+                888
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "6https://archive.ics.uci.edu/ml/datasets/adult "
+                    }
+                ]
+            },
+            "bbox": [
+                537,
+                859,
+                802,
+                875
+            ]
+        },
+        {
+            "type": "page_footer",
+            "content": {
+                "page_footer_content": [
+                    {
+                        "type": "text",
+                        "content": "7https://www.kaggle.com/c/hhp "
+                    }
+                ]
+            },
+            "bbox": [
+                537,
+                875,
+                728,
+                888
+            ]
+        }
+    ],
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3RVW\u00103URFHVVLQJ\u0003\u000b2XUV "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                158,
+                80,
+                308,
+                94
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "0HJDQ\u0003 ZDV\u0003 ERUQ\u0003 DQG\u0003 UDLVHG\u0003 LQ\u0003 $UOLQJWRQ\u000f\u0003 7H[DV\u0011\u0003 6KH\u0003 JUDGXDWHG\u0003IURP\u0003%D\\ORU\u00038QLYHUVLW\\\u0003/RXLVH\u0003+HUULQJWRQ\u00036FKRRO\u0003 RI\u0003 1XUVLQJ\u0003 LQ\u0003 \u0015\u0013\u0014\u0018\u0003 ZLWK\u0003 KHU\u0003 %DFKHORUV\u0003 RI\u0003 6FLHQFH\u0003 LQ\u0003 1XUVLQJ\u0011\u0003 )ROORZLQJ\u0003 JUDGXDWLRQ\u000f\u0003 VKH\u0003 FRPSOHWHG\u0003 D\u0003 FDUGLDF\u0003 WHOHPHWU\\\u0003LQWHUQVKLS\u0003DW\u00037H[DV\u0003+HDOWK\u00035HVRXUFHV\u0003)RUW\u0003:RUWK\u0011 6KH\u0003 FRQWLQXHG\u0003 WR\u0003 ZRUN\u0003 WKHUH\u0003 IRU\u0003 WZR\u0003 \\HDUV\u0003 WDNLQJ\u0003 FDUH\u0003 RI\u0003 SRVWVXUJLFDO\u0003 FDUGLDF\u0003 SDWLHQWV\u0003 DQG\u0003 WDNLQJ\u0003 DQ\u0003 DFWLYH\u0003 UROH\u0003 LQ\u0003 SDWLHQW\u0003 HGXFDWLRQ\u0003 FRPPLWWHHV\u0011\u0003 6LQFH\u0003 WKDW\u0003 WLPH\u000f\u0003 VKH\u0003 KDV\u0003 OHIW\u0003 WKH\u0003 KRVSLWDO\u0003 VHWWLQJ\u0003 DQG\u0003 KDV\u0003 MRLQHG\u0003 WKH\u0003 SUDFWLFH\u0011\u0003 0HJDQ\u0003 LV\u0003 UHFHQWO\\\u0003 PDUULHG\u0003 DQG\u0003 KDV\u0003 D\u0003 UHVFXH\u0003 &KLKXDKXD\u0003 7HUULHU\u0003 PL[\u0003 SXS\u0011\u0003 ,Q\u0003 KHU\u0003 IUHH\u0003 WLPH\u000f\u0003 VKH\u0003 ORYHV\u0003 VSHQGLQJ\u0003 WLPH\u0003 ZLWK\u0003 IDPLO\\\u0003 DQG\u0003 IULHQGV\u000f\u0003 WU\\LQJ\u0003 QHZ\u0003 IRRGV\u000f\u0003 DQG\u0003 FDWFKLQJ\u0003 XS\u0003 RQ\u0003 D\u0003 JRRG\u0003 ERRN\u0011 "
+                    }
+                ]
+            },
+            "bbox": [
+                94,
+                99,
+                356,
+                244
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3UH\u00103URFHVVLQJ "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                452,
+                80,
+                552,
+                94
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "0HJDQ\u0003 ZDV\u0003 ERUQ\u0003 DQG\u0003 UDLVHG\u0003 LQ\u0003 $UOLQJWRQ\u000f\u0003 7H[DV\u0011\u0003 6KH\u0003 JUDGXDWHG\u0003IURP\u0003%D\\ORU\u00038QLYHUVLW\\\u0003/RXLVH\u0003+HUULQJWRQ\u00036FKRRO\u0003 RI\u0003 1XUVLQJ\u0003 LQ\u0003 \u0015\u0013\u0014\u0018\u0003 ZLWK\u0003 KHU\u0003 %DFKHORUV\u0003 RI\u0003 6FLHQFH\u0003 LQ\u0003 1XUVLQJ\u0011\u0003 )ROORZLQJ\u0003 JUDGXDWLRQ\u000f\u0003 VKH\u0003 FRPSOHWHG\u0003 D\u0003 FDUGLDF\u0003 WHOHPHWU\\\u0003LQWHUQVKLS\u0003DW\u00037H[DV\u0003+HDOWK\u00035HVRXUFHV\u0003)RUW\u0003:RUWK\u0011\u0003 6KH\u0003 FRQWLQXHG\u0003 WR\u0003 ZRUN\u0003 WKHUH\u0003 IRU\u0003 WZR\u0003 \\HDUV\u0003 WDNLQJ\u0003 FDUH\u0003 RI\u0003 SRVWVXUJLFDO\u0003 FDUGLDF\u0003 SDWLHQWV\u0003 DQG\u0003 WDNLQJ\u0003 DQ\u0003 DFWLYH\u0003 UROH\u0003 LQ\u0003 SDWLHQW\u0003 HGXFDWLRQ\u0003 FRPPLWWHHV\u0011\u0003 6LQFH\u0003 WKDW\u0003 WLPH\u000f\u0003 VKH\u0003 KDV\u0003 OHIW\u0003 WKH\u0003 KRVSLWDO\u0003 VHWWLQJ\u0003 DQG\u0003 KDV\u0003 MRLQHG\u0003 WKH\u0003 SUDFWLFH\u0011\u0003 0HJDQ\u0003 LV\u0003 UHFHQWO\\\u0003 PDUULHG\u0003 DQG\u0003 KDV\u0003 D\u0003 UHVFXH\u0003 &KLKXDKXD\u0003 7HUULHU\u0003 PL[\u0003 SXS\u0011\u0003 ,Q\u0003 KHU\u0003 IUHH\u0003 WLPH\u000f\u0003 VKH\u0003 ORYHV\u0003 VSHQGLQJ\u0003 WLPH\u0003 ZLWK\u0003 IDPLO\\\u0003 DQG\u0003 IULHQGV\u000f\u0003 WU\\LQJ\u0003 QHZ\u0003 IRRGV\u000f\u0003 DQG\u0003 FDWFKLQJ\u0003 XS\u0003 RQ\u0003 D\u0003 JRRG ERRN\u0011 "
+                    }
+                ]
+            },
+            "bbox": [
+                369,
+                99,
+                629,
+                244
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1RW\u0003'HELDVHG\u00030RGHO "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                712,
+                80,
+                849,
+                92
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "0HJDQ\u0003 ZDV\u0003 ERUQ\u0003 DQG\u0003 UDLVHG\u0003 LQ\u0003 $UOLQJWRQ\u000f\u0003 7H[DV\u0011\u0003 6KH\u0003 JUDGXDWHG\u0003IURP\u0003%D\\ORU\u00038QLYHUVLW\\\u0003/RXLVH\u0003+HUULQJWRQ\u00036FKRRO\u0003 RI\u0003 1XUVLQJ\u0003 LQ\u0003 \u0015\u0013\u0014\u0018\u0003 ZLWK\u0003 KHU\u0003 %DFKHORUV\u0003 RI\u0003 6FLHQFH\u0003 LQ\u0003 1XUVLQJ\u0011\u0003 )ROORZLQJ\u0003 JUDGXDWLRQ\u000f\u0003 VKH\u0003 FRPSOHWHG\u0003 D\u0003 FDUGLDF\u0003 WHOHPHWU\\\u0003LQWHUQVKLS\u0003DW\u00037H[DV\u0003+HDOWK\u00035HVRXUFHV\u0003)RUW\u0003:RUWK\u0011\u0003 6KH\u0003 FRQWLQXHG\u0003 WR\u0003 ZRUN\u0003 WKHUH\u0003 IRU\u0003 WZR\u0003 \\HDUV\u0003 WDNLQJ\u0003 FDUH\u0003 RI\u0003 SRVWVXUJLFDO\u0003 FDUGLDF\u0003 SDWLHQWV\u0003 DQG\u0003 WDNLQJ\u0003 DQ\u0003 DFWLYH\u0003 UROH\u0003 LQ\u0003 SDWLHQW\u0003 HGXFDWLRQ\u0003 FRPPLWWHHV\u0011\u0003 6LQFH\u0003 WKDW\u0003 WLPH\u000f\u0003 VKH\u0003 KDV\u0003 OHIW\u0003 WKH\u0003 KRVSLWDO\u0003 VHWWLQJ\u0003 DQG\u0003 KDV\u0003 MRLQHG\u0003 WKH\u0003 SUDFWLFH\u0011\u0003 0HJDQ\u0003 LV\u0003 UHFHQWO\\\u0003 PDUULHG\u0003 DQG\u0003 KDV\u0003 D\u0003 UHVFXH\u0003 &KLKXDKXD\u0003 7HUULHU\u0003 PL[\u0003 SXS\u0011\u0003 ,Q\u0003 KHU\u0003 IUHH\u0003 WLPH\u000f\u0003 VKH\u0003 ORYHV\u0003 VSHQGLQJ\u0003 WLPH\u0003 ZLWK\u0003 IDPLO\\\u0003 DQG\u0003 IULHQGV\u000f\u0003 WU\\LQJ\u0003 QHZ\u0003 IRRGV\u000f\u0003 DQG\u0003 FDWFKLQJ\u0003 XS\u0003 RQ\u0003 D\u0003 JRRG\u0003 ERRN\u0011 "
+                    }
+                ]
+            },
+            "bbox": [
+                643,
+                99,
+                901,
+                244
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/af6456a1237d757a3434b479b1f298290aa450474470522ab8cb93c7ea1a69bc.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 5: Additional qualitative results from the non-tabular data experiment on the job classification task based on the bio texts. Green regions represent top three words that the model used for its prediction based on the attention weights. "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Accuracy vs EQOP (UCI Adult) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                86,
+                352,
+                488,
+                616
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/258c52a20fb1c1deb3ec9016590599c48474c69b4d34d41389bcd8a9a453832a.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Accuracy vs EQOP (Heritage Health) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 6: Accuracy vs equality of opportunity curves for UCI Adult and Heritage Health datasets. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                500,
+                353,
+                901,
+                616
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/bc9f023086698d4e8b8597bed4c45c3e19333e4b674ef0374d2228cbd45b123b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 3: Adult results on post-processing approach from Hardt et al. vs our attention method when all problematic features are zeroed out. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>Accuracy</td><td>SPD</td><td>Accuracy</td><td>EQOP</td><td>Accuracy</td><td>EQOD</td></tr><tr><td>Attention (Ours)</td><td>0.77 (0.006)</td><td>0.012 (0.003)</td><td>0.81 (0.013)</td><td>0.020 (0.019)</td><td>0.81 (0.021)</td><td>0.027 (0.023)</td></tr><tr><td>Hardt et al.</td><td>0.77 (0.012)</td><td>0.013 (0.005)</td><td>0.83 (0.005)</td><td>0.064 (0.016)</td><td>0.81 (0.007)</td><td>0.047 (0.014)</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                161,
+                672,
+                841,
+                732
+            ]
+        },
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/043bba14147b424e218e3df7811e820efdc24d1fa8e88d8647807af4f5e22500.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 4: Heritage Health results on post-processing approach from Hardt et al. vs our attention method when all problematic features are zeroed out. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td></td><td>Accuracy</td><td>SPD</td><td>Accuracy</td><td>EQOP</td><td>Accuracy</td><td>EQOD</td></tr><tr><td>Attention (Ours)</td><td>0.68 (0.004)</td><td>0.04 (0.015)</td><td>0.68 (0.015)</td><td>0.15 (0.085)</td><td>0.68 (0.015)</td><td>0.10 (0.085)</td></tr><tr><td>Hardt et al.</td><td>0.68 (0.005)</td><td>0.05 (0.018)</td><td>0.75 (0.001)</td><td>0.20 (0.033)</td><td>0.69 (0.012)</td><td>0.19 (0.031)</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                169,
+                789,
+                826,
+                848
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/eb2ed30cb49c2b84a5d4b9ed428bf90c132ef33726d657d7943b25e23ae59888.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Accuracy vs EQOD (UCI Adult) "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                84,
+                88,
+                488,
+                353
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/9daefcb89b3434922a1ec39c20f02c85c96064313fb48e17e2b76e4f2d08f591.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Accuracy vs EQOD (Heritage Health) "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 7: Accuracy vs equalized odds curves for UCI Adult and Heritage Health datasets. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                500,
+                89,
+                897,
+                352
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/c90722e6365adb7c3115d086bb8f614a01218d96e2bc27d9885b3f4a2e7fff17.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Top Problematic Features from Adult "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                109,
+                416,
+                470,
+                563
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/4a1230652f00cc0d7326deb6b4ef1569b1fd83aaa1df129b01f617237e5093e7.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Top Problematic Features from Health "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 8: Top three features for each fairness definition removing which caused the most benefit in improving the corresponding fairness definition. The percentage of improvement upon removal is marked on the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "-axis for adult and heritage health datasets. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                480,
+                415,
+                890,
+                559
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/1184d82e434b304f20d98db981000cd3301d0a923395110aeafe4441dabfc2d5.jpg"
+                },
+                "image_caption": [],
+                "image_footnote": []
+            },
+            "bbox": [
+                120,
+                621,
+                488,
+                801
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/37e08b4f10babf7c6198fac253e739eb2b7c6af83e7f5deb5cccb0d9761045bf.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 9: Results from the real-world datasets. Note that in our "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "notation we replaced indexes with actual feature names for clarity in these results on real-world datasets as there is not one universal indexing schema, but the feature names are more universal and discriptive for this case. Labels on the points represent the feature name that was removed (zeroed out) according to our "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\hat { y } _ { z }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "notation. The results show how the accuracy and fairness of the model (in terms of statistical parity difference) change by exclusion of each feature. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                500,
+                623,
+                864,
+                801
+            ]
+        }
+    ]
+]

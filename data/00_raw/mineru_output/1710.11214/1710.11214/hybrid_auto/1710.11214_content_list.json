@@ -1,0 +1,2099 @@
+[
+    {
+        "type": "text",
+        "text": "How Algorithmic Confounding in Recommendation Systems Increases Homogeneity and Decreases Utility ",
+        "text_level": 1,
+        "bbox": [
+            109,
+            99,
+            888,
+            151
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Allison J.B. Chaney ",
+        "bbox": [
+            151,
+            165,
+            310,
+            183
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Princeton University ",
+        "bbox": [
+            158,
+            183,
+            303,
+            196
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Department of Computer Science ",
+        "bbox": [
+            117,
+            198,
+            344,
+            212
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "achaney@princeton.edu",
+        "bbox": [
+            148,
+            212,
+            313,
+            227
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Brandon M. Stewart ",
+        "bbox": [
+            415,
+            165,
+            581,
+            181
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Princeton University ",
+        "bbox": [
+            428,
+            183,
+            570,
+            196
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Department of Sociology ",
+        "bbox": [
+            413,
+            198,
+            584,
+            213
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "bms4@princeton.edu ",
+        "bbox": [
+            426,
+            213,
+            571,
+            227
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Barbara E. Engelhardt ",
+        "bbox": [
+            676,
+            165,
+            857,
+            181
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Princeton University ",
+        "bbox": [
+            696,
+            183,
+            838,
+            196
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Department of Computer Science ",
+        "bbox": [
+            653,
+            198,
+            880,
+            213
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "bee@princeton.edu ",
+        "bbox": [
+            700,
+            213,
+            834,
+            227
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "ABSTRACT ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            237,
+            184,
+            250
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Recommendation systems are ubiquitous and impact many domains; they have the potential to influence product consumption, individuals’ perceptions of the world, and life-altering decisions. These systems are often evaluated or trained with data from users already exposed to algorithmic recommendations; this creates a pernicious feedback loop. Using simulations, we demonstrate how using data confounded in this way homogenizes user behavior without increasing utility. ",
+        "bbox": [
+            81,
+            255,
+            482,
+            366
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "KEYWORDS ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            378,
+            189,
+            393
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Recommendation systems; algorithmic confounding. ",
+        "bbox": [
+            83,
+            398,
+            401,
+            412
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 INTRODUCTION ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            431,
+            256,
+            445
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Recommendation systems are designed to help people make decisions. These systems are commonly used on online platforms for video, music, and product purchases through service providers such as Netflix, Pandora, and Amazon. Live systems are updated or retrained regularly to incorporate new data that was influenced by the recommendation system itself, forming a feedback loop (figure 1). While the broad notion of confounding from the data collection process has been studied extensively, we seek to characterize the impact of this feedback loop in the context of recommendation systems, demonstrating the unintended consequences of algorithmic confounding. As recommendation systems become increasingly important in decision-making, we have an ethical responsibility to understand the idiosyncrasies of these systems and consider their implications for individual and societal welfare [18]. ",
+        "bbox": [
+            81,
+            449,
+            482,
+            643
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Individual decisions can aggregate to have broad political and economic consequences. Recommendation systems can influence how users perceive the world by filtering access to media; pushing political dialog towards extremes [59] or filtering out contrary opinions [25]. Even more gravely, these systems impact crucial decision-making processes, such as loan approvals, criminal profiling, and medical interventions. As recommendation systems shape access to goods and resources, issues of fairness and transparency need to be considered. For example, if a distinct group of minoritypreference users exists, a system may deferentially undermine the ",
+        "bbox": [
+            81,
+            643,
+            482,
+            782
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "image",
+        "img_path": "images/5fe72d500d27d512cd2cf6758ad0421f147c3c34acf327566109983097f60781.jpg",
+        "image_caption": [
+            "Figure 1: The feedback loop between user behavior and algorithmic recommendation systems. Confounding occurs when a platform attempts to model user behavior without accounting for recommendations. User preferences act as confounding factors, influencing both recommendations (through past interactions) and current interactions. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            532,
+            237,
+            893,
+            354
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "needs or preferences of the minority in favor of optimizing the utility of the majority group. ",
+        "bbox": [
+            513,
+            450,
+            911,
+            478
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Many researchers and practitioners still focus on evaluating recommendation systems in terms of held-out accuracy, which cannot capture the full effects of the feedback loop. Even with accuracy as a primary concern, algorithmic confounding can play a crucial role; for instance, when a recommendation system is evaluated using confounded held-out data, results are biased toward recommendation systems similar to the confounding algorithm. Thus, the choice of data can considerably impact held-out evaluation and subsequent conclusions. Averaged accuracy metrics, however, are only one approach to evaluating recommendation systems, and do not detect disparate impact across users. It is our hope that this work will help motivate researchers and practitioners to 1) actively assess systems with objectives such as diversity, serendipity, novelty, and coverage [31]; 2) apply causal reasoning techniques to counter the effects of algorithmic confounding; and 3) evaluate the distribution of impact across all users, instead of exclusively reporting averages. ",
+        "bbox": [
+            511,
+            478,
+            913,
+            699
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "We begin with a summary of our claims (section 2) and then situate this work among related lines of inquiry (section 3). To provide evidence for our claims, we introduce a model for users interacting with recommendations (section 4); this allows us to analyze the impact of algorithmic confounding on simulated communities (section 5). We find that algorithmic confounding amplifies the homogenization of user behavior (section 5.2) without corresponding gains in utility (section 5.3) and also amplifies the impact of recommendation systems on the distribution of item consumption (section 5.4). We briefly discuss weighting approaches to counter these effects (section 6) before we conclude (section 7). For our simulations and analysis, we develop a general framework for recommendation systems (appendix A) which highlights commonalities between seemingly distinct approaches. ",
+        "bbox": [
+            511,
+            699,
+            913,
+            893
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1710.11214v2 [cs.CY] 27 Nov 2018 ",
+        "bbox": [
+            22,
+            257,
+            57,
+            707
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for third-party components of this work must be honored. For all other uses, contact the owner/author(s). ",
+        "bbox": [
+            81,
+            799,
+            482,
+            851
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            83,
+            851,
+            331,
+            862
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "© 2018 Copyright held by the owner/author(s). ",
+        "bbox": [
+            84,
+            863,
+            303,
+            873
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "ACM ISBN 978-1-4503-5901-6/18/10. ",
+        "bbox": [
+            84,
+            873,
+            256,
+            883
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "https://doi.org/10.1145/3240323.3240370 ",
+        "bbox": [
+            84,
+            883,
+            272,
+            893
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "2 CONSEQUENCES OF THE FEEDBACK LOOP ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            104,
+            475,
+            119
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Real-world recommendation systems are often part of a feedback loop (figure 1): the underlying recommendation model is trained using data that are confounded by algorithmic recommendations from a previously deployed system. We attempt to characterize the impact of this feedback loop through three claims. ",
+        "bbox": [
+            81,
+            125,
+            480,
+            194
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The recommendation feedback loop causes homogenization of user behavior (section 5.2), which is amplified with more cycles through the loop. Homogenization occurs at both a population level (all users behave more similarly) and at an individual level (each user behaves more like its nearest neighbors). ",
+        "bbox": [
+            81,
+            199,
+            480,
+            270
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Users experience losses in utility due to homogenization effects; these losses are distributed unequally (section 5.3). Across multiple recommendation system types, users with lower relative utility have higher homogenization, indicating that homogenization can be detrimental for subsets of users by encouraging them to make sub-optimal choices. ",
+        "bbox": [
+            81,
+            275,
+            480,
+            358
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The feedback loop amplifies the impact of recommendation systems on the distribution of item consumption (section 5.4), irrespective of homogenization effects. Two recommendation systems can produce similar amounts of user homogenization with different distributions of item consumption. ",
+        "bbox": [
+            81,
+            364,
+            480,
+            434
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 RELATED WORK ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            446,
+            256,
+            460
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Bias, confounding, and estimands. Schnabel, et al. [52] note that users introduce selection bias; this occurs during the interaction component of the feedback loop shown in figure 1. They consider a mechanism for interaction in which users first select an item and then rate it. Other work also considers similar notions of missingness in rating data [43, 62]. However, many platforms exist where users express their preferences implicitly by viewing or reading content, as opposed to explicitly rating it. In the implicit setting, the observations of user behavior are the selections themselves. The quantity of interest (estimand) is no longer the rating of an item, but the probability of the user selecting an item. Thus, we do not wish to correct for user selection bias; instead, we wish to predict it. ",
+        "bbox": [
+            81,
+            465,
+            480,
+            631
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Recommendation systems introduce confounding factors in this setting; it is difficult to tell which user interactions stem from users’ true preferences and which are influenced by recommendations. The core problem is that recommendation algorithms are attempting to model the underlying user preferences, making it difficult to make claims about user behavior (or use the behavior data) without accounting for algorithmic confounding. In this paper, we describe various problems that arise from using data confounded by recommendation systems. Among these problems is offline evaluation using confounded data; De Myttenaere, et al. [17] propose addressing this with weighting techniques and Li, et al. [39] propose a method specifically for reducing this bias in contextual bandit algorithms. ",
+        "bbox": [
+            81,
+            632,
+            480,
+            797
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Previous work has investigated how many algorithms rely on data that is imbued with societal biases and explored how to address this issue [3, 12, 50, 56]. This work is complementary to these efforts as the described feedback effects may amplify societal biases. Due to these and other concerns, regulations are emerging to restrict automated individual decision-making, such as recommendation systems [21]; this work will aid in making such efforts effective. ",
+        "bbox": [
+            81,
+            797,
+            480,
+            896
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Evaluating recommendation systems. Rating prediction is a common focus for recommendation algorithms, owing its popularity at least in part to the Netflix challenge [4, 5], which evaluated systems using RMSE on a set of held-out data. In practice, however, recommendation systems are deployed to rank items. Even Netflix has moved away from its original 5-star system in favor of a ranking-friendly thumbs-up/down interaction [46] and now advocates for ranking items as the primary recommendation task, as it considers all items in a collection during evaluation instead of only held-out observed items [54]. Simply put, top- $n$ correctness metrics such as precision, recall, and nDCG are better for evaluating the real-world performance of these systems [14]. These metrics are popular because they are straightforward to understand and easy to implement, but still they do not necessarily capture the usefulness of recommendations; a variety of system characteristics are thought to be important [24]. Among these characteristics, diversity is often framed as a counterpart to accuracy [28, 41, 64]. Diversity can be considered at multiple levels: in aggregate, within groups of users, and individually. Many efforts have been made to understand whether or not various recommender systems impact diversity by reinforcing the popularity of already-popular products or by increasing interactions with niche items [2, 11, 15, 20, 47, 63]. These systems also have the potential to create “echo-chambers,” which result in polarized behavior [16]. ",
+        "bbox": [
+            511,
+            107,
+            913,
+            439
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Causality in recommendation systems. Formal causal inference techniques have been used extensively in many domains, but have only recently been applied to recommendation systems. Liang, et al. [40] draw on the language of causal analysis in describing a model of user exposure to items; this is related to distinguishing between user preference and our confidence in an observation [26]. Some work has also been done to understand the causal impact of these systems on behavior by finding natural experiments in observational data [53, 55] (approximating expensive controlled experiments [33]), but it is unclear how well these results generalize. Schnabel, et al. [52] use propensity weighting techniques to remove users’ selection bias for explicit ratings. Bottou, et al. [8] use ad placement as an example to motivate the use of causal inference techniques in the design of deployed learning systems to avoid confounding; this potentially seminal work does not, however, address the use of already confounded data (e.g., to train and evaluate systems or ask questions about user behavior), which is abundant. ",
+        "bbox": [
+            511,
+            446,
+            913,
+            681
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Connections with the explore/exploit trade-off. Some investigators have modeled these systems using temporal dynamics [35] or framed them in an explore/exploit paradigm [38, 60]. Recommendation systems have natural connections with the explore/exploit trade-off; for example, should a system recommend items that have high probability of being consumed under the current model, or low probability items to learn more about a user’s preferences? Reinforcement learning models already use notion of a feedback loop to maximize reward. One major challenge with this setup, however, is constructing a reward function. Usually the reward is based on click-through rate or revenue for companies; we, however, focus on utility for the users of a platform. Our analysis may be informative for the construction of reward functions and may be extended to use the stationary distribution of Markov decision processes (MDPs) to further characterize the impact of the feedback loop. ",
+        "bbox": [
+            511,
+            688,
+            913,
+            896
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "header",
+        "text": "RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            84,
+            73,
+            416,
+            87
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "header",
+        "text": "Allison J.B. Chaney, Brandon M. Stewart, and Barbara E. Engelhardt ",
+        "bbox": [
+            496,
+            73,
+            911,
+            87
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "4 INTERACTION MODEL ",
+        "text_level": 1,
+        "bbox": [
+            81,
+            104,
+            308,
+            119
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In order to reason about the feedback dynamics of algorithmic recommendations and user behavior, we need a model of how users engage with recommended items on a platform; we model engagement and not ratings, which is justified in section 3. We draw on a model recently proposed by Schmit and Riquelme [51] that captures the interaction between recommended items and users, and we modify this model to allow for personalized recommendations and multiple interactions for a given user.1 ",
+        "bbox": [
+            81,
+            125,
+            482,
+            234
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 1. The utility of user  consuming item  at time  is ",
+        "bbox": [
+            98,
+            241,
+            482,
+            255
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nV _ {u i} (t) = P _ {u i} (t) + Q _ {u i} (t), \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            207,
+            260,
+            480,
+            273
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where $P _ { u i } ( t )$ and $Q _ { u i } ( t )$ are the utilities that are known and unknown Pui t Qui tto the user, respectively. Neither utilities are known to the platform. ",
+        "bbox": [
+            83,
+            279,
+            480,
+            306
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "When a user considers whether or not they wish to engage with items, they have some notion of their own preferences; these preferences come from any information displayed and external knowledge. The quantity $P$ captures these preferences that are known Pto the user but unknown to the recommendation system platform. Users rely on $P$ in combination with the ordering of recommended content to select items with which to engage. Users must also have some unknown utility $Q$ , or else they would be omniscient, and rec-Qommendation systems would be of no use. The underlying objective of these systems is to estimate the total utility $V$ . ",
+        "bbox": [
+            81,
+            309,
+            482,
+            446
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 1. The utility of a user interacting with an item is approximately static over time, or $V _ { u i } ( t ) \\approx V _ { u i }$ . ",
+        "bbox": [
+            83,
+            453,
+            482,
+            481
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In the real world, utility fluctuates due to contextual factors such as user mood. However, the variance around utility is likely small and inversely related to the importance of the choice. Moving forward, we will omit the time notation for simplicity. ",
+        "bbox": [
+            81,
+            483,
+            482,
+            540
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 2. The total utility $V _ { u i }$ is beta-distributed,2 ",
+        "bbox": [
+            98,
+            545,
+            434,
+            559
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nV _ {u i} \\sim B e t a ^ {\\prime} \\left(\\rho_ {u} \\alpha_ {i} ^ {\\top}\\right), \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            220,
+            561,
+            480,
+            579
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "and is parameterized by the dot product of user general preferences $\\rho _ { u }$ for user  and item attributes $\\alpha _ { i }$ for item . ",
+        "bbox": [
+            83,
+            583,
+            482,
+            611
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "iThis assumption will constrain utility values to be in the range [0 1]; this representation is flexible because any utility with finite ,support can be rescaled to fall within this range. The use of the dot product to parameterize the utility is likewise a flexible representation; when the underlying vectors $\\rho$ and $\\alpha$ have a dimensionality of $\\operatorname* { m i n } ( | \\mathcal { U } | , | \\boldsymbol { \\mathcal { I } } | )$ ρand either preferences $\\rho$ αor attributes $\\alpha$ use a one-hot , ρ αrepresentation, then all possible utility values can be captured. ",
+        "bbox": [
+            81,
+            613,
+            482,
+            710
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 3. General preferences $\\rho$ and attributes are fixed ρ αbut unknown to the user or the recommendation system. They are drawn from Dirichlet distributions, or ",
+        "bbox": [
+            83,
+            715,
+            482,
+            758
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\rho_ {u} \\sim \\operatorname {D i r i c h l e t} \\left(\\mu_ {\\rho}\\right) \\quad a n d \\quad \\alpha_ {i} \\sim \\operatorname {D i r i c h l e t} \\left(\\mu_ {\\alpha}\\right), \\tag {3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            127,
+            763,
+            480,
+            777
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "for all users $u \\in \\mathcal { U }$ and all items $i \\in \\mathcal { I }$ , respectively. Individual u ipreferences are parameterized by a vector of global popularity of ",
+        "bbox": [
+            81,
+            781,
+            483,
+            811
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "preferences $\\mu _ { \\rho }$ over all users. Individual item attributes are similarly µρparameterized by a global popularity of attributes $\\mu \\alpha$ over all items. ",
+        "bbox": [
+            513,
+            107,
+            913,
+            135
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 2 requires $\\rho _ { u } \\alpha _ { i } ^ { \\top } \\in [ 0 , 1 ]$ α and this guarantees that $\\rho$ and $\\alpha$ ρu αi ,will satisfy this constraint. Most importantly, when agρ αgregated by user (a proxy for activity) or item (popularity), this construction produces a distribution of utility values with a long tail, as seen in real platforms [10]. ",
+        "bbox": [
+            513,
+            135,
+            913,
+            205
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 4. The proportion of the utility known to user  is $\\eta _ { u i } \\sim B e t a ^ { \\prime } ( \\mu _ { \\eta } ) ; ^ { 3 }$ this results in ",
+        "bbox": [
+            513,
+            210,
+            913,
+            238
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\nP _ {u i} = \\eta_ {u i} V _ {u i} \\quad a n d \\quad Q _ {u i} = (1 - \\eta_ {u i}) V _ {u i}. \\tag {4}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            586,
+            242,
+            911,
+            257
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "ui ui ui ui ui uiThis assumption introduces some uncertainty so that the known utility $P$ is a noisy approximation of the true utility  . While each P Vuser could theoretically have a different mean proportion $\\mu _ { \\eta }$ , in practice this is not important because the known utilities $P$ µηare not compared across users. ",
+        "bbox": [
+            513,
+            257,
+            913,
+            325
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 5. At every discrete time step , each user  will interact with exactly one item, $i _ { u } ( t )$ . ",
+        "bbox": [
+            514,
+            332,
+            913,
+            359
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "iu tUsers in the real world have varying levels of activity; we argue that the long tail of utility (see the justification for assumption 3) captures the essence of this behavior and that we could adopt different levels of user activity without substantially altering our results. ",
+        "bbox": [
+            513,
+            359,
+            913,
+            416
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 2. To select an item at time , user  relies on her own preferences $P _ { u i }$ and a function $f$ t uof the rank of the items provided by uirecommendation system $\\Re$ .4 The chosen item is ",
+        "bbox": [
+            513,
+            421,
+            913,
+            460
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\ni _ {u} ^ {\\Re} (t) = \\arg \\max  _ {i} \\left(f \\left(\\operatorname {r a n k} _ {u, t} ^ {\\Re} (i)\\right) \\cdot P _ {u i} (t)\\right), \\tag {5}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            586,
+            465,
+            911,
+            489
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "where ra $n k _ { u , t } ^ { \\Re } ( i ) = n ,$ , or according to recommender system $\\Re$ ’s orderu,t i ning of items, as described in appendix A, the th recommendation $r$ nfor user  at time  is item ; this can also be written $r _ { u , n } ( t ) = i$ . ",
+        "bbox": [
+            513,
+            494,
+            913,
+            537
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "u,nUsers are more likely to click on items presented earlier in a ranked list [27]; the function $f$ captures this effect of rank on the frate of interaction. In keeping with our earlier discussion, to allow for various levels of user activity, one need only add some threshold $\\tau$ such that if the function of rank and preference $P _ { u i } ( t )$ inside τ Pui tequation (5) are less than this threshold, then no interaction occurs. ",
+        "bbox": [
+            513,
+            539,
+            913,
+            622
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 6. Each user  interacts with item  at most once. ",
+        "bbox": [
+            529,
+            627,
+            901,
+            638
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "u iWhen a user engages with an item repeatedly, utility decreases with each interaction. This is the simplest assumption that captures the notion of decreasing utility; without it, a generally poor recommendation system might ostensibly perform well due to a single item. The interaction model could alternatively decrease utility with multiple interactions, but this would not alter results significantly. ",
+        "bbox": [
+            511,
+            641,
+            913,
+            724
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Assumption 7. New and recommended items are interleaved. ",
+        "bbox": [
+            529,
+            729,
+            895,
+            742
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "As in the real world, new items are introduced with each time interval. When no recommendation algorithm is in place (early “start-up” iterations), the system randomly recommends the newest items. Once a recommendation algorithm is active, we interleave new items with recommended items; this interleaving procedure is a proxy for users engaging with items outside of the recommendation system, or elsewhere on the platform. Since this procedure is identical for all systems, it does not impact the comparison across systems. ",
+        "bbox": [
+            511,
+            744,
+            913,
+            854
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "header",
+        "text": "Algorithmic Confounding in Recommendation Systems Increases Homogeneity RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            81,
+            71,
+            913,
+            87
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "1Unlike the Schmit and Riquelme model [51], we include no additional noise term because we model utility (or “quality” in the Schmit and Riquelme model) probabilistically instead of holding it fixed. ",
+        "bbox": [
+            81,
+            816,
+            482,
+            847
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "2We use an atypical parameterization of the beta distribution with mean $\\mu$ and fixed variance $\\sigma$ µand distinguish this parameterization as Beta′. For our simulaσtions in section 5, we set $\\sigma = 1 0 ^ { - 5 }$ . To convert to the standard parameterization, ",
+        "bbox": [
+            81,
+            847,
+            482,
+            878
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "$\\begin{array} { r } { \\alpha = \\left( \\frac { 1 - \\mu } { \\sigma ^ { 2 } } - \\frac { 1 } { \\mu } \\right) \\mu ^ { 2 } } \\end{array}$ and $\\begin{array} { r } { \\beta = \\alpha \\left( \\frac { 1 } { \\mu } - 1 \\right) } \\end{array}$ ",
+        "bbox": [
+            83,
+            878,
+            274,
+            898
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "3Mean proportion $\\mu _ { \\eta } = 0 . 9 8$ in our simulations (section 5). ",
+        "bbox": [
+            513,
+            862,
+            795,
+            873
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "µ .4For our simulations (section 5), we used $f ( n ) = n ^ { - 0 . 8 }$ , which approximates observed f n neffects of rank on click-through rate [27]; our results held for other choices of $f$ . ",
+        "bbox": [
+            514,
+            873,
+            913,
+            895
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "5 SIMULATED COMMUNITIES ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            104,
+            352,
+            119
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In this section, we explore the performance of various recommendation systems on simulated communities of users and items. We first describe the simulation procedure, and then discuss three claims. ",
+        "bbox": [
+            81,
+            125,
+            482,
+            165
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "5.1 Simulation Procedure ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            185,
+            305,
+            199
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We consider six recommendation algorithms: popularity, content filtering (“content”), matrix factorization (“MF”), social filtering (“social”), random, and ideal. Appendix A provides further details on the first four approaches and describes our general recommendation framework. The core idea of this framework is that each recommendation system provides some underlying score $s _ { u i } ( t )$ of how much a user $u$ uiwill enjoy item  at time . These scores are constructed using user preferences $\\theta _ { u } ( t )$ and item attributes $\\beta _ { i } ( t )$ : ",
+        "bbox": [
+            81,
+            203,
+            482,
+            314
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\ns _ {u i} (t) = \\theta_ {u} (t) \\beta_ {i} (t) ^ {\\top}, \\tag {6}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            217,
+            318,
+            480,
+            334
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "and each recommendation approach has a different way of constructing or modeling these preferences and attributes. ",
+        "bbox": [
+            81,
+            338,
+            482,
+            364
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "For our simulations, all of the six approaches recommend from the set of items that exist in the system at the time of training; random recommends these items in random order. Ideal recommends items for each user $u$ based on the user’s true utility $V _ { u i }$ for those u Vuiitems. Comparison with these two approaches minimizes the impact of the interaction model assumptions (section 4) on our results. ",
+        "bbox": [
+            81,
+            366,
+            482,
+            448
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In all of our simulations, a community consists of 100 users and is run for 1,000 time intervals with ten new items being introduced at each interval; each simulation is repeated with ten random seeds and all our results are averages over these ten “worlds.” We generate the distributions of user preference and item attribute popularity, as used in equation (3), in $K = 2 0$ dimensions; we generate uneven user preferences, but approximately even item attributes. The user preference parameter is generated as follows: ˜ ∼ Dirichlet(1) and $\\mu _ { \\rho } = 1 0 \\cdot \\tilde { \\mu } _ { \\rho }$ ρ. This mirrors the real world where preferences are ρ ρunevenly distributed, which allows us to expose properties of the recommendation algorithms. Item attribute popularity is encouraged to be more even in aggregate, but still be sparse for individual items; we draw: ˜ ∼ Dirichlet(100) and $\\mu _ { \\alpha } = 0 . 1 \\cdot \\tilde { \\mu } _ { \\alpha }$ . While item µα µα . µαattributes are not evenly distributed in the real world, this ensures that all users will be able to find items that match their preferences. With these settings for user preferences and item attributes, the resulting matrix of true utility is sparse (e.g., figure 2), which matches commonly accepted intuitions about user behavior. We generate social networks (used by social filtering only) using the covariance matrix of user preferences; we impose that each user must have at least one network connection and binarize the covariance matrix using this criteria. This procedure enforces homophily between connected users, which is generally (but not always) true in the real world. ",
+        "bbox": [
+            81,
+            449,
+            482,
+            766
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We consider two cases of observing user interactions with items: a simple case where each recommendation algorithm is trained once, and a more complicated case of repeated training; this allows us to compare a single cycle of the feedback loop (figure 1) to multiple cycles. In the simple paradigm, we run 50 iterations of “start-up” (new items only each iteration), train the algorithms, and then observe 50 iterations of confounded behavior. In the second paradigm, we have ten iterations of “start-up,” then train the algorithms every iteration for the remaining 90 iterations using all previous data. ",
+        "bbox": [
+            81,
+            767,
+            482,
+            892
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/6f87ec0e650a4b0ab9e192b83a9c1b0e38d794b343b319542334aa772aa2129e.jpg",
+        "image_caption": [
+            "Figure 2: Example true utility matrix  for simulated data; Vdarker is higher utility. The distribution of user preferences is disproportionate, like the real world, and the structure is easily captured with matrix factorization. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            524,
+            108,
+            908,
+            253
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "5.2 Homogenization Effects ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            318,
+            756,
+            333
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Recommendation systems may not change the underlying preferences of user (especially not when used on short time scales), but they do impact user behavior, or the collection of items with which users interact. Recommendation algorithms encourage similar users to interact with the same set of items, therefore homogenizing their behavior, relative to the same platform without recommended content. For example, Popularity-based systems represent all users in the same way; this homogenizes all users, as seen in previous work [11, 58]. Social recommendation systems homogenize connected users or within cliques, and matrix factorization homogenizes users along learned latent factors. ",
+        "bbox": [
+            511,
+            335,
+            913,
+            488
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Homogenizing effects are not inherently bad as they indicate that the models are learning patterns from the data, as intended; when achieving optimum utility, users will have some degree of homogenization. However, homogenization of user behavior does not correspond directly with an increase in utility: we can observe an increase in homogenization without a corresponding increase in utility. This is related to the explore/exploit paradigm, where we wish to exploit the user representation to maximize utility, but not to homogenize users more than necessary. When a representation of users is over-exploited, users are being pushed to be have more similar behaviors than their underlying preferences would optimally dictate. This suggests that the “tyranny of majority” and niche “echo chamber” effects may both be manifestations of the same problem: over-exploitation of recommendation models. While concerns about maximizing utility are not new to the recommendation system literature, there are also grave social consequences from homogenization that have received less consideration. ",
+        "bbox": [
+            511,
+            489,
+            913,
+            723
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We measure homogenization of behavior by first pairing each user with their most similar user according to the recommendation system, or user $u$ is partnered with user $^ { v }$ that maximizes the ucosine similarity of $\\theta _ { u }$ and $\\theta _ { v }$ v. Next, we compute the Jaccard index θu θvof the sets of observed items for these users. If at time $t$ , user $u$ has interacted with a set if items ${ \\mathcal { D } } _ { u } ( t ) = \\{ i _ { u } ( 1 ) , \\ldots , i _ { u } ( t ) \\}$ uthe Jaccard u t iu , . . . , iu tindex of the two users’ interactions can be written as ",
+        "bbox": [
+            513,
+            724,
+            913,
+            820
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathbf {J} _ {u v} (t) = \\frac {\\left| \\mathcal {D} _ {u} (t) \\cap \\mathcal {D} _ {v} (t) \\right|}{\\left| \\mathcal {D} _ {u} (t) \\cup \\mathcal {D} _ {v} (t) \\right|}. \\tag {7}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            627,
+            821,
+            911,
+            851
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "We compared the Jaccard index for paired users against the Jaccard index of the same users exposed to ideal recommendations; this difference captures how much the behavior has homogenized relative ",
+        "bbox": [
+            513,
+            853,
+            913,
+            895
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "header",
+        "text": "RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            83,
+            71,
+            416,
+            87
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "header",
+        "text": "Allison J.B. Chaney, Brandon M. Stewart, and Barbara E. Engelhardt ",
+        "bbox": [
+            496,
+            71,
+            913,
+            87
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/236500d8a88cb96376696fc277f229a3008ad1693deaed04657631708aef8860.jpg",
+        "image_caption": [
+            "Figure 3: Change in Jaccard index of user behavior relative to ideal behavior; users paired by cosine similarity of . On the left, mild homogenization of behavior occurs soon after a single training, but then diminishes. On the right, recommendation systems that include repeated training homogenize user behavior more than is needed for ideal utility. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            108,
+            897,
+            314
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/ce0cbf843c96504e88ae55350bba4d56c3e053ffd141d86ec47ff51f0ebe29bc.jpg",
+        "image_caption": [
+            "Figure 4: For the repeated training case, change in Jaccard index of user behavior relative to ideal behavior; users paired randomly. Popularity increases homogenization the most globally, but all non-random recommendation algorithms also homogenize users globally. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            378,
+            467,
+            561
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "to ideal. Figure 3 shows these results for both the single training and the repeated training cases. In the single training case, users became slightly homogenized after training, but then returned to the ideal homogenization. With repeated training, all recommendation systems (except random), homogenize user behavior beyond what was needed to achieve ideal utility. As the number of cycles in the feedback loop (figure 1) increases, we observe homogenization effects continue to increase without corresponding increases in utility. ",
+        "bbox": [
+            81,
+            657,
+            482,
+            768
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We can consider global homogenization to reveal the impact of the feedback loop at the population level; instead of comparing to paired users based on $\\theta _ { u }$ , we compare users matched randomly (figθuure 4). In this setting, all recommendation systems (except random) increased global homogeneity of user behavior. The popularity system increased homogeneity the most; after that, matrix factorization and social filtering homogenized users comparably, and content filtering homogenized users least of all, but still more than ideal. ",
+        "bbox": [
+            81,
+            768,
+            482,
+            878
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We have shown that when practitioners update their models without considering the feedback loop of recommendation and interaction, they encourage users to consume a more narrow range of items, both in terms of local niche behavior and global behavior. ",
+        "bbox": [
+            511,
+            376,
+            915,
+            434
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "5.3 Loss of Utility ",
+        "text_level": 1,
+        "bbox": [
+            513,
+            446,
+            676,
+            463
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Changes in utility due to these effects are not necessarily born equally across all users. For example, users whose true preferences are not captured well by the low dimensional representation of user preferences may be disproportionately impacted. These minority users may see lesser improvements or even decreases in utility when homogenization occurs. Figure 5 breaks down the relationship between homogenization and utility by user; for all recommendation algorithms, we find that users who experience lower utility generally have higher homogenization with their nearest neighbor. ",
+        "bbox": [
+            511,
+            464,
+            913,
+            589
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Note that we have assumed that each user/item pair has fixed utility (assumption 1). In reality, a collection of similar items is probably less useful than a collection of diverse items [19]. With a more nuanced representation of utility that includes the collection of interactions as a whole, these effects would likely increase in magnitude. ",
+        "bbox": [
+            511,
+            589,
+            915,
+            659
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "5.4 Shifts in Item Consumption ",
+        "text_level": 1,
+        "bbox": [
+            513,
+            672,
+            785,
+            688
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "To explore the impacts of these systems on item consumption, we computed the Gini coefficient on the distribution of consumed items, which measures the inequality of the distribution (0 being all items are consumed at equal rates and 1 indicating maximal inequality between the consumption rate of items). We use the following definition of Gini inequality, which relies on the relative popularity $( \\mathrm { R P } ) ^ { 5 }$ of each item at time : ",
+        "bbox": [
+            511,
+            691,
+            913,
+            787
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\mathcal {G} (t) = \\frac {\\sum_ {i \\in \\mathcal {I}} \\left(2 * \\operatorname {R P} (i , t) - | \\mathcal {I} | - 1\\right) \\sum_ {u \\in \\mathcal {U}} \\mathbb {1} [ i \\in \\mathcal {D} _ {u} (t) ]}{| \\mathcal {I} | \\sum_ {i \\in \\mathcal {I}} \\sum_ {u \\in \\mathcal {U}} \\mathbb {1} [ i \\in \\mathcal {D} _ {u} (t) ]}. \\tag {8}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            531,
+            790,
+            911,
+            821
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We found that the feedback loop amplifies the impact of recommendation systems on the distribution of item consumption, ",
+        "bbox": [
+            513,
+            824,
+            915,
+            852
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "header",
+        "text": "Algorithmic Confounding in Recommendation Systems Increases Homogeneity RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            81,
+            71,
+            915,
+            87
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_footnote",
+        "text": "$^ 5 \\mathrm { R P } ( i , t )$ is the rank of item based on how many people have consumed it, relative i, t ito all other items (up to time ). ",
+        "bbox": [
+            513,
+            871,
+            913,
+            895
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/609cfb121d20082e8be4b56923364da8f138a424e95dc2b206dfa7c964178d82.jpg",
+        "image_caption": [
+            "Figure 5: For the repeated training case, change in Jaccard index of user behavior, relative to ideal behavior, and shown as a function of utility relative to the ideal platform; users paired by cosine similarity of . Each user is shown as a point, with a θlinear fit to highlight the general trend that users who experience losses in utility have higher homogenization. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            108,
+            911,
+            270
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/5301e024317dd45765711467bc81d6c29f6c32c7d38eccb317824951b64a18a4.jpg",
+        "image_caption": [
+            "Figure 6: For the repeated training case, change in Jaccard index of user behavior (higher is more homogeneous), relative to the Gini coefficient of the item consumption distribution (higher is more unequal consumption of items). Each point is a single simulation. Similar homogenization can result in different item consumption distributions. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            335,
+            467,
+            517
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "irrespective of homogenization effects. Specifically, two recommendation systems can produce similar amounts of user homogenization with different distributions of item consumption (figure 6). For example, matrix factorization (MF) and content filtering have comparable homogenizing effects, but MF creates a more unequal distribution of item consumption. ",
+        "bbox": [
+            81,
+            616,
+            482,
+            699
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "As a community, we do not fully understand the ways in which these systems change the popularity of items. Differential item consumption may ultimately change item production from strategic actors, such as companies like Amazon and Netflix which are now producing content based on their consumers’ behavior data. Thus, recommendation systems change not only what users see first, but can fundamentally alter the collection of content from which users can choose. ",
+        "bbox": [
+            81,
+            699,
+            482,
+            809
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "6 ACCOUNTING FOR CONFOUNDING ",
+        "text_level": 1,
+        "bbox": [
+            81,
+            830,
+            416,
+            845
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Recommendation system are often evaluated using confounded held-out data. This form of offline evaluation is used by both researchers and practitioners alike, but the choice is not as innocuous ",
+        "bbox": [
+            81,
+            849,
+            482,
+            891
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "as one might expect. When a recommendation system is evaluated using confounded held-out data, results are biased toward recommendation systems similar to the confounding algorithm. Researchers can, intentionally or unintentionally, select data sets that highlight their proposed model, thus overstating its performance. ",
+        "bbox": [
+            511,
+            334,
+            915,
+            404
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "There are specific instances in recommendation system literature where this may be troubling. For example, MovieLens is a research website that uses collaborative filtering to make movie recommendations [45]; the researchers behind it have released several public datasets6 that are used prolifically in evaluation recommendation systems [23]. Recommendation systems based on collaborative filtering will likely perform better on this data. Similarly, the Douban service contains popularity features; algorithms that include a notion of popularity should perform better on the publicly available data from this platform [42]. Many algorithms use social network information to improve recommendations [13, 22, 42] but when training and evaluating these algorithms on data from social platforms, it is not clear if the models capture the true preferences of users or the biasing effects of platform features. These biases are problematic for researchers and platform developers who attempt to evaluate models offline or rely on academic publications that do. ",
+        "bbox": [
+            511,
+            404,
+            913,
+            625
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Researchers and practitioners alike would benefit from methods to address these concerns. Weighting techniques, such as those proposed by Schnabel, et al. [52] and De Myttenaere, et al. [17] for offline evaluation seem promising. We performed a preliminary exploration of weighting techniques and found that in the repeated training case, weighting can simultaneously increase utility and decrease homogenization. These weighting techniques could also be of use when attempting to answer social science questions using algorithmically confounded user behavior data. We leave a full exploration of these methods for future work. ",
+        "bbox": [
+            511,
+            625,
+            913,
+            763
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "As proposed by Bottou, et al. [8], formal causal inference techniques can assist in the design of deployed learning systems to avoid confounding. This would likely reduce the effects we have described (section 5), but needs to be studied in greater depth. In particular, the distribution of impact across users should be explored, as well as non-accuracy metrics. Regardless, practitioners would do well to incorporate measures to avoid confounding, such as these. At least they should log information about the recommendation system in ",
+        "bbox": [
+            511,
+            763,
+            913,
+            875
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "header",
+        "text": "RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            84,
+            71,
+            416,
+            85
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "header",
+        "text": "Allison J.B. Chaney, Brandon M. Stewart, and Barbara E. Engelhardt ",
+        "bbox": [
+            496,
+            71,
+            913,
+            85
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_footnote",
+        "text": "6https://grouplens.org/datasets/movielens/ ",
+        "bbox": [
+            514,
+            883,
+            718,
+            895
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "deployment along with observations of behavior; this would be useful in disentangling recommendation system influence from true preference signal as weighting and other techniques are refined. ",
+        "bbox": [
+            81,
+            106,
+            480,
+            148
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "7 CONCLUSION ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            166,
+            232,
+            181
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We have explored the impact of algorithmic confounding on a range of simulated recommendation systems. We found that algorithmic confounding amplifies the homogenization of user behavior (section 5.2) without corresponding gains in utility (section 5.3) and also amplifies the impact of recommendation systems on the distribution of item consumption (section 5.4). These findings have implications for any live recommendation platform; those who design these systems need to consider how a system influences its users and account for algorithmic confounding. Researchers who use confounded data to test and evaluate their algorithms should be aware of these effects, as should researchers who wish to use confounded data to study and make claims about user behavior. Platform users and policy makers should take these effects into consideration as they make individual choices or propose policies to guide or govern the use of these algorithms. ",
+        "bbox": [
+            81,
+            185,
+            482,
+            393
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "ACKNOWLEDGEMENTS ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            411,
+            290,
+            425
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "This work was funded by a Princeton CITP Interdisciplinary Microsoft Seed Grant. BEE was funded by NIH R01 HL133218, a Sloan Faculty Fellowship, and an NSF CAREER AWD1005627. ",
+        "bbox": [
+            81,
+            429,
+            482,
+            470
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "A RECOMMENDATION FRAMEWORK ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            489,
+            416,
+            503
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In this appendix, we cast ostensibly disparate recommendation methods into a general mathematical framework that encompasses many standard algorithmic recommendation techniques. ",
+        "bbox": [
+            81,
+            508,
+            480,
+            549
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "A recommendation system provides some underlying score $s _ { u i } ( t )$ of how much a user $u$ sui twill enjoy item  at time . This score is u i tgenerated from two components: the system’s representations at time of both user preferences $\\theta _ { u } ( t )$ for user $u$ and item attributes $\\beta _ { i } ( t )$ t θu t ufor item . The dot product of these vectors produces the score: ",
+        "bbox": [
+            81,
+            550,
+            480,
+            619
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\ns _ {u i} (t) = \\theta_ {u} (t) \\beta_ {i} (t) ^ {\\top}. \\tag {9}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            217,
+            622,
+            480,
+            638
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "This construction is reminiscent of the notation typically used for the matrix factorization approach discussed in appendix A.4, but it also provides us a more general framework. ",
+        "bbox": [
+            81,
+            643,
+            482,
+            684
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "The scores $s _ { u i } ( t )$ are not necessarily comparable across recomuimendation techniques. Recommendation systems that focus on rating prediction will provide scores comparable to other rating prediction models. For these systems, the goal is to predict how users will explicitly rate items, most commonly on a five-star scale, and are typically evaluated with prediction error on held-out ratings. Low errors for predicting ratings, however, do not always correspond to high accuracy in rank-based evaluation [14, 54] (e.g., “what should I watch next?”), which is the ultimate goal in many recommendation applications. Additionally, limiting our scope to rating prediction systems would omit models that focus on learning rankings [32] or that otherwise produce rankings directly, such as ordering items by popularity. ",
+        "bbox": [
+            81,
+            684,
+            482,
+            864
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Given a collection of scores $s _ { u i } ( t )$ , a recommendation system sui tthen produces, for each user, an ordered list (or sequence) of items ",
+        "bbox": [
+            83,
+            864,
+            480,
+            892
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "sorted according to these scores. Formally, we represent these recommendations as a set of sequences ",
+        "bbox": [
+            513,
+            106,
+            915,
+            133
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left\\{\\left(r _ {u, n} (t)\\right) _ {n = 1} ^ {| \\mathcal {I} |} \\right\\} _ {u \\in \\mathcal {U}}, \\tag {10}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            651,
+            138,
+            911,
+            162
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "where $\\boldsymbol { \\mathcal { T } }$ is the set of all items and $\\boldsymbol { \\mathcal { U } }$ is the set of all users. For each user $u$ , the system provides a sequence, or ranked list of items, where $n$ uis the position in the ranked list and $r _ { u , n }$ is the recommended nitem for user $u$ at rank $n$ ru,n. This sequence of items for a given user $u$ u n uis defined as all items sorted descendingly by their respective score $s _ { u i } ( t )$ , or ",
+        "bbox": [
+            513,
+            165,
+            913,
+            247
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\left(r _ {u, n} (t)\\right) _ {n = 1} ^ {| \\mathcal {I} |} = \\text {d e s c e n d i n g} \\operatorname {s o r t} (\\forall i \\in \\mathcal {I}, \\text {b y} = s _ {u i} (t)). \\tag {11}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            544,
+            251,
+            911,
+            270
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Our simulated experiments (section 5) revealed that it is important to break ties randomly when performing this sort; if not, the random item recommender baseline receives a performance advantage on early iterations by exposing users to a wider variety of items. ",
+        "bbox": [
+            513,
+            273,
+            911,
+            329
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We now cast a collection of standard recommendation systems in this framework by defining the user preferences $\\theta _ { u } ( t )$ and item attributes $\\beta _ { i } ( t )$ θu tfor each system; this emphasizes the commonalities βi tbetween the various approaches. ",
+        "bbox": [
+            513,
+            329,
+            911,
+            385
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "A.1 Popularity ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            400,
+            650,
+            416
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Intuitively, the popularity recommendation system ranks items based on the overall item consumption patterns of a community of users. All users are represented identically, or $\\theta _ { u } ( t ) = 1$ for all $u \\in \\mathcal { U }$ u, and thus every user receives the same recommendations at ua given time . Item attributes are based on the interactions of users with items up to time $t$ ; these interactions can be structured as a collection of $N$ triplets $\\left\\{ ( u _ { n } , i _ { n } , t _ { n } ) \\right\\} _ { n = 1 } ^ { N }$ , where each triplet $( u , i , t )$ Nindicates that user $u$ un, in, tn ninteracted with item at time $t$ . ",
+        "bbox": [
+            513,
+            419,
+            911,
+            530
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "There are many permutations of the popularity recommendation technique, including windowing or decaying interactions to prioritize recent behavior; this prevents recommendations from stagnating. For our analysis (section 5), we employ the simplest popularity recommendation system; it considers all interactions up to time $t$ , or ",
+        "bbox": [
+            513,
+            531,
+            913,
+            599
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\beta_ {i} (t) = \\sum_ {n = 1} ^ {N} \\mathbb {1} [ i _ {n} = i \\text {A N D} t _ {n} <   t ]. ^ {7} \\tag {12}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            606,
+            604,
+            911,
+            641
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "A.2 Content Filtering ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            655,
+            705,
+            671
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Content-based recommender systems match attributes in a user’s profile with attribute tags associated with an item [48, ch. 3]. In the simplest variant, the set of possible attribute tags $\\mathcal { A }$ are identical for both users and items. User preferences $\\theta _ { u } ( t )$ is a vector of length $| \\mathcal { A } |$ θu t, and the attribute tags for a given user are in the set $\\mathcal { A } _ { u } ( t )$ ; this gives us $\\theta _ { u a } ( t ) = \\mathbb { 1 } \\left[ a \\in \\mathcal { A } _ { u } ( t ) \\right]$ u t. The item attribute tags can simiθua t a u tlarly be represented as a vector of length $| \\mathcal { R } |$ with values $\\beta _ { i a } ( t ) =$ $\\mathbb { 1 } \\left[ a \\in \\mathcal { A } _ { i } ( t ) \\right]$ , where $\\mathcal { A } _ { i } ( t )$ βia tis the set of attributes for an item . ",
+        "bbox": [
+            513,
+            672,
+            913,
+            784
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "a i t i t iAttributes for both users and items can be input manually (e.g., movie genre), or they can be learned independent of time  with, for texample, a topic model [6] for text or from the acoustic structure of a song [57] for music; when learned, the attribute tags can be ",
+        "bbox": [
+            513,
+            785,
+            911,
+            840
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "header",
+        "text": "Algorithmic Confounding in Recommendation Systems Increases Homogeneity RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            81,
+            71,
+            913,
+            87
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_footnote",
+        "text": "7The indicator function notation 1[ expression ] evaluates to 1 when the internal expression is true and 0 when it is false. ",
+        "bbox": [
+            513,
+            869,
+            911,
+            893
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "real-valued instead of binary. For our simulations (section 5), we use binary item attributes and learn real-valued user preferences.8 ",
+        "bbox": [
+            81,
+            106,
+            480,
+            135
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "A.3 Social Filtering ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            146,
+            256,
+            162
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Social filtering recommendation systems rely on a user’s social network to determine what content to suggest. In the simplest variant, the user preferences $\\theta ( t )$ are a representation of the social network, or a $| \\mathcal { U } | \\times | \\mathcal { U } |$ θ tmatrix; for each user $u$ connected to another user $^ { v }$ , $\\theta _ { u v } ( t ) = \\mathbb { 1 } \\left[ v \\in \\mathcal { F } _ { u } ( t ) \\right]$ , where $\\mathcal { F } _ { u } ( t )$ u is the set of people $u$ v θuv t v u t u t ufollows (directed network) or with which they are connected as “friends” (undirected network) as of time . Alternatively, the user preferences $\\pmb \\theta ( t )$ t can represent the non-binary trust between users, which can be provided explicitly by the user [44] or learned from user behavior [13]; we use the latter in our analysis (section 5). ",
+        "bbox": [
+            81,
+            165,
+            482,
+            304
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Item attributes $\\beta ( t )$ are then a representation of previous interβ tactions, broken down by user, or an $| \\boldsymbol { \\mathcal { I } } | \\times | \\boldsymbol { \\mathcal { U } } |$ matrix where for each item  and user $^ { v }$ , $\\beta _ { i v } ( t ) = 1 \\left[ v \\in \\mathcal { U } _ { i } ( t ) \\right]$ , where $\\mathcal { U } _ { i } ( t )$ is the i v βiv t v i t i tset of users which have interacted with item  as of time . The item representation $\\beta ( t )$ i tcan alternatively be a non-binary matrix, where $\\beta _ { i v } ( t )$ is the number of interactions a user $^ { v }$ has with an item , or user ’s rating of item . ",
+        "bbox": [
+            81,
+            305,
+            482,
+            401
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "A.4 Collaborative Filtering ",
+        "text_level": 1,
+        "bbox": [
+            83,
+            412,
+            316,
+            429
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Collaborative filtering learns the representation of both users and items based on past user behavior, and is divided into roughly two areas: neighborhood methods and latent factor models. ",
+        "bbox": [
+            81,
+            431,
+            482,
+            474
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Neighborhood Methods. The simplicity of neighborhood methods [48, ch. 4] is appealing for both implementation and interpretation. These approaches find similar users, or neighbors, in preference space; alternatively, they can find neighborhoods based on item similarity. In either case, these methods construct similarity measures between users or items and recommend content based on these measures. We outline the user-based neighborhood paradigm, but the item-based approach has a parallel construction. ",
+        "bbox": [
+            81,
+            479,
+            482,
+            590
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Users are represented in terms of their similarity to others, or ",
+        "bbox": [
+            98,
+            592,
+            473,
+            606
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\theta_ {u} (t) = \\left[ w _ {u 1}, \\dots , w _ {u | \\mathcal {U} |} \\right], \\tag {13}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            199,
+            609,
+            480,
+            627
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "where the weight $w _ { u v }$ captures the similarity between users $u$ and wuv u. The similarity between users is typically computed using their vratings or interactions with items, and there are many options for similarity measures, including Pearson’s correlation, cosine similarity, and Spearman’s rank correlation [1]. These weights can be normalized or limited to the closest $K$ nearest neighbors. ",
+        "bbox": [
+            81,
+            628,
+            480,
+            712
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "KItems are represented with their previous interactions or ratings, just as done for social filtering in appendix A.3. We can see that these neighborhood methods are very similar to social filtering methods— the biggest distinction is that in social filtering, the users themselves determine the pool of users that contribute to the recommendation system, whereas the collaborative filtering approach determines this collection of users based on similarity of behavior. ",
+        "bbox": [
+            81,
+            713,
+            480,
+            809
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "While neighborhood-based methods have some advantages, we focus our analysis of collaborative filtering approaches on latent factor methods for two main reasons: first, in the simulated setting, ",
+        "bbox": [
+            81,
+            810,
+            482,
+            851
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "there is little distinction between social filtering and neighborhoodbased collaborative filtering. Second, latent factor methods are more frequently used than neighborhood methods. ",
+        "bbox": [
+            513,
+            106,
+            915,
+            148
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Latent Factor Methods. Of the latent factor methods, matrix factorization is a successful and popular approach [36]. The core idea behind matrix factorization for recommendation is that user-item interactions form a $| \\mathcal { U } | \\times | \\mathcal { I } |$ matrix (as of time ) $\\mathbf { R } ( t )$ , which can be factorized into two low-rank matrices: a $| { \\mathcal { U } } | \\times K$ trepresentation of user preferences $\\theta ( t )$ and an $| { \\cal { I } } | \\times K$ Krepresentation of item attributes $\\beta ( t )$ θ t K. The number of latent features $K$ is usually chosen by the analyst or determined with a nonparametric model. The multiplication of these two low-rank matrices approximates the observed interaction matrix, parallel to equation (9), or $\\pmb \\theta ( t ) \\pmb \\beta ( t ) ^ { \\top } \\approx \\mathbf { R } ( t )$ . ",
+        "bbox": [
+            511,
+            159,
+            915,
+            297
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "θ t β t tThere are many instantiations of the user preferences and item attributes. Non-negative matrix factorization [37] requires that these representations be non-negative. Probabilistic matrix factorization [49] assumes that each cell in the user preference and item attribute matrices are normally distributed, whereas a probabilistic construction of non-negative matrix factorization [9] assumes that they are gamma-distributed. Under all of these constructions, these latent representations are learned from the data by following a sequence of updates to infer the parameters that best match the observed data. ",
+        "bbox": [
+            511,
+            297,
+            913,
+            421
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Other latent factor methods, such as principal component analysis (PCA) [29] and latent Dirichlet allocation (LDA) [7], similarly frame user and item representations in terms of a low dimension $K$ Kof hidden factors. These factors are then learned algorithmically from the observed interactions. We focus on matrix factorization in our simulations (section 5), for simplicity.9 ",
+        "bbox": [
+            511,
+            422,
+            913,
+            503
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "To update a latent factor recommendation system with recently collected data, one has several options. Since these methods are typically presented without regard to time , one option is to refit the model entirely from scratch, concatenating old data with the new; in these cases, consistent interpretation of latent factors may be challenging. A second option is to hold fixed some latent factors (e.g., all item attributes $\\beta$ ) and update the remaining factors according to the update rules used to originally learn all the latent factors. This approach maintains the ordering of the latent factors, but may break convergence guarantees, even if it works well in practice. This approach does not explicitly address new items or users, often called the “cold-start problem,” but can be adapted to account for them. ",
+        "bbox": [
+            511,
+            505,
+            915,
+            672
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "A.5 Modifications and Hybrid Approaches ",
+        "text_level": 1,
+        "bbox": [
+            514,
+            686,
+            872,
+            703
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "The concepts of these systems can be modified and combined to create innumerable permutations. In considering collaborative filtering alone, neighborhood-based methods can be merged with latent factor approaches [34]. Full collaborative filtering system can be supplemented with content information [61] or augmented with social filtering [13]. Any of these methods can be supplemented with a popularity bias. Under any of these modified or hybrid systems, the changes propagate to the representations of user preferences $\\theta ( t )$ and item attributes $\\beta ( t )$ , and the general framework for θ t β trecommendation remains the same. ",
+        "bbox": [
+            511,
+            705,
+            915,
+            843
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "header",
+        "text": "RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            83,
+            71,
+            416,
+            87
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "header",
+        "text": "Allison J.B. Chaney, Brandon M. Stewart, and Barbara E. Engelhardt ",
+        "bbox": [
+            496,
+            71,
+            913,
+            87
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_footnote",
+        "text": "8Item attributes are determined by applying a binarizing threshold to $\\alpha _ { i }$ in equation (3) αsuch that every item has at least one attribute. User representations are then learned using scipy.optimize.nnls [30]. ",
+        "bbox": [
+            81,
+            862,
+            482,
+            895
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_footnote",
+        "text": "9Specifically, we use Gaussian probabilistic matrix factorization with confidence weighting, as described by Wang and Blei [61], with $\\alpha = 1$ and $b = 0 . 0 0 1$ . ",
+        "bbox": [
+            513,
+            869,
+            913,
+            893
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "REFERENCES ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            104,
+            202,
+            119
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[1] Ahn, H. J. A new similarity measure for collaborative filtering to alleviate the new user cold-starting problem. Information Sciences 178, 1 (2008), 37–51. ",
+            "[2] Anderson, C. The long tail: Why the future of business is selling less of more. Hachette Books, 2006. ",
+            "[3] Baeza-Yates, R. Data and algorithmic bias in the web. In Proceedings of the 8th ACM Conference on Web Science (2016), ACM, pp. 1–1. ",
+            "[4] Bell, R. M., and Koren, Y. Lessons from the netflix prize challenge. ACM SigKDD Explorations Newsletter 9, 2 (2007), 75–79. ",
+            "[5] Bennett, J., Lanning, S., et al. The netflix prize. In Proceedings of KDD cup and workshop (2007), vol. 2007, New York, NY, USA, p. 35. ",
+            "[6] Blei, D. M. Probabilistic topic models. Communications of the ACM 55, 4 (2012), 77–84. ",
+            "[7] Blei, D. M., Ng, A. Y., and Jordan, M. I. Latent Dirichlet allocation. JMLR 3 (Mar. 2003), 993–1022. ",
+            "[8] Bottou, L., Peters, J., Candela, J. Q., Charles, D. X., Chickering, M., Portugaly, E., Ray, D., Simard, P. Y., and Snelson, E. Counterfactual reasoning and learning systems: the example of computational advertising. Journal of Machine Learning Research 14, 1 (2013), 3207–3260. ",
+            "[9] Canny, J. GaP: a factor model for discrete data. In SIGIR (2004), pp. 122–129. ",
+            "[10] Celma, Ò. The long tail in recommender systems. In Music Recommendation and Discovery. Springer, 2010, pp. 87–107. ",
+            "[11] Celma, Ò., and Cano, P. From hits to niches?: or how popular artists can bias music recommendation and discovery. In Proceedings of the 2nd KDD Workshop on Large-Scale Recommender Systems and the Netflix Prize Competition (2008), ACM, p. 5. ",
+            "[12] Chander, A. The racist algorithm. Mich. L. Rev. 115 (2016), 1023. ",
+            "[13] Chaney, A. J., Blei, D. M., and Eliassi-Rad, T. A probabilistic model for using social networks in personalized item recommendation. In RecSys (New York, NY, USA, 2015), RecSys ’15, ACM, pp. 43–50. ",
+            "[14] Cremonesi, P., Koren, Y., and Turrin, R. Performance of recommender algorithms on top-n recommendation tasks. In RecSys (2010), ACM, pp. 39–46. ",
+            "[15] Dan-Dan, Z., An, Z., Ming-Sheng, S., and Jian, G. Long-term effects of recommendation on the evolution of online systems. Chinese Physics Letters 30, 11 (2013), 118901. ",
+            "[16] Dandekar, P., Goel, A., and Lee, D. T. Biased assimilation, homophily, and the dynamics of polarization. PNAS 110, 15 (2013), 5791–5796. ",
+            "[17] De Myttenaere, A., Grand, B. L., Golden, B., and Rossi, F. Reducing offline evaluation bias in recommendation systems. arXiv preprint arXiv:1407.0822 (2014). ",
+            "[18] Diresta, R. Up next: A better recommendation system. https://www.wired.com/ story/creating-ethical-recommendation-engines/, March 2018. ",
+            "[19] Drosou, M., Jagadish, H., Pitoura, E., and Stoyanovich, J. Diversity in big data: A review. Big Data 5, 2 (2017), 73–84. ",
+            "[20] Fleder, D., and Hosanagar, K. Blockbuster culture’s next rise or fall: The impact of recommender systems on sales diversity. Management science 55, 5 (2009), 697–712. ",
+            "[21] Goodman, B., and Flaxman, S. European union regulations on algorithmic decision-making and a\" right to explanation\". arXiv preprint arXiv:1606.08813 (2016). ",
+            "[22] Guo, G., Zhang, J., and Yorke-Smith, N. TrustSVD: Collaborative filtering with both the explicit and implicit influence of user trust and of item ratings. AAAI (2015), 123–129. ",
+            "[23] Harper, F. M., and Konstan, J. A. The movielens datasets: History and context. ACM Transactions on Interactive Intelligent Systems (TiiS) 5, 4 (2016), 19. ",
+            "[24] Herlocker, J. L., Konstan, J. A., Terveen, L. G., and Riedl, J. T. Evaluating collaborative filtering recommender systems. ACM Transactions on Information Systems (TOIS) 22, 1 (2004), 5–53. ",
+            "[25] Hess, A. How to escape your political bubble for a clearer view. https://www. nytimes.com/2017/03/03/arts/the-battle-over-your-political-bubble.html, March 2017. ",
+            "[26] Hu, Y., Koren, Y., and Volinsky, C. Collaborative filtering for implicit feedback datasets. In ICDM (2008), pp. 263–272. ",
+            "[27] Jansen, B. J., Liu, Z., and Simon, Z. The effect of ad rank on the performance of keyword advertising campaigns. Journal of the american society for Information science and technology 64, 10 (2013), 2115–2132. ",
+            "[28] Javari, A., and Jalili, M. A probabilistic model to resolve diversity-accuracy challenge of recommendation systems. arXiv preprint arXiv:1501.01996 (2015). ",
+            "[29] Jolliffe, I. Principal component analysis. Wiley Online Library, 2002. ",
+            "[30] Jones, E., Oliphant, T., Peterson, P., et al. SciPy: Open source scientific tools for Python, 2001–. ",
+            "[31] Kaminskas, M., and Bridge, D. Diversity, serendipity, novelty, and coverage: A survey and empirical analysis of beyond-accuracy objectives in recommender systems. ACM Transactions on Interactive Intelligent Systems (TiiS) 7, 1 (2017), 2. ",
+            "[32] Karatzoglou, A., Baltrunas, L., and Shi, Y. Learning to rank for recommender systems. In RecSys (2013), ACM, pp. 493–494. ",
+            "[33] Kohavi, R., Longbotham, R., Sommerfield, D., and Henne, R. M. Controlled experiments on the web: survey and practical guide. Data mining and knowledge "
+        ],
+        "bbox": [
+            86,
+            122,
+            482,
+            888
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "discovery 18, 1 (2009), 140–181. ",
+            "[34] Koren, Y. Factorization meets the neighborhood: A multifaceted collaborative filtering model. In International Conference on Knowledge Discovery and Data Mining (2008), KDD ’08, pp. 426–434. ",
+            "[35] Koren, Y. Collaborative filtering with temporal dynamics. Communications of the ACM 53, 4 (2010), 89–97. ",
+            "[36] Koren, Y., Bell, R., and Volinsky, C. Matrix factorization techniques for recommender systems. IEEE Computer 42 (2009), 30–37. ",
+            "[37] Lee, D. D., and Seung, H. S. Algorithms for non-negative matrix factorization. In NIPS (2000), pp. 556–562. ",
+            "[38] Li, L., Chu, W., Langford, J., and Schapire, R. E. A contextual-bandit approach to personalized news article recommendation. In WWW (2010), ACM, pp. 661– 670. ",
+            "[39] Li, L., Chu, W., Langford, J., and Wang, X. Unbiased offline evaluation of contextual-bandit-based news article recommendation algorithms. In Proceedings of the fourth ACM international conference on Web search and data mining (2011), ACM, pp. 297–306. ",
+            "[40] Liang, D., Charlin, L., McInerney, J., and Blei, D. M. Modeling user exposure in recommendation. In WWW (2016), pp. 951–961. ",
+            "[41] Liu, J.-G., Shi, K., and Guo, Q. Solving the accuracy-diversity dilemma via directed random walks. Physical Review E 85, 1 (2012), 016118. ",
+            "[42] Ma, H., Zhou, D., Liu, C., Lyu, M. R., and King, I. Recommender systems with social regularization. In WSDM (2011), pp. 287–296. ",
+            "[43] Marlin, B. M., and Zemel, R. S. Collaborative prediction and ranking with non-random missing data. In RecSys (2009), ACM, pp. 5–12. ",
+            "[44] Massa, P., and Avesani, P. Trust-aware recommender systems. In RecSys (2007), pp. 17–24. ",
+            "[45] Miller, B. N., Albert, I., Lam, S. K., Konstan, J. A., and Riedl, J. Movielens unplugged: experiences with an occasionally connected recommender system. In Proceedings of the 8th international conference on Intelligent user interfaces (2003), ACM, pp. 263–266. ",
+            "[46] Netflix. Introducing thumbs. https://www.youtube.com/watch?v=as4pZhodG5I, April 2017. ",
+            "[47] Park, Y.-J., and Tuzhilin, A. The long tail of recommender systems and how to leverage it. In RecSys (2008), ACM, pp. 11–18. ",
+            "[48] Ricci, F., Rokach, L., Shapira, B., and Kantor, P. B., Eds. Recommender Systems Handbook. Springer, 2011. ",
+            "[49] Salakhutdinov, R., and Mnih, A. Probabilistic matrix factorization. In NIPS (2007), pp. 1257–1264. ",
+            "[50] Sandvig, C., Hamilton, K., Karahalios, K., and Langbort, C. Auditing algorithms: Research methods for detecting discrimination on internet platforms. Data and Discrimination: Converting Critical Concerns into Productive Inquiry (2014). ",
+            "[51] Schmit, S., and Riqelme, C. Human interaction with recommendation systems: On bias and exploration. arXiv preprint arXiv:1703.00535 (2017). ",
+            "[52] Schnabel, T., Swaminathan, A., Singh, A., Chandak, N., and Joachims, T. Recommendations as treatments: Debiasing learning and evaluation. CoRR, abs/1602.05352 (2016). ",
+            "[53] Sharma, A., Hofman, J. M., and Watts, D. J. Estimating the causal impact of recommendation systems from observational data. EC (2015). ",
+            "[54] Steck, H. Evaluation of recommendations: rating-prediction and ranking. In RecSys (2013), ACM, pp. 213–220. ",
+            "[55] Su, J., Sharma, A., and Goel, S. The effect of recommendations on network structure. In WWW (2016), pp. 1157–1167. ",
+            "[56] Sweeney, L. Discrimination in online ad delivery. Queue 11, 3 (2013), 10. ",
+            "[57] Tingle, D., Kim, Y. E., and Turnbull, D. Exploring automatic music annotation with acoustically-objective tags. In Proceedings of the international conference on Multimedia information retrieval (2010), ACM, pp. 55–62. ",
+            "[58] Treviranus, J., and Hockema, S. The value of the unpopular: Counteracting the popularity echo-chamber on the web. In Science and Technology for Humanity (TIC-STH), 2009 IEEE Toronto International Conference (2009), IEEE, pp. 603–608. ",
+            "[59] Tufekci, Z. Youtube, the great radicalizer. https://www.nytimes.com/2018/03/ 10/opinion/sunday/youtube-politics-radical.html, March 2018. ",
+            "[60] Vanchinathan, H. P., Nikolic, I., De Bona, F., and Krause, A. Explore-exploit in top-n recommender systems via gaussian processes. In RecSys (2014), ACM, pp. 225–232. ",
+            "[61] Wang, C., and Blei, D. M. Collaborative topic modeling for recommending scientific articles. In KDD (2011), KDD ’11, pp. 448–456. ",
+            "[62] Ying, Y., Feinberg, F., and Wedel, M. Leveraging missing ratings to improve online recommendation systems. Journal of marketing research 43, 3 (2006), 355–365. ",
+            "[63] Zeng, A., Yeung, C. H., Medo, M., and Zhang, Y.-C. Modeling mutual feedback between users and recommender systems. Journal of Statistical Mechanics: Theory and Experiment 2015, 7 (2015), P07020. ",
+            "[64] Zhou, T., Kuscsik, Z., Liu, J.-G., Medo, M., Wakeling, J. R., and Zhang, Y.-C. Solving the apparent diversity-accuracy dilemma of recommender systems. PNAS 107, 10 (2010), 4511–4515. "
+        ],
+        "bbox": [
+            517,
+            109,
+            913,
+            883
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "header",
+        "text": "Algorithmic Confounding in Recommendation Systems Increases Homogeneity RecSys ’18, October 2–7, 2018, Vancouver, BC, Canada ",
+        "bbox": [
+            83,
+            71,
+            913,
+            87
+        ],
+        "page_idx": 8
+    }
+]

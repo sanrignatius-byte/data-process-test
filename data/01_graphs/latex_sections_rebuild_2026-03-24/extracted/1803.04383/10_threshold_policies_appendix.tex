@@ -1,0 +1,254 @@
+% !TeX root = writeup.tex 
+\section{Optimality of Threshold Policies}
+
+\subsection{Proof of Lemma~\ref{lem:pol_sim_lemma}\label{sec:lem_pol_sim}} 
+	
+	We begin with the first statement of the lemma. Suppose $\polj \simj \polj'$. Then there exists a set $\calS \subset \X$ such that $\distj(x) = 0$ for all $x \in \calS$, and for all $x \notin \calS$, $\polj(x) = \polj'(x)$. Thus, 
+	\begin{eqnarray*}
+	\ratef_{\dist}(\polj) - \ratef_{\distj}(\polj') &=& \sum_{x \in \X}\distj(x)(\polj(x) - \polj'(x)) \\
+	&=& \sum_{x \in \calS}\distj(x)(\polj(x) - \polj'(x)) = 0\:. \\
+	\end{eqnarray*}
+	Conversely, suppose that $\ratefj(\polj) = \ratefj(\polj')$. 
+	Let $\polj = \pol_{c,\gamma}$ and $\polj' = \pol_{c',\gamma'}$ as in Definition~\ref{def:monotone_pols}. We now have the following cases:
+	\begin{enumerate}
+		\item Case 1: $c = c'$. Then $\polj(x) = \polj'(x)$ for all $x \in \X -\{c\}$. Hence, 
+		\begin{eqnarray*}
+		0 = \ratef_{\dist}(\polj) - \ratef_{\distj}(\polj') = \dist(x)(\polj(c) - \polj'(c)) \:.
+		\end{eqnarray*}
+		This implies that either $\polj(c) = \polj'(c)$, and thus $\polj(x) = \polj'(x)$ for all $x \in \X$, or otherwise $\dist(c) = 0$, in which case we still have $\polj \simj \polj'$ (since the two policies agree every outside the set $\{c\}$). 
+		\item Case 2: $c \ne c'$. We assume assume without loss of generality that $c' < c \le \maxscore$. Since the policies $\pol_{c',1}$ and $\pol_{c'+1,0}$ are identity for $c' < \maxscore$, we may also assume without loss of generality that $\gamma' \in [0,1)$. Thus for all $x \in \calS:= \{c',c'+1,\dots,C\}$, we have $\polj'(x) < \polj(x)$. This implies that 
+		\begin{eqnarray*}
+		0 &=& \ratef_{\dist}(\polj) - \ratef_{\distj}(\polj') \\
+		&=& \sum_{x \in \calS} \distj(x)(\polj(x) - \polj'(x)) \\
+		&\ge& \min_{x \in \calS}(\polj(c) - \polj'(x)) \cdot  \sum_{x \in \calS} \dist(x)\:.
+		\end{eqnarray*}
+		Since $\min_{x \in \calS}(\polj(c) - \polj'(x))  > 0$, it follows that $\sum_{x \in \calS} \distj(x) = 0$, whence $\polj \simj \polj'$.  
+		\end{enumerate}
+
+		Next, we show that $\ratef_{\dist}$ is a bijection from $\Monotone(\dist) \to [0,1]$. That $\ratef_{\dist}$ is injective follows immediately from the fact if $\ratefj(\pol) = \ratefj(\polj')$, then $\polj \simj \polj'$. To show it is surjective, we exhibit for every $\accrate \in [0,1]$ a threshold policy $\pol_{c,\gamma}$ for which $\ratefj(\pol_{c,\gamma}) = \accrate$. We may assume $\accrate < 1$, since the all-ones policy has a selection rate of $1$.
+
+		Recall the definition of the inverse CDF 
+		\begin{eqnarray*}
+		\RCDFj(\accrate) := \argmax\{c:\sum_{x=c}^C\dist(x) > \accrate\}\:.
+		\end{eqnarray*}
+		Since $\accrate < 1$, $\RCDFj(\accrate) \le \maxscore$. Let $\accrate_+ = \sum_{x=\RCDFj(\accrate)}^C\dist(x)$, and let $\accrate_- = \sum_{x=\RCDFj(\accrate) + 1}^C\dist(x)$. Note that by definition, we have $\accrate_- \le \accrate < \accrate_+$, and $\accrate_+ - \accrate_- = \dist(\RCDFj(\accrate))$. Hence, if we define $\gamma = \frac{\accrate - \accrate_-}{\accrate_+ - \accrate_-}$, we have 
+		\begin{eqnarray*}
+		\ratef_{\distj}(\pol_{\RCDFj(\accrate), \gamma}) =  \dist(\RCDFj(\accrate)) \gamma + \sum_{x=\RCDFj(\accrate) + 1}^C\dist(x) = \accrate_- + (\accrate_+ - \accrate_-)\gamma = \accrate_- + \accrate - \accrate_- = \accrate\:.
+		\end{eqnarray*}
+
+
+\subsection{Proof of Lemma~\ref{lem:optimal_best}~\label{sec:optimal_best_proof}}
+	Given $\pol \in [0,1]^{\maxscore}$, 
+	we define the \emph{normal cone} at $\pol$ as $\NC(\pol):= \mathrm{ConicalHull}\{\boldz: \pol + \boldz \in [0,1]^{\maxscore}\}$. 
+	We can describe $\NC(\pol)$ explicitly as:
+	\begin{eqnarray*}\label{eq:normal_cone_def}
+	 \NC(\pol) := \{\boldz \in \R^{\maxscore} : \boldz_i \le 0 \text{ if } \pol_i = 0, \boldz_i \ge 0 \text{ if } \pol_i = 1\}\:.
+	\end{eqnarray*}
+	Immediately from the above definition, we have the following useful identity, which is that for any vector $\boldg \in \R^\maxscore$,
+	\begin{eqnarray}\label{eq:normal_cone_first_order}
+	\langle \boldg, \boldz \rangle \le 0 ~\forall \boldz \in \NC(\pol),  &\text{if and only if}& \forall x\in \X, \begin{cases} \pol(x) = 0 & \boldg(x) < 0\\
+	\pol(x) = 1 & \boldg(x) > 0\\
+	\pol(x) \in [0,1] & \boldg(x) = 0
+	\end{cases}\:.
+	\end{eqnarray}
+
+
+	Now consider the optimization problem~\eqref{eq:optim}. By the first order KKT conditions, we know that for any optimizer $\pol_*$ of the above objective, there exists some $\lamhat \in \R$ such that, for all $\boldz \in \NC(\pol_*)$
+	\begin{eqnarray*}
+	\langle \boldz, \boldv \circ \dist + \lamhat \dist \circ \boldw \rangle \le 0\:.
+	\end{eqnarray*}
+	By~\eqref{eq:normal_cone_first_order}, we must have that
+	\begin{eqnarray*}
+	\pol_*(x) = \begin{cases} 0 & \dist(x)(\boldv(x) + \lamhat\boldw(x))< 0\\
+	1 & \dist(x)(\boldv(x) + \lamhat\boldw(x)) > 0\\
+	 \in [0,1] & \dist(x)(\boldv(x) + \lamhat\boldw(x)) = 0
+	\end{cases}\:.
+	\end{eqnarray*}
+	Now $\pol_*(x)$ is not necessarily a threshold policy. To conclude the theorem, it suffices to exhibit a threshold policy $\widetilde{\pol}_*$ such that $\pol_*(x) \simpi \widetilde{\pol}_*$. (Note that $\widetilde{\pol}_*(x)$ will also be feasible for the constraint, and have the same objective value; hence $\widetilde{\pol}_*$ will be optimal as well.)
+
+
+	Given $\pol_*$ and $\lamhat$, let $c_* = \min\{ c \in \X: \boldv(x) + \lamhat\boldw(x) \ge 0\}$. If either (a) $\boldw(x) = 0$ for all $x \in \X$ and $\boldv(x)$ is strictly increasing or (b) $\boldv(x)/\boldw(x)$ is strictly increasing, then the modified policy 
+	\begin{eqnarray*}
+	\widetilde{\pol}_*(x) = \begin{cases} 0 & x < c_*\\
+	\pol_*(x) & x = c_* \\
+	1 & x > c_*
+	\end{cases}~,
+	\end{eqnarray*}
+	is a threshold policy, and $\pol_*(x) \simpi \widetilde{\pol}_*$. Moreover, $\langle \boldw,\widetilde{\pol}_* \rangle = \langle \boldw,\widetilde{\pol}_* \rangle$ and $\langle \dist,\widetilde{\pol}_* \rangle = \langle \dist,\widetilde{\pol}_* \rangle$, which implies that $\widetilde{\pol}_*$ is an optimal policy for the objective in Lemma~\ref{lem:optimal_best}. 
+
+\subsection{Proof of Lemma~\ref{lem:der_comp}~\label{sec:der_comp_proof}}
+	We shall prove 
+	\begin{eqnarray}
+	\partial_+ \left(\distj \circ \ratef_{\distj}^{-1}(\accrate)\right) = \bolde_{\RCDFj(\beta)}~,
+	\end{eqnarray}
+	where the derivative is with respect to $\beta$.
+	The computation of the left-derivative is analogous. Since we are concerned with right-derivatives, we shall take $\accrate \in [0,1)$.
+	%
+	Since $\distj \circ \ratef_{\distj}^{-1}(\accrate)$ does not depend on the choice of representative for $\ratef_{\distj}^{-1}$, we can choose a cannonical representation for $\ratef_{\distj}^{-1}$. 
+	%
+	In Section~\ref{sec:lem_pol_sim}, we saw that the threshold policy $\pol_{\RCDFj(\accrate),\gamma(\accrate)}$ had acceptance rate $\accrate$, where we had defined 
+	\begin{eqnarray}
+	&&\accrate_+ = \sum_{x=\RCDFj(\accrate)}^C\dist(x)~\text{ and }~\accrate_- = \sum_{x=\RCDFj(\accrate) + 1}^C\dist(x)\:,\\
+	&&\gamma(\accrate) = \frac{\accrate - \accrate_-}{\accrate_+ - \accrate_-}~.
+	\end{eqnarray}
+	Note then that for each $x$, $\pol_{\RCDFj(\accrate),\gamma(\accrate)}(x)$ is piece-wise linear, and thus admits left and right derivatives. We first claim that
+	\begin{eqnarray}\label{eq:right_der_not_ex}
+	\forall x \in \X \setminus \{\RCDFj(\accrate)\},~~\partial_+ \pol_{\RCDFj(\accrate),\gamma(\accrate)}(x) = 0 \:.
+	\end{eqnarray}
+	To see this, note that $\RCDFj(\accrate)$ is right continuous, so for all $\epsilon$ sufficiently small, $\RCDFj(\accrate + \epsilon) = \RCDFj(\accrate)$. Hence, for all $\epsilon$ sufficiently small and all $x \ne \RCDF(\accrate)$, we have $\pol_{\RCDFj(\accrate+\epsilon),\gamma(\accrate + \epsilon)}(x) = \pol_{\RCDFj(\accrate+\epsilon),\gamma(\accrate + \epsilon)}(x)$, as needed. 
+	%
+	Thus, Equation~\eqref{eq:right_der_not_ex} implies that $\partial_+ \distj \circ \ratefj^{-1}(\accrate)$ is supported on $x = \RCDFj(\accrate)$, and hence
+	\begin{eqnarray*}
+	\partial_+ \distj \circ \ratefj^{-1}(\accrate) = \partial_+ \distj(x)\pol_{\RCDFj(\accrate),\gamma(\accrate)}(x) \big{|}_{x = \RCDFj(\accrate)} \cdot \bolde_{\RCDFj(\accrate)}\:.
+	\end{eqnarray*}
+
+	To conclude, we must show that $\partial_+ \distj(x)\pol_{\RCDFj(\accrate),\gamma(\accrate)}(x) \big{|}_{x = \RCDFj(\accrate)} = 1$. To show this, we have
+	\begin{eqnarray*}
+	1 &=& \partial_+(\accrate)\\
+	&=& \partial_+(\ratefj(\pol_{\RCDFj(\accrate),\gamma(\accrate)}))\quad\text{since}\quad\quad\ratefj(\pol_{\RCDFj(\accrate),\gamma(\accrate)}) = \accrate ~\forall \accrate \in [0,1)\\
+	&=& \partial_+\left(\sum_{x \in \X} \dist(x) \cdot \pol_{\RCDFj(\accrate),\gamma(\accrate)}(x)\right)\\
+	&=& \partial_+  \dist(x) \cdot \pol_{\RCDFj(\accrate),\gamma(\accrate)}(x)\big{|}_{x = \RCDFj(\accrate)}~, \text{ as needed. }
+	\end{eqnarray*}
+% \subsection{Notation}	
+% We begin by establishing notation which we shall use throughout. Recall that $\hdmd$ denotes the Hadamard product between vectors, and throughout, we identify functions mapping $\X \to \R$ with vectors in $\R^{\maxscore}$. We also define the group-wise utilities 
+% \begin{eqnarray}
+% \Util\supj(\polj) := \sum_{x \in \X}\distj(x) \polj(x)\util(x)~,
+% \end{eqnarray}
+% So that for $\pol = (\pola,\polb)$, $\Util(\pol):= \fraca \Util\supa(\pola) + \fracb\Util\supb(\polb)$. Lastly, given a function $f:[a,b] \to \R$, we define the left and right derivatives at $x = (a,b]$ and $y \in [a,b)$ as 
+% \begin{eqnarray}
+% \partial_- f(x):= \lim_{t \to 0^-}\frac{f(x + t) - f(x)}{t} \quad \text{and} \quad \partial_+ f(y):= \lim_{t \to 0^+}\frac{f(y + t) - f(y)}{t} 
+% \end{eqnarray}
+% We say that $f$ is left- (resp. right-) differentiable if $\partial_-f(x)$ exists for all $x \in (a,b]$ (resp. $\partial_+ f(y)$ exists for all $y \in (a,b]$). We remark that $f$ is concave (and finite) on $[a,b]$ if and only (a) $f$ is left- and right-differentiable, (b) for all $x \in (a,b)$, $\partial_-f(x) \ge \partial_+f(x)$ and (c) for any $x > y$, $\partial_- f(x) \le \partial_+ f(y)$. Lastly, we introduce with notion of measure-zero sets:
+% \begin{defn}[$\distj$-measure zero] We say that set $\mathcal{S}$ has $\distj$-measure zero if $\sum_{x \in \mathcal{S}} \distj(x) = 0$. 
+% \end{defn}
+
+
+% \subsection{Threshold Policies \label{app:threshold_pol}}
+%  Given a policy $\polj$ and distribution $\distj$, we define the selection rate function
+% 	\begin{eqnarray}
+% 	\ratef_{\distj}(\polj) := \sum_{x \in \X} \distj(x) \polj(x)
+% 	\end{eqnarray}
+
+% 	which denotes the fraction of group $\popj$ which is selected. We will show that, up to subsets of $\X$ with zero mass under $\distj$, $\ratef_{\distj}$ is a bijection between selection rate and threshold policies, defined below:
+
+% 	%further show that for the optimization problems presented in the previous section, threshold policies are sufficient to characterize the solutions.
+% \begin{defn}[Threshold selection policy] \label{def:monotone_pols}
+
+% 	A single group selection policy $\pol \in [0,1]^\maxscore$ is called a \emph{threshold policy} if it has the form of a randomized threshold on score:
+% 	\begin{align} \pol_{c,\gamma}= \begin{cases}
+% 	1, & x > c \\
+% 	\gamma, & x=c \\
+% 	0, & x < c
+% 	\end{cases} ~, \text{ for some }~c \in [\maxscore]~\text{and}~ \gamma \in (0,1] \:.
+% 	\end{align} 
+% \end{defn}
+
+% % Then, define the set $\Monotone(\distj)$ to denote the set of all threshold policies $\pol_{c,\gamma}$ such that, $\gamma = 1$ if $\distj(c) = 0$ and $\distj(c-1) > 0$ if $\gamma = 1$ and $c > 1$. Intuitively, $\Monotone(\distj)$ standardizes all threshold policies to account for scores with zero mass under $\distj$, and one can check that $\ratef_{\distj}$ is a bijection between policies $\Monotone(\distj)$ and $[0,1]$. 
+
+% % We also say that a set $\mathcal{S}$ has $\distj$-measure zero if $\sum_{x \in \mathcal{S}} \distj(x) = 0$, and remark that any threshold policy $\polj$, there exists a $\polj' \in \Monotone(\distj)$ which coincides with $\polj$ up to a set of scores $\mathcal{S} \subset \X$ of $\distj$-measure zero. The next lemma shows that threshold policies are always desirable among policies with a fixed selection rate:
+% % \begin{prop}[Threshold Policies are Preferable]\label{lem:monotone_best} Suppose that $\util(x)$ and $\chg(x)$ are monotone in $x$. Given any loaning policy $\polj$  with distribution $\dist$ and selection rate $\accrate$, then any threshold policy $\pol_\mono$ with $\ratef_{\distj}(\pol_\mono) = \ratef_{\distj}(\polj)$ is preferable to $\polj$ in the sense that $\Util\supj(\pol_\mono) \ge \Util\supj(\pol)$ and $\delmean\supj(\pol_\mono) \ge \delmean(\pol)$. 
+% % \end{prop}
+% % Moreover, an institution can always maximize it utility subject to $\maxprof$, $\dem$ or $\eqop$ by selecting a threshold policy:
+% % \begin{lem}[Existence of Optimal Threshold Policies]\label{lem:opt_monotone} If $\util(x)$ is strictly increasing, then under $\dempar$ or $\maxprof$, there for all optimal policies $\pol^* = (\pola^*,\polb^*)$, there exists monotone 
+% % $\polj \in \Monotone(\distj)$ for $j \in \{\popa,\popb\}$. The same is true under $\eqop$ if $\util(x)/\pb(x)$ is monotone (e.g. linear $\pb$).  Moreover, for every policy $\tau \in \Monotone$ and every $\pi$, there exists a policy $\tau' \in \Monotone(\pi)$ such that $f_{\pi}(\tau) = f_{\pi}(\tau')$. 
+% % 
+% % =======
+% Then, define the set $\Monotone(\distj)$ to denote the set of all threshold policies $\pol_{c,\gamma}$ such that, $\gamma = 1$ if $\distj(c) = 0$ and $\distj(c-1) > 0$ if $\gamma = 1$ and $c > 1$. Intuitively, $\Monotone(\distj)$ standardizes all threshold policies to account for scores with zero mass under $\distj$, and one can check that $\ratef_{\distj}$ is a bijection between policies $\Monotone(\distj)$ and $[0,1]$.
+% We remark that for any threshold policy $\polj$, there exists a $\polj' \in \Monotone(\distj)$ which coincides with $\polj$ up to a set of scores $\mathcal{S} \subset \X$ of $\distj$-measure zero.  The next lemma shows that threshold policies are always desirable given a fixed selection rate, in the following sense:
+% \begin{prop}[Threshold Policies are Preferable]\label{lem:monotone_best} Suppose that $\util(x)$ and $\chg(x)$ are increasing in $x$. Given any loaning policy $\polj$  with distribution $\dist$ and selection rate $\accrate$, then any threshold policy $\pol_\mono$ with $\ratef_{\distj}(\pol_\mono) = \ratef_{\distj}(\polj)$ is preferable to $\polj$ in the sense that $\Util\supj(\pol_\mono) \ge \Util\supj(\pol)$ and $\delmean\supj(\pol_\mono) \ge \delmean(\pol)$. 
+% \end{prop}
+% Moreover, an institution can always maximize its utility subject to $\maxprof$, $\dem$ or $\eqop$ by selecting a threshold policy:
+% \begin{lem}[Existence of Optimal Threshold Policies]\label{lem:opt_monotone} If $\util(x)$ is strictly increasing, then under $\dempar$ or $\maxprof$, then for all optimal policies $\pol^* = (\pola^*,\polb^*)$, there exists monotone 
+% $\polj \in \Monotone(\distj)$ for $j \in \{\popa,\popb\}$. The same is true under $\eqop$ if $\util(x)/\pb(x)$ is strictly increasing (e.g. the example of linear $\pb$).  Moreover, for every policy $\tau \in \Monotone$ and every $\pi$, there exists a policy $\tau' \in \Monotone(\pi)$ such that $f_{\pi}(\tau) = f_{\pi}(\tau')$. 
+% \end{lem}
+% The statements above are proven in the following subsection, using a more general technical result, Proposition~\ref{prop:optimal_best}.
+
+% \subsection{Proof of Optimality of Threshold Policies}
+% 		In this statement, we prove results which justify our consideration of threshold policies. We begin by stating the following technical lemma, which we prove in the following subsection
+% 		\begin{prop}\label{prop:optimal_best}
+% 		Let $\boldv \in \R^{\maxscore}$, and let $\boldw \in \R_{>0}^{\maxscore}$, 
+% 		and suppose that both $\boldv(x)$ and $\boldv(x)/\boldw(x)$ is increasing in $x$. 
+% 		Then, for any $\dist \in \Simplex$,
+% 		\begin{eqnarray}\label{eq:optim}
+% 		\max_{\pol \in [0,1]^C}\langle \boldv, \pol \rangle \quad \subto \quad \langle \dist \circ \boldw,\pol \rangle = t
+% 		\end{eqnarray}
+% 		is feasible for $t \in [0,\sum_{x \in \X} \boldw(x)]$, and any solution $\widetilde{\pol}^*$ coincides with some other policy $\overline{\pol}^* \in \Monotone(\dist)$, up to a set of $\dist$-measure zero. The conclusion is also true if $t = 0$ and $\boldw = 0$.
+% 		\end{prop}
+% 		We are now ready to prove technical results which had appeared earlier in the work.
+% 		\begin{proof}[Proof of Lemma~\ref{lem:monotone_best}] The lemma follows as an immediate corollary of Proposition~\ref{prop:optimal_best}, by choosing $\boldw $ to be the one's vector, and choose $\boldv(x)$ to be either $\util(x)$ or $\chg(x)$.
+% 		\end{proof}
+% 		\begin{proof}[Proof of Lemma~\ref{lem:opt_monotone}] $\maxprof$ follows from Proposition~\ref{prop:optimal_best} with $\boldv(x) = \util(x)$, and $t = 0$ and $\boldw = \mathbf{0}$. The lemma for $\dempar$ follows since one can write
+% 		\begin{eqnarray}
+% 		&&\arg\max_{\pol = (\pola,\polb)} \Util(\pol) \quad \subto \quad \ratef_{\dista}(\pola) = \ratef_{\distb}(\polb)\\
+% 		&=& \arg\max_{\pol = (\pola,\polb),\beta} \Util(\pol) \quad \subto \quad \ratef_{\dista}(\pola) = \ratef_{\distb}(\polb) = \accrate
+% 		\end{eqnarray}
+% 		Noting that $\ratef_{\distj}(\polj) = \langle \distj , \polj \rangle$, we see that under the special case that $\boldv(x) = \util(x)$ and $\boldw(x) = 1$, the optimal solution $(\pola^*(\accrate),\polb^*(\accrate))$ for $\ratef_{\dista}(\pola) = \ratef_{\distb}(\polb) = \accrate$ can be chosen to coincide with the threshold policies by Proposition~\ref{prop:optimal_best}, and hence optimizing over $\accrate$, the global optimal must coincide with thresholds. The same argument holds for $\eqop$ by choosing $\boldv(x) = \util(x)$ and $\boldw(x) = \pb(x)$, recalling that we assume $\util(x)/\pb(x)$ is increasing. 
+% 		\end{proof}
+% \subsection{Proof of Proposition~\ref{prop:optimal_best}}
+% 	Given $\pol \in [0,1]^{\maxscore}$, 
+% 	we define the \emph{normal cone} at $\pol$ as $\NC(\pol):= \mathrm{ConicalHull}\{\boldz: \pol + \boldz \in [0,1]^{\maxscore}\}$. 
+% 	We can describe $\NC(\pol)$ explicitly as:
+% 	\begin{eqnarray*}\label{eq:normal_cone_def}
+% 	 \NC(\pol) := \{\boldz \in \R^{\maxscore} : \boldz_i \le 0 \text{ if } \pol_i = 0, \boldz_i \ge 0 \text{ if } \pol_i = 1\}
+% 	\end{eqnarray*}
+% 	Immediately from the above definition, we have the following useful identity, which is that for any vector $\boldg \in \R^\maxscore$,
+% 	\begin{eqnarray}\label{eq:normal_cone_first_order}
+% 	\forall \boldz \in \NC(\pol), \langle \boldg, \boldz \rangle \le 0  &\text{if and only if}& \forall x\in \X, \begin{cases} \pol(x) = 0 & \boldg(x) < 0\\
+% 	\pol(x) = 1 & \boldg(x) > 0\\
+% 	\pol(x) \in [0,1] & \boldg(x) = 0\\
+% 	\end{cases}
+% 	\end{eqnarray}
+
+
+% 	Now consider the optimization problem~\eqref{eq:optim}. By the first order KKT conditions, we know that for any optimizer $\pol_*$ of the above objective, there exists some $\lamhat \in \R$ such that, for all $\boldz \in \NC(\pol_*)$
+% 	\begin{eqnarray*}
+% 	\langle \boldz, \boldv \circ \dist + \lamhat \dist \circ \boldw \rangle \le 0
+% 	\end{eqnarray*}
+% 	By~\eqref{eq:normal_cone_first_order}, we must have that
+% 	\begin{eqnarray*}
+% 	\pol_*(x) = \begin{cases} 0 & \dist(x)(\boldv(x) + \lamhat\boldw(x))< 0\\
+% 	1 & \dist(x)(\boldv(x) + \lamhat\boldw(x)) > 0\\
+% 	 \in [0,1] & \dist(x)(\boldv(x) + \lamhat\boldw(x)) = 0\\
+% 	\end{cases}
+% 	\end{eqnarray*}
+% 	Now, given $\lamhat$, let $c_* = \min\{ c \in \X: \boldv(x) + \lamhat\boldw(x) \ge 0\}$. If either (a) $\boldw(x) = 0$ for all $x \in \X$ and $\boldv(x)$ is strictly increasing or (b) $\boldv(x)/\boldw(x)$ is strictly increasing, then the modified policy 
+% 	\begin{eqnarray*}
+% 	\widetilde{\pol}_*(x) = \begin{cases} 0 & x < c_*\\
+% 	\pol_*(x) & x = c_* \\
+% 	1 & x > c_*
+% 	\end{cases}~,
+% 	\end{eqnarray*}
+
+% 	is a threshold policy, agrees with $\pol_*$ up to a set of $\dist$-measure zero, and thus also satisfies $\langle \boldw,\widetilde{\pol}_* \rangle = \langle \boldw,\widetilde{\pol}_* \rangle$ and $\langle \dist,\widetilde{\pol}_* \rangle = \langle \dist,\widetilde{\pol}_* \rangle$. It is also straightforward to further modify $\widetilde{\pol}_*$ so that it lies in $\Monotone(\pi)$. 
+
+
+
+% \subsection{Quantiles and Concavity of the Outcome Curve\label{app:concavity_outcome}}
+
+% We now introduce left and right quantile functions which allows us to specify thresholds in terms of both selection rate and score cutoffs. 
+
+% \begin{defn}[Upper quantile function] Define $\RCDF$ to be the upper quantile function corresponding to $\dist$, i.e. \begin{align}
+% 	\RCDF(\accrateb) = \argmax\{a:\sum_{x=a}^C\dist(x) > \accrateb\}
+% 	\quad\text{and}\quad \RCDFpl(\accrateb) = \argmax\{a:\sum_{x=a}^C\dist(x) \ge \accrate\}
+% 	\end{align}
+% \end{defn}
+% In particular, if $\pol = f_{\pi}^{-1}(\accrate) \in \Monotone(\accrate)$, then the expected change in mean resulting from a decision rule $\pol$ is given by $\delmean (\ratef_{\pi}^{-1}(\accrate))  = \left(\sum_{x = \RCDF(\accrateb) + 1}^{\maxscore} \dist (x) \chg(x) \right)
+% + \gamma\dist(\RCDF(\accrateb)) \chg(\RCDF(\accrateb))$. Hence the quantile functions allow us to conduct useful derivative computations for analyzing the optimization. Formally, we now state a key computation which will be used throughout:
+% 	\begin{lem}\label{lem:der_comp} Let $\bolde_{x}$ denote the vector such that $\bolde_x(x) = 1$, and $\bolde_x(x') = 0$ for $x' \ne x$. Then $\distj \circ \ratef_{\distj}^{-1}(\accrate): [0,1] \to [0,1]^{\maxscore}$ is a continuous, and has left and right derivatives 
+% 	\begin{eqnarray}
+% 	\partial_+ \distj \circ \ratef_{\distj}^{-1}(\accrate) = \bolde_{\RCDF(\beta)} 
+% 	\quad \text{and}\quad \partial_- \distj \circ \ratef_{\distj}^{-1}(\accrate) = \bolde_{\RCDFpl(\beta)}
+% 	\end{eqnarray}
+% 	\end{lem}
+% 	The above lemma is a straightforward computation, omitted in the interest of brevity. The lemma will be central to many of our computations, and it implies that the outcome curve is concave under the assumption that $\chg(x)$ is monotone:
+% 	\begin{prop}\label{prop:beta_concavity} Let $\dist$ be a distribution over $C$ states. Then $\accrate \mapsto \delmean(\ratef_{\dist}^{-1}(\accrate))$ is concave.
+% 	\end{prop}
+% 		\begin{proof} 
+% 		Observe that $\delmean(\ratef_{\dist}^{-1}(\accrate)) = \langle \chg, \dist \circ  \ratef_{\dist}^{-1}(\accrate) \rangle $. By Lemma~\ref{lem:der_comp}, $\dist \circ  \ratef_{\dist}^{-1}(\accrate)$ has right and left derivatives $\bolde_{\RCDF(\accrate)}$ and $\bolde_{\RCDFpl(\accrate)}$. Hence, we have that
+% 		\begin{eqnarray}
+% 		\partial_+ \delmean(\accrateb) = \chg(\RCDF(\accrateb))\quad\text{and}\quad \partial_- \delmean(\accrateb) = \chg(\RCDFpl(\accrateb))
+% 		\end{eqnarray}
+% 		Using the fact that $\chg(x)$ is monotone, and that $\RCDF \le \RCDFpl$, we see that $\partial_+ \delmean(f_{\dist}^{-1}(\accrateb)) \le \partial_- \delmean(f_{\dist}^{-1}(\accrateb))  $, and that $\partial \delmean(f_{\dist}^{-1}(\accrateb))$ and $\partial_+ \delmean(f_{\dist}^{-1}(\accrateb))$ are non-increasing, from which it follows that $\delmean(f_{\dist}^{-1}(\accrateb))$ is concave.
+% 		\end{proof} 
+
+

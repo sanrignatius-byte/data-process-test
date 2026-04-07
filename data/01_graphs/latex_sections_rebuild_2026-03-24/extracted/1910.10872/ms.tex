@@ -1,0 +1,75 @@
+\pdfoutput=1
+\documentclass[letterpaper]{article}
+\usepackage[dvipdfmx]{graphicx} 
+\usepackage{bmpsize}
+\usepackage{aaai20}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{multirow}
+\usepackage{courier}
+\usepackage{graphicx}
+\usepackage{booktabs}
+%\usepackage{titlesec}
+\usepackage[toc,page]{appendix}
+\usepackage{url}
+%\setlength\belowcaptionskip{-4.18ex}
+
+\frenchspacing
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{soul}
+
+%%% Custom commands 
+% comments and notes
+\newcommand\tg[1]{\textcolor{blue}{\textsuperscript{TG:}#1}}
+\newcommand\nina[1]{\textcolor{green}{Nina: #1}}
+\newcommand\tgedit[2]{\textsuperscript{TG:}\st{#1}\textcolor{cyan}{#2}}
+%%%%
+
+\usepackage{todonotes}
+\newcommand{\Note}[2]{\todo[color=#1,size=\footnotesize, inline=true]{#2}} 
+\newcommand{\SideNote}[2]{\todo[color=#1,size=\footnotesize]{#2}} % 
+\newcommand{\NoteNP}[1]{\Note{purple!40}{#1 --Nanyun}}
+\newcommand{\NP}[1]{\SideNote{purple!40}{#1 --Nanyun}}
+
+\newcommand{\citet}[1]{\citeauthor{#1} \shortcite{#1}}
+\newcommand{\citep}{\cite}
+\newcommand{\citealp}[1]{\citeauthor{#1} \citeyear{#1}}
+
+\pdfinfo{
+/Title (Insert Your Title Here)
+/Author (Put All Your Authors Here, Separated by Commas)}
+\setcounter{secnumdepth}{0}  
+ \begin{document}
+% The file aaai.sty is the style file for AAAI Press 
+% proceedings, working notes, and technical reports.
+%
+\title{Man is to Person as Woman is to Location: \\Measuring Gender Bias in Named Entity Recognition}%140 Years of Gender Bias in Named Entity Recognition}
+\author{Ninareh Mehrabi, Thamme Gowda, Fred Morstatter, Nanyun Peng, Aram Galstyan, \\
+ University of Southern California\\
+        Information Sciences Institute\\
+        \{ninarehm, tg, fredmors, npeng, galstyan\}@isi.edu}
+\maketitle
+\begin{abstract}
+\begin{quote}
+
+We study the bias in several state-of-the-art named entity recognition (NER) models---specifically, a  difference in the ability to recognize male and female names as PERSON entity types.
+We evaluate NER models on a dataset containing  139 years of U.S. census baby names and find that relatively more female names, as opposed to male names, are not recognized as PERSON entities. We study the extent of this bias in several NER systems that are used prominently in industry and academia. In addition, we also report a bias in the datasets on which these models were trained. 
+The result of this analysis yields a new benchmark for gender bias evaluation in named entity recognition systems.
+%This introduces a new dimension of bias in models with version updates and show that version updates can actually amplify the existing bias in these systems by performing a more fine grained error analysis of current state of the art methods. 
+The data and code for the application of this benchmark will be publicly available for researchers to use.\footnote{\label{projecturl}\url{https://github.com/Ninarehm/NERGenderBias}}
+
+\end{quote}
+\end{abstract}
+\input{sections/Introduction.tex} 
+\input{sections/Models_Experiments.tex}
+\input{sections/Version_Comparision.tex}
+\input{sections/Data.tex}
+\input{sections/Related_work.tex}
+\input{sections/Conclusion_futurework.tex}
+\bibliographystyle{aaai}
+\bibliography{references}
+\input{sections/Suplement.tex}
+\end{document}

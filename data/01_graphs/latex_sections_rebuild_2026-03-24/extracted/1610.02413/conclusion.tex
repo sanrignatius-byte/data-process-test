@@ -1,0 +1,71 @@
+\section{Conclusions}
+%
+We proposed a fairness measure that accomplishes two important desiderata.
+First, it remedies the main conceptual shortcomings of demographic parity as a
+fairness notion. Second, it is fully aligned with the central goal of supervised
+machine learning, that is, to build higher accuracy classifiers.
+In light of our results, we draw several conclusions aimed to help interpret and
+apply our framework effectively.
+
+\paragraph{Choose reliable target variables.}
+
+Our notion requires access to observed outcomes such as default rates in the
+loan setting. This is precisely the same requirement that supervised learning
+generally has. The broad success of supervised learning demonstrates that this
+requirement is met in many important applications. That said, having access
+to reliable ``labeled data'' is not always possible. Moreover, the measurement
+of the target variable might in itself be unreliable or biased. Domain-specific
+scrutiny is required in defining and collecting a reliable target variable.
+
+\paragraph{Measuring unfairness, rather than proving fairness.}
+
+Due to the limitations we described, satisfying our notion (or any other
+oblivious measure) should not be considered a conclusive \emph{proof of
+fairness}. Similarly, violations of our condition are not meant to be a proof of
+unfairness. Rather we envision our framework as providing a reasonable way of
+discovering and measuring potential concerns that require further scrutiny. We
+believe that resolving fairness concerns is ultimately impossible without
+substantial domain-specific investigation. This realization echoes earlier
+findings in ``Fairness through Awareness''~\cite{DworkHPRZ12} describing the
+task-specific nature of fairness.
+
+\paragraph{Incentives.}
+
+Requiring equalized odds creates an incentive structure for the entity
+building the predictor that aligns well with achieving fairness.
+Achieving better prediction with equalized odds requires collecting
+features that more directly capture the target $Y$, unrelated to its
+correlation with the protected attribute. Deriving an equalized
+odds predictor from a score involves considering the pointwise minimum
+ROC curve among different protected groups, encouraging constructing
+of predictors that are accurate in all groups, e.g.,~by collecting data
+appropriately or basing prediction on features predictive in all
+groups.
+
+\paragraph{When to use our post-processing step.}
+An important feature of our notion is that it can be achieved via a simple and
+efficient post-processing step. In fact, this step requires only aggregate
+information about the data and therefore could even be carried out in a
+privacy-preserving manner (formally, via Differential Privacy). In contrast,
+many other approaches require changing a usually complex machine learning
+training pipeline, or require access to raw data. Despite its simplicity, our
+post-processing step exhibits a strong optimality principle. If the underlying
+score was close to optimal, then the derived predictor will be close to optimal
+among all predictors satisfying our definition. However, this does not mean that
+the predictor is necessarily good in an absolute sense. It also does not mean
+that the loss compared to the original predictor is always small.  An
+alternative to using our post-processing step is always to invest in better
+features and more data. Only when this is no longer an option, should our
+post-processing step be applied.
+
+\paragraph{Predictive affirmative action.}
+In some situations, including Scenario II in
+Section~\ref{sec:oblivious}, the equalized odds predictor can be thought of as
+introducing some sort of affirmative action: the optimally predictive
+score~$R^*$ is shifted based on~$A$. This shift compensates for the fact that,
+due to uncertainty, the score is in a sense more biased then the target label
+(roughly, $R^*$ is more correlated with~$A$ then~$Y$ is correlated with~$A$).
+Informally speaking, our approach transfers the \emph{burden of uncertainty}
+from the protected class to the decision maker. We believe this is a reasonable
+proposal, since it incentivizes the decision maker to invest additional
+resources toward building a better model.

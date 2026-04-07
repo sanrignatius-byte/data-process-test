@@ -1,0 +1,3599 @@
+[
+    [
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Men Also Like Shopping: Reducing Gender Bias Amplification using Corpus-level Constraints "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                147,
+                80,
+                852,
+                118
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Jieyu Zhao§ Tianlu Wang§ Mark Yatskar‡ "
+                    }
+                ]
+            },
+            "bbox": [
+                280,
+                134,
+                724,
+                152
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Vicente Ordonez§ Kai-Wei Chang§ "
+                    }
+                ]
+            },
+            "bbox": [
+                332,
+                152,
+                670,
+                168
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "§University of Virginia "
+                    }
+                ]
+            },
+            "bbox": [
+                410,
+                168,
+                596,
+                185
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "{jz4fu, tw8cb, vicente, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "_ { \\mathrm { k c 2 w c } } \\} \\mathcal { O }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "virginia.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                319,
+                186,
+                685,
+                202
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "‡University of Washington "
+                    }
+                ]
+            },
+            "bbox": [
+                394,
+                203,
+                611,
+                219
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "my89@cs.washington.edu "
+                    }
+                ]
+            },
+            "bbox": [
+                394,
+                219,
+                610,
+                235
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "Abstract "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                263,
+                263,
+                341,
+                278
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Language is increasingly being used to define rich visual recognition problems with supporting image collections sourced from the web. Structured prediction models are used in these tasks to take advantage of correlations between co-occurring labels and visual input but risk inadvertently encoding social biases found in web corpora. In this work, we study data and models associated with multilabel object classification and visual semantic role labeling. We find that (a) datasets for these tasks contain significant gender bias and (b) models trained on these datasets further amplify existing bias. For example, the activity cooking is over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "33 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "more likely to involve females than males in a training set, and a trained model further amplifies the disparity to "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "68 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "at test time. We propose to inject corpus-level constraints for calibrating existing structured prediction models and design an algorithm based on Lagrangian relaxation for collective inference. Our method results in almost no performance loss for the underlying recognition task but decreases the magnitude of bias amplification by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 7 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "40 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for multilabel classification and visual semantic role labeling, respectively. "
+                    }
+                ]
+            },
+            "bbox": [
+                142,
+                292,
+                460,
+                760
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "1 Introduction "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                771,
+                260,
+                785
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Visual recognition tasks involving language, such as captioning (Vinyals et al., 2015), visual question answering (Antol et al., 2015), and visual semantic role labeling (Yatskar et al., 2016), have emerged as avenues for expanding the diversity of information that can be recovered from images. These tasks aim at extracting rich seman-"
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                797,
+                489,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "tics from images and require large quantities of labeled data, predominantly retrieved from the web. Methods often combine structured prediction and deep learning to model correlations between labels and images to make judgments that otherwise would have weak visual support. For example, in the first image of Figure 1, it is possible to predict a spatula by considering that it is a common tool used for the activity cooking. Yet such methods run the risk of discovering and exploiting societal biases present in the underlying web corpora. Without properly quantifying and reducing the reliance on such correlations, broad adoption of these models can have the inadvertent effect of magnifying stereotypes. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                263,
+                884,
+                505
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this paper, we develop a general framework for quantifying bias and study two concrete tasks, visual semantic role labeling (vSRL) and multilabel object classification (MLC). In vSRL, we use the imSitu formalism (Yatskar et al., 2016, 2017), where the goal is to predict activities, objects and the roles those objects play within an activity. For MLC, we use MS-COCO (Lin et al., 2014; Chen et al., 2015), a recognition task covering 80 object classes. We use gender bias as a running example and show that both supporting datasets for these tasks are biased with respect to a gender binary1. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                506,
+                882,
+                697
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our analysis reveals that over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "45 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "37 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of verbs and objects, respectively, exhibit bias toward a gender greater than 2:1. For example, as seen in Figure 1, the cooking activity in imSitu is a heavily biased verb. Furthermore, we show that after training state-of-the-art structured predictors, models amplify the existing bias, by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 . 0 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for vSRL, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in MLC. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                699,
+                882,
+                826
+            ]
+        },
+        {
+            "type": "page_aside_text",
+            "content": {
+                "page_aside_text_content": [
+                    {
+                        "type": "text",
+                        "content": "arXiv:1707.09457v1 [cs.AI] 29 Jul 2017 "
+                    }
+                ]
+            },
+            "bbox": [
+                21,
+                324,
+                60,
+                724
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "1To simplify our analysis, we only consider a gender binary as perceived by annotators in the datasets. We recognize that a more fine-grained analysis would be needed for deployment in a production system. Also, note that the proposed approach can be applied to other NLP tasks and other variables such as identification with a racial or ethnic group. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                835,
+                882,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/ca5e785e38887226617cad34a9f5c2cd2168a09f014cc3112d2072b6ac322951.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "Figure 1: Five example images from the imSitu visual semantic role labeling (vSRL) dataset. Each image is paired with a table describing a situation: the verb, cooking, its semantic roles, i.e agent, and noun values filling that role, i.e. woman. In the imSitu training set, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "33 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of cooking images have man in the agent role while the rest have woman. After training a Conditional Random Field (CRF), bias is amplified: man fills "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "16 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of agent roles in cooking images. To reduce this bias amplification our calibration method adjusts weights of CRF potentials associated with biased predictions. After applying our methods, man appears in the agent role of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "20 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of cooking images, reducing the bias amplification by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "2 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", while keeping the CRF vSRL performance unchanged. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                117,
+                70,
+                884,
+                229
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To mitigate the role of bias amplification when training models on biased corpora, we propose a novel constrained inference framework, called RBA, for Reducing Bias Amplification in predictions. Our method introduces corpus-level constraints so that gender indicators co-occur no more often together with elements of the prediction task than in the original training distribution. For example, as seen in Figure 1, we would like noun man to occur in the agent role of the cooking as often as it occurs in the imSitu training set when evaluating on a development set. We combine our calibration constraint with the original structured predictor and use Lagrangian relaxation (Korte and Vygen, 2008; Rush and Collins, 2012) to reweigh bias creating factors in the original model. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                399,
+                489,
+                657
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We evaluate our calibration method on imSitu vSRL and COCO MLC and find that in both instances, our models substantially reduce bias amplification. For vSRL, we reduce the average magnitude of bias amplification by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "40 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For MLC, we are able to reduce the average magnitude of bias amplification by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 7 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Overall, our calibration methods do not affect the performance of the underlying visual system, while substantially reducing the reliance of the system on socially biased correlations2. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                665,
+                489,
+                843
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "2 Related Work "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                399,
+                665,
+                414
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "As intelligence systems start playing important roles in our daily life, ethics in artificial intelligence research has attracted significant interest. It is known that big-data technologies sometimes inadvertently worsen discrimination due to implicit biases in data (Podesta et al., 2014). Such issues have been demonstrated in various learning systems, including online advertisement systems (Sweeney, 2013), word embedding models (Bolukbasi et al., 2016; Caliskan et al., 2017), online news (Ross and Carter, 2011), web search (Kay et al., 2015), and credit score (Hardt et al., 2016). Data collection biases have been discussed in the context of creating image corpus (Misra et al., 2016; van Miltenburg, 2016) and text corpus (Gordon and Van Durme, 2013; Van Durme, 2010). In contrast, we show that given a gender biased corpus, structured models such as conditional random fields, amplify the bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                507,
+                426,
+                884,
+                731
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The effect of the data imbalance can be easily detected and fixed when the prediction task is simple. For example, when classifying binary data with unbalanced labels (i.e., samples in the majority class dominate the dataset), a classifier trained exclusively to optimize accuracy learns to always predict the majority label, as the cost of making mistakes on samples in the minority class can be neglected. Various approaches have been proposed to make a “fair” binary classification (Barocas and Selbst, 2014; Dwork et al., 2012; Feldman "
+                    }
+                ]
+            },
+            "bbox": [
+                507,
+                732,
+                884,
+                909
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "2Code and data are available at https://github. com/uclanlp/reducingbias "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                882,
+                485,
+                909
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "et al., 2015; Zliobaite, 2015). For structured prediction tasks the effect is harder to quantify and we are the first to propose methods to reduce bias amplification in this context. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                74,
+                489,
+                139
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Lagrangian relaxation and dual decomposition techniques have been widely used in NLP tasks (e.g., (Sontag et al., 2011; Rush and Collins, 2012; Chang and Collins, 2011; Peng et al., 2015)) for dealing with instance-level constraints. Similar techniques (Chang et al., 2013; Dalvi, 2015) have been applied in handling corpus-level constraints for semi-supervised multilabel classification. In contrast to previous works aiming for improving accuracy performance, we incorporate corpus-level constraints for reducing gender bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                143,
+                489,
+                319
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "3 Visualizing and Quantifying Biases "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                344,
+                452,
+                363
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Modern statistical learning approaches capture correlations among output variables in order to make coherent predictions. However, for realworld applications, some implicit correlations are not appropriate, especially if they are amplified. In this section, we present a general framework to analyze inherent biases learned and amplified by a prediction model. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                380,
+                489,
+                508
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Identifying bias We consider that prediction problems involve several inter-dependent output variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { 1 } , y _ { 2 } , . . . y _ { K }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which can be represented as a structure "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y ~ = ~ \\{ y _ { 1 } , y _ { 2 } , . . . y _ { K } \\} ~ \\in ~ Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". This is a common setting in NLP applications, including tagging, and parsing. For example, in the vSRL task, the output can be represented as a structured table as shown in Fig 1. Modern techniques often model the correlation between the sub-components in "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and make a joint prediction over them using a structured prediction model. More details will be provided in Section 4. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                531,
+                489,
+                724
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We assume there is a subset of output variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g \\subseteq y , g \\in G"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that reflects demographic attributes such as gender or race (e.g. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g ~ \\in ~ G ~ ="
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ \\boldsymbol { \\mathrm { m a n } } , \\boldsymbol { \\mathrm { w o m a n } } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the agent), and there is another subset of the output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "o \\subseteq y , o \\in O"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that are corelated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(e.g., "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "o"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the activity present in an image, such as cooking). The goal is to identify the correlations that are potentially amplified by a learned model. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                728,
+                489,
+                872
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "To achieve this, we define the bias score of a given output, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "o"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", with respect to a demographic "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                877,
+                489,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "variable, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", as: "
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                74,
+                623,
+                90
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "b (o, g) = \\frac {c (o , g)}{\\sum_ {g ^ {\\prime} \\in G} c (o , g ^ {\\prime})},",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/1cc7af2ee2f9ffef12b09b00a74af8807c778d4e431b7026f02ab1f6ffc934a0.jpg"
+                }
+            },
+            "bbox": [
+                598,
+                102,
+                796,
+                139
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c ( o , g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the number of occurrences of o and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "in a corpus. For example, to analyze how genders of agents and activities are co-related in vSRL, we define the gender bias toward man for each verb "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ( v e r b , \\mathtt { m a n } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as: "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                149,
+                885,
+                231
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\frac {c (\\text {v e r b} , \\text {m a n})}{c (\\text {v e r b} , \\text {m a n}) + c (\\text {v e r b} , \\text {w o m a n})}. \\tag {1}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c6c26409f0cd0c055c70b1968fd836f31aff3ed9d991af8d443ce4ca7152da87.jpg"
+                }
+            },
+            "bbox": [
+                569,
+                242,
+                882,
+                275
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "If "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ( o , g ) > 1 / \\Vert G \\Vert"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "o"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is positively correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and may exhibit bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                286,
+                885,
+                319
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Evaluating bias amplification To evaluate the degree of bias amplification, we propose to compare bias scores on the training set, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ^ { * } ( o , g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", with bias scores on an unlabeled evaluation set of images "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { b } ( o , g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "that has been annotated by a predictor. We assume that the evaluation set is identically distributed to the training set. Therefore, if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "o"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is positively correlated with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(i.e, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ^ { * } ( o , g ) \\ > \\ 1 / \\Vert G \\Vert )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { b } ( o , g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is larger than "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ^ { * } ( o , g )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", we say bias has been amplified. For example, if "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ^ { * } ( \\mathrm { c o o k i n g , w o m a n } ) ~ = ~ . 6 6"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\tilde { b } ( \\mathrm { c o o k i n g } , \\mathrm { w o m a n } ) = . 8 4"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", then the bias of woman toward cooking has been amplified. Finally, we define the mean bias amplification as: "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                329,
+                885,
+                554
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\frac {1}{| O |} \\sum_ {g} \\sum_ {o \\in \\{o \\in O | b ^ {*} (o, g) > 1 / \\| G \\| \\}} \\tilde {b} (o, g) - b ^ {*} (o, g).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/c0236143198c1e8e968fe5538ae215b2e825e252f4017cc45cf135fca4dd42ce.jpg"
+                }
+            },
+            "bbox": [
+                519,
+                577,
+                875,
+                619
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "This score estimates the average magnitude of bias amplification for pairs of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "o"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": "which exhibited bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                629,
+                885,
+                677
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "4 Calibration Algorithm "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                690,
+                741,
+                707
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we introduce Reducing Bias Amplification, RBA, a debiasing technique for calibrating the predictions from a structured prediction model. The intuition behind the algorithm is to inject constraints to ensure the model predictions follow the distribution observed from the training data. For example, the constraints added to the vSRL system ensure the gender ratio of each verb in Eq. (1) are within a given margin based on the statistics of the training data. These constraints are applied at the corpus level, because computing gender ratio requires the predictions of all test "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                715,
+                885,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "instances. As a result, a joint inference over test instances is required3. Solving such a giant inference problem with constraints is hard. Therefore, we present an approximate inference algorithm based on Lagrangian relaxation. The advantages of this approach are: "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                74,
+                489,
+                172
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "text_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Our algorithm is iterative, and at each iteration, the joint inference problem is decomposed to a per-instance basis. This can be solved by the original inference algorithm. That is, our approach works as a metaalgorithm and developers do not need to implement a new inference algorithm. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• The approach is general and can be applied in any structured model. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "• Lagrangian relaxation guarantees the solution is optimal if the algorithm converges and all constraints are satisfied. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                134,
+                177,
+                489,
+                387
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In practice, it is hard to obtain a solution where all corpus-level constrains are satisfied. However, we show that the performance of the proposed approach is empirically strong. We use imSitu for vSRL as a running example to explain our algorithm. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                395,
+                489,
+                489
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Structured Output Prediction As we mentioned in Sec. 3, we assume the structured output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y \\in Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "consists of several sub-components. Given a test instance "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as an input, the inference problem is to find "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                499,
+                489,
+                577
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\operatorname * {a r g   \\max} _ {y \\in Y} f _ {\\theta} (y, i),",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/827e0c3d1048d250b3b252a444b762ab5b2157e9abd08858772b431e7f12fdc7.jpg"
+                }
+            },
+            "bbox": [
+                226,
+                579,
+                376,
+                604
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { \\theta } ( y , i )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a scoring function based on a model "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\theta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "learned from the training data. The structured output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the scoring function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { \\theta } ( y , i )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "can be decomposed into small components based on an independence assumption. For example, in the vSRL task, the output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "consists of two types of binary output variables "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ y _ { v } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ y _ { v , r } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The variable "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { v } = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if and only if the activity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is chosen. Similarly, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { v , r } = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "if and only if both the activity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and the semantic role "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are assigned 4. The scoring function "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { \\theta } ( y , i )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is decomposed accordingly such that: "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                607,
+                489,
+                799
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "f _ {\\theta} (y, i) = \\sum_ {v} y _ {v} s _ {\\theta} (v, i) + \\sum_ {v, r} y _ {v, r} s _ {\\theta} (v, r, i),",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/3e840714de05929b25867dab01fcc93b131cc1d67851ab64e71f7e990839fc0a.jpg"
+                }
+            },
+            "bbox": [
+                129,
+                804,
+                473,
+                838
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "represents the overall score of an assignment, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s _ { \\theta } ( v , i )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "s _ { \\theta } ( v , r , i )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are the potentials of the subassignments. The output space "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "Y"
+                    },
+                    {
+                        "type": "text",
+                        "content": "contains all feasible assignments of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { v }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y _ { v , r }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", which can be represented as instance-wise constraints. For example, the constraint, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\textstyle \\sum _ { v } y _ { v } \\ = 1"
+                    },
+                    {
+                        "type": "text",
+                        "content": "ensures only one activity is assigned to one image. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                74,
+                884,
+                187
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Corpus-level Constraints Our goal is to inject constraints to ensure the output labels follow a desired distribution. For example, we can set a constraint to ensure the gender ratio for each activity in Eq. (1) is within a given margin. Let "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y ^ { i } = \\{ y _ { v } ^ { i } \\} \\cup \\{ y _ { v , r } ^ { i } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "be the output assignment for test instance "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i ^ { 5 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". For each activity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v ^ { * }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the constraints can be written as "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                196,
+                884,
+                325
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "b ^ {*} - \\gamma \\leq \\frac {\\sum_ {i} y _ {v = v ^ {*} , r \\in M} ^ {i}}{\\sum_ {i} y _ {v = v ^ {*} , r \\in W} ^ {i} + \\sum_ {i} y _ {v = v ^ {*} , r \\in M} ^ {i}} \\leq b ^ {*} + \\gamma \\tag {2}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/23b488816cf0da2fe258e480bd27ae0a7bd752d8e295cac57d2fa6515ad89b2d.jpg"
+                }
+            },
+            "bbox": [
+                512,
+                334,
+                882,
+                386
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b ^ { * } \\equiv b ^ { * } ( v ^ { * } , m a n )"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the desired gender ratio of an activity "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v ^ { * }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\gamma"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is a user-specified margin. "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "M"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "W"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are a set of semantic role-values representing the agent as a man or a woman, respectively. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                387,
+                882,
+                467
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Note that the constraints in (2) involve all the test instances. Therefore, it requires a joint inference over the entire test corpus. In general, these corpus-level constraints can be represented in a form of "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A \\textstyle \\sum _ { i } y ^ { i } - b \\leq 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", where each row in the matrix "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "A \\in R ^ { l \\times K }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the coefficients of one constraint, and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b \\in R ^ { l }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The constrained inference problem can then be formulated as: "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                468,
+                882,
+                596
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} \\max  _ {\\{y ^ {i} \\} \\in \\{Y ^ {i} \\}} \\quad \\sum_ {i} f _ {\\theta} \\left(y ^ {i}, i\\right), \\tag {3} \\\\ \\begin{array}{l l} \\text {s . t .} & A \\sum_ {i} y ^ {i} - b \\leq 0, \\end{array} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/444e51ae5d0a72797e87255118a2c659ad151bdd11599716d69ca4adfa3b2ecc.jpg"
+                }
+            },
+            "bbox": [
+                586,
+                607,
+                882,
+                675
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\{ Y ^ { i } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "represents a space spanned by possible combinations of labels for all instances. Without the corpus-level constraints, Eq. (3) can be optimized by maximizing each instance i "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                688,
+                882,
+                753
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\max  _ {y _ {i} \\in Y ^ {i}} f _ {\\theta} (y ^ {i}, i),",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/69390f35edeb2c2afcc050768bfbe95b91e64daf0410519af31f3d0faaece021.jpg"
+                }
+            },
+            "bbox": [
+                640,
+                764,
+                752,
+                790
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "separately. "
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                802,
+                594,
+                816
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Lagrangian Relaxation Eq. (3) can be solved by several combinatorial optimization methods. For example, one can represent the problem as an "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                826,
+                882,
+                875
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "3A sufficiently large sample of test instances must be used so that bias statistics can be estimated. In this work we use the entire test set for each respective problem. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                846,
+                489,
+                883
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "4We use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "r"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to refer to a combination of role and noun. For example, one possible value indicates an agent is a woman. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                883,
+                489,
+                909
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "5For the sake of simplicity, we abuse the notations and use "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "_ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "to represent both input and data index. "
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                883,
+                882,
+                909
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/ec39e21fb44a922a487a63da2ae6305d9fa5edf16eb972b8a32abe434971542b.jpg"
+                },
+                "table_caption": [
+                    {
+                        "type": "text",
+                        "content": "Table 1: Statistics for the two recognition problems. In vSRL, we consider gender bias relating to verbs, while in MLC we consider the gender bias related to objects. "
+                    }
+                ],
+                "table_footnote": [],
+                "html": "<table><tr><td>Dataset</td><td>Task</td><td>Images</td><td>O-Type</td><td>||O||</td></tr><tr><td>imSitu</td><td>vSRL</td><td>60,000</td><td>verb</td><td>212</td></tr><tr><td>MS-COCO</td><td>MLC</td><td>25,000</td><td>object</td><td>66</td></tr></table>",
+                "table_type": "simple_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                139,
+                72,
+                467,
+                124
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "integer linear program and solve it using an offthe-shelf solver (e.g., Gurobi (Gurobi Optimization, 2016)). However, Eq. (3) involves all test instances. Solving a constrained optimization problem on such a scale is difficult. Therefore, we consider relaxing the constraints and solve Eq. (3) using a Lagrangian relaxation technique (Rush and Collins, 2012). We introduce a Lagrangian multiplier "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda _ { j } \\geq 0"
+                    },
+                    {
+                        "type": "text",
+                        "content": "for each corpus-level constraint. The Lagrangian is "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                223,
+                489,
+                382
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\begin{array}{l} L (\\lambda , \\{y ^ {i} \\}) = \\\\ \\sum_ {i} f _ {\\theta} \\left(y ^ {i}\\right) - \\sum_ {j = 1} ^ {l} \\lambda_ {j} \\left(A _ {j} \\sum_ {i} y ^ {i} - b _ {j}\\right), \\tag {4} \\\\ \\end{array}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/a1a2d61115300715951591fecb820a35d774ba52575e9dc0c6cdbd2a0cdb0bdb.jpg"
+                }
+            },
+            "bbox": [
+                139,
+                393,
+                487,
+                460
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where all the "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda _ { j } \\ge 0 , \\forall j \\in \\left\\{ 1 , \\ldots , l \\right\\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". The solution of Eq. (3) can be obtained by the following iterative procedure: "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                469,
+                489,
+                518
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "1) At iteration "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "t"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", get the output solution of each instance "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    }
+                ]
+            },
+            "bbox": [
+                129,
+                527,
+                487,
+                558
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "y ^ {i, (t)} = \\underset {y \\in \\mathcal {Y} ^ {\\prime}} {\\operatorname {a r g m a x}} L \\left(\\lambda^ {(t - 1)}, y\\right) \\tag {5}",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/e0d2840df451b16a1ba5ac0892af84a11a3c0ea8dd0ef2a706730b95e5601ac6.jpg"
+                }
+            },
+            "bbox": [
+                208,
+                567,
+                487,
+                598
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "2) update the Lagrangian multipliers. "
+                    }
+                ]
+            },
+            "bbox": [
+                127,
+                612,
+                411,
+                627
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\lambda^ {(t)} = \\max  \\left(0, \\lambda^ {(t - 1)} + \\sum_ {i} \\eta (A y ^ {i, (t)} - b)\\right),",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/87243040d8396b9159e236ea54fc074d555d079ab0884a3d55bfb9cbdb1b4e3b.jpg"
+                }
+            },
+            "bbox": [
+                152,
+                636,
+                489,
+                678
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "{ \\bf \\nabla } \\lambda ^ { ( 0 ) } = { \\bf 0 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta"
+                    },
+                    {
+                        "type": "text",
+                        "content": "is the learning rate for updating "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". Note that with a fixed "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\lambda ^ { ( t - 1 ) }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", Eq. (5) can be solved using the original inference algorithms. The algorithm loops until all constraints are satisfied (i.e. optimal solution achieved) or reach maximal number of iterations. "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                695,
+                489,
+                791
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5 Experimental Setup "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                804,
+                324,
+                822
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we provide details about the two visual recognition tasks we evaluated for bias: visual semantic role labeling (vSRL), and multi-label classification (MLC). We focus on gender, defining "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "G = \\{ \\mathrm { m a n } , \\mathrm { w o m a n } \\}"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and focus on the agent "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                829,
+                489,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "role in vSRL, and any occurrence in text associated with the images in MLC. Problem statistics are summarized in Table 1. We also provide setup details for our calibration method. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                74,
+                884,
+                137
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.1 Visual Semantic Role Labeling "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                149,
+                800,
+                166
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Dataset We evaluate on imSitu (Yatskar et al., 2016) where activity classes are drawn from verbs and roles in FrameNet (Baker et al., 1998) and noun categories are drawn from WordNet (Miller et al., 1990). The original dataset includes about 125,000 images with 75,702 for training, 25,200 for developing, and 25,200 for test. However, the dataset covers many non-human oriented activities (e.g., rearing, retrieving, and wagging), so we filter out these verbs, resulting in 212 verbs, leaving roughly 60,000 of the original 125,000 images in the dataset. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                171,
+                884,
+                363
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Model We build on the baseline CRF released with the data, which has been shown effective compared to a non-structured prediction baseline (Yatskar et al., 2016). The model decomposes the probability of a realized situation, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", the combination of activity, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "v"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and realized frame, a set of semantic (role,noun) pairs "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "( e , n _ { e } )"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", given an image "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as : "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                373,
+                884,
+                500
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "p (y | i; \\theta) \\propto \\psi (v, i; \\theta) \\prod_ {(e, n _ {e}) \\in R _ {f}} \\psi (v, e, n _ {e}, i; \\theta)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/b933512bc7d5ab636e4053bb4a943a059d405286f09669ed2476c6ebaca6940f.jpg"
+                }
+            },
+            "bbox": [
+                524,
+                512,
+                868,
+                549
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where each potential value in the CRF for subpart "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is computed using features "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "from the VGG convolutional neural network (Simonyan and Zisserman, 2014) on an input image, as follows: "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                560,
+                882,
+                624
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\psi (x, i; \\theta) = e ^ {w _ {x} ^ {T} f _ {i} + b _ {x}},",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/9643216ace8198ade97773c63d610a3093b4f5323d4bada786f2c0161cfe75f1.jpg"
+                }
+            },
+            "bbox": [
+                611,
+                634,
+                781,
+                656
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "w"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "b"
+                    },
+                    {
+                        "type": "text",
+                        "content": "are the parameters of an affine transformation layer. The model explicitly captures the correlation between activities and nouns in semantic roles, allowing it to learn common priors. We use a model pretrained on the original task with 504 verbs. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                668,
+                882,
+                764
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.2 Multilabel Classification "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                776,
+                749,
+                791
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Dataset We use MS-COCO (Lin et al., 2014), a common object detection benchmark, for multilabel object classification. The dataset contains 80 object types but does not make gender distinctions between man and woman. We use the five associated image captions available for each image in this dataset to annotate the gender of people in the "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                797,
+                884,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "images. If any of the captions mention the word man or woman we mark it, removing any images that mention both genders. Finally, we filter any object category not strongly associated with humans by removing objects that do not occur with man or woman at least 100 times in the training set, leaving a total of 66 objects. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                74,
+                489,
+                187
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Model For this multi-label setting, we adapt a similar model as the structured CRF we use for vSRL. We decompose the joint probability of the output "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "y"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", consisting of all object categories, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "c"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", and gender of the person, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "g"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", given an image "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "i"
+                    },
+                    {
+                        "type": "text",
+                        "content": "as: "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                200,
+                489,
+                282
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "p (y | i; \\theta) \\propto \\psi (g, i; \\theta) \\prod_ {c \\in y} \\psi (g, c, i; \\theta)",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/05f8f17e95425354bc7797abd6749e0f90a792f76caa277974278caeb8f1aff8.jpg"
+                }
+            },
+            "bbox": [
+                164,
+                296,
+                440,
+                331
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "where each potential value for "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "x"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", is computed using features, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "f _ { i }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", from a pretrained ResNet-50 convolutional neural network evaluated on the image, "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                344,
+                489,
+                394
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\psi (x, i; \\theta) = e ^ {w _ {x} ^ {T} f _ {i} + b _ {x}}.",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/4ddf028532eb59eca36b901d62888577e1ad9f7006283d068811ec5a53f21aea.jpg"
+                }
+            },
+            "bbox": [
+                216,
+                407,
+                388,
+                430
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We trained a model using SGD with learning rate "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 0 ^ { - 5 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", momentum 0.9 and weight-decay "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 0 ^ { - 4 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", fine tuning the initial visual network, for 50 epochs. "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                445,
+                489,
+                494
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "5.3 Calibration "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                508,
+                253,
+                524
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "The inference problems for both models are: "
+                    }
+                ]
+            },
+            "bbox": [
+                115,
+                533,
+                448,
+                549
+            ]
+        },
+        {
+            "type": "equation_interline",
+            "content": {
+                "math_content": "\\arg \\max _ {y \\in Y} f _ {\\theta} (y, i) = \\log p (y | i; \\theta).",
+                "math_type": "latex",
+                "image_source": {
+                    "path": "images/2f71ebf834d5d54eb4e305d2a4ec70a42aec70cb255348f0fcf41e72f5beb43d.jpg"
+                }
+            },
+            "bbox": [
+                179,
+                565,
+                425,
+                590
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We use the algorithm in Sec. (4) to calibrate the predictions using model θ. Our calibration tries to enforce gender statistics derived from the training set of corpus applicable for each recognition problem. For all experiments, we try to match gender ratios on the test set within a margin of .05 of their value on the training set. While we do adjust the output on the test set, we never use the ground truth on the test set and instead working from the assumption that it should be similarly distributed as the training set. When running the debiasing algorithm, we set "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\eta = 1 0 ^ { - 1 }"
+                    },
+                    {
+                        "type": "text",
+                        "content": "and optimize for 100 iterations. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                606,
+                489,
+                815
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6 Bias Analysis "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                832,
+                265,
+                848
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "In this section, we use the approaches outlined in Section 3 to quantify the bias and bias amplification in the vSRL and the MLC tasks. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                860,
+                489,
+                908
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.1 Visual Semantic Role Labeling "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                74,
+                800,
+                90
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "imSitu is gender biased In Figure 2(a), along the x-axis, we show the male favoring bias of im-Situ verbs. Overall, the dataset is heavily biased toward male agents, with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "6 4 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of verbs favoring a male agent by an average bias of 0.707 (roughly 3:1 male). Nearly half of verbs are extremely biased in the male or female direction: "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 6 . 9 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of verbs favor a gender with a bias of at least 0.7.6 Figure 2(a) contains several activity labels revealing problematic biases. For example, shopping, microwaving and washing are biased toward a female agent. Furthermore, several verbs such as driving, shooting, and coaching are heavily biased toward a male agent. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                99,
+                885,
+                325
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Training on imSitu amplifies bias In Figure 2(a), along the y-axis, we show the ratio of male agents "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of total people) in predictions on an unseen development set. The mean bias amplification in the development set is high, 0.050 on average, with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 5 . 7 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of verbs exhibiting amplification. Biased verbs tend to have stronger amplification: verbs with training bias over 0.7 in either the male or female direction have a mean amplification of 0.072. Several already problematic biases have gotten much worse. For example, serving, only had a small bias toward females in the training set, 0.402, is now heavily biased toward females, 0.122. The verb tuning, originally heavily biased toward males, 0.878, now has exclusively male agents. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                341,
+                885,
+                600
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.2 Multilabel Classification "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                618,
+                749,
+                633
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "MS-COCO is gender biased In Figure 2(b) along the x-axis, similarly to imSitu, we analyze bias of objects in MS-COCO with respect to males. MS-COCO is even more heavily biased toward men than imSitu, with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "8 6 . 6 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of objects biased toward men, but with smaller average magnitude, 0.65. One third of the nouns are extremely biased toward males, "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 7 . 9 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of nouns favor men with a bias of at least 0.7. Some problematic examples include kitchen objects such as knife, fork, or spoon being more biased toward woman. Outdoor recreation related objects such tennis racket, snowboard and boat tend to be more biased toward men. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                642,
+                885,
+                868
+            ]
+        },
+        {
+            "type": "page_footnote",
+            "content": {
+                "page_footnote_content": [
+                    {
+                        "type": "text",
+                        "content": "6In this gender binary, bias toward woman is "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "1 -"
+                    },
+                    {
+                        "type": "text",
+                        "content": "the bias toward man "
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                883,
+                885,
+                908
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f2c3be8f1cd202df1d60c550ca7c951238cb9036019e77ac16c5bed8835719b4.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Bias analysis on imSitu vSRL "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                131,
+                74,
+                499,
+                256
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/7b8792af45b3dea9e111fab06fe8ba495b3680be159a62597b3caf9f7f24b32d.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Bias analysis on MS-COCO MLC"
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 2: Gender bias analysis of imSitu vSRL and MS-COCO MLC. (a) gender bias of verbs toward man in the training set versus bias on a predicted development set. (b) gender bias of nouns toward man in the training set versus bias on the predicted development set. Values near zero indicate bias toward woman while values near 0.5 indicate unbiased variables. Across both dataset, there is significant bias toward males, and significant bias amplification after training on biased training data. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                509,
+                74,
+                882,
+                258
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Training on MS-COCO amplifies bias In Figure 2(b), along the y-axis, we show the ratio of man "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "\\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of both gender) in predictions on an unseen development set. The mean bias amplification across all objects is 0.036, with "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "6 5 . 6 7 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "of nouns exhibiting amplification. Larger training bias again tended to indicate higher bias amplification: biased objects with training bias over 0.7 had mean amplification of 0.081. Again, several problematic biases have now been amplified. For example, kitchen categories already biased toward females such as knife, fork and spoon have all been amplified. Technology oriented categories initially biased toward men such as keyboard and mouse have each increased their bias toward males by over 0.100. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                395,
+                489,
+                652
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "6.3 Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                663,
+                247,
+                678
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We confirmed our hypothesis that (a) both the im-Situ and MS-COCO datasets, gathered from the web, are heavily gender biased and that (b) models trained to perform prediction on these datasets amplify the existing gender bias when evaluated on development data. Furthermore, across both datasets, we showed that the degree of bias amplification was related to the size of the initial bias, with highly biased object and verb categories exhibiting more bias amplification. Our results demonstrate that care needs be taken in deploying such uncalibrated systems otherwise they could not only reinforce existing social bias but actually make them worse. "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                684,
+                489,
+                909
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7 Calibration Results "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                395,
+                714,
+                411
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We test our methods for reducing bias amplification in two problem settings: visual semantic role labeling in the imSitu dataset (vSRL) and multilabel image classification in MS-COCO (MLC). In all settings we derive corpus constraints using the training set and then run our calibration method in batch on either the development or testing set. Our results are summarized in Table 2 and Figure 3. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                423,
+                884,
+                551
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7.1 Visual Semantic Role Labeling "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                564,
+                800,
+                580
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our quantitative results are summarized in the first two sections of Table 2. On the development set, the number of verbs whose bias exceed the original bias by over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "decreases "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 0 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Viol.). Overall, we are able to significantly reduce bias amplification in vSRL by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "52 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on the development set (Amp. bias). We evaluate the underlying recognition performance using the standard measure in vSRL: top-1 semantic role accuracy, which tests how often the correct verb was predicted and the noun value was correctly assigned to a semantic role. Our calibration method results in a negligible decrease in performance (Perf.). In Figure 3(c) we can see that the overall distance to the training set distribution after applying RBA decreased significantly, over "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "39 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ". "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                587,
+                882,
+                843
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Figure 3(e) demonstrates that across all initial training bias, RBA is able to reduce bias amplification. In general, RBA struggles to remove bias amplification in areas of low initial training bias, "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                845,
+                882,
+                910
+            ]
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/e42a4dee24b5c39c2fdb35a818d524eef911bc2169c313a54331f9535ee4c384.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(a) Bias analysis on imSitu vSRL without RBA "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                132,
+                86,
+                505,
+                263
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/b076298a02baf85abdc6e852f2fd7cbaaefb02fbbc5e55efb09360fa0526ef2e.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(b) Bias analysis on MS-COCO MLC without RBA "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                515,
+                86,
+                884,
+                263
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/f834dbab405e3633c205c430b3cf411c643b5a3c22b38a7f9ec9a0f5fa3e7a1b.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(c) Bias analysis on imSitu vSRL with RBA "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                132,
+                300,
+                505,
+                476
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/2f1965008e72d01109ef55296aeac5aa3ae1759a33c474b6bd86b919b0da8961.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(d) Bias analysis on MS-COCO MLC with RBA "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                515,
+                300,
+                884,
+                476
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/eb85457bb1ecf0f2327c5d13d8cf7c44c2c7cdef3aebd7c73ad147de0d8b5642.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(e) Bias in vSRL with (blue) / without (red) RBA "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                132,
+                526,
+                504,
+                703
+            ]
+        },
+        {
+            "type": "image",
+            "content": {
+                "image_source": {
+                    "path": "images/ac5ad6ff4d19e843fdcd9a80839a89008580c092c4ba4b432e5b9de8f5ae9442.jpg"
+                },
+                "image_caption": [
+                    {
+                        "type": "text",
+                        "content": "(f) Bias in MLC with (blue) / without (red) RBA "
+                    },
+                    {
+                        "type": "text",
+                        "content": "Figure 3: Results of reducing bias amplification using RBA on imSitu vSRL and MS-COCO MLC. Figures 3(a)-(d) show initial training set bias along the x-axis and development set bias along the yaxis. Dotted blue lines indicate the 0.05 margin used in RBA, with points violating the margin shown in red while points meeting the margin are shown in green. Across both settings adding RBA significantly reduces the number of violations, and reduces the bias amplification significantly. Figures 3(e)-(f) demonstrate bias amplification as a function of training bias, with and without RBA. Across all initial training biases, RBA is able to reduce the bias amplification. "
+                    }
+                ],
+                "image_footnote": []
+            },
+            "bbox": [
+                510,
+                526,
+                882,
+                703
+            ]
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "content": {
+                "image_source": {
+                    "path": "images/e81fc29b304c19c7c42406ad3f777b808693e2c30b910e5b23659c5bcd0c997a.jpg"
+                },
+                "table_caption": [],
+                "table_footnote": [
+                    {
+                        "type": "text",
+                        "content": "Table 2: Number of violated constraints, mean amplified bias, and test performance before and after calibration using RBA. The test performances of vSRL and MLC are measured by top-1 semantic role accuracy and top-1 mean average precision, respectively. "
+                    }
+                ],
+                "html": "<table><tr><td>Method</td><td>Viol.</td><td>Amp. bias</td><td>Perf. (%)</td></tr><tr><td colspan=\"4\">vSRL: Development Set</td></tr><tr><td>CRF</td><td>154</td><td>0.050</td><td>24.07</td></tr><tr><td>CRF + RBA</td><td>107</td><td>0.024</td><td>23.97</td></tr><tr><td colspan=\"4\">vSRL: Test Set</td></tr><tr><td>CRF</td><td>149</td><td>0.042</td><td>24.14</td></tr><tr><td>CRF + RBA</td><td>102</td><td>0.025</td><td>24.01</td></tr><tr><td colspan=\"4\">MLC: Development Set</td></tr><tr><td>CRF</td><td>40</td><td>0.032</td><td>45.27</td></tr><tr><td>CRF + RBA</td><td>24</td><td>0.022</td><td>45.19</td></tr><tr><td colspan=\"4\">MLC: Test Set</td></tr><tr><td>CRF</td><td>38</td><td>0.040</td><td>45.40</td></tr><tr><td>CRF + RBA</td><td>16</td><td>0.021</td><td>45.38</td></tr></table>",
+                "table_type": "complex_table",
+                "table_nest_level": 1
+            },
+            "bbox": [
+                117,
+                71,
+                485,
+                288
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "likely because bias is encoded in image statistics and cannot be removed as effectively with an image agnostic adjustment. Results on the test set support our development set results: we decrease bias amplification by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "40 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Amp. bias). "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                423,
+                489,
+                505
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7.2 Multilabel Classification "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                516,
+                354,
+                530
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our quantitative results on MS-COCO RBA are summarized in the last two sections of Table 2. Similarly to vSRL, we are able to reduce the number of objects whose bias exceeds the original training bias by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": ", by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "40 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Viol.). Bias amplification was reduced by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "3 1 . 3 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "on the development set (Amp. bias). The underlying recognition system was evaluated by the standard measure: top-1 mean average precision, the precision averaged across object categories. Our calibration method results in a negligible loss in performance. In Figure 3(d), we demonstrate that we substantially reduce the distance between training bias and bias in the development set. Finally, in Figure 3(f) we demonstrate that we decrease bias amplification for all initial training bias settings. Results on the test set support our development results: we decrease bias amplification by "
+                    },
+                    {
+                        "type": "equation_inline",
+                        "content": "4 7 . 5 \\%"
+                    },
+                    {
+                        "type": "text",
+                        "content": "(Amp. bias). "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                537,
+                489,
+                828
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "7.3 Discussion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                115,
+                839,
+                247,
+                854
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "We have demonstrated that RBA can significantly reduce bias amplification. While were not able to remove all amplification, we have made significant "
+                    }
+                ]
+            },
+            "bbox": [
+                114,
+                860,
+                489,
+                910
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "progress with little or no loss in underlying recognition performance. Across both problems, RBA was able to reduce bias amplification at all initial values of training bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                74,
+                884,
+                139
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "8 Conclusion "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                151,
+                643,
+                166
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Structured prediction models can leverage correlations that allow them to make correct predictions even with very little underlying evidence. Yet such models risk potentially leveraging social bias in their training data. In this paper, we presented a general framework for visualizing and quantifying biases in such models and proposed RBA to calibrate their predictions under two different settings. Taking gender bias as an example, our analysis demonstrates that conditional random fields can amplify social bias from data while our approach RBA can help to reduce the bias. "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                177,
+                884,
+                369
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Our work is the first to demonstrate structured prediction models amplify bias and the first to propose methods for reducing this effect but significant avenues for future work remain. While RBA can be applied to any structured predictor, it is unclear whether different predictors amplify bias more or less. Furthermore, we presented only one method for measuring bias. More extensive analysis could explore the interaction among predictor, bias measurement, and bias deamplification method. Future work also includes applying bias reducing methods in other structured domains, such as pronoun reference resolution (Mitkov, 2014). "
+                    }
+                ]
+            },
+            "bbox": [
+                509,
+                370,
+                884,
+                595
+            ]
+        },
+        {
+            "type": "paragraph",
+            "content": {
+                "paragraph_content": [
+                    {
+                        "type": "text",
+                        "content": "Acknowledgement This work was supported in part by National Science Foundation Grant IIS-1657193 and two NVIDIA Hardware Grants. "
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                605,
+                882,
+                653
+            ]
+        },
+        {
+            "type": "title",
+            "content": {
+                "title_content": [
+                    {
+                        "type": "text",
+                        "content": "References "
+                    }
+                ],
+                "level": 1
+            },
+            "bbox": [
+                510,
+                681,
+                610,
+                695
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Stanislaw Antol, Aishwarya Agrawal, Jiasen Lu, Margaret Mitchell, Dhruv Batra, C Lawrence Zitnick, and Devi Parikh. 2015. Vqa: Visual question answering. In Proceedings of the IEEE International Conference on Computer Vision, pages 2425–2433. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Collin F Baker, Charles J Fillmore, and John B Lowe. 1998. The Berkeley framenet project. In Proceedings of the Annual Meeting of the Association for Computational Linguistics (ACL), pages 86–90. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Solon Barocas and Andrew D Selbst. 2014. Big data’s disparate impact. Available at SSRN 2477899. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tolga Bolukbasi, Kai-Wei Chang, James Y Zou, Venkatesh Saligrama, and Adam T Kalai. 2016. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                510,
+                703,
+                885,
+                909
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Man is to computer programmer as woman is to homemaker? debiasing word embeddings. In The Conference on Advances in Neural Information Processing Systems (NIPS), pages 4349–4357. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Aylin Caliskan, Joanna J Bryson, and Arvind Narayanan. 2017. Semantics derived automatically from language corpora contain human-like biases. Science, 356(6334):183–186. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Kai-Wei Chang, S. Sundararajan, and S. Sathiya Keerthi. 2013. Tractable semi-supervised learning of complex structured prediction models. In Proceedings of the European Conference on Machine Learning (ECML), pages 176–191. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Yin-Wen Chang and Michael Collins. 2011. Exact decoding of phrase-based translation models through Lagrangian relaxation. In EMNLP, pages 26–37. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Xinlei Chen, Hao Fang, Tsung-Yi Lin, Ramakrishna Vedantam, Saurabh Gupta, Piotr Dollar, and´ C Lawrence Zitnick. 2015. Microsoft coco captions: Data collection and evaluation server. arXiv preprint arXiv:1504.00325. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bhavana Bharat Dalvi. 2015. Constrained Semisupervised Learning in the Presence of Unanticipated Classes. Ph.D. thesis, Google Research. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Cynthia Dwork, Moritz Hardt, Toniann Pitassi, Omer Reingold, and Richard Zemel. 2012. Fairness through awareness. In Proceedings of the 3rd Innovations in Theoretical Computer Science Conference, pages 214–226. ACM. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Michael Feldman, Sorelle A Friedler, John Moeller, Carlos Scheidegger, and Suresh Venkatasubramanian. 2015. Certifying and removing disparate impact. In Proceedings of International Conference on Knowledge Discovery and Data Mining (KDD), pages 259–268. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Jonathan Gordon and Benjamin Van Durme. 2013. Reporting bias and knowledge extraction. Automated Knowledge Base Construction (AKBC). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Inc. Gurobi Optimization. 2016. Gurobi optimizer reference manual. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Moritz Hardt, Eric Price, Nati Srebro, et al. 2016. Equality of opportunity in supervised learning. In Conference on Neural Information Processing Systems (NIPS), pages 3315–3323. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Matthew Kay, Cynthia Matuszek, and Sean A Munson. 2015. Unequal representation and gender stereotypes in image search results for occupations. In Human Factors in Computing Systems, pages 3819– 3828. ACM. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Bernhard Korte and Jens Vygen. 2008. Combinatorial Optimization: Theory and Application. Springer Verlag. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                76,
+                487,
+                908
+            ]
+        },
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Tsung-Yi Lin, Michael Maire, Serge Belongie, James Hays, Pietro Perona, Deva Ramanan, Piotr Dollar,´ and C Lawrence Zitnick. 2014. Microsoft coco: Common objects in context. In European Conference on Computer Vision, pages 740–755. Springer. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "G. Miller, R. Beckwith, C. Fellbaum, D. Gross, and K.J. Miller. 1990. Wordnet: An on-line lexical database. International Journal of Lexicography, 3(4):235–312. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Emiel van Miltenburg. 2016. Stereotyping and bias in the flickr30k dataset. MMC. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ishan Misra, C Lawrence Zitnick, Margaret Mitchell, and Ross Girshick. 2016. Seeing through the human reporting bias: Visual classifiers from noisy humancentric labels. In Conference on Computer Vision and Pattern Recognition (CVPR), pages 2930–2939. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Ruslan Mitkov. 2014. Anaphora resolution. Routledge. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Nanyun Peng, Ryan Cotterell, and Jason Eisner. 2015. Dual decomposition inference for graphical models over strings. In Conference on Empirical Methods in Natural Language Processing (EMNLP), pages 917–927. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "John Podesta, Penny Pritzker, Ernest J. Moniz, John Holdren, and Jefrey Zients. 2014. Big data: Seizing opportunities and preserving values. Executive Office of the President. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Karen Ross and Cynthia Carter. 2011. Women and news: A long and winding road. Media, Culture & Society, 33(8):1148–1165. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Alexander M Rush and Michael Collins. 2012. A Tutorial on Dual Decomposition and Lagrangian Relaxation for Inference in Natural Language Processing. Journal of Artificial Intelligence Research, 45:305– 362. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Karen Simonyan and Andrew Zisserman. 2014. Very deep convolutional networks for large-scale image recognition. arXiv preprint arXiv:1409.1556. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "David Sontag, Amir Globerson, and Tommi Jaakkola. 2011. Introduction to dual decomposition for inference. Optimization for Machine Learning, 1:219– 254. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Latanya Sweeney. 2013. Discrimination in online ad delivery. Queue, 11(3):10. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Benjamin D Van Durme. 2010. Extracting implicit knowledge from text. Ph.D. thesis, University of Rochester. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. 2015. Show and tell: A neural image caption generator. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pages 3156–3164. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                512,
+                76,
+                882,
+                908
+            ]
+        }
+    ],
+    [
+        {
+            "type": "list",
+            "content": {
+                "list_type": "reference_list",
+                "list_items": [
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Mark Yatskar, Vicente Ordonez, Luke Zettlemoyer, and Ali Farhadi. 2017. Commonly uncommon: Semantic sparsity in situation recognition. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR). "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Mark Yatskar, Luke Zettlemoyer, and Ali Farhadi. 2016. Situation recognition: Visual semantic role labeling for image understanding. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), pages 5534–5542. "
+                            }
+                        ]
+                    },
+                    {
+                        "item_type": "text",
+                        "item_content": [
+                            {
+                                "type": "text",
+                                "content": "Indre Zliobaite. 2015. A survey on measuring indirect discrimination in machine learning. arXiv preprint arXiv:1511.00148. "
+                            }
+                        ]
+                    }
+                ]
+            },
+            "bbox": [
+                117,
+                76,
+                489,
+                266
+            ]
+        }
+    ]
+]

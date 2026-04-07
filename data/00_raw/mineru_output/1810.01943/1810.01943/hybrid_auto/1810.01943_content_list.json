@@ -1,0 +1,2555 @@
+[
+    {
+        "type": "text",
+        "text": "AI FAIRNESS 360: AN EXTENSIBLE TOOLKIT FOR DETECTING, UNDERSTANDING, AND MITIGATING UNWANTED ALGORITHMIC BIAS ",
+        "text_level": 1,
+        "bbox": [
+            119,
+            111,
+            851,
+            154
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Rachel K. E. Bellamy 1 Kuntal Dey 2 Michael Hind 1 Samuel C. Hoffman 1 Stephanie Houde 1 ",
+        "bbox": [
+            148,
+            200,
+            818,
+            215
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Kalapriya Kannan 3 Pranay Lohia 3 Jacquelyn Martino 1 Sameep Mehta 3 Aleksandra Mojsilovic 1 Seema Nagar 3 Karthikeyan Natesan Ramamurthy 1 John Richards 1 Diptikalyan Saha 3 Prasanna Sattigeri 1 Moninder Singh 1 Kush R. Varshney 1 Yunfeng Zhang 1 ",
+        "bbox": [
+            94,
+            215,
+            872,
+            262
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "ABSTRACT ",
+        "text_level": 1,
+        "bbox": [
+            436,
+            289,
+            534,
+            303
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Fairness is an increasingly important concern as machine learning models are used to support decision making in high-stakes applications such as mortgage lending, hiring, and prison sentencing. This paper introduces a new open source Python toolkit for algorithmic fairness, AI Fairness 360 (AIF360), released under an Apache v2.0 license (https://github.com/ibm/aif360). The main objectives of this toolkit are to help facilitate the transition of fairness research algorithms to use in an industrial setting and to provide a common framework for fairness researchers to share and evaluate algorithms. ",
+        "bbox": [
+            117,
+            305,
+            851,
+            396
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "The package includes a comprehensive set of fairness metrics for datasets and models, explanations for these metrics, and algorithms to mitigate bias in datasets and models. It also includes an interactive Web experience (https://aif360.mybluemix.net) that provides a gentle introduction to the concepts and capabilities for line-of-business users, as well as extensive documentation, usage guidance, and industry-specific tutorials to enable data scientists and practitioners to incorporate the most appropriate tool for their problem into their work products. The architecture of the package has been engineered to conform to a standard paradigm used in data science, thereby further improving usability for practitioners. Such architectural design and abstractions enable researchers and developers to extend the toolkit with their new algorithms and improvements, and to use it for performance benchmarking. A built-in testing infrastructure maintains code quality. ",
+        "bbox": [
+            117,
+            401,
+            851,
+            537
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 INTRODUCTION ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            558,
+            256,
+            571
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Recent years have seen an outpouring of research on fairness and bias in machine learning models. This is not surprising, as fairness is a complex and multi-faceted concept that depends on context and culture. Narayanan described at least 21 mathematical definitions of fairness from the literature (Narayanan, 2018). These are not just theoretical differences in how to measure fairness; different definitions produce entirely different outcomes. For example, ProPublica and Northpointe had a public debate on an important social justice issue (recidivism prediction) that was fundamentally about what is the right fairness metric (Larson et al., 2016; Dieterich et al., 2016; Larson & Angwin, 2016). Furthermore, researchers have shown that it is impossible to satisfy all definitions of fairness at the same time (Kleinberg et al., 2017). Thus, although fairness research is a very active field, clarity on which bias metrics and bias mitigation strategies are best is yet to be ",
+        "bbox": [
+            86,
+            584,
+            473,
+            840
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "achieved (Friedler et al., 2018). ",
+        "bbox": [
+            496,
+            559,
+            705,
+            574
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "In addition to the multitude of fairness definitions, different bias handling algorithms address different parts of the model life-cycle, and understanding each research contribution, how, when and why to use it is challenging even for experts in algorithmic fairness. As a result, general public, fairness scientific community and AI practitioners need clarity on how to proceed. Currently the burden is on ML and AI developers, as they need to deal with questions such as “Should the data be debiased?”, “Should we create new classifiers that learn unbiased models?”, and “Is it better to correct predictions from the model?” ",
+        "bbox": [
+            496,
+            582,
+            883,
+            747
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "To address these issues we have created AI Fairness 360 (AIF360), an extensible open source toolkit for detecting, understanding, and mitigating algorithmic biases. The goals of AIF360 are to promote a deeper understanding of fairness metrics and mitigation techniques; to enable an open common platform for fairness researchers and industry practitioners to share and benchmark their algorithms; and to help facilitate the transition of fairness research algorithms to use in an industrial setting. ",
+        "bbox": [
+            496,
+            755,
+            883,
+            891
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:1810.01943v1 [cs.AI] 3 Oct 2018 ",
+        "bbox": [
+            22,
+            279,
+            57,
+            700
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_footnote",
+        "text": "1IBM Research, Yorktown Heights, NY, USA 2IBM Research, New Delhi, India 3IBM Research, Bangalore, India. ",
+        "bbox": [
+            84,
+            849,
+            472,
+            876
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "AIF360 will make it easier for developers and practitioners to understand bias metrics and mitigation and to foster further contributions and information sharing. To help increase the likelihood that AIF360 will develop into a flourishing open source community, we have designed the system to be extensible, adopted software engineering best practices to maintain code quality, and invested significantly in documentation, demos, and other artifacts. ",
+        "bbox": [
+            84,
+            84,
+            473,
+            205
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The initial AIF360 Python package implements techniques from 8 published papers from the broader algorithm fairness community. This includes over 71 bias detection metrics, 9 bias mitigation algorithms, and a unique extensible metric explanations facility to help consumers of the system understand the meaning of bias detection results. These techniques can all be called in a standard way, similar to scikit-learn’s fit/transform/predict paradigm. In addition, there are several realistic tutorial examples and notebooks showing salient features for industry use that can be quickly adapted by practitioners. ",
+        "bbox": [
+            84,
+            212,
+            473,
+            378
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "AIF360 is the first system to bring together in one open source toolkit: bias metrics, bias mitigation algorithms, bias metric explanations, and industrial usability. By integrating these aspects, AIF360 can enable stronger collaboration between AI fairness researchers and practitioners, helping to translate our collective research results to practicing data scientists, data engineers, and developers deploying solutions in a variety of industries. ",
+        "bbox": [
+            84,
+            386,
+            473,
+            507
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The contributions of this paper are ",
+        "bbox": [
+            86,
+            515,
+            315,
+            530
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• an extensible architecture that incorporates dataset representations and algorithms for bias detection, bias mitigation, and bias metric explainability ",
+            "• an empirical evaluation that demonstrates how AIF360 can be used for scientific comparisons of bias metrics and mitigation algorithms ",
+            "• the design of an interactive web experience to introduce users to bias detection and mitigation techniques "
+        ],
+        "bbox": [
+            102,
+            544,
+            473,
+            680
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "This paper is organized as follows. In Section 2, we introduce the basic terminology of bias detection and mitigation. In Section 3, we review prior art and other open source libraries and contributions in this area. The overall architecture of the toolkit is outlined in Section 4, while Sections 5, 6, 7, and 8 present details of the underlying dataset, metrics, explainer, and algorithms base classes and abstractions, respectively. In Section 9, we review our testing protocols and test suite for maintaining quality code. In Section 10, we discuss algorithm evaluation in bias checking and mitigation. In Section 11, we describe the design of the front-end interactive experience, and the design of the back-end service. Concluding remarks and next steps are provided in Section 12. ",
+        "bbox": [
+            84,
+            694,
+            475,
+            905
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 TERMINOLOGY ",
+        "text_level": 1,
+        "bbox": [
+            496,
+            83,
+            668,
+            99
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "In this section, we briefly define specialized terminology from the field of fairness in machine learning. A favorable label is a label whose value corresponds to an outcome that provides an advantage to the recipient. Examples are receiving a loan, being hired for a job, and not being arrested. A protected attribute is an attribute that partitions a population into groups that have parity in terms of benefit received. Examples include race, gender, caste, and religion. Protected attributes are not universal, but are application specific. A privileged value of a protected attribute indicates a group that has historically been at a systematic advantage. Group fairness is the goal of groups defined by protected attributes receiving similar treatments or outcomes. Individual fairness is the goal of similar individuals receiving similar treatments or outcomes. Bias is a systematic error. In the context of fairness, we are concerned with unwanted bias that places privileged groups at a systematic advantage and unprivileged groups at a systematic disadvantage. A fairness metric is a quantification of unwanted bias in training data or models. A bias mitigation algorithm is a procedure for reducing unwanted bias in training data or models. ",
+        "bbox": [
+            495,
+            109,
+            885,
+            441
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3 RELATED WORK ",
+        "text_level": 1,
+        "bbox": [
+            496,
+            460,
+            679,
+            477
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Several open source libraries have been developed in recent years to provide various levels of functionality in learning fair AI models. Many of these deal only with bias detection, and provide no techniques for mitigating such bias. Fairness Measures (Zehlike et al., 2017), for example, provides several fairness metrics, including difference of means, disparate impact, and odds ratio. A set of datasets is also provided, though some datasets are not in the public domain and need explicit permission from the owners to access/use the data. Similarly, FairML (Adebayo, 2016) provides an auditing tool for predictive models by quantifying the relative effects of various inputs on a models predictions. This, in turn, can be used to assess the models fairness. FairTest (Tramer et al. ` , 2017), on the other hand, approaches the task of detecting biases in a dataset by checking for associations between predicted labels and protected attributes. The methodology also provides a way to identify regions of the input space where an algorithm might incur unusually high errors. This toolkit also includes a rich catalog of datasets. Aequitas (Stevens et al., 2018) is another auditing toolkit for data scientists as well as policy makers; it has a Python library as well as an associated web site where data can be uploaded for bias analysis. It offers several fairness metrics, including demographic or statistical parity and disparate impact, along with a ”fairness tree” to help users identify the correct metric to use for their particular situation. Aequitas’s license does not allow ",
+        "bbox": [
+            495,
+            487,
+            885,
+            893
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "commercial use. Finally, Themis (Galhotra et al., 2017) is an open source bias toolbox that automatically generates test suites to measure discrimination in decisions made by a predictive system. ",
+        "bbox": [
+            84,
+            84,
+            473,
+            145
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "A handful of toolkits address both bias detection as well as bias mitigation. Themis-ML (Bantilan, 2018) is one such repository that provides a few fairness metrics, such as mean difference, as well as some bias mitigation algorithms, such as relabeling (Kamiran & Calders, 2012), additive counterfactually fair estimator (Kusner et al., 2017), and reject option classification (Kamiran et al., 2012). The repository contains a subset of the methods described in the paper. Fairness Comparison (Friedler et al., 2018) is one of the more extensive libraries. It includes several bias detection metrics as well as bias mitigation methods, including disparate impact remover (Feldman et al., 2015), prejudice remover (Kamishima et al., 2012), and two-Naive Bayes (Calders & Verwer, 2010). Written primarily as a test-bed to allow different bias metrics and algorithms to be compared in a consistent way, it also allows the addition of additional algorithms and datasets. ",
+        "bbox": [
+            86,
+            152,
+            473,
+            409
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Our work on AIF360 aims to unify these efforts and bring together in one open source toolkit a comprehensive set of bias metrics, bias mitigation algorithms, bias metric explanations, and industrial usability. Another contribution of this work is a rigorous architectural design focused on extensibility, usability, explainability, and ease of benchmarking that goes beyond the existing work. We outline these design aspects in more details in the following sections. ",
+        "bbox": [
+            84,
+            416,
+            475,
+            537
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "4 OVERARCHING PARADIGM AND ARCHITECTURE ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            556,
+            398,
+            590
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "AIF360 is designed as an end-to-end workflow with two goals: (a) ease of use and (b) extensibility. Users should be able to go from raw data to a fair model as easily as possible, while comprehending the intermediate results. Researchers should be able to contribute new functionality with minimal effort. ",
+        "bbox": [
+            84,
+            599,
+            473,
+            691
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Figure 1 shows our generic pipeline for bias mitigation. Every output in this process (rectangles in the figure) is a new dataset that shares, at least, the same protected attributes as other datasets in the pipeline. Every transition is a transformation that may modify the features or labels or both between its input and output. Trapezoids represent learned models that can be used to make predictions on test data. There are also various stages in the pipeline where we can assess if bias is present using fairness metrics (not pictured), and obtain relevant explanations for the same (not pictured). These will each be discussed below. ",
+        "bbox": [
+            84,
+            699,
+            473,
+            864
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "To ensure ease of use, we created simple abstractions for datasets, metrics, explainers, and algorithms. Metric ",
+        "bbox": [
+            84,
+            872,
+            473,
+            902
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "classes compute fairness and accuracy metrics using one or two datasets, explainer classes provide explanations for the metrics, and algorithm classes implement bias mitigation algorithms. Each of these abstractions are discussed in detail in the subsequent sections. The term “dataset” refers to the dataset object created using our abstraction, as opposed to a CSV data file or a Pandas DataFrame. ",
+        "bbox": [
+            495,
+            84,
+            885,
+            189
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The base classes for the abstractions are general enough to be useful, but specific enough to prevent errors. For example, there is no functional difference between predictions and ground-truth data or training and testing data. Each dataset object contains both features and labels, so it can be both an output of one transformation and an input to another. More specialized subclasses benefit from inheritance while also providing some basic error-checking, such as determining what metrics are available for certain types of datasets. Finally, we are able to generate high-quality, informative documentation automatically by using Sphinx1 to parse the docstring blocks in the code. ",
+        "bbox": [
+            495,
+            198,
+            885,
+            378
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "There are three main paths to the goal of making fair predictions (bottom right) — these are labelled in bold: fair pre-processing, fair in-processing, and fair post-processing. Each corresponds to a category of bias mitigation algorithms we have implemented in AIF360. Functionally, however, all three classes of algorithms act on an input dataset and produce an output dataset. This paradigm and the terminology we use for method names are familiar to the machine learning/data science community and similar to those used in other libraries such as scikit-learn.2 Block arrows marked “learn” in Figure 1 correspond to the fit method for a particular algorithm or class of algorithms. Sequences of arrows marked “apply” correspond to transform or predict methods. Predictions, by convention, result in an output that differs from the input by labels and not features or protected attributes. Transformations result in an output that may differ in any of those attributes. ",
+        "bbox": [
+            495,
+            386,
+            885,
+            657
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Although pre-, in-, and post-processing algorithms are all treated the same in our design, there are important considerations that the user must make in choosing which to use. For example, post-processing algorithms are easy to apply to existing classifiers without retraining. By making the distinction clear, which many libraries listed in Section 3 do not do, we hope to make the process transparent and easy to understand. ",
+        "bbox": [
+            495,
+            665,
+            885,
+            787
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "As for extensibility, while we cannot generalize from only one user, we were very encouraged about how easy it is to use the toolkit when within days of the toolkit being made available, a researcher from the AI fairness field submit-",
+        "bbox": [
+            495,
+            794,
+            885,
+            854
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "1http://www.sphinx-doc.org/en/master/ ",
+        "bbox": [
+            514,
+            862,
+            846,
+            876
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "2http://scikit-learn.org ",
+        "bbox": [
+            514,
+            876,
+            733,
+            891
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/b89f048d34e7a999d15a3c8e6e8275908750ff7265a3c4fa6ef61db1a62dc358.jpg",
+        "image_caption": [
+            "Figure 1. The fairness pipeline. An example instantiation of this generic pipeline consists of loading data into a dataset object, transforming it into a fairer dataset using a fair pre-processing algorithm, learning a classifier from this transformed dataset, and obtaining predictions from this classifier. Metrics can be calculated on the original, transformed, and predicted datasets as well as between the transformed and predicted datasets. Many other instantiations are also possible. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            109,
+            99,
+            851,
+            411
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "ted a pull request asking to add his group’s bias mitigation algorithm. In a subsequent interview, this contributor informed us that contributing to the toolkit did not take much time as: “...it was very well structured and very easy to follow”. ",
+        "bbox": [
+            83,
+            505,
+            473,
+            580
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "A simplified UML class diagram of the code is provided in Appendix A for reference. Code snippets for an instantiation of the pipeline based on our AIF360 implementation is provided in Appendix B. ",
+        "bbox": [
+            84,
+            588,
+            473,
+            648
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "5 DATASET CLASS ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            667,
+            264,
+            683
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "The Dataset class and its subclasses are a key abstraction that handle all forms of data. Training data is used to learn classifiers. Testing data is used to make predictions and compare metrics. Besides these standard aspects of a machine learning pipeline, fairness applications also require associating protected attributes with each instance or record in the data. To maintain a common format, independent of what algorithm or metric is being applied, we chose to structure the Dataset class so that all of these relevant attributes — features, labels, protected attributes, and their respective identifiers (names describing each) — are present and accessible from each instance of the class. Subclasses add further attributes that differentiate the dataset and dictate with which algorithms and metrics it is able to ",
+        "bbox": [
+            84,
+            694,
+            475,
+            905
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "interact. ",
+        "bbox": [
+            496,
+            505,
+            555,
+            518
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Structured data is the primary form of dataset studied in the fairness literature and is represented by the StructuredDataset class. Further distinction is made for a BinaryLabelDataset — a structured dataset that has a single label per instance that can only take one of two values: favorable or unfavorable. Unstructured data, which is receiving more attention from the fairness community, can be accommodated in our architecture by constructing a parallel class to the StructuredDataset class, without affecting existing classes or algorithms that are not applicable to unstructured data. ",
+        "bbox": [
+            495,
+            527,
+            885,
+            693
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "The classes provide a common structure for the rest of the pipeline to use. However, since raw data comes in many forms, it is not possible to automatically load an arbitrary raw dataset without input from the user about the data format. The toolkit includes a StandardDataset class that standardizes the process of loading a dataset from CSV format and populating the necessary class attributes. Raw data must often be “cleaned” before being used and categorical features must be encoded as numerical entities. Furthermore, with the same raw data, different experiments are often run using subsets of features or protected attributes. The StandardDataset class handles these common tasks by providing a simple interface for the ",
+        "bbox": [
+            495,
+            700,
+            885,
+            898
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "user to specify the columns of a Pandas DataFrame that correspond to features, labels, protected attributes, and optionally instance weights; the values of protected attributes that correspond to privileged status; the values of labels that correspond to favorable status; the features that need to be converted from categorical to numerical; and the subset of features to keep for the subsequent analysis. It also allows for arbitrary, user-defined data pre-processing, such as deriving new features from existing ones or filtering invalid instances. ",
+        "bbox": [
+            84,
+            85,
+            475,
+            234
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "We extend the StandardDataset class with examples of commonly used datasets that can be used to load datasets in different manners without modifying code by simply passing different arguments to the constructor. This is in contrast with other tools that make it more difficult to configure the loading procedure at runtime. We currently provide an interface to seven popular datasets: Adult Census Income (Kohavi, 1996), German Credit (Dheeru & Karra Taniskidou, 2017), ProPublica Recidivism (COM-PAS) (Angwin et al., 2016), Bank Marketing (Moro et al., 2014), and three versions of Medical Expenditure Panel Surveys (AHRQ, 2015; 2016). ",
+        "bbox": [
+            84,
+            243,
+            475,
+            425
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "Besides serving as a structure that holds data to be used by bias mitigation algorithms or metrics, the Dataset class provides many important utility functions and capabilities. Using Python’s $= =$ operator, we are able to compare equality of two datasets and even compare a subset of fields using a custom context manager temporarily ignore3 The split method allows for easy partitioning into training, testing, and possibly validation sets. We are also able to easily convert to Pandas DataFrame format for visualization, debugging, and compatibility with externally implemented code. Finally, we track basic metadata associated with each dataset instance. Primary among these is a simple form of provenance-tracking: after each modification by an algorithm, a new object is created and a pointer to the previous state is kept in the metadata along with details of the algorithm applied. This way, we maintain trust and transparency in the pipeline. ",
+        "bbox": [
+            84,
+            431,
+            475,
+            690
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "6 METRICS CLASS ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            708,
+            267,
+            724
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "The Metric class and its subclasses compute various individual and group fairness metrics to check for bias in datasets and models.4 The DatasetMetric class ",
+        "bbox": [
+            84,
+            734,
+            473,
+            779
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "3A sample snippet of this functionality is as follows: ",
+        "bbox": [
+            102,
+            786,
+            418,
+            799
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "with transf.temporarily ignore(‘labels’): return transf $= =$ pred ",
+        "bbox": [
+            102,
+            800,
+            460,
+            825
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "This returns True if the two datasets transf and pred differ only in labels. ",
+        "bbox": [
+            88,
+            825,
+            472,
+            851
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "4In the interest of space, we omit mathematical notation and definitions here. They may be found elsewhere, including the documentation for AIF360. ",
+        "bbox": [
+            88,
+            851,
+            472,
+            888
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "and its subclass BinaryLabelDatasetMetric examine a single dataset as input (StructuredDataset and BinaryLabelDataset, respectively) and are typically applied in the left half of Figure 1 to either the original dataset or the transformed dataset. The metrics therein are the group fairness measures of disparate (DI) and statistical parity difference (SPD) — the ratio and difference, respectively, of the base rate conditioned on the protected attribute — and the individual fairness measure consistency defined by Zemel et al. (2013). ",
+        "bbox": [
+            495,
+            84,
+            885,
+            236
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "In contrast, the SampleDistortionMetric and ClassificationMetric classes examine two datasets as input. For classification metrics, the first input is the original or transformed dataset containing true labels, and the second input is the predicted dataset or fair predicted dataset, respectively, containing predicted labels. This metric class implements accuracy and fairness metrics on models. The sample distortion class contains distance computations between the same individual point in the original and transformed datasets for different distances. Such metrics are used, e.g. by Calmon et al. (2017), to quantify individual fairness. ",
+        "bbox": [
+            495,
+            243,
+            885,
+            425
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "A large collection of group fairness and accuracy metrics in the classification metric class are functions of the confusion matrix of the true labels and predicted labels, e.g. false negative rate difference and false discovery rate ratio. Two metrics important for later reference are average odds difference (the mean of the false positive rate difference and the true positive rate difference), and equal opportunity difference (the true positive rate difference). Classification metrics also include disparate impact and statistical parity difference, but based on predicted labels. Since the main computation of confusion matrices is common for a large set of metrics, we utilize memoization and caching of computations for performance on large-scale datasets. This class also contains metrics based on the generalized entropy index, which is able to quantify individual and group fairness with a single number (Speicher et al., 2018). Additional details on the metrics used in the evaluations (Section 10) are given in Appendix C. ",
+        "bbox": [
+            495,
+            431,
+            885,
+            704
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "There is a need for a large number and variety of fairness metrics in the toolkit because there is no one best metric relevant for all contexts. It must be chosen carefully, based on subject matter expertise and worldview (Friedler et al., 2016). The comprehensiveness of the toolkit allows a user to not be hamstrung in making the most appropriate choice. ",
+        "bbox": [
+            495,
+            710,
+            885,
+            801
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "7 EXPLAINER CLASS ",
+        "text_level": 1,
+        "bbox": [
+            496,
+            821,
+            699,
+            837
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "The Explainer class is intended to be associated with the Metric class and provide further insights about computed fairness metrics. Different subclasses of varying ",
+        "bbox": [
+            495,
+            847,
+            885,
+            893
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/9e8c48caa824a6c4147d5fdfb4d5f021304252d3370238e54c8df0156eaac01b.jpg",
+        "image_caption": [
+            "(a) "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            98,
+            84,
+            230,
+            210
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/c9d302437aaf7fb0929099b7bb71f0a9377c80d6eb260d5c4f14e722775c4aff.jpg",
+        "image_caption": [
+            "(b) ",
+            "Figure 2. Protected attribute bias localization in (a) younger (unprivileged), and (b) older (privileged) groups in the German Credit dataset. The 17–27 range in the younger group and the 43– 58 range in the older group would be localized by the approach. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            245,
+            84,
+            475,
+            210
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "complexity that extend the Explainer class can be created to output explanations that are meaningful to different user personas. To the best of our knowledge, this is the first fairness toolkit that stresses the need for explanations. The explainer capability implemented in the first release of AIF360 is basic reporting through ”pretty print” and JSON outputs. Future releases may include methodologies such as fine-grained localization of bias (we describe the approach herein), actionable recourse analysis (Ustun et al., 2018), and counterfactual fairness (Wachter et al., 2018). ",
+        "bbox": [
+            84,
+            334,
+            475,
+            484
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "7.1 Reporting ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            502,
+            199,
+            517
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "TextExplainer, a subclass of Explainer, returns a plain text string with a metric value. For example, the explanation for the accuracy metric is simply the text string “Classification accuracy on hcounti instances: haccuracyi”, where hcounti represents the number of records, and haccuracyi the accuracy. This can be invoked for both the privileged and unprivileged instances by passing arguments. ",
+        "bbox": [
+            84,
+            525,
+            473,
+            647
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "JSONExplainer extends TextExplainer and produces three output attributes in JSON format: (a) metaattributes about the metric such as its name, a natural language description of its definition and its ideal value in a bias-free world, (b) statistical attributes that include the raw and derived numbers, and (c) the plain text explanation passed unchanged from the superclass TextExplainer. Outputs from this class are consumed by the Web application described in Section 11. ",
+        "bbox": [
+            84,
+            654,
+            473,
+            789
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "7.2 Fine-grained localization ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            806,
+            302,
+            821
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "A more insightful explanation for fairness metrics is the localization of the source of bias at a fine granularity in the protected attribute and feature spaces. In the protected attribute space, the approach finds the values in which the given fairness metric is diminished (unprivileged group) or ",
+        "bbox": [
+            84,
+            829,
+            475,
+            906
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/9bc70008c77a9bc59e5e427698abe0663c8321e66471888ad4200557c75cc7fc.jpg",
+        "image_caption": [
+            "Figure 3. Feature bias localization in the Stanford Open Policing dataset for Connecticut, with county name as the feature and race as the protected attribute. In Hartford County, the ratio of search rates for the unprivileged groups (black and Hispanic) in proportion to the search rate for the privileged group (this ratio is the DI fairness metric) is higher than the same metric in Middlesex County and others. The approach would localize Hartford County. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            545,
+            85,
+            836,
+            263
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "enhanced (privileged group) compared to the entire group. In the feature space, the approach computes the given fairness metric across all feature values and localizes on ones that are most objectionable. Figure 2 illustrates protected attribute bias localization on the German Credit dataset, with age as the protected attribute. Figure 3 illustrates feature bias localization on the Stanford Open Policing dataset (Pierson et al., 2017) for Connecticut, with county name as the feature and race as the protected attribute. ",
+        "bbox": [
+            496,
+            457,
+            885,
+            594
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "8 ALGORITHMS CLASS ",
+        "text_level": 1,
+        "bbox": [
+            496,
+            613,
+            718,
+            628
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Bias mitigation algorithms attempt to improve the fairness metrics by modifying the training data, the learning algorithm, or the predictions. These algorithm categories are known as pre-processing, in-processing, and post-processing, respectively (d’Alessandro et al., 2017). ",
+        "bbox": [
+            495,
+            638,
+            885,
+            715
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "8.1 Bias mitigation approaches ",
+        "text_level": 1,
+        "bbox": [
+            496,
+            731,
+            728,
+            746
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "The bias mitigation algorithm categories are based on the location where these algorithms can intervene in a complete machine learning pipeline. If the algorithm is allowed to modify the training data, then pre-processing can be used. If it is allowed to change the learning procedure for a machine learning model, then in-processing can be used. If the algorithm can only treat the learned model as a black box without any ability to modify the training data or learning algorithm, then only post-processing can be used. This is illustrated in Figure 1. ",
+        "bbox": [
+            495,
+            753,
+            885,
+            905
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "8.2 Algorithms ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            85,
+            207,
+            99
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "AIF360 currently contains 9 bias mitigation algorithms that span these three categories. All the algorithms are implemented by inheriting from the Transformer class. Transformers are an abstraction for any process that acts on an instance of Dataset class and returns a new, modified Dataset object. This definition encompasses preprocessing, in-processing, and post-processing algorithms. ",
+        "bbox": [
+            84,
+            108,
+            473,
+            214
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Pre-processing algorithms: Reweighing (Kamiran & Calders, 2012) generates weights for the training examples in each (group, label) combination differently to ensure fairness before classification. Optimized preprocessing (Calmon et al., 2017) learns a probabilistic transformation that edits the features and labels in the data with group fairness, individual distortion, and data fidelity constraints and objectives. Learning fair representations (Zemel et al., 2013) finds a latent representation that encodes the data well but obfuscates information about protected attributes. Disparate impact remover (Feldman et al., 2015) edits feature values to increase group fairness while preserving rank-ordering within groups. ",
+        "bbox": [
+            84,
+            220,
+            475,
+            417
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In-processing algorithms: Adversarial debiasing (Zhang et al., 2018) learns a classifier to maximize prediction accuracy and simultaneously reduce an adversarys ability to determine the protected attribute from the predictions. This approach leads to a fair classifier as the predictions cannot carry any group discrimination information that the adversary can exploit. Prejudice remover (Kamishima et al., 2012) adds a discrimination-aware regularization term to the learning objective. ",
+        "bbox": [
+            84,
+            425,
+            473,
+            561
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Post-processing algorithms: Equalized odds postprocessing (Hardt et al., 2016) solves a linear program to find probabilities with which to change output labels to optimize equalized odds. Calibrated equalized odds postprocessing (Pleiss et al., 2017) optimizes over calibrated classifier score outputs to find probabilities with which to change output labels with an equalized odds objective. Reject option classification (Kamiran et al., 2012) gives favorable outcomes to unprivileged groups and unfavorable outcomes to privileged groups in a confidence band around the decision boundary with the highest uncertainty. ",
+        "bbox": [
+            84,
+            569,
+            475,
+            734
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "9 MAINTAINING CODE QUALITY ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            753,
+            390,
+            771
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Establishing and maintaining high quality code is crucial for an evolving open source system. Although we do not claim any novelty over modern software projects, we do feel that faithfully adopting such practices is another distinguishing feature of AIF360 relative to other fairness projects. ",
+        "bbox": [
+            84,
+            780,
+            473,
+            869
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "An extensible toolkit should provide confidence to its con-",
+        "bbox": [
+            84,
+            878,
+            473,
+            893
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "tributors that, while it makes it is easy for them to extend, it does not alter the existing API contract. Our testing protocols are designed to cover software engineering aspects and comprehensive test suites that focus on the performance metrics of fairness detection and mitigation algorithms. ",
+        "bbox": [
+            495,
+            84,
+            885,
+            161
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "The AIF360 Github repository is directly integrated with Travis CI,5 a continuous testing and integration framework, which invokes pytest to run our unit tests. Any pull request automatically triggers the tests. The results of the tests are made available to the reviewer of the pull request to help ensure that changes to the code base do not introduce bugs that would break the tests. ",
+        "bbox": [
+            495,
+            167,
+            885,
+            273
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Unit test cases ensure that classes and functions defined in the different libraries are functionally correct and do not break the flow of the fairness detection and mitigation pipeline. Each of our classes is equipped with unit tests that attempt to cover every aspect of the class/module/functions. ",
+        "bbox": [
+            495,
+            281,
+            885,
+            369
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We have also developed a test suite to compute the metrics reported in Section 6. Our measurements include aspects of the fairness metrics, classification metrics, dataset metrics, and distortion metrics, covering a total of 71 metrics at the time of this writing. These metrics tests can be invoked directly with any fairness algorithm. The test suite also provides unit tests for all bias mitigation algorithms and basic validation of the datasets. ",
+        "bbox": [
+            495,
+            378,
+            885,
+            500
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Our repository has two types of tests: (1) unit tests that test individual helper functions, and (2) integration tests that test a complete flowof bias mitigation algorithms in Jupyter notebooks. Table 1 provides the statistics and code coverage information as reported by the tool py.test --cov and Jupyter notebook coverage using py.test --nbval . ",
+        "bbox": [
+            495,
+            508,
+            885,
+            612
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "table",
+        "img_path": "images/e3089ab9f4e3c89f8158cd685804910ce84c46411a7b542e69c0279c5c0ffc4d.jpg",
+        "table_caption": [
+            "Table 1. Statistics on the Test Suite for AIF360 "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Metrics</td><td>Statistics</td></tr><tr><td>Number of Unit Test cases</td><td>23 test cases in 13 modules</td></tr><tr><td>Code Coverage (Helper Files)</td><td>65%</td></tr><tr><td>Code Coverage (Algorithms)</td><td>58%</td></tr></table>",
+        "bbox": [
+            540,
+            655,
+            844,
+            698
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "10 EVALUATION OF THE ALGORITHMS ",
+        "text_level": 1,
+        "bbox": [
+            500,
+            734,
+            852,
+            750
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "Fairness is a complex construct that cannot be captured with a one-size-fits-all solution. Hence, our goal in this evaluation is two-fold: (a) demonstrating the capabilities of our toolkit in terms of the various fairness metrics and bias mitigation algorithms, (b) showing how a user can understand the behavior of various metrics and bias mitigation algorithms on her dataset, and make an appropriate choice according to her needs. ",
+        "bbox": [
+            495,
+            760,
+            885,
+            881
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_footnote",
+        "text": "5https://travis-ci.org/ ",
+        "bbox": [
+            517,
+            890,
+            723,
+            905
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "table",
+        "img_path": "images/d4f38b4876b06c9ce98ba5ebfc95824d49af6bd369cd4c16f0a2789ecb795f11.jpg",
+        "table_caption": [
+            "Table 2. Overview of the experimental setup "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Datasets</td><td>Adult Census Income, German Credit, COMPAS</td></tr><tr><td>Metrics</td><td>Disparate impact\nStatistical parity difference\nAverage odds difference\nEqual opportunity difference</td></tr><tr><td>Classifiers</td><td>Logistic regression (LR), \nRandom forest classifier (RF), Neural Network (NN)</td></tr><tr><td>Pre-processing Algorithms</td><td>Re-weighing (Kamiran &amp; Calderns, 2012)\nOptimized pre-processing (Calmon et al., 2017)\nLearning fair representations (Zemel et al., 2013)\nDisparate impact remover (Feldman et al., 2015)</td></tr><tr><td>In-processing Algorithms</td><td>Adversarial debiasing (Zhang et al., 2018)\nPrejudice remover (Kamishima et al., 2012)</td></tr><tr><td>Post-processing Algorithms</td><td>Equalized odds post-processing (Hardt et al., 2016)\nCalibrated eq. odds postprocessing (Pleiss et al., 2017)\nReject option classification (Kamiran et al., 2012)</td></tr></table>",
+        "bbox": [
+            86,
+            107,
+            452,
+            273
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "Table 2 provides the datasets, metrics, classifiers, and bias mitigation algorithms used in our experiments. Additional details on the datasets and metrics are available in Appendix C. The processed Adult Census Income, German Credit, and COMPAS datasets contain 45,222, 1,000 and 6,167 records respectively. Except Adversarial debiasing and Disparate impact remover, all other bias mitigation algorithms use datasets that are cleaned and pre-processed in a similar way. Each dataset is randomly divided into $5 0 \\%$ training, $2 0 \\%$ validation, and $3 0 \\%$ test partitions. Each point in the figures of results consists of a mean and a spread $\\pm 1$ standard deviation) computed using 25 such random splits. For the random forest classifier, we set the number of trees to be 100, and the minimum samples at a leaf node to be 20. ",
+        "bbox": [
+            88,
+            309,
+            472,
+            534
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "For fair pre-processing algorithms, since the original dataset itself gets transformed (see Figure 1), we compute fairness metrics before and after this transformation and present results in Figure 4. For all datasets, the Reweighing and Optimized pre-processing algorithms improve fairness in both metrics presented. However, the least improvement is with German Credit dataset, possibly because it is the smallest in size. Results for disparate impact remover and learning fair representations algorithms are not shown since they do not modify the labels or protected attributes directly when transforming the dataset. Hence the SPD and DI values do not change during transformation. ",
+        "bbox": [
+            88,
+            542,
+            472,
+            738
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "We also train classifiers with and without bias mitigation for all the dataset and algorithm combinations. We then measure statistical parity difference and disparate impact using the predicted dataset, and average odds and equal opportunity difference using the input and predicted datasets. In all possible cases, the validation datasets were used to obtain the score threshold for the classifiers to maximize balanced accuracy. The results are all obtained on test partitions. ",
+        "bbox": [
+            88,
+            747,
+            472,
+            881
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "An example result for Adult Census Income dataset with ",
+        "bbox": [
+            88,
+            890,
+            472,
+            904
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "race as protected attribute is shown in Figure 5. The rest of the results referenced here are available in Appendix D. Disparate impact remover and adversarial debiasing use differently processed datasets and hence their metrics in the top panel are different from others. The first thing that strikes when glancing at the figure is that the four different metrics seem to be correlated. Also the uncertainty in classification accuracy is much smaller compared to the uncertainty in the fairness metrics. There is also correlation between the metrics computed using the LR and RF classifiers. The Reject option classification algorithm improves fairness quite a bit, but also suffers a significant reduction in accuracy. Reweighing and optimized pre-processing also show good improvement in fairness, but without much penalty in accuracy. The two equal odds post-processing methods do not show significant changes to accuracy or fairness. ",
+        "bbox": [
+            501,
+            85,
+            883,
+            339
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "These evaluations can be used to arrive at an informed conclusion about the choice of bias mitigation algorithm depending on the application. Clearly, if modifying the data is possible reweighing or optimized pre-processing are good options. However, if post-processing is the only option, e.g., if the user has access only to black box models, reject option classification is shown to be a decent choice on average, although it is brittle. The effect of dataset size on these metrics becomes clear looking at Figures 9 and 10. The uncertainty is substantially higher in the case of German Credit data. Fairness improvements are more mixed in the COMPAS data, but Reweighing and Reject option classification still show up to be good choices. ",
+        "bbox": [
+            501,
+            349,
+            883,
+            544
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "11 WEB APPLICATION ",
+        "text_level": 1,
+        "bbox": [
+            501,
+            565,
+            710,
+            579
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "AIF360 includes not only the main toolkit code, but also an interactive Web experience (see Appendix E for a screen shot). Here we describe its front-end and back-end design. ",
+        "bbox": [
+            501,
+            590,
+            883,
+            635
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "11.1 Design of the interactive experience ",
+        "text_level": 1,
+        "bbox": [
+            501,
+            652,
+            792,
+            667
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "The Web experience was designed to provide useful information for a diverse consumers. For business users, the interactive demonstration offers a sample of the toolkit’s fairness checking and mitigation capabilities without requiring any programming knowledge. For new developers, the demonstration, notebook-based tutorials, guidance on algorithm selection, and access to a user community provide multiple ways to progress from their current level of understanding into the details of the code. For more advanced developers, the detailed documentation and code are directly accessible. ",
+        "bbox": [
+            501,
+            676,
+            883,
+            840
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "The design of the Web experience proceeded through several iterations. Early clickable mock-ups of the interactive demonstration had users first select a dataset, one or two ",
+        "bbox": [
+            501,
+            849,
+            883,
+            893
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/62a8e3958dc764fc3dbf123be68a02f4f05e159fff61fc8552a6cd077ec2d4f5.jpg",
+        "image_caption": [
+            "(a) SPD - Re-weighing "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            91,
+            80,
+            282,
+            205
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/f74f96334152f8c99ad869d4e3a21896de9f45559242fb768c487e87d567f81f.jpg",
+        "image_caption": [
+            "(b) SPD - Optimized pre-proc. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            282,
+            80,
+            478,
+            205
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/794deb8af3d25332184784b4e6d0d34d23ef6291024b70d22191a8949ec85340.jpg",
+        "image_caption": [
+            "(c) DI - Re-weighing "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            478,
+            80,
+            671,
+            205
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/eb36f73331bb5051b9e37859c17f57376b7feabec14ac6011a3ca6d8df6107d3.jpg",
+        "image_caption": [
+            "(d) DI - Optimized pre-proc. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            671,
+            98,
+            872,
+            205
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/1f3a22a49f0e18dea1be689836044aa8121a9e22fae2f59a639078352e3c74dd.jpg",
+        "image_caption": [
+            "Figure 4. Statistical Parity Difference (SPD) and Disparate Impact (DI) before (blue bar) and after (orange bar) applying pre-processing algorithms on various datasets for different protected attributes. The dark gray bars indicate the extent of $\\pm 1$ standard deviation. The ideal fair value of SPD is 0 and DI is 1. ",
+            "(a) Statistical parity difference "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            286,
+            285,
+            500
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/ac5db4e405c9da227d21fa3704f131c4f2401f74a39ed6420af2e9173ce26c77.jpg",
+        "image_caption": [
+            "(b) Disparate impact "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            285,
+            287,
+            483,
+            498
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/12ce84549317fb032f914098de45c5f76ba17881862071af389d92afb5f25914.jpg",
+        "image_caption": [
+            "(c) Average odds difference "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            483,
+            287,
+            671,
+            500
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/f9414af7700271fa9b8187bbfe33173a70c04f1c32a9cc3eb59083683ee6ae45.jpg",
+        "image_caption": [
+            "(d) Equal opportunity difference ",
+            "Figure 5. Fairness vs. Balanced Accuracy before (top panel) and after (bottom panel) applying various bias mitigation algorithms. Four different fairness metrics are shown. In most cases two classifiers (Logistic regression - LR or Random forest classifier - RF) were used. The ideal fair value of disparate impact is 1, whereas for all other metrics it is 0. The circles indicate the mean value and bars indicate the extent of $\\pm 1$ standard deviation. Dataset: Adult, Protected attribute: race. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            671,
+            290,
+            880,
+            500
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "protected attributes to check for bias, and one of up to five metrics to use for checking. We learned, however, that this was overwhelming, even for those familiar with AI, since it required choices they were not yet equipped to make. As a result, we simplified the experience by asking users to first select only one of three datasets to explore. Bias checking results were then graphically presented for two protected attributes across five different metrics. Users could then select a mitigation algorithm leading to a report comparing bias before and after mitigation. The design of the charts for each bias metric also evolved in response to user feedback as we learned the importance of depicting a colorcoded range of values considered fair or biased with more detailed information being available in an overlay. Figure 6 shows the before and after mitigation graphs from the interactive Web experience. ",
+        "bbox": [
+            84,
+            619,
+            473,
+            859
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "The design of the rest of the site also went through several iterations. Of particular concern, the front page sought to ",
+        "bbox": [
+            84,
+            868,
+            473,
+            898
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/ccf3bbb43dc0f7a680048fcb0535ec95cc2f3c899481bbf1c7c83f6503eaeb34.jpg",
+        "image_caption": [
+            "Before mitigation "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            509,
+            625,
+            689,
+            777
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/2ed91763d236af35a5f6cae4d5762449d31fa08c460d6058dcfc1904b7d47977.jpg",
+        "image_caption": [
+            "After adversarial debiasing mitigation ",
+            "Figure 6. Graphs from the interactive web experience showing one of the metrics, for one of the datasets, before and after mitigation. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            669,
+            625,
+            875,
+            777
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "convey toolkit richness while still being approachable. In the final design, a short textual introduction to the content of the site, along with direct links to the API documentation and code repository, is followed by a number of direct links to various levels of advice and examples. Further links to the individual datasets, the bias checkers, and the mitigation algorithms are also provided. In all this, we ensured the site was suitably responsive across all major desktop and mobile platforms. ",
+        "bbox": [
+            84,
+            84,
+            475,
+            220
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "11.2 Design of the back-end service ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            237,
+            346,
+            252
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The demo web application not only provides a gentle introduction to the capabilities of the toolkit, but also serves as an example of deploying the toolkit to the cloud and converting it into a web service. We used Python’s Flask framework for building the service and exposed a REST API that generates a bias report based on the following input parameters from a user: the dataset name, the protected attributes, the privileged and unprivileged groups, the chosen fairness metrics, and the chosen mitigation algorithm, if any. With these inputs, the back-end then runs a series of steps to 1) split the dataset into training, development, and validation sets; 2) train a logistic regression classifier on the training set; 3) run the bias-checking metrics on the classifier against the test dataset; 4) if a mitigation algorithm is chosen, run the mitigation algorithm with the appropriate pipeline (pre-processing, in-processing, or post-processing). The end result is then cached so that if the exact same inputs are provided, the result can be directly retrieved from cache and no additional computation is needed. ",
+        "bbox": [
+            84,
+            260,
+            475,
+            561
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "The reason to truly use the toolkit code in serving the Web application rather than having a pre-computed lookup table of results is twofold: we want to make the app a real representation of the underlying capabilities (in fact, creating the Web app helped us debug a few items in the code), and we also avoid any issues of synchronizing updates to the metrics, explainers, and algorithms with the results shown: synchronization is automatic. Currently, the service is limited to three built-in datasets, but it can be expanded to support the user’s own data upload. The service is also limited to building logistic regression classifiers, but again this can be expanded. Such expansions can be more easily implemented if this fairness service is integrated into a full AI suite that provides various classifier options and data storage solutions. ",
+        "bbox": [
+            84,
+            570,
+            475,
+            797
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "12 CONCLUSION ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            816,
+            250,
+            830
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "AIF360 is an open source toolkit that brings value to diverse users and practitioners. For fairness researchers, it provides a platform that enables them to: 1) experiment with and compare various existing bias detection and mit-",
+        "bbox": [
+            84,
+            842,
+            475,
+            902
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "igation algorithms in a common framework, and gain insights into their practical usage; 2) contribute and benchmark new algorithms; 3) contribute new datasets and analyze them for bias. For developers, it provides: 1) education on the important issues in bias checking and mitigation, 2) guidance on which metrics and mitigation algorithms to use; 3) tutorials and sample notebooks that demonstrate bias mitigation in different industry settings; and 4) a Python package for detecting and mitigating bias in their workflows. ",
+        "bbox": [
+            495,
+            84,
+            885,
+            236
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "Fairness is a multifaceted, context-dependent social construct that defies simple definition. The metrics and algorithms in AIF360 may be viewed from the lens of distributive justice (Hu & Chen, 2018), i.e., relating to decisions about who in a society receives which benefits and goods, and clearly do not capture the full scope of fairness in all situations. Even within distributive justice, more work is needed to apply the toolkit to additional datasets and situations. Future work could also expand the toolkit to measure and mitigate other aspects of justice such as compensatory justice, i.e. relating to the extent to which people are fairly compensated for harms done to them. Further work is also needed to extend the variety of types of explanations offered, and to create guidance for practitioners on when a specific kind of explanation is most appropriate. There is a lot of work left to do to achieve unbiased AI, we hope others in the research community continue to contribute to the toolkit their own approaches to fairness and bias checking, mitigation and explanation. ",
+        "bbox": [
+            495,
+            243,
+            885,
+            530
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "REFERENCES ",
+        "text_level": 1,
+        "bbox": [
+            500,
+            550,
+            620,
+            565
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Adebayo, J. A. ”FairML : Toolbox for diagnosing bias in predictive modeling”. Master’s thesis, Massachusetts Institute of Technology, 2016. URL https://github. com/adebayoj/fairml. ",
+            "AHRQ. Medical Expenditure Panel Survey data: 2015 Full Year Consolidated Data File, 2015. URL https://meps.ahrq.gov/mepsweb/data_ stats/download_data_files_detail.jsp? cboPufNumber $=$ HC-181. ",
+            "AHRQ. Medical Expenditure Panel Survey data: 2016 Full Year Consolidated Data File, 2016. URL https://meps.ahrq.gov/mepsweb/data_ stats/download_data_files_detail.jsp? cboPufNumber $=$ HC-192. ",
+            "Angwin, J., Larson, J., Mattu, S., and Kirchner, L. Machine bias: Theres software used across the country to predict future criminals. And its biased against blacks. ProPublica, 2016. URL https://github.com/ propublica/compas-analysis. "
+        ],
+        "bbox": [
+            498,
+            573,
+            885,
+            906
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Bantilan, N. Themis-ml: A fairness-aware machine learning interface for end-to-end discrimination discovery and mitigation. Journal of Technology in Human Services, 36(1):15–30, 2018. URL https://github.com/ cosmicBboy/themis-ml. ",
+            "Calders, T. and Verwer, S. Three naive Bayes approaches for discrimination-free classification. Data Mining journal; special issue with selected papers from ECML/PKDD, 2010. ",
+            "Calmon, F. P., Wei, D., Vinzamuri, B., Natesan Ramamurthy, K., and Varshney, K. R. Optimized preprocessing for discrimination prevention. In Advances in Neural Information Processing Systems 30, pp. 3992– 4001, Long Beach, USA, December 2017. ",
+            "d’Alessandro, B., O’Neil, C., and LaGatta, T. Conscientious classification: A data scientist’s guide to discrimination-aware classification. Big Data, 5(2):120– 134, June 2017. ",
+            "Dheeru, D. and Karra Taniskidou, E. UCI machine learning repository, 2017. URL https: //archive.ics.uci.edu/ml/datasets/ Statlog+%28German+Credit+Data%29. ",
+            "Dieterich, W., Mendoza, C., and Brennan, T. COM-PAS risk scales: Demonstrating accuracy equity and predictive parity, 2016. URL https://assets. documentcloud.org/documents/2998391/ ProPublica-Commentary-Final-070616. pdf. ",
+            "Feldman, M., Friedler, S. A., Moeller, J., Scheidegger, C., and Venkatasubramanian, S. Certifying and removing disparate impact. In Proceedings of the ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pp. 259–268, Sydney, Australia, August 2015. ",
+            "Friedler, S. A., Scheidegger, C., and Venkatasubramanian, S. On the (im)possibility of fairness. arXiv:1609.07236, September 2016. ",
+            "Friedler, S. A., Scheidegger, C., Venkatasubramanian, S., Choudhary, S., Hamilton, E. P., and Roth, D. A comparative study of fairness-enhancing interventions in machine learning. http://arxiv.org/abs/1802.04422, Feb. 2018. URL https://github.com/ algofairness/fairness-comparison. ",
+            "Galhotra, S., Brun, Y., and Meliou, A. Fairness Testing: Testing software for discrimination. In Proceedings of the 2017 11th Joint Meeting on Foundations of Software Engineering, ESEC/FSE 2017, pp. 498–510, 2017. doi: http://doi.acm.org/10.1145/ "
+        ],
+        "bbox": [
+            86,
+            84,
+            473,
+            906
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "3106237.3106277. URL https://github.com/ LASER-UMASS/Themis. ",
+            "Hardt, M., Price, E., and Srebro, N. Equality of opportunity in supervised learning. In Advances in Neural Information Processing Systems 29, pp. 3315–3323, Barcelona, Spain, December 2016. ",
+            "Hu, L. and Chen, Y. Welfare and distributional impacts of fair classification. In Proc. Fairness Accountability Transparency Machine Learning Workshop, July 2018. ",
+            "Kamiran, F. and Calders, T. Data preprocessing techniques for classification without discrimination. Knowledge and Information Systems, 33(1):1–33, 2012. doi: https://doi. org/10.1007/s10115-011-0463-8. ",
+            "Kamiran, F., Karim, A., and Zhang, X. Decision theory for discrimination-aware classification. In IEEE International Conference on Data Mining, pp. 924–929, 2012. doi: https://doi.org/10.1109/ICDM.2012.45. ",
+            "Kamishima, T., Akaho, S., Asoh, H., and Sakuma, J. Fairness-aware classifier with prejudice remover regularizer. Machine Learning and Knowledge Discovery in Databases, pp. 35–50, 2012. ",
+            "Kleinberg, J., Mullainathan, S., and Raghavan, M. Inherent trade-offs in the fair determination of risk scores. Innovations in Theoretical Computer Science. ACM, 2017. ",
+            "Kohavi, R. Scaling up the accuracy of naive-Bayes classifiers: a decision-tree hybrid. In Proceedings of the Second International Conference on Knowledge Discovery and Data Mining, 1996. URL https://archive. ics.uci.edu/ml/datasets/adult. ",
+            "Kusner, M. J., Loftus, J. R., Russell, C., and Silva, R. Counterfactual fairness. In NIPS, 2017. ",
+            "Larson, J. and Angwin, J. Technical response to Northpointe, 2016. URL http: //www.propublica.org/article/ technical-response-to-northpointe. ",
+            "Larson, J., Mattu, S., Kirchner, L., and Angwin, J. How we analyzed the COMPAS recidivism algorithm, 2016. URL http: //www.propublica.org/article/ how-we-analyzed-the-compas-recidivism-algorithm. ",
+            "Moro, S., Cortez, P., and Rita, P. A datadriven approach to predict the success of bank telemarketing. Decision Support Systems, 62:22–31, 2014. URL https://archive.ics.uci.edu/ ml/datasets/Bank+Marketing. "
+        ],
+        "bbox": [
+            500,
+            84,
+            985,
+            906
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "Narayanan, A. Translation tutorial: 21 fairness definitions and their politics. In Conference on Fairness, Accountability, and Transparency, February 2018. ",
+            "Pierson, E., Simoiu, C., Overgoor, J., Corbett-Davies, S., Ramachandran, V., Phillips, C., and Goel, S. A largescale analysis of racial disparities in police stops across the united states. arXiv preprint arXiv:1706.05678, 2017. ",
+            "Pleiss, G., Raghavan, M., Wu, F., Kleinberg, J., and Weinberger, K. Q. On fairness and calibration. In Advances in Neural Information Processing Systems, pp. 5680–5689, 2017. ",
+            "Speicher, T., Heidari, H., Grgic-Hlaca, N., Gummadi, K. P., Singla, A., Weller, A., and Zafar, M. B. A unified approach to quantifying algorithmic unfairness: Measuring individual & group unfairness via inequality indices. In Proc. ACM SIGKDD Int. Conf. Knowl. Disc. Data Min., pp. 2239–2248, London, UK, August 2018. ",
+            "Stevens, A., Anisfeld, A., Kuester, B., London, J., Saleiro, P., and Ghani, R. Aequitas: Bias and fairness audit, 2018. URL https://github.com/dssg/ aequitas. Center for Data Science and Public Policy, The University of Chicago. ",
+            "Tramer, F., Atlidakis, V., Geambasu, R., Hsu, D., Hubaux, ` J.-P., Humbert, M., Juels, A., and Lin, H. FairTest: Discovering unwarranted associations in data-driven applications. In IEEE European Symposium on Security and Privacy, pp. 401–416, 2017. doi: https://doi.org/ 10.1109/EuroSP.2017.29. URL https://github. com/columbia/fairtest. ",
+            "Ustun, B., Spangher, A., and Liu, Y. Actionable recourse in linear classification. arXiv:1809.06514, September 2018. ",
+            "Wachter, S., Mittelstadt, B., and Russell, C. Counterfactual explanations without opening the black box: Automated decisions and the GDPR. Harvard Journal of Law & Technology, 31(2):841–887, Spring 2018. ",
+            "Zehlike, M., Castillo, C., Bonchi, F., Hajian, S., and Megahed, M. Fairness Measures: Datasets and software for detecting algorithmic discrimination, 2017. URL http://fairness-measures.org/. ",
+            "Zemel, R., Wu, Y. L., Swersky, K., Pitassi, T., and Dwork, C. Learning fair representations. In Proceedings of the International Conference on Machine Learning, pp. 325–333, Atlanta, USA, June 2013. ",
+            "Zhang, B. H., Lemoine, B., and Mitchell, M. Mitigating unwanted biases with adversarial learning. In Proc. AAAI/ACM Conf. Artif. Intell., Ethics, Society, New Orleans, USA, February 2018. "
+        ],
+        "bbox": [
+            86,
+            84,
+            473,
+            902
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "Appendices ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            80,
+            258,
+            109
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "A UML CLASS DIAGRAM ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            130,
+            328,
+            147
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "image",
+        "img_path": "images/83fd31a1a95ef3912b9986f44a4f89ed6c0b51c33e8177bd5c98a5fde5395f0e.jpg",
+        "image_caption": [
+            "Figure 7. Class abstractions for a fair machine learning pipeline, as implemented in AIF360. This figure is meant to provide a visual sense of the class hierarchy, many details and some methods are omitted. For brevity, inherited members and methods are not shown (but overridden ones are) nor are aliases such as recall() for true positive rate(). Some methods are “metametrics” — such as difference(), ratio(), total(), average(), maximum() — that act on other metrics to get, e.g. true positive rate difference(). The metric explainer classes use the same method signatures as the metric classes (not enumerated) but provide further description for the values. The GenericPreProcessing, GenericInProcessing, and GenericPostProcessing are not actual classes but serve as placeholders here for the real bias mitigation algorithms we implemented. Finally, memoize and addmetadata are Python decorator functions that are automatically applied to every function in their respective classes. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            101,
+            162,
+            877,
+            492
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "B CODE SNIPPETS ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            672,
+            266,
+            690
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "This example provides Python code snippets for some common tasks that the user might perform using our toolbox. The example involves the user loading a dataset, splitting it into training and testing partitions, understanding the outcome disparity between two demographic groups, and transforming the dataset to mitigate this disparity. A more detailed version of this example is available in url.redacted. ",
+        "bbox": [
+            84,
+            699,
+            888,
+            761
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "B.1 Dataset operations ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            776,
+            261,
+            792
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "Load the UCI Adult dataset from aif360.datasets import AdultDataset ds_orig = AdultDataset() ",
+        "guess_lang": "txt",
+        "bbox": [
+            84,
+            800,
+            480,
+            845
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "Split into train and test partitions ds_orig_tr, ds_orig(te = ds_orig.split([0.7], shuffle=True, seed=1) ",
+        "guess_lang": "python",
+        "bbox": [
+            84,
+            861,
+            741,
+            891
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "Look into the training dataset  \nprint(\"Training Dataset shape\")  \nprint(ds_orig_tr_features.shape)  \nprint(\"Favorable and unfavorable outcome labels\")  \nprint(ds_orig_tr.favorable_label, ds_orig_tr.unfavorable_label)  \nprint(\"Metadata for labels\")  \nprint(ds_orig_tr_metadata[\"label_maps'])  \nprint(\"Protected attribute names\")  \nprint(ds_orig_tr.protected_attribute_names)  \nprint(\"Privileged and unprivileged protected attribute values\")  \nprint(ds_orig_tr_PRIVileged_protected_attributes, ds_orig_tr.unprivileged_protected_attributes)  \nprint(\"Metadata for protected attributes\")  \nprint(ds_orig_tr_metadata[\"protected_attribute_maps\")] ",
+        "guess_lang": "python",
+        "bbox": [
+            84,
+            85,
+            704,
+            297
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Expected output: The attributes of the Adult dataset will be printed. The training partition of the Adult dataset has 31655 instances and 98 features with two protected attributes (race and sex). The labels correspond to high-income $( > 5 0 \\mathrm { K } )$ or low-income $\\angle = 5 0 \\mathrm { K }$ ), as shown in the metadata. Similar metadata is also available for protected attributes. ",
+        "bbox": [
+            83,
+            325,
+            887,
+            372
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "B.2 Checking for bias in the original data ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            388,
+            388,
+            402
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "# Load the metric class\nfrom aif360.metrics import BinaryLabelDatasetMetric\n# Define privileged and unprivileged groups\npriv = {{'sex': 1}} # Male\nunpriv = {{'sex': 0}} # Female\n# Create the metric object\nmetric_otr = BinaryLabelDatasetMetric( ds_orig_tr,\n\t unprivileged_groups=unpriv, privileged_groups=priv)\n# Load and create explainers\nfrom aif360 explanations import MetricTextExplainer, MetricJSONExplainer\ntext_exp_otr = MetricTextExplainer(metric_otr)\njson_exp_otr = MetricJSONExplainer(metric_otr)\n# Print statistical parity difference\nprint(text_exp_otr.statistical paritydifference())\nprintjson_exp_otr/statistical parity_differencel) ",
+        "guess_lang": "python",
+        "bbox": [
+            84,
+            412,
+            777,
+            700
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Expected output: The statistical parity difference should be $- 0 . 1 9 7 4$ , which is the difference between probability of favorable outcome (high income) between the unprivileged group (females) and the privileged group (male) in this dataset. The JSON output is more elaborate to facilitate consumption by a downstream algorithm. ",
+        "bbox": [
+            83,
+            714,
+            887,
+            760
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "B.3 Pre-process data to mitigate bias ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            776,
+            356,
+            791
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "Import the reweighing preprocessing algorithm class from aif360.algorithms.preprocessing.reweighing import Reweighing # Create the algorithm object RW = Reweighing(unprivileged_groups=unpriv, privileged_groups=priv) # Train and predict on the training data ",
+        "guess_lang": "python",
+        "bbox": [
+            84,
+            800,
+            741,
+            906
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "Uses scikit-learn convention (fit, predict, transform)  \nRW.fit(ds_orig_tr)  \nds_transf_tr = RW.transform(ds_orig_tr) ",
+        "guess_lang": "txt",
+        "bbox": [
+            84,
+            85,
+            633,
+            128
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Expected output: There will be no output here, but the reweighing algorithm equalizes the weights across (group, label) combination. ",
+        "bbox": [
+            83,
+            146,
+            885,
+            175
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "B.4 Checking for bias in the pre-processed training data ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            193,
+            493,
+            209
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "code",
+        "sub_type": "algorithm",
+        "code_caption": [],
+        "code_body": "Create the metric object for pre-processed data metric_ttr $=$ BinaryLabelDatasetMetric(ds_transf_tr, unprivileged_groups $\\equiv$ unpriv, privileged_groups $\\equiv$ priv) # Create explainer text_exp_ttr $=$ MetricTextExplainer(metric_ttr) # Print statistical parity difference print(text_exp_ttr.statistical_paritydifference()) ",
+        "bbox": [
+            84,
+            217,
+            624,
+            351
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Expected output: Because of the action of the re-weighing pre-processing algorithm, the statistical parity difference for the transformed data (ds transf tr) must be really close to 0. ",
+        "bbox": [
+            83,
+            368,
+            885,
+            398
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "B.5 Pre-process out-of-sample testing data and check for bias ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            415,
+            527,
+            431
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "Apply the learned re-weighing pre-processor  \nds_transf(te = RW.transform(ds_orig(te))  \n# Create metric objects for original and  \n# pre-processed test data  \nmetric_ote = BinaryLabelDatasetMetric(ds_orig(te,  \n    unprivileged_groups=unpriv, privileged_groups=priv)  \nmetric_tte = BinaryLabelDatasetMetric(ds_transf(te,  \n    unprivileged_groups=unpriv, privileged_groups=priv)  \n# Create explainers for both metric objects  \ntext_exp_ote = MetricTextExplainer(metric_ote)  \ntext_exp_tte = MetricTextExplainer(metric_tte)  \n# Print statistical parity difference  \nprint(text_exp_ote.statistical parity Difference())  \nprint(text_exp_tte.statistical parityDifference()) ",
+        "guess_lang": "txt",
+        "bbox": [
+            84,
+            439,
+            624,
+            696
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "Expected output: The trained re-weighing pre-processor can be applied on the out-of-sample test data. The metrics for the original and transformed testing data will show a significant reduction in statistical parity difference (-0.2021 to -0.0119 in this case). ",
+        "bbox": [
+            83,
+            712,
+            885,
+            756
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "C ADDITIONAL EXPERIMENTAL DETAILS ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            83,
+            467,
+            99
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "We provide additional details on the experimental evaluations. ",
+        "bbox": [
+            84,
+            109,
+            495,
+            125
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.1 Datasets ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            141,
+            191,
+            155
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.1.1 Adult Census Income ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            164,
+            281,
+            178
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "For protected attribute sex, Male is privileged, and Female is unprivileged. For protected attribute race, White is privileged, and Non-white is unprivileged. Favorable label is High income $( > 5 0 \\mathrm { K } )$ ) and unfavorable label is Low income $\\angle = 5 0 \\mathrm { K }$ ). ",
+        "bbox": [
+            84,
+            188,
+            883,
+            218
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.1.2 German Credit ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            233,
+            241,
+            247
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "For protected attribute sex, Male is privileged, and Female is unprivileged. For protected attribute age, Old is privileged, and Young is unprivileged. Favorable label is Good credit and unfavorable label is Bad credit. ",
+        "bbox": [
+            84,
+            256,
+            883,
+            287
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.1.3 Probpublica recidivism (COMPAS) ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            301,
+            372,
+            316
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "For protected attribute sex, Female is privileged, and Male is unprivileged. For protected attribute race, Caucasian is privileged, and Not Caucasian is unprivileged. Favorable label is Did not recidivate and unfavorable label is Did recidivate. ",
+        "bbox": [
+            84,
+            325,
+            883,
+            356
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.2 Metrics ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            372,
+            184,
+            386
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.2.1 Statistical Parity Difference ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            395,
+            323,
+            411
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "This is the difference in the probability of favorable outcomes between the unprivileged and privileged groups. This can be computed both from the input dataset as well as from the dataset output from a classifier (predicted dataset). A value of 0 implies both groups have equal benefit, a value less than 0 implies higher benefit for the privileged group, and a value greater than 0 implies higher benefit for the unprivileged group. ",
+        "bbox": [
+            84,
+            419,
+            883,
+            479
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.2.2 Disparate Impact ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            494,
+            258,
+            508
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "This is the ratio in the probability of favorable outcomes between the unprivileged and privileged groups. This can be computed both from the input dataset as well as from the dataset output from a classifier (predicted dataset). A value of 1 implies both groups have equal benefit, a value less than 1 implies higher benefit for the privileged group, and a value greater than 1 implies higher benefit for the unprivileged group. ",
+        "bbox": [
+            84,
+            518,
+            883,
+            579
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.2.3 Average odds difference ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            593,
+            299,
+            608
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "This is the average of difference in false positive rates and true positive rates between unprivileged and privileged groups. This is a method in the ClassificationMetric class and hence needs to be computed using the input and output datasets to a classifier. A value of 0 implies both groups have equal benefit, a value less than 0 implies higher benefit for the privileged group and a value greater than 0 implies higher benefit for the unprivileged group. ",
+        "bbox": [
+            84,
+            616,
+            883,
+            678
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "C.2.4 Equal opportunity difference ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            691,
+            330,
+            707
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "This is the difference in true positive rates between unprivileged and privileged groups. This is a method in the ClassificationMetric class and hence needs to be computed using the input and output datasets to a classifier. A value of 0 implies both groups have equal benefit, a value less than 0 implies higher benefit for the privileged group and a value greater than 0 implies higher benefit for the unprivileged group. ",
+        "bbox": [
+            84,
+            715,
+            883,
+            776
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "D EVALUATION ON DIFFERENT DATA SETS ",
+        "text_level": 1,
+        "bbox": [
+            84,
+            795,
+            467,
+            810
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "We present additional results with bias mitigation obtained for various datasets and protected attributes. These correspond to the setting described in Section 10. ",
+        "bbox": [
+            84,
+            821,
+            883,
+            851
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 15
+    },
+    {
+        "type": "image",
+        "img_path": "images/aadaebf4ada705c4e83c2489b5fb32d9fab7fb2d4ee4fa4da5fdf01c0e058e4a.jpg",
+        "image_caption": [
+            "(a) Statistical parity difference ",
+            "(b) Disparate impact ",
+            "(c) Average odds difference "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            132,
+            883,
+            344
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "image",
+        "img_path": "images/e13d0fd6993cb50bd9b7ac8c99e570c1e6dc967885313ea8b4e966d3895d2c6e.jpg",
+        "image_caption": [
+            "(d) Equal opportunity difference ",
+            "Figure 8. Fairness vs. Balanced Accuracy before (top panel) and after (bottom panel) applying various bias mitigation algorithms. Four different fairness metrics are shown. In most cases two classifiers (Logistic regression - LR or Random forest classifier - RF) were used. The ideal fair value of disparate impact is 1, whereas for all other metrics it is 0. The circles indicate the mean value and bars indicate the extent of $\\pm 1$ standard deviation. Data set: Adult, Protected attribute: sex. ",
+            "(a) Statistical parity difference ",
+            "(b) Disparate impact ",
+            "(c) Average odds difference ",
+            "(d) Equal opportunity difference ",
+            "Figure 9. Fairness vs. Balanced Accuracy before (top panel) and after (bottom panel) applying various bias mitigation algorithms. Four different fairness metrics are shown. In most cases two classifiers (Logistic regression - LR or Random forest classifier - RF) were used. The ideal fair value of disparate impact is 1, whereas for all other metrics it is 0. The circles indicate the mean value and bars indicate the extent of $\\pm 1$ standard deviation. Data set: german, Protected attribute: sex. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            544,
+            880,
+            758
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 16
+    },
+    {
+        "type": "image",
+        "img_path": "images/160ab84c8641f1949fdc891edf8ca8da1aafe2b7193fc15b649e6f718abe30d7.jpg",
+        "image_caption": [
+            "(a) Statistical parity difference ",
+            "(b) Disparate impact ",
+            "(c) Average odds difference "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            132,
+            877,
+            342
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/4bedf888846aad4be5360c7184e0086f556381331e81eeac4655cdfa41fdb050.jpg",
+        "image_caption": [
+            "(d) Equal opportunity difference ",
+            "Figure 10. Fairness vs. Balanced Accuracy before (top panel) and after (bottom panel) applying various bias mitigation algorithms. Four different fairness metrics are shown. In most cases two classifiers (Logistic regression - LR or Random forest classifier - RF) were used. The ideal fair value of disparate impact is 1, whereas for all other metrics it is 0. The circles indicate the mean value and bars indicate the extent of $\\pm 1$ standard deviation. Data set: german, Protected attribute: age. ",
+            "(a) Statistical parity difference ",
+            "(b) Disparate impact ",
+            "(c) Average odds difference ",
+            "(d) Equal opportunity difference ",
+            "Figure 11. Fairness vs. Balanced Accuracy before (top panel) and after (bottom panel) applying various bias mitigation algorithms. Four different fairness metrics are shown. In most cases two classifiers (Logistic regression - LR or Random forest classifier - RF) were used. The ideal fair value of disparate impact is 1, whereas for all other metrics it is 0. The circles indicate the mean value and bars indicate the extent of $\\pm 1$ standard deviation. Data set: compas, Protected attribute: sex. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            544,
+            883,
+            758
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/69840c7b94c7b8f0058c3072a2d07d5fe4d3c282576b5d975b80d20a06e11963.jpg",
+        "image_caption": [
+            "(a) Statistical parity difference ",
+            "(b) Disparate impact ",
+            "(c) Average odds difference ",
+            "(d) Equal opportunity difference ",
+            "Figure 12. Fairness vs. Balanced Accuracy before (top panel) and after (bottom panel) applying various bias mitigation algorithms. Four different fairness metrics are shown. In most cases two classifiers (Logistic regression - LR or Random forest classifier - RF) were used. The ideal fair value of disparate impact is 1, whereas for all other metrics it is 0. The circles indicate the mean value and bars indicate the extent of $\\pm 1$ standard deviation. Data set: compas, Protected attribute: race. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            89,
+            337,
+            883,
+            551
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            436,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "E UI PAGE ",
+        "text_level": 1,
+        "bbox": [
+            86,
+            83,
+            199,
+            98
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/1b41b476e2f716808f1490f5c253209eef46ef62d885ebdcbc9fab646207033d.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            106,
+            111,
+            867,
+            228
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "4.Compare original vs. mitigated results ",
+        "text_level": 1,
+        "bbox": [
+            129,
+            246,
+            419,
+            260
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Dataset: Adult census income ",
+        "bbox": [
+            147,
+            266,
+            313,
+            277
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Mitigation: Optimized Pre-processing algorithm applied ",
+        "bbox": [
+            147,
+            280,
+            431,
+            292
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Protected Attribute: Race ",
+        "bbox": [
+            145,
+            306,
+            295,
+            318
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Privileged Group: White, Unprivileged Group: Non-white ",
+        "bbox": [
+            145,
+            323,
+            418,
+            335
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Accuracy after mitigation changed from $8 2 \\%$ to $7 4 \\%$ ",
+        "bbox": [
+            145,
+            337,
+            398,
+            348
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "Bias against unprivileged group was reduced to acceptable levels*for1 of 2 previously biased metrics ",
+        "bbox": [
+            145,
+            351,
+            630,
+            363
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "(1 of 5 metrics stillindicate bias for unprivileged group) ",
+        "bbox": [
+            145,
+            364,
+            411,
+            375
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/c6edf748bd3a547429cc91c0a6cb864b2f5f3ddb60614fea64f92e8d8e749068.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            148,
+            385,
+            316,
+            532
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/23e2d7081fe22cd41dcbeaf43926081dec54a2d874cfaf914e1219b5d9a60a82.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            323,
+            386,
+            496,
+            532
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/ef278c4019e9c1b17a8b7ac6a8614a7c5eb1547cf666dcd31a83616c3a04e6d4.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            498,
+            386,
+            674,
+            532
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/1a3ad418e33486f7ff0601059ed33de5911f199db88ca0daa8c79d88d795b001.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            145,
+            540,
+            315,
+            688
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/bf85859271ca2389b75d1e17118ae50d7dc283f22eb5d3bb6881fb11f6eccb52.jpg",
+        "image_caption": [
+            "Figure 13. A screen shot from the web interactive experience, showing the results of mitigation applied to one of the available datasets. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            323,
+            540,
+            496,
+            688
+        ],
+        "page_idx": 19
+    },
+    {
+        "type": "header",
+        "text": "AI Fairness 360 ",
+        "bbox": [
+            434,
+            56,
+            537,
+            69
+        ],
+        "page_idx": 19
+    }
+]

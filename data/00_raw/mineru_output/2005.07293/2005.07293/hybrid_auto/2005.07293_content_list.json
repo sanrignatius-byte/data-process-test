@@ -1,0 +1,2824 @@
+[
+    {
+        "type": "text",
+        "text": "Statistical Equity: A Fairness Classification Objective ",
+        "text_level": 1,
+        "bbox": [
+            227,
+            114,
+            769,
+            136
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Ninareh Mehrabi University of Southern California Information Sciences Institute ninarehm@usc.edu ",
+        "bbox": [
+            135,
+            204,
+            359,
+            263
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Yuzhong Huang University of Southern California Information Sciences Institute yuzhongh@isi.edu ",
+        "bbox": [
+            387,
+            204,
+            609,
+            265
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Fred Morstatter University of Southern California Information Sciences Institute morstatt@usc.edu ",
+        "bbox": [
+            637,
+            204,
+            859,
+            263
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Abstract ",
+        "text_level": 1,
+        "bbox": [
+            261,
+            305,
+            338,
+            321
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Machine learning systems have been shown to propagate the societal errors of the past. In light of this, a wealth of research focuses on designing solutions that are “fair.” Even with this abundance of work, there is no singular definition of fairness, mainly because fairness is subjective and context dependent. We propose a new fairness definition, motivated by the principle of equity, that considers existing biases in the data and attempts to make equitable decisions that account for these previous historical biases. We formalize our definition of fairness, and motivate it with its appropriate contexts. Next, we operationalize it for equitable classification. We perform multiple automatic and human evaluations to show the effectiveness of our definition and demonstrate its utility for aspects of fairness, such as the feedback loop. ",
+        "bbox": [
+            143,
+            344,
+            455,
+            617
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1 Introduction ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            651,
+            253,
+            667
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "With the omnipresent use of machine learning in different decision and policy making environments, fairness has gained significant importance. This became the case when researchers noticed that an AI system used to measure recidivism risk in bail decisions was biased against certain racial groups [Angwin et al., 2016]. As a reaction to the disclosure of this issue and various others, the AI community has made efforts to mitigate biased and unfair outcomes in decision making processes. Many researchers have proposed definitions of algorithmic fairness, while others have tried to use these definitions in different down-stream tasks in an effort to overcome unfair outcomes. Despite the abundance of fairness definitions, the majority of them are not complete [Gajane and Pechenizkiy, 2018]. Moreover, ",
+        "bbox": [
+            111,
+            684,
+            488,
+            912
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "image",
+        "img_path": "images/089eee2a11615e273a0a464dffd37f77f2d1fabe5d657f928ce1b4c040b3f860.jpg",
+        "image_caption": [
+            "Figure 1: Notion of equality in fairness is depicted and formalized along with our newly formalized notion of equity. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            501,
+            303,
+            895,
+            476
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "theoretical analysis of these definitions have found that many at the forefront are incompatible with each other [Kleinberg, Mullainathan, and Raghavan, 2016]. For now at least, fairness remains a philosophical question that is not yet answered in the computational domain. In light of that, we propose and mathematically formalize the equity notion of fairness in which resources and outcomes are distributed to overcome obstacles experienced by groups in order to maximize their opportunities [Schement, 2001]. In this work we take the perspective that historical biases should be compensated and disadvantaged groups should be leveraged. We then introduce a data-driven classification objective function that operationalizes the notion of equity in which existing historical biases in the training data are compensated through predictions on the test data. This approach will not only target fixing biases but it will also target minimizing the feedback loop phenomenon in which the biased data contaminates the decision making outcome, and it continues to stay and grow through the system. ",
+        "bbox": [
+            506,
+            571,
+            885,
+            875
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Our definition of fairness is an augmented version of statistical parity [Dwork et al., 2012] that we adapt to mea-",
+        "bbox": [
+            508,
+            881,
+            885,
+            912
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "aside_text",
+        "text": "arXiv:2005.07293v1 [cs.LG] 14 May 2020 ",
+        "bbox": [
+            22,
+            255,
+            58,
+            705
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "sure equity. Unlike previous definitions and objective functions in which only equality is considered in present outcomes, our approach will consider the historical biases present in the data and will combine the notion of equity and affirmative action while also satisfying equality amongst groups. Our definition is a departure from differential privacy [Jagielski et al., 2019] and fairness through unawareness [Chen et al., 2019] since having access to sensitive attributes is necessary in some scenarios. For instance, in cases that pertain to the medical domain, access to sensitive attributes such as gender and age are required to make a decision. ",
+        "bbox": [
+            111,
+            90,
+            488,
+            271
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Two different fairness realizations are depicted in Figure 1. On the left side there is the notion of equality in which every group is given an equal amount of resources, which is too much for some members and insufficient for others. This is the problem that motivates this work: how can a classifier produce predictions that are good for the majority of a group or society? This leads us to the right picture which depicts equity where leverage is given through the model to give the groups appropriate resources to reach their goals. ",
+        "bbox": [
+            111,
+            279,
+            488,
+            430
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Note: We use parity (statistical parity) and equality interchangeably as synonyms throughout this paper. ",
+        "bbox": [
+            111,
+            431,
+            486,
+            460
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "The contributions of this paper are as follows: ",
+        "bbox": [
+            112,
+            474,
+            416,
+            491
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1. We define and formalize equity as a fairness definition. ",
+            "2. We demonstrate how this definition can be made actionable by proposing a loss function that combines equity with the cross-entropy loss into the classifier. Through experimentation, we demonstrate how our definition compares to the objective of equality. ",
+            "3. We then discuss and experimentally show the effectiveness of our definition in mitigating the feedback loop problem [Chouldechova and Roth, 2018]. ",
+            "4. Finally, we evaluate our fairness notion against the parity notion through human annotators and show how these definitions fare in different real life scenarios. "
+        ],
+        "bbox": [
+            125,
+            508,
+            486,
+            750
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2 Defining Equity ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            773,
+            279,
+            791
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Equity is the distribution of resources among groups to overcome obstacles and to raise their opportunities for access [Schement, 2001]. Thus, historically disadvantaged groups are compensated, and others get their fair share to reach their goals. To operationalize equity, we learn the existing biases from the historical data and compensate for them in the predictions generated by the model. This ",
+        "bbox": [
+            111,
+            806,
+            488,
+            912
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "can be viewed similarly to affirmative action in which present decisions (algorithmic or otherwise) are made to compensate for biases of the past but in such a way that groups reach an ultimate equality. The goal is to equalize all the groups in the long run and give each group their fair share.We modeled this phenomenon in our classification objective function which will be described in detail in this section. ",
+        "bbox": [
+            506,
+            90,
+            883,
+            210
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Our objective function consists of two terms: ",
+        "bbox": [
+            509,
+            212,
+            807,
+            227
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• The Fairness Objective: In which the goal is to enforce equity amongst groups. ",
+            "• The Classification Objective: In which we enforce the classification objective to achieve predictive accuracy. "
+        ],
+        "bbox": [
+            526,
+            246,
+            883,
+            335
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Finally, we combine these two objectives and control the importance of each using a regularization parameter. ",
+        "bbox": [
+            508,
+            354,
+            883,
+            386
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2.1 Operationalizing Equity ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            405,
+            720,
+            421
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Herein, we formalize our equity notion of fairness. Let $Y$ be a random variable denoting an outcome of a decision making process and $A$ be the sensitive variable (e.g., demographic group membership). Let $D$ be the set of all decisions made in the past (or historical decisions). Let the joint distribution $p _ { D } ( Y , A )$ summarize the essential statistics of past decisions. We are interested in the case when past decisions contain bias, i.e., $p _ { D } ( Y \\mid A = a ) \\not \\approx p _ { D } ( Y \\mid A = b )$ . ",
+        "bbox": [
+            506,
+            433,
+            885,
+            570
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "Let $M$ be the set of instances for which a prediction has to be done using a machine learning method. As mentioned earlier we want the decisions of the classifier to account for and reverse the biases in the data in an equitable manner. We formalize this in the following way. Let a joint distribution $p _ { M } ( Y , A )$ summarize the essential statistics of the classifier on $M$ . Our goal is to generate equitable decisions for each group: ",
+        "bbox": [
+            506,
+            577,
+            885,
+            699
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} p _ {D} (Y = y \\mid A = a) p _ {D} (A = a) + p _ {M} (Y = y \\mid A = a) p _ {M} (A = a) \\\\ = p _ {D} (Y = y \\mid A = b) p _ {D} (A = b) + p _ {M} (Y = y \\mid A = b) p _ {M} (A = b), \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            511,
+            710,
+            965,
+            747
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "for each possible outcome $y$ . We assume that we study the same number of instances from each demographic group between both the historical and outcome sets (i.e., $p _ { D } ( A = a ) = p _ { D } ( A = b ) = 1 / 2$ and $p _ { M } ( A = a ) =$ $p _ { M } ( A = b ) = 1 / 2 )$ . Under this assumption, our fairness criterion becomes: ",
+        "bbox": [
+            506,
+            768,
+            883,
+            858
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} p _ {D} (Y = y \\mid A = a) + p _ {M} (Y = y \\mid A = a) \\\\ = p _ {D} (Y = y \\mid A = b) + p _ {M} (Y = y \\mid A = b). \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            545,
+            875,
+            846,
+            907
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "One can interpret this criterion as equalizing odds of different groups for a random person drawn with equal probability from $D$ or $M$ . ",
+        "bbox": [
+            111,
+            90,
+            488,
+            137
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "To comply with the notation widely used in the fairness literature, $p _ { D } ( Y | A = a )$ can also be written as $p ( Y | A =$ $a$ ) and $p _ { M } ( Y | A = a )$ as $p ( \\hat { Y } | A = a )$ . ",
+        "bbox": [
+            111,
+            143,
+            486,
+            189
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Finally, to translate our new fairness notion into widely used format one can write our objective as follows: ",
+        "bbox": [
+            111,
+            189,
+            486,
+            219
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\np (\\hat {Y} | A = a) + p (Y | A = a) = p (\\hat {Y} | A = b) + p (Y | A = b).\n$$",
+        "text_format": "latex",
+        "bbox": [
+            111,
+            224,
+            504,
+            244
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Definition 1 (Statistical Equity) A predictor is statically equitable among demographic groups, a and b, if it satisfies $p ( \\bar { Y } | A = \\bar { a } ) \\dot { + } p ( \\bar { Y } | A \\dot { = }$ $a ) = p ( \\hat { Y } | A = b ) + p ( Y | A = b )$ . ",
+        "bbox": [
+            137,
+            261,
+            462,
+            324
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "2.2 Classification Objective ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            354,
+            318,
+            369
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In order to satisfy the fairness objective and to be able to couple it with our classification loss, we divided our total classification objective into two terms. The first term, denoted by $F _ { e q u i t y }$ , attempts to satisfy the fairness objective, and the other term, denoted by $L$ , attempts to satisfy the classification loss. These two losses are then controlled and coupled by a regularization term $\\beta$ . ",
+        "bbox": [
+            111,
+            381,
+            486,
+            488
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The resulting fairness objective for each possible outcome $y$ is coupled in our classifier as follows: ",
+        "bbox": [
+            111,
+            494,
+            486,
+            525
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} F _ {\\text {e q u i t y}} (\\theta) = \\\\ \\sum_ {y} \\left(\\left[ \\frac {1}{n} \\sum_ {i = 1} ^ {n} p (\\hat {Y _ {i}} = y | A = a) + p (Y = y | A = a) \\right] \\right. \\\\ \\left. - \\left[ \\frac {1}{n} \\sum_ {i = 1} ^ {n} p (\\hat {Y _ {i}} = y | A = b) + p (Y = y | A = b) \\right]\\right) ^ {2}. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            112,
+            532,
+            488,
+            640
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Note that there is a difference between the notation of historical and predictive (future) outcomes. By equalizing the sum of historical plus future outcomes of one group to another, we are enforcing affirmative action and try to compensate for observed historical biases in the data by correcting and adjusting the predictive outcome so that eventually all the groups reach an equilibrium in our objective function. This equilibrium can be in terms of all the groups satisfying their goals, e.g. that in Figure 1. We defined our classification objective as the cross-entropy loss $L ( \\theta )$ . Notice that $L ( \\theta )$ can be any other loss; however, cross-entropy is used in our experiments. Finally, by combining the fairness objective with the classification objective, we define the whole objective of our fair classification task as follows: ",
+        "bbox": [
+            111,
+            652,
+            488,
+            878
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {\\theta} \\beta F _ {\\text {e q u i t y}} (\\theta) + (1 - \\beta) L (\\theta). \\tag {1}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            191,
+            893,
+            486,
+            914
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "$\\beta$ is a hyperparameter that controls the importance of the fairness constraint over the classification objective. By making the $\\beta$ value larger we are enforcing more of the fairness (equity) constraint in our objective, while smaller $\\beta$ value favors the classification accuracy over the fairness constraint. ",
+        "bbox": [
+            508,
+            90,
+            883,
+            181
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "3 Experiments and Results ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            200,
+            754,
+            219
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "3.1 Model and Experimental Setup ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            234,
+            769,
+            250
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "The model used in these experiments is a two-layer dense network with 256 hidden dimensions. We stopped training the model after seeing no improvement on the validation set for 100 iterations (validation epochs) in all the experiments with a starting learning rate of 0.01 and applied learning rate decay of 0.95. The code is available for reproduction of our experiments.1 We performed the experiments on three different loss functions described below. ",
+        "bbox": [
+            508,
+            261,
+            883,
+            396
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• Equity Loss: This loss function is our proposed loss function in Equation 1 introduced in the previous section. ",
+            "• Parity Loss: This loss function is mirroring the statistical parity notion of fairness which combines the statistical parity notion with the classification loss as follows: "
+        ],
+        "bbox": [
+            526,
+            415,
+            883,
+            529
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\begin{array}{l} F _ {\\text {p a r i t y}} (\\theta) = \\\\ \\sum_ {y} \\left(\\frac {1}{n} \\sum_ {i = 1} ^ {n} p \\left(\\hat {Y _ {i}} = y \\mid A = a\\right) - \\frac {1}{n} \\sum_ {i = 1} ^ {n} p \\left(\\hat {Y _ {i}} = y \\mid A = b\\right)\\right) ^ {2}. \\\\ \\end{array}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            542,
+            542,
+            944,
+            606
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Where $F _ { \\mathrm { p a r i t y } }$ represents the fairness loss corresponding to the parity notion of fairness. This loss will then be combined with the classification cross-entropy loss as before which will form the whole objective loss as follows: ",
+        "bbox": [
+            540,
+            622,
+            883,
+            696
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {\\theta} \\beta F _ {\\text {p a r i t y}} (\\theta) + (1 - \\beta) L (\\theta). \\tag {2}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            604,
+            709,
+            882,
+            731
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "• Classification Loss (Cross-entropy): This is a loss function containing only the cross-entropy loss with no fairness constraints imposed as follows: ",
+        "bbox": [
+            526,
+            747,
+            882,
+            792
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "equation",
+        "text": "$$\n\\min  _ {\\theta} L (\\theta). \\tag {3}\n$$",
+        "text_format": "latex",
+        "bbox": [
+            676,
+            805,
+            882,
+            825
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "In our results, Equity corresponds to a classifier using the equity loss function defined in Equation 1, Parity using the parity loss function defined in Equation 2, and ",
+        "bbox": [
+            508,
+            843,
+            883,
+            888
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_footnote",
+        "text": "1https://github.com/Ninarehm/Fairness ",
+        "bbox": [
+            529,
+            897,
+            857,
+            912
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/afb4a9a6cceaacee1cf76cab746df0180063f312bd83215c951588b014971cbc.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            160,
+            95,
+            493,
+            234
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/f6493f6d761c6241d90f3860c89aada3e1717422d3e5fc5573016359cafb6247.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            504,
+            95,
+            841,
+            234
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/48f88138374aafe513bf9f37a91db22ba147e4212f7e6126f5633db1fcb3a7ce.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            161,
+            239,
+            493,
+            381
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/5d897f65f0a47e34f8ed68538e2c55984fda14c562ebdd589cda9aadd26ac472.jpg",
+        "image_caption": [
+            "Figure 2: Accuracy and fairness gain results for the COMPAS and Adult datasets over different $\\beta$ values. Top plots report the accuracy results, while bottom plots report the fairness gain results. Each point on the plots is the average value of 10 experiments performed on the 10 random splits. Notice that the 10 random split sets are the same across different $\\beta$ values. For details of these values along with standard deviation numbers refer to Tables 7 and 8 in the Appendixes section. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            511,
+            239,
+            841,
+            380
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Classifier using the cross-entropy loss only in Equation 3. We tested these classifiers on two benchmark datasets in fairness, COMPAS and Adult datasets, and reported the performance accuracy and fairness gain as defined below. ",
+        "bbox": [
+            109,
+            492,
+            486,
+            554
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Definition 2 (Fairness Gain) For a given loss function $\\ell \\in \\ \\{ E q u i t y , P a r i t y , C l a s s i f i e r \\}$ , we define the fairness gain relative to a simple classifier with no fairness constraint for demographic groups a and $b$ on the $D \\cup M$ set as: ",
+        "bbox": [
+            120,
+            582,
+            478,
+            659
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Fairness $G a i n = [ | p ( Y | A = a ) - p ( Y | A = b ) | ] _ { c l a s s i f i e l }$ ",
+        "bbox": [
+            124,
+            670,
+            482,
+            689
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "equation",
+        "text": "$$\n- \\left[ | p (Y | A = a) - p (Y | A = b) | \\right] _ {\\ell}.\n$$",
+        "text_format": "latex",
+        "bbox": [
+            222,
+            691,
+            452,
+            709
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "In other words, we measure how effective a method was in reducing disparities among demographics compared to a classifier with no fairness constraint. Note how this measure is similar to the statistical parity except considering both the history and future predictive outcome. ",
+        "bbox": [
+            122,
+            720,
+            478,
+            810
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "For robustness purposes, each of our experiments were performed on 10 random train, validation, and test splits for each of the datasets and the significance of our hypotheses were reported accordingly. The reported results are averages of 10 experiments performed on 10 different ",
+        "bbox": [
+            109,
+            830,
+            488,
+            906
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "random splits. Due to the existing variance in the splits, we found the MannWhitney U tests more suitable and reliable in performing experiments. Thus, we reported the significance of the averaged results in terms of $p$ -value instead of standard deviation. However, the standard deviations and detailed averaged results are all listed in the appendixes section. ",
+        "bbox": [
+            506,
+            492,
+            883,
+            599
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "Hypothesis 1 The Equity classification objective will achieve the highest gain in fairness, at a slight cost to accuracy. We expect this fairness gain and accuracy degrade to be more noticeable for higher $\\beta$ values which controls the importance of fairness gain over classification accuracy. ",
+        "bbox": [
+            532,
+            616,
+            859,
+            708
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "3.2 COMPAS Dataset ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            746,
+            679,
+            760
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "The COMPAS dataset contains information about defendants from Broward County. The labels in our prediction classification task were weather or not a criminal will re-offend within two years. The sensitive attribute in our experiments was gender. Among features in this dataset we used features as listed in Table 2. We split the dataset into 10 different random 80-10-10 splits for train, test, and validation sets. The averaged accuracy and fairness gain results obtained from applying different losses in our ",
+        "bbox": [
+            506,
+            775,
+            883,
+            912
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "classification task over 10 experiments on different splits with different $\\beta$ values on the COMPAS dataset is shown in Figure 2. ",
+        "bbox": [
+            109,
+            90,
+            486,
+            136
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "From results shown in Figure 2, we can observe that classifier trained on our Equity loss is able to achieve higher fairness gain for all $\\beta$ values. We also show the significance of these results in terms of one vs all (Equity vs Parity and Classifier) MannWhitney U test in Table 1 for all the $\\beta$ values. Although from the results in Figure 2, one can observe a degrade in performance in terms of test accuracy, the results in Table 3 show the insignificance of this degrade for low to mid $\\beta$ values in this dataset. However, the degrade gets significant for higher $\\beta$ values as expected due to the control of $\\beta$ over accuracy-fairness trade-off. Although we reported the results for all the $\\beta$ values from 0.1 to extreme of 0.9, we recommend a $\\beta$ value around 0.3-0.5 which balances the fairness gain and test accuracy. ",
+        "bbox": [
+            109,
+            143,
+            488,
+            371
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "3.3 Adult Dataset ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            390,
+            251,
+            402
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "The Adult dataset contains information about individuals with a label corresponding if an individual’s income exceeds 50k per year or not. We utilized all the features from the dataset in our classification task for predicting the label. We considered gender as the protected attribute in our classification loss. The data was split into 10 different random 80-10-10 splits for train, test, and validation sets for each set of experiments. The averaged test accuracy and fairness gain results over 10 different splits for each $\\beta$ value obtained from applying different losses in our classification task on the Adult dataset is shown in Figure 2. ",
+        "bbox": [
+            109,
+            417,
+            488,
+            599
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "As shown in Figure 2, we can observe that for all $\\beta$ values our definition was able to achieve higher fairness gain. We also show the significance of these results in Table 1. Although from the results in Figure 2, one can observe a degrade in performance in terms of test accuracy and that results in Table 3 show the significance of this degrade, this degrade is still considered to be a reasonable price for fairness considering the gain in fairness. Especially for mid $\\beta$ values in which the degrade can be perceived negligible when considering the gain in fairness. As with the COMPAS dataset, we recommend a $\\beta$ value around 0.3-0.5 which balances the fairness gain and test accuracy for this dataset as well. ",
+        "bbox": [
+            109,
+            606,
+            488,
+            803
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "3.4 Overall Results Discussion ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            823,
+            339,
+            837
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "As expected in our initial hypothesis, through experimentation and hypothesis testing, we were able to gain knowledge that using the Equity loss in classification will result in gain in fairness. Through MannWhitney U significance ",
+        "bbox": [
+            109,
+            851,
+            488,
+            912
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "table",
+        "img_path": "images/4d5947ae89148fbb4a74866a301c38724aec0f806837795d1cf3125a6b1d6279.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Beta</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>0.1</td><td rowspan=\"9\">Equity</td><td>0.0003</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.2</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.3</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.4</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.5</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.6</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.7</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.8</td><td>0.0001</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr><tr><td>0.9</td><td>9.1e-05</td><td>3.2e-05</td><td>9.1e-05</td><td>3.2e-05</td></tr></table>",
+        "bbox": [
+            511,
+            88,
+            883,
+            275
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "table",
+        "img_path": "images/5bca1eeb81ee4d3cf6bc71a795a6e5468579757886ed0a934f2427d076b5b651.jpg",
+        "table_caption": [
+            "Table 1: One vs all (Equity loss vs Parity and Classifier losses) MannWhitney U test for COMPAS and Adult datasets. The results show the statistical significance of experiments performed for evaluation of fairness gain amongst different losses over different $\\beta$ values. The assumed test hypothesis was whether Equity will have greater fairness gain compared to Parity and Classifier losses. ",
+            "Table 2: Features used in the experiments from the COM-PAS dataset. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"3\">Features</td></tr><tr><td>sex</td><td>age_cat</td><td>race</td></tr><tr><td>juv_fel_count</td><td>juv_misd_count</td><td>juv_other_count</td></tr><tr><td>priors_count</td><td>c_charge Degree</td><td></td></tr></table>",
+        "bbox": [
+            511,
+            426,
+            880,
+            505
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "test we show that this gain is significant for all the $\\beta$ values for both of the datasets. With regards to degrade in test accuracy, as expected, larger $\\beta$ values resulted in more loss in test accuracy, while more gain in fairness. However, this loss was shown to be non-significant for one of our datasets, the COMPAS dataset, for low to mid $\\beta$ values which we recommend using. For the Adult dataset, although the loss was shown to be statistically significant, the test accuracy loss was reasonable considering the price of fairness we get through the gain in fairness. Figure 2, demonstrates the behavior of different losses over different $\\beta$ values in terms of test accuracy and fairness gain for the COMPAS and Adult datasets. Tables 1 and 3 indicate the significance of our hypothesis in terms of Equity loss being able to gain highest gain in fairness and also the significance of its degrade in performance in terms of test accuracy over other baselines for the COMPAS and Adult datasets respectively. From the overall results, we suggest use of $\\beta$ values between 0.3-0.5 when using our Equity objective as they are shown to be the most effective in terms of gain in fairness and maintaining a reasonable test accuracy. ",
+        "bbox": [
+            506,
+            579,
+            883,
+            912
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "table",
+        "img_path": "images/e39ebfc88e4a25a35fc3ed6beb3e0461d6f3402ecc9793b01955c1719673bdce.jpg",
+        "table_caption": [
+            "Table 3: One vs all (Equity loss vs Parity and Classifier losses) MannWhitney U test for COMPAS and Adult datasets. The results test the statistical significance of experiments performed for evaluation of test accuracy amongst different losses over different $\\beta$ values. The test reports the significance of degrade in performance of Equity loss over the other two losses in terms of test accuracy. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Beta</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>0.1</td><td rowspan=\"9\">Equity</td><td>0.2725</td><td>0.5151</td><td>0.2245</td><td>0.2476</td></tr><tr><td>0.2</td><td>0.3383</td><td>0.1717</td><td>0.0045</td><td>0.0056</td></tr><tr><td>0.3</td><td>0.1821</td><td>0.0928</td><td>0.0005</td><td>0.0003</td></tr><tr><td>0.4</td><td>0.1622</td><td>0.0991</td><td>9.1e-05</td><td>9.0e-05</td></tr><tr><td>0.5</td><td>0.0557</td><td>0.0604</td><td>9.1e-05</td><td>9.0e-05</td></tr><tr><td>0.6</td><td>0.0203</td><td>0.0377</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>0.7</td><td>0.0187</td><td>0.0225</td><td>9.1e-05</td><td>9.0e-05</td></tr><tr><td>0.8</td><td>0.0020</td><td>0.0116</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>0.9</td><td>0.0008</td><td>0.0069</td><td>9.1e-05</td><td>9.1e-05</td></tr></table>",
+        "bbox": [
+            114,
+            88,
+            485,
+            273
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "4 Effect of Equity on Feedback Loop ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            446,
+            437,
+            465
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "An important and major concern in the fairness community is the feedback loop phenomenon [Chouldechova and Roth, 2018]. Since biased data is generated by humans, these biases are perpetuated after the models make biased decisions based on the historical biased data. The bias originates from humans, the models amplify these biases, and they loop back biased results back to the humans. This loop gets repeated and continues to carry the initial existing biases. This phenomenon is called the feedback loop phenomenon. ",
+        "bbox": [
+            109,
+            489,
+            485,
+            640
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "We hope that since our notion considers and compensates the historical biases in the training set, which might have come from humans in initial phases, and attempts to fix them by achieving an ultimate equilibrium considering the past and future decisions, it may help with the mitigation of the feedback loop phenomenon. ",
+        "bbox": [
+            109,
+            647,
+            485,
+            738
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "In order to observe the effect of our new equity notion on fixing the historical biases in the training sets and effectively fixing the feedback loop as a consequence, we conducted experiments on datasets used in the previous section and recorded averaged results over the 10 experiments on random splits along with their MannWhitney U significance tests in this section with the following hypothesis. The model architecture remains the same as experiments conducted in the previous section. In addition the experiments are performed on the Equity, Parity, and Classification losses for comparison purposes. ",
+        "bbox": [
+            109,
+            746,
+            486,
+            912
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "table",
+        "img_path": "images/328d67e868f4fc560580db7a11ffd090f810a9b28b2225d0705eb9ff00788a88.jpg",
+        "table_caption": [
+            "Table 4: Performance of Mann-Whitney U test for showing the effectiveness of Equity in reducing bias in the feedback loop compared to Parity and Classifier losses over different iterations for COMPAS and Adult datasets. The obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.5. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Iter</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>1</td><td rowspan=\"9\">Equity</td><td>0.1365</td><td>0.0809</td><td>0.0520</td><td>0.0018</td></tr><tr><td>2</td><td>0.0520</td><td>0.0106</td><td>0.0045</td><td>9.1e-05</td></tr><tr><td>3</td><td>0.0156</td><td>0.0004</td><td>0.0002</td><td>9.1e-05</td></tr><tr><td>4</td><td>0.0070</td><td>0.0002</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>5</td><td>0.0018</td><td>0.0001</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>6</td><td>0.0006</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>7</td><td>0.0008</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>8</td><td>0.0004</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>9</td><td>0.0002</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr></table>",
+        "bbox": [
+            511,
+            88,
+            883,
+            273
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Hypothesis 2 The Equity classification objective can be the most effective in terms of reducing the disparities (bias) defined as $| p ( Y | A = a ) -$ $p ( Y | A = b ) |$ between demographic groups a and b over some iterations when predictive outcomes on the test sets are accumulated over time on the historical train sets. ",
+        "bbox": [
+            532,
+            415,
+            859,
+            522
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "4.1 Experimental Design and Results ",
+        "text_level": 1,
+        "bbox": [
+            508,
+            558,
+            782,
+            573
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Herein, we answer the question of what will happen if the equity classifier is allowed to play out in a realistic environment. We simulate the feedback loop as an iterative training-predicting cycle. We train our model in sequential chunks, splitting the test data into 10 equalsized chunks. At the first iteration, we train the model using the train data. At each subsequent iteration, we take one of the chunks from our test data adding it to the previous train data alongside its predicted labels and retrain the model for the next iteration. We then deleted this chunk from the test set and keep it in the train set. Each experiment was repeated 10 times with different random splits. ",
+        "bbox": [
+            506,
+            587,
+            883,
+            782
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "Figure 3 reports $| p ( Y | A = { \\mathrm { f e m a l e } } ) - p ( Y | A = { \\mathrm { m a l e } } )$ |, averaged across 10 runs, as a measure for disparity for both predicted class labels $Y ~ = ~ 0$ and $Y ~ = ~ 1$ in each of the datasets for each of the fairness notions for each $\\beta$ value. These results demonstrate that our notion of fairness was able to minimize the gap between $p ( Y | A \\ =$ female) and $p ( Y | A \\ = \\ { \\mathrm { m a l e } } )$ in all of the datasets. The results show that using our notion can bring ",
+        "bbox": [
+            506,
+            790,
+            883,
+            912
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "image",
+        "img_path": "images/e00bde91392bdd6b82c20d728ec6c1da61aa553c151cd8c66ef350de71411e10.jpg",
+        "image_caption": [
+            "(a) β = 0.1 "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            127,
+            108,
+            367,
+            210
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/3917ebc7ef18159da31738223b1afd911425d52b7cd3ee28358b8aa77c3b4778.jpg",
+        "image_caption": [
+            "(b) β = 0.5 "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            383,
+            108,
+            620,
+            210
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/1f847a79da1d5c0cf53da3fc3780b5a2551b778795a14d1e6838f02e0dd29a3d.jpg",
+        "image_caption": [
+            "(c) β = 0.9 "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            640,
+            108,
+            879,
+            210
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/51d98f71f33ff38a12c6087642ae60ff6b916c47d67f869143be16244a48fe91.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            127,
+            222,
+            367,
+            323
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/1dad8aae5161720ea87d41e9ae414d6282fe19bd87b889ec77878c97a8f90a79.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            383,
+            222,
+            620,
+            323
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/0b173de238944696b40bd0ddd58b08553713e7d248817acea07fdc6a7236c660.jpg",
+        "image_caption": [
+            "Figure 3: Simulation of the feedback loop phenomenon and results obtained in reduction of bias via different methods in COMPAS and Adult datasets. As expected higher $\\beta$ values result in reduction of more bias in the two fairness based objectives (Equity and Parity). It also shows how Equity is more effective in reducing the bias over iterations. Each point on the plots is the average value of 10 experiments performed on the 10 random splits. Notice that the 10 random split sets are the same across different $\\beta$ values. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            638,
+            222,
+            879,
+            323
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "equality, equity, and fairness in long run and mitigate the negative effects of the feedback loop phenomenon. As expected and shown in Figure 3, higher $\\beta$ values resulted in achieving more fair outcomes which resulted in reduction of bias. In addition, we reported the MannWhitney U test results to show the significance of our results. Table 4 shows the significance of these results for COM-PAS and Adult datasets for $\\beta$ value of 0.5 for different iterations supporting our hypothesis.2 This is consistent with our earlier finding that $\\beta = 0 . 5$ is the most effective and reasonable with significant impact in gaining fairness, reducing bias, and balancing the fairness-accuracy trade-off. ",
+        "bbox": [
+            109,
+            450,
+            488,
+            645
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "5 Public Perception of Equity ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            667,
+            375,
+            686
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "In order to understand the public’s perception of equity (via our proposed definition) and its comparison to equality in different real life scenarios, we conducted surveys on Amazon Mechanical Turk in the vein of [Saxena et al., 2019]. ",
+        "bbox": [
+            109,
+            702,
+            488,
+            777
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "5.1 Experimental Setup ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            797,
+            294,
+            814
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "We recruited 150 workers by showing them four different real life scenarios. In each scenario, we proposed two fairness solutions: one based on equity and one based on ",
+        "bbox": [
+            109,
+            825,
+            486,
+            871
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "equality/parity. For each scenario, we asked workers to rate how fair they think each solution is on a scale of zero to four. At the end of each scenario, we asked workers to select their preferred fairness solution for each scenario. We asked workers to provide written justification for their responses. In addition, we had a “sanity check” question at the end of our survey to discover and remove workers behaving randomly. The screenshot from our questionnaire is included in the Appendixes section for more detailed information. ",
+        "bbox": [
+            506,
+            450,
+            883,
+            599
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "A summary of the scenarios are as follows. Note that the experimental results follow the same numbering convention as listed below. ",
+        "bbox": [
+            506,
+            608,
+            883,
+            652
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "• Scenario 1 (Equality vs Equity): We asked workers to rate pictures of equity and equality in Figure 1 and chose their preferred picture. ",
+            "• Scenario 2 (School Loan): Workers rate loan distribution mechanisms. One is based on equity, which considers each student’s past history of receiving a scholarship (equity). Another simply proposes to equally distribute the loan among all the students (parity). ",
+            "• Scenario 3 (Government Subsidized Housing): We asked respondents to rate the government subsidized housing distribution systems proposed in the survey— one based on equity considering how houses were historically distributed across different races (eq-"
+        ],
+        "bbox": [
+            526,
+            672,
+            885,
+            912
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_footnote",
+        "text": "2Results for other $\\beta$ values can be found in the supplementary material. ",
+        "bbox": [
+            112,
+            883,
+            411,
+            912
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "table",
+        "img_path": "images/0a67ab02538002abba9d0a51e025d28cd1928b8c4ca2d01c300ef31b2c8b8acc.jpg",
+        "table_caption": [
+            "Table 5: Number of people preferring solutions provided by the equity vs solutions provided by the parity notions of fairness in different scenarios. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Scenario 1</td><td>Scenario 2</td><td>Scenario 3</td><td>Scenario 4</td></tr><tr><td>Equity</td><td>134</td><td>115</td><td>59</td><td>44</td></tr><tr><td>Parity</td><td>16</td><td>35</td><td>91</td><td>106</td></tr></table>",
+        "bbox": [
+            114,
+            88,
+            488,
+            209
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "uity). The other proposes to equally distribute houses across different racial categories (parity). ",
+        "bbox": [
+            143,
+            299,
+            485,
+            330
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "• Scenario 4 (College Admission): We asked respondents to rate college admission systems—one based on equity considering if the student is a first generation college student (equity). The other equally admits students from first generation and non-first generation backgrounds (parity). ",
+        "bbox": [
+            129,
+            351,
+            488,
+            441
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "5.2 Results ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            465,
+            205,
+            479
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "After gathering and analyzing responses from mechanical turk workers, we observed that there are some cases in which our notion of fairness is strongly preferred by a large margin, and some other cases where preference is given to the parity notion. Fairness is subjective and different people may have different takes on what would be a fair solution to a particular case. That is the main reason why we introduce this notion as not only in some scenarios our definition will be over-preferred but also in some non-preferred scenarios it will get some preference from certain groups of people. ",
+        "bbox": [
+            111,
+            496,
+            485,
+            662
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "The statistics of ratings for each of the 4 scenarios is shown in Figure 4. In addition, Table 5 depicts the number of mechanical turk workers who preferred a certain solution following a fairness definition in each of the scenarios. Similar to findings in [Saxena et al., 2019], we also observed the support for the principle of affirmative action in our experiments which relates to our notion. From the results it is evident that strong preference is given to our notion introduced in this paper for scenarios 1 and 2, and despite the fact that scenarios 3 and 4 are not over-preferred for our notion, there are still considerable number of people who gave preference to our notion in these scenarios. All the justifications written down by the respondents were analyzed. For each preference recorded in this paper, respondents gave justifications that cover a wide range of perspectives. The dataset can be found in 1. ",
+        "bbox": [
+            111,
+            670,
+            488,
+            912
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/2978a5df0fb2fc1d64138be8e95c5e28ae914338fc6de0f10d4b82f9e1fae1a6.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            517,
+            89,
+            694,
+            193
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/32f3bcacbd733be460b4d3b6633e05aeab1b3e3918e39f037c2559baa3ba2843.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            517,
+            195,
+            694,
+            299
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/eb51c829e8e8e021018d395dfd3a072da5e6d1bd2753a5d6d4974c05c81ac473.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            697,
+            90,
+            875,
+            193
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "image",
+        "img_path": "images/f12a3188f600e16a6daf4443ceaad509150b05d1cee105efdc654d0ffff81ae7.jpg",
+        "image_caption": [
+            "Figure 4: Human ratings of equity and parity notions of fairness in different scenarios. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            699,
+            195,
+            875,
+            299
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "6 Related Work ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            373,
+            661,
+            388
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "With relatively recent popularity of fairness in machine learning and natural language processing domains, the need to find a universal and a more complete fairness definition and measure is crucial. Although finding such definition and measure is a challenge not only in machine learning but also in social and political sciences, steps need to be taken to make current definitions evolve and cover more real world cases. In light of this many fairness definitions have been proposed. Some tried to complement others and some starting a new direction and view-point on their own. Different body of work tried to incorporate the proposed definitions in different downstream tasks such as classification and regression [Menon and Williamson, 2018, Berk et al., 2017, Krasanakis et al., 2018, Agarwal, Dudik, and Wu, 2019, Goel, Yaghini, and Faltings, 2018]. ",
+        "bbox": [
+            506,
+            411,
+            883,
+            652
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "6.1 Fairness Definitions ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            678,
+            689,
+            691
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "For a more complete list of existing fairness definitions there exists papers that survey [Mehrabi et al., 2019] and explain [Verma and Rubin, 2018] proposed definitions. Here we will elaborate some important and widely known definitions related to our work introduced in this paper. ",
+        "bbox": [
+            506,
+            708,
+            883,
+            784
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "6.1.1 Statistical Parity ",
+        "text_level": 1,
+        "bbox": [
+            508,
+            806,
+            679,
+            823
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "In statistical parity [Dwork et al., 2012] the goal is to satisfy $P ( \\hat { Y } | A = a ) \\dot { = } P ( \\hat { Y } | A = b )$ . This notion states that regardless of the belonging demographic group $A$ , the predicted outcome should be the same for both demographic groups $A = a$ and $A = b$ . ",
+        "bbox": [
+            506,
+            835,
+            883,
+            912
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "6.1.2 Equalized Odds ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            90,
+            277,
+            107
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "In equalized odds [Hardt et al., 2016] the goal is to satisfy $P ( \\hat { Y } = 1 | A = a , Y = y ) = P ( \\hat { Y } = 1 | \\overline { { A } } = b , Y = \\dot { y } )$ for $y \\in \\{ 0 , 1 \\}$ . This notion states that both groups $A = a$ and $A \\ = \\ b$ should have equal true positive and false positive rates. ",
+        "bbox": [
+            112,
+            116,
+            486,
+            191
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "6.1.3 Equal Opportunity ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            207,
+            302,
+            223
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "In equal opportunity [Hardt et al., 2016] the goal is to satisfy $P ( \\hat { Y } = 1 | \\hat { A } = a , Y = 1 ) = \\bar { P } ( \\hat { Y } = 1 | A =$ $b , Y \\ = \\ 1 ,$ ). This notion states that both demographic groups $A = a$ and $A = b$ should have equal true positive rates. ",
+        "bbox": [
+            111,
+            232,
+            486,
+            306
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "6.1.4 Counterfactual Fairness ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            323,
+            334,
+            338
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "In counterfactual fairness [Kusner et al., 2017] the goal is to satisfy $P ( \\hat { Y } _ { A  a } ( U ) = y \\vert X = x , A = a ) =$ $P ( \\hat { Y } _ { A  a ^ { \\prime } } ( \\stackrel { \\cdot } { U } ) \\stackrel { \\cdot } { = } y | X = x , A \\stackrel { \\cdot } { = } a )$ ) under any $X = x$ and $A = a$ for all $y$ and for any value $a ^ { \\prime }$ feasible for $A$ . The perception in counterfactual fairness definition is that if the decision is the same in both the actual and counterfactual world where the individual belonged to a different group then it is called a fair decision. ",
+        "bbox": [
+            112,
+            349,
+            486,
+            470
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "6.2 Fairness Definitions in Classification ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            486,
+            406,
+            500
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "Research in fairness domain does not conclude itself in defining fairness definitions and measures but also incorporation of these definitions in tasks such as classification [Calders and Verwer, 2010, Huang and Vishnoi, 2019]. This incorporation on its own is a challenge. Some methods introduce pre-processing methods that augment the train data for discrimination removal [Kamiran and Calders, 2012]. Some other methods perform in-processing which tries to incorporate the fairness objective during training phase [Kamishima et al., 2012, Zafar et al., 2015, Wu, Zhang, and Wu, 2018]. Other definitions require post-processing techniques in which discrimination removal is performed after the training phase treating the model as a black box [Hardt et al., 2016, Pleiss et al., 2017]. Literature on fair classification also targets a wide variety of fairness definitions, such as equality of opportunity and equalized odds [Hardt et al., 2016, Woodworth et al., 2017], statistical parity [Agarwal et al., 2018], and subgroup fairness [Ustun, Liu, and Parkes, 2019], and their incorporation in classification task. ",
+        "bbox": [
+            111,
+            513,
+            488,
+            830
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "7 Conclusion ",
+        "text_level": 1,
+        "bbox": [
+            112,
+            849,
+            241,
+            864
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "In this work, we proposed a definition of fairness based upon equity, demonstrated its appeal as a fairness outcome ",
+        "bbox": [
+            112,
+            881,
+            486,
+            912
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "to a wide audience, and formalized it for classification. We tested this approach in a traditional cross validation setup, and demonstrated how it can be used in a real-world environment, such as unfairness that can arise from the feedback loop. Our results show the effectiveness of our method in mitigating bias and achieving fairness. We also performed human evaluation to evaluate our notion in different scenarios with the equality/parity notion of fairness. As a future direction, our definition can be utilized to achieve and study the effects of equity in classification with different techniques. In this work, we provide a framework for equity to be formalized; however, there is still work to be done in the area of fairness with regards to equity. Future work is to further study how the equity notion interacts with other existing definitions of fairness, such as equality of opportunity, equalized odds or other definitions in the equality domain other than statistical parity. It can also be extended to other machine learning tasks such as regression. ",
+        "bbox": [
+            506,
+            90,
+            885,
+            378
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "8 Acknowledgments ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            398,
+            697,
+            415
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "We wanted to thank Hrayr Harutyunyan and Mozhdeh Gheini for their help and comments. ",
+        "bbox": [
+            508,
+            430,
+            883,
+            460
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "References ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            481,
+            607,
+            496
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[Agarwal et al., 2018] Agarwal, A.; Beygelzimer, A.; Dudik, M.; Langford, J.; and Wallach, H. 2018. A reductions approach to fair classification. In International Conference on Machine Learning, 60–69. ",
+            "[Agarwal, Dudik, and Wu, 2019] Agarwal, A.; Dudik, M.; and Wu, Z. S. 2019. Fair regression: Quantitative definitions and reduction-based algorithms. In International Conference on Machine Learning, 120– 129. ",
+            "[Angwin et al., 2016] Angwin, J.; Larson, J.; Mattu, S.; and Kirchner, L. 2016. Machine bias. ProPublica, May 23:2016. ",
+            "[Berk et al., 2017] Berk, R.; Heidari, H.; Jabbari, S.; Joseph, M.; Kearns, M.; Morgenstern, J.; Neel, S.; and Roth, A. 2017. A convex framework for fair regression. ",
+            "[Calders and Verwer, 2010] Calders, T., and Verwer, S. 2010. Three naive bayes approaches for discriminationfree classification. Data Mining and Knowledge Discovery 21(2):277–292. ",
+            "[Chen et al., 2019] Chen, J.; Kallus, N.; Mao, X.; Svacha, G.; and Udell, M. 2019. Fairness under unawareness: Assessing disparity when protected class "
+        ],
+        "bbox": [
+            509,
+            512,
+            887,
+            912
+        ],
+        "page_idx": 8
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "is unobserved. In Proceedings of the Conference on Fairness, Accountability, and Transparency, FAT* 19, 339348. ",
+            "[Chouldechova and Roth, 2018] Chouldechova, A., and Roth, A. 2018. The frontiers of fairness in machine learning. arXiv preprint arXiv:1810.08810. ",
+            "[Dwork et al., 2012] Dwork, C.; Hardt, M.; Pitassi, T.; Reingold, O.; and Zemel, R. 2012. Fairness through awareness. In Proceedings of the 3rd Innovations in Theoretical Computer Science Conference, ITCS ’12, 214–226. New York, NY, USA: ACM. ",
+            "[Gajane and Pechenizkiy, 2018] Gajane, P., and Pechenizkiy, M. 2018. On formalizing fairness in prediction with machine learning. Fairness, Accountability, and Transparency in Machine Learning. ",
+            "[Goel, Yaghini, and Faltings, 2018] Goel, N.; Yaghini, M.; and Faltings, B. 2018. Non-discriminatory machine learning through convex fairness criteria. In Thirty-Second AAAI Conference on Artificial Intelligence. ",
+            "[Hardt et al., 2016] Hardt, M.; Price, E.; Srebro, N.; et al. 2016. Equality of opportunity in supervised learning. In Advances in neural information processing systems, 3315–3323. ",
+            "[Huang and Vishnoi, 2019] Huang, L., and Vishnoi, N. 2019. Stable and fair classification. In International Conference on Machine Learning, 2879–2890. ",
+            "[Jagielski et al., 2019] Jagielski, M.; Kearns, M.; Mao, J.; Oprea, A.; Roth, A.; Sharifi-Malvajerdi, S.; and Ullman, J. 2019. Differentially private fair learning. In International Conference on Machine Learning, 3000– 3008. ",
+            "[Kamiran and Calders, 2012] Kamiran, F., and Calders, T. 2012. Data preprocessing techniques for classification without discrimination. Knowledge and Information Systems 33(1):1–33. ",
+            "[Kamishima et al., 2012] Kamishima, T.; Akaho, S.; Asoh, H.; and Sakuma, J. 2012. Fairness-aware classifier with prejudice remover regularizer. In Joint European Conference on Machine Learning and Knowledge Discovery in Databases, 35–50. Springer. ",
+            "[Kleinberg, Mullainathan, and Raghavan, 2016] Kleinberg, J.; Mullainathan, S.; and Raghavan, M. 2016. Inherent trade-offs in the fair determination of risk scores. arXiv preprint arXiv:1609.05807. ",
+            "[Krasanakis et al., 2018] Krasanakis, E.; Spyromitros-Xioufis, E.; Papadopoulos, S.; and Kompatsiaris, Y. "
+        ],
+        "bbox": [
+            116,
+            90,
+            488,
+            912
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "2018. Adaptive sensitive reweighting to mitigate bias in fairness-aware classification. In Proceedings of the 2018 World Wide Web Conference, WWW ’18, 853– 862. ",
+            "[Kusner et al., 2017] Kusner, M. J.; Loftus, J.; Russell, C.; and Silva, R. 2017. Counterfactual fairness. In Advances in Neural Information Processing Systems 30. Curran Associates, Inc. 4066–4076. ",
+            "[Mehrabi et al., 2019] Mehrabi, N.; Morstatter, F.; Saxena, N.; Lerman, K.; and Galstyan, A. 2019. A survey on bias and fairness in machine learning. arXiv preprint arXiv:1908.09635. ",
+            "[Menon and Williamson, 2018] Menon, A. K., and Williamson, R. C. 2018. The cost of fairness in binary classification. In Friedler, S. A., and Wilson, C., eds., Proceedings of the 1st Conference on Fairness, Accountability and Transparency, volume 81 of Proceedings of Machine Learning Research, 107–118. PMLR. ",
+            "[Pleiss et al., 2017] Pleiss, G.; Raghavan, M.; Wu, F.; Kleinberg, J.; and Weinberger, K. Q. 2017. On fairness and calibration. In Advances in Neural Information Processing Systems 30. Curran Associates, Inc. 5680– 5689. ",
+            "[Saxena et al., 2019] Saxena, N. A.; Huang, K.; DeFilippis, E.; Radanovic, G.; Parkes, D. C.; and Liu, Y. 2019. How do fairness definitions fare?: Examining public attitudes towards algorithmic definitions of fairness. In Proceedings of the 2019 AAAI/ACM Conference on AI, Ethics, and Society, 99–106. ACM. ",
+            "[Schement, 2001] Schement, J. R. 2001. Imagining fairness: Equality and equity of access in search of democracy. Libraries and Democracy: The Cornerstones of Liberty ed. Nancy Kranich (Chicago: American Library Association, 2001) 21. ",
+            "[Ustun, Liu, and Parkes, 2019] Ustun, B.; Liu, Y.; and Parkes, D. 2019. Fairness without harm: Decoupled classifiers with preference guarantees. In Chaudhuri, K., and Salakhutdinov, R., eds., Proceedings of the 36th International Conference on Machine Learning, volume 97 of Proceedings of Machine Learning Research, 6373–6382. ",
+            "[Verma and Rubin, 2018] Verma, S., and Rubin, J. 2018. Fairness definitions explained. In 2018 IEEE/ACM International Workshop on Software Fairness (Fair-Ware), 1–7. IEEE. "
+        ],
+        "bbox": [
+            511,
+            90,
+            883,
+            911
+        ],
+        "page_idx": 9
+    },
+    {
+        "type": "list",
+        "sub_type": "ref_text",
+        "list_items": [
+            "[Woodworth et al., 2017] Woodworth, B.; Gunasekar, S.; Ohannessian, M. I.; and Srebro, N. 2017. Learning non-discriminatory predictors. arXiv preprint arXiv:1702.06081. ",
+            "[Wu, Zhang, and Wu, 2018] Wu, Y.; Zhang, L.; and Wu, X. 2018. Fairness-aware classification: Criterion, convexity, and bounds. ",
+            "[Zafar et al., 2015] Zafar, M. B.; Valera, I.; Rodriguez, M. G.; and Gummadi, K. P. 2015. Fairness constraints: Mechanisms for fair classification. arXiv preprint arXiv:1507.05259. "
+        ],
+        "bbox": [
+            114,
+            90,
+            486,
+            276
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "9 Appendixes ",
+        "text_level": 1,
+        "bbox": [
+            509,
+            89,
+            640,
+            107
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "In this section we are going to report some additional and detailed numbers reported in the main paper, such as detailed averaged values shown in Figures 2 and 3 for the 10 conduced experiments on different splits of data along with the corresponding standard deviations in parenthesis. As also mentioned in the main text, due to the existing variance in different random splits of the dataset, we found reporting the $p$ -values with Mann-Whitney U test more suitable; however, here we also report detailed standard deviations for the sake of completeness. We would also include details of our model architecture and also the mechanical turk survey conducted and discussed in the main paper in this section. ",
+        "bbox": [
+            506,
+            121,
+            883,
+            319
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "table",
+        "img_path": "images/c94ac656b59b21e7a5c59b972efb866b9ec0edeaf1b03f51772ac58d0c01d2bf.jpg",
+        "table_caption": [
+            "Table 6: Architecture of model used in our experiments. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>Layer Type</td><td>Parameters</td></tr><tr><td>dense</td><td>256 hidden dimension, tanh activation</td></tr><tr><td>dense</td><td>2 output dimension</td></tr></table>",
+        "bbox": [
+            511,
+            330,
+            870,
+            407
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "table",
+        "img_path": "images/96ffb84cc8d9cb51110f181f111d228559c65b258f54c3539985b0d76c79ba8f.jpg",
+        "table_caption": [
+            "Table 7: Averaged percent accuracy and fairness gain for the Adult dataset along with the standard deviation numbers reported in parenthesis for different $\\beta$ values. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Accuracy</td><td>0.0</td><td>84.76%(0.41)</td><td>84.76%(0.41)</td><td>84.76%(0.41)</td></tr><tr><td>0.1</td><td>84.68%(0.42)</td><td>84.83%(0.46)</td><td>NA</td></tr><tr><td>0.2</td><td>84.29%(0.51)</td><td>84.89%(0.45)</td><td>NA</td></tr><tr><td>0.3</td><td>83.51%(0.45)</td><td>84.73%(0.50)</td><td>NA</td></tr><tr><td>0.4</td><td>82.86%(0.45)</td><td>84.55%(0.51)</td><td>NA</td></tr><tr><td>0.5</td><td>82.00%(0.49)</td><td>84.36%(0.57)</td><td>NA</td></tr><tr><td>0.6</td><td>81.48%(0.43)</td><td>84.14%(0.49)</td><td>NA</td></tr><tr><td>0.7</td><td>80.81%(0.47)</td><td>83.97%(0.57)</td><td>NA</td></tr><tr><td>0.8</td><td>80.45%(0.63)</td><td>83.74%(0.44)</td><td>NA</td></tr><tr><td>0.9</td><td>79.38%(1.12)</td><td>83.71%(0.54)</td><td>NA</td></tr><tr><td rowspan=\"10\">Fairness Gain</td><td>0.0</td><td>0.00%(0.00)</td><td>0.00%(0.00)</td><td>0.00%(0.00)</td></tr><tr><td>0.1</td><td>0.61%(0.06)</td><td>0.30%(0.04)</td><td>NA</td></tr><tr><td>0.2</td><td>1.24%(0.10)</td><td>0.58%(0.06)</td><td>NA</td></tr><tr><td>0.3</td><td>1.80%(0.16)</td><td>0.84%(0.07)</td><td>NA</td></tr><tr><td>0.4</td><td>2.25%(0.16)</td><td>1.08%(0.09)</td><td>NA</td></tr><tr><td>0.5</td><td>2.61%(0.17)</td><td>1.30%(0.13)</td><td>NA</td></tr><tr><td>0.6</td><td>2.83%(0.21)</td><td>1.42%(0.17)</td><td>NA</td></tr><tr><td>0.7</td><td>3.12%(0.24)</td><td>1.58%(0.11)</td><td>NA</td></tr><tr><td>0.8</td><td>3.33%(0.28)</td><td>1.67%(0.13)</td><td>NA</td></tr><tr><td>0.9</td><td>3.77%(0.42)</td><td>1.86%(0.12)</td><td>NA</td></tr><tr><td rowspan=\"10\">Accuracy</td><td>0.0</td><td>66.80%(2.19)</td><td>66.80%(2.19)</td><td>66.80%(2.19)</td></tr><tr><td>0.1</td><td>66.60%(1.59)</td><td>67.04%(1.90)</td><td>NA</td></tr><tr><td>0.2</td><td>66.23%(1.78)</td><td>66.47%(2.08)</td><td>NA</td></tr><tr><td>0.3</td><td>65.66%(2.04)</td><td>66.48%(1.87)</td><td>NA</td></tr><tr><td>0.4</td><td>65.39%(1.82)</td><td>66.30%(1.74)</td><td>NA</td></tr><tr><td>0.5</td><td>65.17%(1.84)</td><td>66.41%(1.22)</td><td>NA</td></tr><tr><td>0.6</td><td>64.61%(2.12)</td><td>66.51%(1.43)</td><td>NA</td></tr><tr><td>0.7</td><td>64.25%(2.37)</td><td>66.51%(1.49)</td><td>NA</td></tr><tr><td>0.8</td><td>64.10%(2.08)</td><td>66.61%(1.49)</td><td>NA</td></tr><tr><td>0.9</td><td>64.06%(1.62)</td><td>66.39%(1.17)</td><td>NA</td></tr><tr><td rowspan=\"10\">Fairness Gain</td><td>0.0</td><td>0.0%(0.00)</td><td>0.0%(0.00)</td><td>0.0%(0.00)</td></tr><tr><td>0.1</td><td>1.80%(0.52)</td><td>0.77%(0.32)</td><td>NA</td></tr><tr><td>0.2</td><td>3.26%(0.57)</td><td>1.38%(0.53)</td><td>NA</td></tr><tr><td>0.3</td><td>4.07%(0.61)</td><td>1.72%(0.44)</td><td>NA</td></tr><tr><td>0.4</td><td>4.48%(0.48)</td><td>1.94%(0.43)</td><td>NA</td></tr><tr><td>0.5</td><td>4.81%(0.65)</td><td>2.26%(0.59)</td><td>NA</td></tr><tr><td>0.6</td><td>5.11%(0.72)</td><td>2.53%(0.50)</td><td>NA</td></tr><tr><td>0.7</td><td>5.38%(0.80)</td><td>2.07%(0.38)</td><td>NA</td></tr><tr><td>0.8</td><td>5.37%(1.06)</td><td>2.78%(0.70)</td><td>NA</td></tr><tr><td>0.9</td><td>6.05%(1.40)</td><td>2.91%(0.36)</td><td>NA</td></tr></table>",
+        "bbox": [
+            511,
+            455,
+            890,
+            816
+        ],
+        "page_idx": 10
+    },
+    {
+        "type": "table",
+        "img_path": "",
+        "table_caption": [],
+        "table_footnote": [],
+        "bbox": [
+            114,
+            114,
+            495,
+            477
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "table",
+        "img_path": "images/e81acadfcbda34d8fc29b241fb57d44018dcedd869c5e7915979e3faea100b90.jpg",
+        "table_caption": [
+            "Table 8: Averaged percent accuracy and fairness gain for the COMPAS dataset along with the standard deviation numbers reported in parenthesis for different $\\beta$ values. ",
+            "Table 9: Performance of Mann-Whitney U test for showing the effectiveness of Equity in reducing bias in the feedback loop compared to Parity and Classifier losses over different iterations for COMPAS and Adult datasets. The obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.1. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Iter</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>1</td><td rowspan=\"9\">Equity</td><td>0.3387</td><td>0.2854</td><td>0.3115</td><td>0.2603</td></tr><tr><td>2</td><td>0.2248</td><td>0.2137</td><td>0.2137</td><td>0.0520</td></tr><tr><td>3</td><td>0.1365</td><td>0.1207</td><td>0.1365</td><td>0.0106</td></tr><tr><td>4</td><td>0.1207</td><td>0.0320</td><td>0.1061</td><td>0.0011</td></tr><tr><td>5</td><td>0.0929</td><td>0.0070</td><td>0.0445</td><td>0.0018</td></tr><tr><td>6</td><td>0.0269</td><td>0.0008</td><td>0.0226</td><td>0.0006</td></tr><tr><td>7</td><td>0.0378</td><td>0.0004</td><td>0.0445</td><td>0.0004</td></tr><tr><td>8</td><td>0.0106</td><td>0.0004</td><td>0.0226</td><td>0.0004</td></tr><tr><td>9</td><td>0.0106</td><td>0.0004</td><td>0.0106</td><td>0.0001</td></tr></table>",
+        "bbox": [
+            114,
+            594,
+            485,
+            779
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "table",
+        "img_path": "images/892c1426cfcb6798569783f05135747b5f5584714af2e5d3703f4d8e13bbfe28.jpg",
+        "table_caption": [
+            "Table 10: Performance of Mann-Whitney U test for showing the effectiveness of Equity in reducing bias in the feedback loop compared to Parity and Classifier losses over different iterations for COMPAS and Adult datasets. The obtained $p$ -values show the significance of our reported results in Figure 3 for $\\beta$ value of 0.9. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td colspan=\"2\"></td><td colspan=\"2\">COMPAS Dataset</td><td colspan=\"2\">Adult Dataset</td></tr><tr><td colspan=\"2\"></td><td colspan=\"2\">p-value</td><td colspan=\"2\">p-value</td></tr><tr><td>Iter</td><td></td><td>Parity</td><td>Classifier</td><td>Parity</td><td>Classifier</td></tr><tr><td>1</td><td rowspan=\"9\">Equity</td><td>0.1537</td><td>0.0606</td><td>0.0156</td><td>0.0004</td></tr><tr><td>2</td><td>0.0606</td><td>0.0056</td><td>0.0005</td><td>9.1e-05</td></tr><tr><td>3</td><td>0.0156</td><td>0.0003</td><td>0.0001</td><td>9.1e-05</td></tr><tr><td>4</td><td>0.0045</td><td>0.0001</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>5</td><td>0.0018</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>6</td><td>0.0005</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>7</td><td>0.0005</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>8</td><td>0.0002</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr><tr><td>9</td><td>0.0002</td><td>9.1e-05</td><td>9.1e-05</td><td>9.1e-05</td></tr></table>",
+        "bbox": [
+            511,
+            90,
+            882,
+            275
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "table",
+        "img_path": "images/8e7a78d2344b139a16107ab790233c265cad156a26b609f3845111e5d6e18b10.jpg",
+        "table_caption": [
+            "Table 11: Detailed averaged percent biases and standard deviation results in parenthesis for the COMPAS dataset shown in Figure 3 for $\\beta$ value of 0.1. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Bias</td><td>0</td><td>11.82%(0.78)</td><td>11.82%(0.78)</td><td>11.82%(0.78)</td></tr><tr><td>1</td><td>11.79%(0.74)</td><td>11.87%(0.77)</td><td>11.93%(0.79)</td></tr><tr><td>2</td><td>11.80%(0.74)</td><td>12.04%(0.79)</td><td>12.10%(0.76)</td></tr><tr><td>3</td><td>11.82%(0.75)</td><td>12.18%(0.80)</td><td>12.30%(0.72)</td></tr><tr><td>4</td><td>11.79%(0.69)</td><td>12.25%(0.76)</td><td>12.47%(0.67)</td></tr><tr><td>5</td><td>11.84%(0.69)</td><td>12.40%(0.77)</td><td>12.69%(0.69)</td></tr><tr><td>6</td><td>11.70%(0.60)</td><td>12.39%(0.73)</td><td>12.77%(0.64)</td></tr><tr><td>7</td><td>11.67%(0.70)</td><td>12.47%(0.85)</td><td>12.98%(0.75)</td></tr><tr><td>8</td><td>11.67%(0.67)</td><td>12.55%(0.82)</td><td>13.16%(0.70)</td></tr><tr><td>9</td><td>11.66%(0.63)</td><td>12.59%(0.81)</td><td>13.24%(0.70)</td></tr></table>",
+        "bbox": [
+            511,
+            390,
+            882,
+            584
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "table",
+        "img_path": "images/212f08feace5304b23f819d3e428f2a57604e1b5c4078e03abad8c939ab2902d.jpg",
+        "table_caption": [
+            "Table 12: Detailed averaged percent biases and standard deviation results in parenthesis for the COMPAS dataset shown in Figure 3 for $\\beta$ value of 0.5. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Bias</td><td>0</td><td>11.18%(0.78)</td><td>11.82%(0.78)</td><td>11.82%(0.78)</td></tr><tr><td>1</td><td>11.45%(0.73)</td><td>11.75%(0.73)</td><td>11.93%(0.79)</td></tr><tr><td>2</td><td>11.18%(0.70)</td><td>11.77%(0.77)</td><td>12.10%(0.76)</td></tr><tr><td>3</td><td>10.90%(0.69)</td><td>11.74%(0.77)</td><td>12.30%(0.72)</td></tr><tr><td>4</td><td>10.63%(0.75)</td><td>11.68%(0.77)</td><td>12.47%(0.67)</td></tr><tr><td>5</td><td>10.40%(0.76)</td><td>11.71%(0.75)</td><td>12.69%(0.69)</td></tr><tr><td>6</td><td>10.11%(0.73)</td><td>11.52%(0.64)</td><td>12.77%(0.64)</td></tr><tr><td>7</td><td>9.85%(0.81)</td><td>11.46%(0.77)</td><td>12.98%(0.75)</td></tr><tr><td>8</td><td>9.66%(0.75)</td><td>11.40%(0.77)</td><td>13.16%(0.70)</td></tr><tr><td>9</td><td>9.35%(0.78)</td><td>11.36%(0.72)</td><td>13.24%(0.70)</td></tr></table>",
+        "bbox": [
+            511,
+            654,
+            882,
+            849
+        ],
+        "page_idx": 11
+    },
+    {
+        "type": "table",
+        "img_path": "images/6cde76da10b6968f8b579c707ceecc290199865713210edc9c72c0e8de8f3540.jpg",
+        "table_caption": [
+            "Table 13: Detailed averaged percent biases and standard deviation results in parenthesis for the COMPAS dataset shown in Figure 3 for $\\beta$ value of 0.9. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Bias</td><td>0</td><td>11.82%(0.78)</td><td>11.82%(0.78)</td><td>11.82%(0.78)</td></tr><tr><td>1</td><td>11.38%(0.86)</td><td>11.69%(0.75)</td><td>11.93%(0.79)</td></tr><tr><td>2</td><td>10.97%(0.84)</td><td>11.64%(0.76)</td><td>12.10%(0.76)</td></tr><tr><td>3</td><td>10.59%(0.91)</td><td>11.57%(0.75)</td><td>12.30%(0.72)</td></tr><tr><td>4</td><td>10.20%(1.03)</td><td>11.48%(0.71)</td><td>12.47%(0.67)</td></tr><tr><td>5</td><td>9.92%(1.04)</td><td>11.41%(0.73)</td><td>12.69%(0.69)</td></tr><tr><td>6</td><td>9.53%(1.08)</td><td>11.21%(0.63)</td><td>12.77%(0.64)</td></tr><tr><td>7</td><td>9.19%(1.18)</td><td>11.12%(0.74)</td><td>12.98%(0.75)</td></tr><tr><td>8</td><td>8.91%(1.16)</td><td>11.06%(0.71)</td><td>13.16%(0.70)</td></tr><tr><td>9</td><td>8.52%(1.21)</td><td>11.01%(0.74)</td><td>13.24%(0.70)</td></tr></table>",
+        "bbox": [
+            114,
+            95,
+            485,
+            291
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "table",
+        "img_path": "images/2e6a33fd42cff2f11f9bb3407dca29edd22c9ff2c3772b5d5c4fed31a71b18f7.jpg",
+        "table_caption": [
+            "Table 14: Detailed averaged percent biases and standard deviation results in parenthesis for the Adult dataset shown in Figure 3 for $\\beta$ value of 0.1. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Bias</td><td>0</td><td>19.91%(0.18)</td><td>19.91%(0.18)</td><td>19.91%(0.18)</td></tr><tr><td>1</td><td>19.83%(0.17)</td><td>19.86%(0.17)</td><td>19.89%(0.16)</td></tr><tr><td>2</td><td>19.75%(0.17)</td><td>19.81%(0.16)</td><td>19.88%(0.16)</td></tr><tr><td>3</td><td>19.67%(0.17)</td><td>19.76%(0.17)</td><td>19.87%(0.17)</td></tr><tr><td>4</td><td>19.59%(0.16)</td><td>19.70%(0.16)</td><td>19.86%(0.16)</td></tr><tr><td>5</td><td>19.51%(0.19)</td><td>19.67%(0.18)</td><td>19.85%(0.18)</td></tr><tr><td>6</td><td>19.43%(0.20)</td><td>19.63%(0.19)</td><td>19.83%(0.19)</td></tr><tr><td>7</td><td>19.34%(0.22)</td><td>19.58%(0.21)</td><td>19.81%(0.20)</td></tr><tr><td>8</td><td>19.26%(0.23)</td><td>19.53%(0.21)</td><td>19.79%(0.21)</td></tr><tr><td>9</td><td>19.18%(0.23)</td><td>19.48%(0.21)</td><td>19.77%(0.21)</td></tr></table>",
+        "bbox": [
+            114,
+            372,
+            485,
+            566
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "table",
+        "img_path": "images/3d1576a517cdfb17a2bfd82e672943446e91be0bee35fee4d18aa0cdbb4d2c1c.jpg",
+        "table_caption": [
+            "Table 15: Detailed averaged percent biases and standard deviation results in parenthesis for the Adult dataset shown in Figure 3 for $\\beta$ value of 0.5. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Bias</td><td>0</td><td>19.91%(0.18)</td><td>19.91%(0.18)</td><td>19.91%(0.18)</td></tr><tr><td>1</td><td>19.61%(0.16)</td><td>19.76%(0.17)</td><td>19.89%(0.16)</td></tr><tr><td>2</td><td>19.32%(0.18)</td><td>19.59%(0.17)</td><td>19.88%(0.16)</td></tr><tr><td>3</td><td>19.01%(0.17)</td><td>19.42%(0.17)</td><td>19.87%(0.17)</td></tr><tr><td>4</td><td>18.73%(0.15)</td><td>19.30%(0.16)</td><td>19.86%(0.16)</td></tr><tr><td>5</td><td>18.44%(0.16)</td><td>19.12%(0.17)</td><td>19.85%(0.18)</td></tr><tr><td>6</td><td>18.71%(0.16)</td><td>18.97%(0.16)</td><td>19.83%(0.19)</td></tr><tr><td>7</td><td>17.90%(0.18)</td><td>18.82%(0.18)</td><td>19.81%(0.20)</td></tr><tr><td>8</td><td>17.63%(0.20)</td><td>18.66%(0.18)</td><td>19.79%(0.21)</td></tr><tr><td>9</td><td>17.38%(0.21)</td><td>18.51%(0.19)</td><td>19.77%(0.21)</td></tr></table>",
+        "bbox": [
+            114,
+            647,
+            485,
+            843
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "table",
+        "img_path": "images/ad33fafc6f7aca52dfacde917855164a67b5ed73c74c7624e7632b340a916cb5.jpg",
+        "table_caption": [
+            "Table 16: Detailed averaged percent biases and standard deviation results in parenthesis for the Adult dataset shown in Figure 3 for $\\beta$ value of 0.9. "
+        ],
+        "table_footnote": [],
+        "table_body": "<table><tr><td></td><td>Beta</td><td>Equity</td><td>Parity</td><td>Classifier</td></tr><tr><td rowspan=\"10\">Bias</td><td>0</td><td>19.91%(0.18)</td><td>19.91%(0.18)</td><td>19.91%(0.18)</td></tr><tr><td>1</td><td>19.48%(0.21)</td><td>19.70%(0.17)</td><td>19.89%(0.16)</td></tr><tr><td>2</td><td>19.08%(0.26)</td><td>19.47%(0.17)</td><td>19.88%(0.16)</td></tr><tr><td>3</td><td>18.64%(0.28)</td><td>19.24%(0.17)</td><td>19.87%(0.17)</td></tr><tr><td>4</td><td>18.25%(0.29)</td><td>19.04%(0.16)</td><td>19.86%(0.16)</td></tr><tr><td>5</td><td>17.85%(0.29)</td><td>18.83%(0.17)</td><td>19.85%(0.18)</td></tr><tr><td>6</td><td>17.46%(0.31)</td><td>18.63%(0.17)</td><td>19.83%(0.19)</td></tr><tr><td>7</td><td>17.09%(0.34)</td><td>18.43%(0.18)</td><td>19.81%(0.20)</td></tr><tr><td>8</td><td>16.70%(0.37)</td><td>18.22%(0.19)</td><td>19.79%(0.21)</td></tr><tr><td>9</td><td>16.33%(0.40)</td><td>18.03%(0.21)</td><td>19.77%(0.21)</td></tr></table>",
+        "bbox": [
+            511,
+            372,
+            883,
+            566
+        ],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "Survey Instructions (Click to expand) ",
+        "bbox": [
+            130,
+            95,
+            209,
+            102
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "In this task, you will be given 4 different scenarios and we would ask you to rate how much proposed solutions to each of the scenarios would be fair on a scale of 0 to 4 (0 meaning completely unfair and 4 meaning completely fair). We would also ask you to pick one of the solutions and tell us why you picked your preferred solution. Attention: You should provide a justification in text boxes 1,2, 3, and 4 or you would not be paid. In other words, you should tell us why you chose your preferred picture/solution to each of the scenarios. ",
+        "bbox": [
+            130,
+            107,
+            483,
+            122
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1. Scenario 1 ss degree ",
+        "bbox": [
+            130,
+            143,
+            312,
+            148
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/1ed62b93aff4f2568ec1f00b7675b407d6c577937bbb556061289e50d6c9321e.jpg",
+        "image_caption": [
+            "Picture A "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            151,
+            162,
+            290,
+            255
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/9f6bd80cae78af0d2064aeaac7dfb61aa5c20446b47e3ebeafc57288b30c6cba.jpg",
+        "image_caption": [
+            "PictureB "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            295,
+            162,
+            434,
+            255
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Picture A (Picture on the left): ",
+        "bbox": [
+            130,
+            287,
+            192,
+            292
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Co pletely Unfai ",
+        "bbox": [
+            143,
+            300,
+            192,
+            305
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-So hat Unfa ",
+        "bbox": [
+            202,
+            300,
+            245,
+            305
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair Nor Unfair ",
+        "bbox": [
+            256,
+            300,
+            310,
+            305
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-So what Fair ",
+        "bbox": [
+            320,
+            300,
+            361,
+            305
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Completely Fair ",
+        "bbox": [
+            370,
+            300,
+            411,
+            305
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Picture B (Picture on the right): ",
+        "bbox": [
+            130,
+            308,
+            194,
+            313
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            202,
+            308,
+            245,
+            313
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            256,
+            308,
+            310,
+            313
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            320,
+            308,
+            361,
+            313
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            370,
+            308,
+            411,
+            313
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Co letely Unfai ",
+        "bbox": [
+            143,
+            320,
+            192,
+            325
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-So what Unfair ",
+        "bbox": [
+            202,
+            320,
+            245,
+            325
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair Nor Unfair ",
+        "bbox": [
+            256,
+            320,
+            310,
+            325
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-So what Fair ",
+        "bbox": [
+            320,
+            320,
+            361,
+            325
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-C letely Fai ",
+        "bbox": [
+            370,
+            320,
+            411,
+            325
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Which picture would you prefer the most? ",
+        "bbox": [
+            130,
+            330,
+            215,
+            335
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "I would prefer Pictur ",
+        "bbox": [
+            143,
+            340,
+            192,
+            345
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "(Picture on the left). ",
+        "bbox": [
+            202,
+            340,
+            245,
+            345
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "would prefer Picture B (Picture on the right). ",
+        "bbox": [
+            256,
+            340,
+            349,
+            345
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Please tell us why you chose your preferred picture. (Must be filled in order for you to get paid) ",
+        "bbox": [
+            130,
+            349,
+            325,
+            354
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2. Scenario 2: ---- 3 students with identical qualifications apply for a student loan to cover their $10k (each) tuition for a semester. The school can only offer $21k in total loans. The circumstance of each student is as follows: Student A: Student A has previously received a $5k scholarship and applies for a loan to cover the rest of his/her $5k tuition. Student B: Student B has previously received a $4k scholarship and applies for a loan to cover the rest of his/her $6k tuition. Student C: Student C has received no scholarships and applies for the loan to cover her/his $10k tuition. ",
+        "bbox": [
+            130,
+            393,
+            482,
+            412
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "degree ",
+        "bbox": [
+            130,
+            414,
+            401,
+            419
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Solution 1: The school should allocate a $7k loan each to Student A, B, and C ",
+        "bbox": [
+            130,
+            424,
+            292,
+            430
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Completely Unfair ",
+        "bbox": [
+            143,
+            438,
+            192,
+            443
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-Somewhat Unfair ",
+        "bbox": [
+            202,
+            438,
+            245,
+            443
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair Nor Unfair ",
+        "bbox": [
+            256,
+            438,
+            310,
+            443
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Somewhat Fair ",
+        "bbox": [
+            320,
+            438,
+            361,
+            443
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Completely Fair ",
+        "bbox": [
+            370,
+            438,
+            411,
+            443
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Solution 2: The school should allocate a $5k loan to Student A, a $6k loan to Student B, and a $10k loan to Student C. ",
+        "bbox": [
+            130,
+            446,
+            370,
+            450
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Co letely Unfai ",
+        "bbox": [
+            145,
+            457,
+            192,
+            462
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            202,
+            457,
+            245,
+            462
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair Nor Unfair ",
+        "bbox": [
+            256,
+            457,
+            310,
+            462
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Som ewhat Fair ",
+        "bbox": [
+            320,
+            457,
+            361,
+            462
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Co pletely Fair ",
+        "bbox": [
+            370,
+            457,
+            411,
+            462
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Which rio? ",
+        "bbox": [
+            130,
+            465,
+            251,
+            470
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "ould prefer solut ",
+        "bbox": [
+            143,
+            478,
+            192,
+            483
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "I would olution 2. tion 2. ",
+        "bbox": [
+            202,
+            478,
+            267,
+            483
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            256,
+            478,
+            290,
+            483
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Please tell us why you chose ",
+        "bbox": [
+            130,
+            487,
+            326,
+            492
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3. Scenario 3: ---- The government is awarding 100 subsidized houses to families every year. In previous years 80 of these houses went to Caucasian families while only 20 went to people of color, although the applicant pool consisting equally of both groups. What would be the fair solution for government to take for this year's plan? Please rate the following solutions according to their fairness degree. ",
+        "bbox": [
+            130,
+            530,
+            482,
+            545
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Selution †- The gpvernment sheuld award 50 to peonle gf color and 50 tn tbe Caucasians ",
+        "bbox": [
+            130,
+            551,
+            315,
+            556
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Completely Unfair ",
+        "bbox": [
+            145,
+            564,
+            192,
+            569
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-Somewhat Unfair ",
+        "bbox": [
+            202,
+            564,
+            245,
+            569
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair N ",
+        "bbox": [
+            256,
+            564,
+            290,
+            569
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Somewhat Fair ",
+        "bbox": [
+            320,
+            564,
+            361,
+            569
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Completely Fair ",
+        "bbox": [
+            370,
+            564,
+            411,
+            569
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Solution 2: 80 houses should go to ",
+        "bbox": [
+            130,
+            573,
+            354,
+            578
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Completely Unfair ",
+        "bbox": [
+            143,
+            585,
+            192,
+            590
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-Somewhat Unfair ",
+        "bbox": [
+            202,
+            585,
+            245,
+            590
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair N ",
+        "bbox": [
+            256,
+            585,
+            290,
+            590
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Somewhat Fair ",
+        "bbox": [
+            320,
+            585,
+            361,
+            590
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Completely Fair ",
+        "bbox": [
+            370,
+            585,
+            411,
+            590
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Which solution would you prefer the this scenario? ",
+        "bbox": [
+            130,
+            594,
+            251,
+            599
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "I would prefer solut ",
+        "bbox": [
+            145,
+            604,
+            192,
+            609
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "I would prefer solution 2. ",
+        "bbox": [
+            202,
+            604,
+            267,
+            609
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Please tell us why you chose your preferred picture. (Must be filled in order for you to get paid) ",
+        "bbox": [
+            130,
+            614,
+            325,
+            619
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/0883bb4bee0059501969552b1d4856260c144910cec26cef4a63efd64927eeb4.jpg",
+        "image_caption": [
+            "igure 5: Survey questionnaire used in the mechanical rk experiment. "
+        ],
+        "image_footnote": [],
+        "bbox": [
+            130,
+            625,
+            318,
+            643
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4. Scenario 4: ---- A college has 4 openings left for their undergraduate admissions. 10 people with identical qualifications with the following background apply to the college: 5 out of 10 of these applicants are going to be first generation college students if they go to college, while the other 5 applicants are non-first generation college students. Please rate the following solutions according to their fairness degree. ",
+        "bbox": [
+            130,
+            657,
+            480,
+            672
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Solution 1: The college should grant 2 admissions to 2 of the first generation college students and 2 to 2 of the non-first generation college students. ",
+        "bbox": [
+            130,
+            680,
+            429,
+            685
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Compeletly Unfair ",
+        "bbox": [
+            143,
+            691,
+            192,
+            696
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-Somewhat Unfair ",
+        "bbox": [
+            202,
+            691,
+            245,
+            696
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair N ",
+        "bbox": [
+            256,
+            691,
+            290,
+            696
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Somewhat Fair ",
+        "bbox": [
+            320,
+            691,
+            361,
+            696
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Completely Fair ",
+        "bbox": [
+            370,
+            691,
+            411,
+            696
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Solution 2: The college should grant admi sion to 3 of the first g ration college student. ",
+        "bbox": [
+            130,
+            700,
+            406,
+            705
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Completely Unfair ",
+        "bbox": [
+            145,
+            713,
+            192,
+            718
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-Somewhat Unfair ",
+        "bbox": [
+            202,
+            713,
+            245,
+            718
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair N ",
+        "bbox": [
+            256,
+            713,
+            290,
+            718
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Somewhat Fair ",
+        "bbox": [
+            320,
+            713,
+            361,
+            718
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-Completely Fair ",
+        "bbox": [
+            370,
+            713,
+            411,
+            718
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "Which so nario? ",
+        "bbox": [
+            130,
+            720,
+            250,
+            726
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "ould prefer solut ",
+        "bbox": [
+            143,
+            733,
+            192,
+            738
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "I would olution 2. ",
+        "bbox": [
+            202,
+            733,
+            267,
+            738
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "",
+        "bbox": [
+            130,
+            742,
+            325,
+            747
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "5. Scenario 5: ---- How fair it would be if we do not pay you for your effort on filling up this survey? ",
+        "bbox": [
+            130,
+            785,
+            326,
+            791
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "0-Cn letely UInfal ",
+        "bbox": [
+            143,
+            801,
+            192,
+            806
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "1-Sg what Unfair ",
+        "bbox": [
+            202,
+            801,
+            245,
+            806
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "2-Neither Fair ",
+        "bbox": [
+            256,
+            801,
+            290,
+            806
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "3-Sg whatEal ",
+        "bbox": [
+            320,
+            801,
+            361,
+            806
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "4-G letely Fal ",
+        "bbox": [
+            370,
+            801,
+            411,
+            806
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "ATTENTION We have ta ete the task hone ly we will know and the HIT will be rejected. ",
+        "bbox": [
+            130,
+            833,
+            419,
+            839
+        ],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "(Optional) Pleas provide any nts that you have about this HIT. Thanks for doing our HIT! We appreciate your input! ",
+        "bbox": [
+            130,
+            840,
+            375,
+            845
+        ],
+        "page_idx": 13
+    }
+]

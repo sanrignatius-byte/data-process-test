@@ -1,0 +1,119 @@
+\subsection{Datasets}
+\label{sec:data-description}
+The following is a more through description of the datasets used in this work.
+We did not use any feature selection methods for any of the datasets. Although, for each dataset, 
+we removed the uninformative features (e.g. various kinds of IDs). Categorical variables were converted 
+to dummy/indicator variables, and an indicator for missing values were included per column with missing values.
+
+\paragraph{The Adult dataset}
+The Adult dataset~\citep{adult-dataset, uci-repo} from the UCI
+repository contains Census data (hours worked per
+week, education, sex, age, marital status, and so forth), and has been
+used to train predictors as to whether an individual earns more or
+less than \$50,000 per year. Predicting income based upon less
+sensitive attributes, such as education and occupation, can be used to
+aid in other economic decisions (related to lending or hiring). It is
+therefore important to design models which are equally predictive of
+income regardless of gender or race. We created groups for this dataset based
+on gender. Furthermore, we extracted the data only from the Adult.data file.
+
+\paragraph{The Communities and Crime dataset}
+The Communities and Crime Dataset~\citep{communities-crime-dataset,
+  uci-repo}, from the UCI repository is a dataset which includes many
+features deemed relevant to violent crime rates (such as the
+percentage of the community's population in an urban area, the
+community's racial makeup, law enforcement involvement and racial
+makeup of that law enforcement in a community, amount a community's
+law enforcement allocated to drug units) for different
+communities. This data is provided to train regression models based on
+this data to predict the amount of violent crime (murder, rape,
+robbery, and assault) in a given community. If police departments
+allocate their units to communities based upon a prediction of this
+form, this should draw concerns of fairness if the predictive behavior
+is much better for violent predominantly white community than for a
+violent predominantly nonwhite communities.  We consider communities
+racial makeup as sensitive variable, however, the racial makeup
+consists of more than two races.  We created two groups for this
+dataset based on whether the percentage of black people in a community
+(blackPerCap) is higher than the percentage of whites (whitePerCap),
+indians (indianPerCap), asians (AsianPerCap) and hispanics
+(HispPerCap) in that community.
+
+
+%\paragraph{The student dataset}
+%The Student Dataset~\citep{student-dataset}, from the UCI
+%repository~\cite{uci-repo}, contains data relevant to secondary school
+%achievement for students in Portugal, from information about students'
+%home lives (their parents' education levels, jobs, cohabitation
+%status, whether or not their homes have internet access, the length of
+%their commute to school, etc), and educational information (whether
+%additional paid courses were taken, the amount of time outside of
+%school spent studying, whether nursery school was attended, etc). The
+%goal from these attributes is to predict the grades of students in the
+%final grading period in mathematics and Portugese, ideally without the
+%use of the (highly correlated) grades from previous grading
+%periods. If this prediction were used to allocate a limited resource
+%to help struggling students, it would be important for that
+%intervention to be allocated in similar ways across genders or races,
+%conditioned on the individual students' likely grades. Similarly, if
+%students were ``tracked'' based on these predictions (and placed in
+%higher or lower achieving classrooms), it would be crucial that these
+%predictions being similarly good in predicting different groups'
+%performance.
+
+\paragraph{The COMPAS dataset}
+The COMPAS dataset contains data from Broward County, Florida originally compiled
+by ProPublica~\cite{propublica} in which the goal
+is to predict whether a convicted individual would commit a violent crime in the following two years
+or not.
+Following the analysis of Propublica and~\citet{Corbett-DaviesP17} we considered black
+and white defendants who were assigned COMPAS risk scores
+within 30 days of their arrest. Furthermore, we restricted ourselves to defendants who
+``spent at least two years outside
+a correctional facility without being arrested for a violent crime,
+or were arrested for a violent crime within this two-year period~\cite{Corbett-DaviesP17}''.
+Our goal is to predict the two-year violent recidivism. 
+The dataset includes race, age, sex, number of prior convictions, and COMPAS violent crime
+risk score (a score between 1 and 10 which we categorized to low, medium and high levels of risks).
+As mentioned earlier, we created groups for this dataset based on race.
+
+\paragraph{The Default dataset}
+The Default of Credit Card Clients dataset~\citep{default-dataset, uci-repo} from the UCI
+repository, contains data from Taiwanese credit card
+users, such as their credit limit, gender, education, marital status,
+history of payment, bill and payment amounts. These features are
+designed to be used in the prediction of the probability of default
+payments, although the data has binary labels. It has been
+noted~\citep{default-dataset} that linear models tend to perform quite
+poorly on this task. Given the sensitive nature of lending (and
+historical inequity of the allocation of credit across races and
+genders), it is important to understand the tradeoff between fairness
+and accuracy in settings related to credit. We created groups for this 
+dataset based on gender.
+
+
+\paragraph{The Law School dataset}
+The bar passage study was initiated in 1991 by Law School Admission Council national longitudinal. 
+The dataset contains  records for law students who took the bar exam. 
+The binary outcome indicates whether the student passed the bar exam or not. The features include variables such 
+as cluster, lsat score, undergraduate GPA, zfyGPA, zGPA, full-time status, family income, age and also sensitive 
+variables such as race and gender. 
+The variable cluster is the result of a clustering of similar law schools (which is done apriori), and is used to adjust for the 
+effect of type of law school. zGPA is the z-scores of the students overall GPA and zfyGPA is the  first year GPA relative to 
+students at the same law school. We created groups for this dataset based on gender.
+For more information about this dataset refer to \url{http://www2.law.ucla.edu/sander/Systemic/Data.htm}.
+
+\paragraph{The Sentencing dataset}
+The Sentencing dataset contains 5969 random sample of all prison inmates primarily from the department of corrections of a state. 
+Moreover data from state agencies that have information of arrests are
+also added to the dataset. To be sentenced to a state prison, an offender must have been convicted of a felony or must have pled guild to a felony. 
+The outcome variable, sentence length, is the sentence given by a judge, but is not necessarily the amount of time served in prison. 
+There are usually provisions for review by the state parole board, which can lead to release well before the full nominal sentence is served. 
+The predictors include variables that are legitimate factors in sentencing (e.g., the crime for which a conviction was obtained) as well as sensitive variables 
+like gender.  We created groups for this dataset based on gender.
+
+
+
+
+
+

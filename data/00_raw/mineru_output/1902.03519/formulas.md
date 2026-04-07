@@ -1,0 +1,43 @@
+$$
+\operatorname {c o s t} _ {\mathrm {m e d}} (D) := \sum_ {q \in D} d (\left| \mathbf {l c a} (D), q\right) = \Theta \left(\left| D \right| \cdot \gamma^ {h \left(\left| \mathbf {l c a} (D)\right)\right)}\right). \tag {1}
+$$
+
+$$
+\# \text {p o i n t s} c \leq N _ {\mathrm {H}} + \sum_ {j \in Q} r _ {j} \leq N _ {\mathrm {H}} + \sum_ {j \in Q} \left(\frac {r}{b} \cdot b _ {j} - \frac {1}{b}\right) \leq \frac {r}{b} \sum_ {j \in Q} b _ {j} \triangleright \text {s i n c e} | Q | = b \cdot N _ {\mathrm {H}}, \tag {2}
+$$
+
+$$
+\# \text {p o i n t s} \bar {c} \geq \frac {r}{b} \sum_ {j \in Q} b _ {j}. \tag {3}
+$$
+
+$$
+\operatorname {c o s t} \left(\operatorname {s o l} _ {i}\right) \leq c \cdot \left(r ^ {2} + b ^ {2}\right) \cdot \left(\operatorname {c o s t} \left(\operatorname {O P T} _ {i}\right) + \left(\left| \mathrm {H} _ {\mathrm {O P T}} ^ {i} \right| + \left| \mathrm {H} _ {\mathrm {S O L}} ^ {i} \right| \cdot (r + b)\right) \cdot \left(r ^ {2} + b ^ {2}\right) \cdot \gamma^ {h - 1}\right). \tag {4}
+$$
+
+$$
+\begin{array}{l} \mathrm {c o s t} (\mathrm {s o l}) = \mathrm {c o s t} (\mathrm {s o l} _ {\mathrm {H}}) + \sum_ {i \in [ \gamma^ {d} ]} \mathrm {c o s t} (\mathrm {s o l} _ {i}) \\ \leq \eta_ {\mathrm {H}} \cdot \left(r ^ {2} + b ^ {2}\right) \cdot \operatorname {c o s t} \left(\mathrm {O P T} _ {\mathrm {H}}\right) \\ + c \cdot (r ^ {2} + b ^ {2}) \cdot (\frac {\eta_ {\mathrm {H}} (r + b) ^ {5}}{\gamma} \cdot \mathrm {c o s t} (\mathrm {O P T} _ {\mathrm {H}}) + \sum_ {i \in [ k ^ {d} ]} \mathrm {c o s t} (\mathrm {O P T} _ {i})) \\ \leq c \cdot \left(r ^ {2} + b ^ {2}\right) \cdot \operatorname {c o s t} (\mathrm {O P T}) \\ + (\eta_ {\mathrm {H}} - \frac {c}{2}) \cdot (r ^ {2} + b ^ {2}) \cdot \mathrm {c o s t (O P T _ {H})} \triangleright \mathrm {B y s e t t i n g} \gamma := 2 \eta_ {\mathrm {H}} (r + b) ^ {5} \\ \leq c \cdot \left(r ^ {2} + b ^ {2}\right) \cdot \operatorname {c o s t} (\mathrm {O P T}) \triangleright c \geq 2 \eta_ {\mathrm {H}} \\ \end{array}
+$$
+
+$$
+| c _ {D} | <   \frac {r}{b} | \bar {c} _ {D} | \Rightarrow b \cdot | c _ {D} | \leq r \cdot | \bar {c} _ {D} | - 1,
+$$
+
+$$
+b \cdot | c _ {\mathcal {X}} | \leq r \cdot | \bar {c} _ {\mathcal {X}} | - b \cdot | Q _ {2} | \Rightarrow b \cdot (| c _ {\mathcal {X}} | + | Q _ {2} |) \leq r \cdot | \bar {c} _ {\mathcal {X}} |,
+$$
+
+$$
+\begin{array}{l} \operatorname {c o s t} \left(\operatorname {O P T} _ {i}\right) + | Q _ {0} \setminus Q _ {1} | \cdot h _ {T} (v _ {i}) + | Q _ {1} \setminus Q _ {2} | \cdot (r + b) \cdot h _ {T} (v _ {i}) + | Q _ {2} | \cdot b \cdot (r + b) \cdot h _ {T} (v _ {i}) \\ \leq \operatorname {c o s t} \left(\mathrm {O P T} _ {i}\right) + | Q _ {0} | \cdot b \cdot (r + b) \cdot h _ {T} (v _ {i}) \\ \leq \mathrm {c o s t} (\mathrm {O P T} _ {i}) + \left(| \mathrm {H} _ {\mathrm {O P T}} ^ {i} | + | \mathrm {H} _ {\mathrm {S O L}} ^ {i} | \cdot (r + b)\right) \cdot (r ^ {2} + b ^ {2}) \cdot \gamma^ {h - 1} \\ \end{array}
+$$
+
+$$
+\operatorname {c o s t} (Q) \leq \alpha \cdot \operatorname {c o s t} \left(\operatorname {O P T} _ {k - \text {f a i r}} (P)\right). \tag {5}
+$$
+
+$$
+\mathrm {c o s t} (\mathrm {O P T} _ {k \text {- m e d i a n}} (\overline {{P}})) \leq (r + b) \cdot \mathrm {c o s t} (\mathrm {O P T} _ {k \text {- m e d i a n}} (N)) \leq (r + b) \cdot \mathrm {c o s t} (\mathrm {O P T} _ {k \text {- m e d i a n}} (P)). \quad (6)
+$$
+
+$$
+\begin{array}{l} \operatorname {c o s t} \left(\mathcal {C} ^ {*}\right) \leq \operatorname {c o s t} (Q) + \operatorname {c o s t} (\mathcal {C}) \\ \leq \alpha \cdot \operatorname {c o s t} \left(\mathrm {O P T} _ {k - \text {f a i r}} (P)\right) \quad \triangleright \text {B y} \tag {5} \\ + \beta \cdot \operatorname {c o s t} \left(\mathrm {O P T} _ {k - \text {m e d i a n}} (\bar {P})\right) \\ \leq \alpha \cdot \operatorname {c o s t} \left(\operatorname {O P T} _ {k - \text {f a i r}} (P)\right) \\ + \beta \cdot (r + b) \cdot \operatorname {c o s t} \left(\mathrm {O P T} _ {k - \text {m e d i a n}} (P)\right) \quad \triangleright \operatorname {B y} (6) \\ \leq (\alpha + \beta \cdot (r + b)) \cdot \operatorname {c o s t} \left(\operatorname {O P T} _ {k - \text {f a i r}} (P)\right) \\ \end{array}
+$$
