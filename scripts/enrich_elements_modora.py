@@ -417,9 +417,9 @@ def merge_enrichments(
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--input", default="data/multimodal_elements.json",
+    ap.add_argument("--input", default="data/01_graphs/multimodal_elements.json",
                     help="Input multimodal elements file")
-    ap.add_argument("--output", default="data/multimodal_elements_enriched.json",
+    ap.add_argument("--output", default="data/02_enriched/multimodal_elements_enriched.json",
                     help="Output enriched elements file")
     ap.add_argument("--provider", choices=["anthropic", "openai", "company"],
                     default="company", help="API provider")

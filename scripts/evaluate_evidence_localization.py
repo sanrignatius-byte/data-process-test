@@ -12,26 +12,26 @@ Usage:
     # Graph-based (uses hub graph nodes as the retrieval corpus)
     python scripts/evaluate_evidence_localization.py \\
         --queries data/l1_dual_evidence_queries_hub_enriched_v1.jsonl \\
-        --graph data/latex_graph_hubs.json \\
-        --elements data/multimodal_elements.json \\
+        --graph data/01_graphs/latex_graph_hubs.json \\
+        --elements data/01_graphs/multimodal_elements.json \\
         --mode graph \\
-        --output data/eval_evidence_localization_graph.json
+        --output data/05_eval/eval_evidence_localization_graph.json
 
     # BM25 baseline
     python scripts/evaluate_evidence_localization.py \\
-        --queries data/l1_dual_evidence_queries_hub_enriched_v1.jsonl \\
-        --elements data/multimodal_elements.json \\
+        --queries data/03_queries/l1_dual_evidence_queries_hub_enriched_v1.jsonl \\
+        --elements data/01_graphs/multimodal_elements.json \\
         --mode bm25 \\
-        --output data/eval_evidence_localization_bm25.json
+        --output data/05_eval/eval_evidence_localization_bm25.json
 
     # C-Pool evaluation (universal queries against document graph)
     python scripts/evaluate_evidence_localization.py \\
-        --queries data/c_pool_universal_queries.json \\
+        --queries data/03_queries/c_pool_universal_queries.json \\
         --c-pool \\
-        --graph data/latex_graph_hubs.json \\
-        --elements data/multimodal_elements.json \\
+        --graph data/01_graphs/latex_graph_hubs.json \\
+        --elements data/01_graphs/multimodal_elements.json \\
         --mode graph \\
-        --output data/eval_cpool_localization.json
+        --output data/05_eval/eval_cpool_localization.json
 """
 
 from __future__ import annotations

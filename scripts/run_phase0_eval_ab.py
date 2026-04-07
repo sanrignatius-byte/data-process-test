@@ -1087,16 +1087,16 @@ def decision(graph_full_metrics: Dict[str, Any], bm25_metrics: Dict[str, Any]) -
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Run Phase-0 locked A/B retrieval evaluation")
-    ap.add_argument("--q1", type=Path, default=Path("data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
-    ap.add_argument("--q2", type=Path, default=Path("data/l1_dual_evidence_queries_v3_pass.jsonl"))
+    ap.add_argument("--q1", type=Path, default=Path("data/03_queries/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
+    ap.add_argument("--q2", type=Path, default=Path("data/03_queries/l1_dual_evidence_queries_v3_pass.jsonl"))
     ap.add_argument("--q3", type=Path, default=None, help="Optional extra query file")
-    ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
-    ap.add_argument("--hubs", type=Path, default=Path("data111/latex_graph_hubs (1).json"))
-    ap.add_argument("--hub-candidates", type=Path, default=Path("data111/hub_candidates_enriched_v2.json"),
+    ap.add_argument("--elements", type=Path, default=Path("data/02_enriched/multimodal_elements_enriched.json"))
+    ap.add_argument("--hubs", type=Path, default=Path("data/01_graphs/latex_graph_hubs.json"))
+    ap.add_argument("--hub-candidates", type=Path, default=Path("data/02_enriched/hub_candidates_enriched_v2.json"),
                     help="Enriched hub candidate pairs for element-level prior + adjacency")
-    ap.add_argument("--citation-graph", type=Path, default=Path("data/citation_graph.json"),
+    ap.add_argument("--citation-graph", type=Path, default=Path("data/01_graphs/citation_graph.json"),
                     help="Citation graph JSON for cross-doc citation walk")
-    ap.add_argument("--output", type=Path, default=Path("data/phase0_eval_report.json"))
+    ap.add_argument("--output", type=Path, default=Path("data/05_eval/phase0_eval_report.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--overlap-threshold", type=float, default=0.5)
     # Graph signal weights

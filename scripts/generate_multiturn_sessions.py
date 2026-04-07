@@ -13,9 +13,9 @@ The LLM generates the decomposed turns given the full query, answer, and evidenc
 
 Usage:
     python scripts/generate_multiturn_sessions.py \
-        --l2 data/m2/l2_production_2026-03-26_section_enriched_pass.jsonl \
-        --l3 data/m2/l3_production_2026-03-26_section_enriched_pass.jsonl \
-        --output data/m2/multiturn_sessions_v1.jsonl \
+        --l2 data/05_eval/m2/l2_production_2026-03-26_section_enriched_pass.jsonl \
+        --l3 data/05_eval/m2/l3_production_2026-03-26_section_enriched_pass.jsonl \
+        --output data/05_eval/m2/multiturn_sessions_v1.jsonl \
         --provider company \
         --model gpt-5.4 \
         --pass-only
@@ -550,13 +550,13 @@ def write_jsonl(rows: List[dict], path: Path) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Generate multi-turn sessions from L2/L3 queries")
     parser.add_argument("--l2", type=Path,
-                        default=_PROJECT_ROOT / "data/m2/l2_production_2026-03-26_section_enriched_pass.jsonl",
+                        default=_PROJECT_ROOT / "data/05_eval/m2/l2_production_2026-03-26_section_enriched_pass.jsonl",
                         help="L2 pass queries input")
     parser.add_argument("--l3", type=Path,
-                        default=_PROJECT_ROOT / "data/m2/l3_production_2026-03-26_section_enriched_pass.jsonl",
+                        default=_PROJECT_ROOT / "data/05_eval/m2/l3_production_2026-03-26_section_enriched_pass.jsonl",
                         help="L3 pass queries input")
     parser.add_argument("--output", type=Path,
-                        default=_PROJECT_ROOT / "data/m2/multiturn_sessions_v1.jsonl",
+                        default=_PROJECT_ROOT / "data/05_eval/m2/multiturn_sessions_v1.jsonl",
                         help="Output JSONL file")
     parser.add_argument("--pass-only", action="store_true",
                         help="Write only QC-passing sessions to output")

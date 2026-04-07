@@ -296,8 +296,8 @@ def call_llm_anthropic(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Generate L2 queries from candidate pairs")
-    ap.add_argument("--pairs", default="data/l2_candidate_pairs_v2.json")
-    ap.add_argument("--output", default="data/l2_queries_v3.jsonl")
+    ap.add_argument("--pairs", default="data/03_queries/l2_candidate_pairs_v2.json")
+    ap.add_argument("--output", default="data/03_queries/l2_queries_v3.jsonl")
     ap.add_argument("--limit", type=int, default=50)
     ap.add_argument("--provider", choices=["anthropic", "openai"], default="anthropic")
     ap.add_argument("--model", default="claude-sonnet-4-5-20250929")

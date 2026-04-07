@@ -37,11 +37,11 @@ def main() -> None:
     ap.add_argument(
         "--candidates",
         default="",
-        help="Enriched hub candidates JSON (auto-detected from data111/ or data/)",
+        help="Enriched hub candidates JSON (auto-detected from data/02_enriched/)",
     )
     ap.add_argument(
         "--output",
-        default=str(DATA_DIR / "m2" / "l3_candidates_filtered.json"),
+        default=str(DATA_DIR / "05_eval" / "m2" / "l3_candidates_filtered.json"),
     )
     ap.add_argument("--min-hops", type=int, default=3)
     ap.add_argument("--max-candidates", type=int, default=200)
@@ -52,9 +52,9 @@ def main() -> None:
         cand_path = Path(args.candidates)
     else:
         candidates_search = [
-            DATA_DIR / "hub_candidates_enriched.json",
-            PROJECT_ROOT / "data111" / "hub_candidates_enriched_v3.json",
-            PROJECT_ROOT / "data111" / "hub_candidates_enriched_v2.json",
+            DATA_DIR / "02_enriched" / "hub_candidates_enriched.json",
+            DATA_DIR / "02_enriched" / "hub_candidates_enriched_v3.json",
+            DATA_DIR / "02_enriched" / "hub_candidates_enriched_v2.json",
         ]
         cand_path = None
         for p in candidates_search:

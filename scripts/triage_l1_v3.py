@@ -94,9 +94,9 @@ def triage_one(obj: Dict[str, Any]) -> Tuple[str, List[str], int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Triage L1 v3 query quality")
-    parser.add_argument("--input", default="data/l1_cross_modal_queries_v3.jsonl")
-    parser.add_argument("--output", default="data/l1_triage_v3.jsonl")
-    parser.add_argument("--report", default="data/l1_triage_report_v3.json")
+    parser.add_argument("--input", default="data/03_queries/l1_cross_modal_queries_v3.jsonl")
+    parser.add_argument("--output", default="data/03_queries/l1_triage_v3.jsonl")
+    parser.add_argument("--report", default="data/03_queries/l1_triage_report_v3.json")
     args = parser.parse_args()
 
     in_path = Path(args.input)

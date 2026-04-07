@@ -842,12 +842,12 @@ def main() -> None:
     )
     ap.add_argument(
         "--candidates",
-        default="data/latex_cross_modal_pairs.json",
+        default="data/01_graphs/latex_cross_modal_pairs.json",
         help="Input candidate pairs (latex_cross_modal_pairs.json or multihop_l1_candidates.json)",
     )
     ap.add_argument(
         "--output",
-        default="data/l1_dual_evidence_queries_v3.jsonl",
+        default="data/03_queries/l1_dual_evidence_queries_v3.jsonl",
         help="Output JSONL path",
     )
     ap.add_argument(
@@ -909,7 +909,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--reference-graph",
-        default="data/latex_reference_graph.json",
+        default="data/01_graphs/latex_reference_graph.json",
         help=(
             "Path to latex_reference_graph.json for bridge paragraph text "
             "resolution (P0 enhancement). Provides actual LaTeX paragraph "
@@ -918,7 +918,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--topology-candidates",
-        default="data/latex_hub_multihop_candidates.json",
+        default="data/01_graphs/latex_hub_multihop_candidates.json",
         help=(
             "Path to topology candidates JSON used for element→label mapping. "
             "Set this to the same section-aware topology family as --reference-graph "

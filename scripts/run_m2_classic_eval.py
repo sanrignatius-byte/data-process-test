@@ -405,11 +405,11 @@ def run_method(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="M2 classic retrieval eval (stdlib)")
-    ap.add_argument("--q1", type=Path, default=Path("data/m2/l2_production_2026-03-26_section_enriched_pass.jsonl"))
-    ap.add_argument("--q2", type=Path, default=Path("data/m2/l3_production_2026-03-26_section_enriched_pass.jsonl"))
-    ap.add_argument("--q3", type=Path, default=Path("data/m2/level1_single_element.jsonl"))
-    ap.add_argument("--elements", type=Path, default=Path("data/multimodal_elements.json"))
-    ap.add_argument("--hub-candidates", type=Path, default=Path("data/m2/hub_candidates_enriched_keyword_boost_full_2026-03-24.json"))
+    ap.add_argument("--q1", type=Path, default=Path("data/05_eval/m2/l2_production_2026-03-26_section_enriched_pass.jsonl"))
+    ap.add_argument("--q2", type=Path, default=Path("data/05_eval/m2/l3_production_2026-03-26_section_enriched_pass.jsonl"))
+    ap.add_argument("--q3", type=Path, default=Path("data/05_eval/m2/level1_single_element.jsonl"))
+    ap.add_argument("--elements", type=Path, default=Path("data/01_graphs/multimodal_elements.json"))
+    ap.add_argument("--hub-candidates", type=Path, default=Path("data/05_eval/m2/hub_candidates_enriched_keyword_boost_full_2026-03-24.json"))
     ap.add_argument("--methods", nargs="+", default=METHODS)
     ap.add_argument("--top-k", type=int, default=20)
 
@@ -421,7 +421,7 @@ def main() -> None:
     ap.add_argument("--hits-alpha", type=float, default=0.4)
     ap.add_argument("--rrf-k", type=int, default=60)
     ap.add_argument("--split-levels", action="store_true", help="Also evaluate q1/q2/q3 separately")
-    ap.add_argument("--output", type=Path, default=Path("data/m2/classic_eval_m2.json"))
+    ap.add_argument("--output", type=Path, default=Path("data/05_eval/m2/classic_eval_m2.json"))
     args = ap.parse_args()
 
     q1_rows = load_jsonl(args.q1)

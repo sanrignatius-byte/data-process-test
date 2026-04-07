@@ -706,22 +706,22 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--hub-candidates",
-        default="data/latex_hub_multihop_candidates.json",
+        default="data/01_graphs/latex_hub_multihop_candidates.json",
         help="Input hub candidates from topology analysis",
     )
     ap.add_argument(
         "--elements",
-        default="data/multimodal_elements.json",
+        default="data/01_graphs/multimodal_elements.json",
         help="MinerU multimodal elements",
     )
     ap.add_argument(
         "--latex-graph",
-        default="data/latex_reference_graph.json",
+        default="data/01_graphs/latex_reference_graph.json",
         help="LaTeX reference graph (for label info and edge contexts)",
     )
     ap.add_argument(
         "--output",
-        default="data/hub_candidates_enriched.json",
+        default="data/02_enriched/hub_candidates_enriched.json",
         help="Output enriched candidates",
     )
     ap.add_argument(
@@ -731,7 +731,7 @@ def main():
     )
     ap.add_argument(
         "--hubs",
-        default="data/latex_graph_hubs.json",
+        default="data/01_graphs/latex_graph_hubs.json",
         help="Hub topology data (for quality_score computation from bridge_score/pagerank)",
     )
     ap.add_argument(

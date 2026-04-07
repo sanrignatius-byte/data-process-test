@@ -11,14 +11,14 @@ Workflow:
 
 Usage:
     python scripts/run_production_batch.py \
-        --enriched-candidates data/m2/hub_candidates_enriched_full.json \
+        --enriched-candidates data/05_eval/m2/hub_candidates_enriched_full.json \
         --batch-name production_v1 \
         --provider company --model gpt-5.4
 
     # Enrich remaining candidates first, then generate
     python scripts/run_production_batch.py \
         --enrich-first \
-        --raw-candidates data/latex_hub_multihop_candidates.json \
+        --raw-candidates data/01_graphs/latex_hub_multihop_candidates.json \
         --batch-name production_v2 \
         --provider company --model gpt-5.4
 """
@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Set
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-M2_DIR = DATA_DIR / "m2"
+M2_DIR = DATA_DIR / "05_eval" / "m2"
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -57,8 +57,8 @@ def get_used_pair_ids() -> Set[str]:
 
     # All existing query files
     query_files = [
-        DATA_DIR / "l1_dual_evidence_queries_v3_pass.jsonl",
-        DATA_DIR / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl",
+        DATA_DIR / "03_queries" / "l1_dual_evidence_queries_v3_pass.jsonl",
+        DATA_DIR / "03_queries" / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl",
         M2_DIR / "level2_dual_evidence.jsonl",
         M2_DIR / "level3_reasoning_chain.jsonl",
         M2_DIR / "l2_new_batch.jsonl",
@@ -132,7 +132,7 @@ def run_enrichment(
     ]
     if enriched_elements and enriched_elements.exists():
         cmd.extend(["--enriched-elements", str(enriched_elements)])
-    hubs_path = DATA_DIR / "latex_graph_hubs.json"
+    hubs_path = DATA_DIR / "01_graphs" / "latex_graph_hubs.json"
     if hubs_path.exists():
         cmd.extend(["--hubs", str(hubs_path)])
 
@@ -226,7 +226,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--raw-candidates", type=Path,
-        default=DATA_DIR / "latex_hub_multihop_candidates.json",
+        default=DATA_DIR / "01_graphs" / "latex_hub_multihop_candidates.json",
         help="Raw hub candidates (used with --enrich-first)",
     )
     ap.add_argument(
@@ -268,8 +268,8 @@ def main() -> None:
     )
     ap.add_argument(
         "--enriched-elements", type=Path,
-        default=DATA_DIR / "multimodal_elements_enriched.json",
-        help="Path to MoDora-enriched elements JSON (default: data/multimodal_elements_enriched.json)",
+        default=DATA_DIR / "02_enriched" / "multimodal_elements_enriched.json",
+        help="Path to MoDora-enriched elements JSON (default: data/02_enriched/multimodal_elements_enriched.json)",
     )
     args = ap.parse_args()
 
@@ -291,8 +291,8 @@ def main() -> None:
             raw_candidates=args.raw_candidates,
             existing_enriched=args.enriched_candidates,
             output=enriched_path,
-            elements=DATA_DIR / "multimodal_elements.json",
-            latex_graph=DATA_DIR / "latex_reference_graph.json",
+            elements=DATA_DIR / "01_graphs" / "multimodal_elements.json",
+            latex_graph=DATA_DIR / "01_graphs" / "latex_reference_graph.json",
             enriched_elements=args.enriched_elements,
         )
     else:

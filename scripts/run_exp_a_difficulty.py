@@ -235,7 +235,7 @@ def main() -> None:
     ap.add_argument(
         "--enriched-elements",
         default="",
-        help="Path to enriched elements (data111/multimodal_elements_enriched.json)",
+        help="Path to enriched elements (data/02_enriched/multimodal_elements_enriched.json)",
     )
     ap.add_argument("--top-k", type=int, default=10, help="Top-K for retrieval")
     ap.add_argument(

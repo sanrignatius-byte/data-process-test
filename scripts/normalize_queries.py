@@ -11,7 +11,7 @@ Usage
     python scripts/normalize_queries.py \\
         --output data/queries_normalized.jsonl
 
-By default it reads from the canonical ``data/m2/`` level files.  Use
+By default it reads from the canonical ``data/05_eval/m2/`` level files.  Use
 ``--l1``, ``--l2``, ``--l3`` to override individual paths.
 """
 

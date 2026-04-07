@@ -20,7 +20,7 @@ module load Miniforge3
 REPO_ROOT=${REPO_ROOT:-/projects/myyyx1/data-process-test}
 CONDA_ENV=${CONDA_ENV:-minerU}
 ARXIV_ID=${ARXIV_ID:-2501.09959}
-OUTPUT_DIR=${OUTPUT_DIR:-data/raw_pdfs}
+OUTPUT_DIR=${OUTPUT_DIR:-data/00_raw/raw_pdfs}
 MAX_REFERENCES=${MAX_REFERENCES:-200}
 MIN_CITATIONS=${MIN_CITATIONS:-0}
 API_KEY=${SEMANTIC_SCHOLAR_API_KEY:-}

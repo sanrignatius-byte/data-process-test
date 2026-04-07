@@ -14,18 +14,18 @@ Outputs a JSON file compatible with run_phase0_eval_ab.py --embedding-edges.
 Usage:
     # sentence-transformers (default, text-only)
     python scripts/build_embedding_edges.py \
-        --elements data111/multimodal_elements_enriched.json \
+        --elements data/02_enriched/multimodal_elements_enriched.json \
         --output data/embedding_edges.json \
         --model sentence-transformers/all-MiniLM-L6-v2 \
         --threshold 0.8
 
     # Qwen3-VL-Embedding (multimodal, local weights)
     python scripts/build_embedding_edges.py \
-        --elements data111/multimodal_elements_enriched.json \
+        --elements data/02_enriched/multimodal_elements_enriched.json \
         --output data/embedding_edges_qwen_vl.json \
         --model ~/models/Qwen3-VL-Embedding-2B \
         --backend qwen-vl \
-        --image-dir data/mineru_output \
+        --image-dir data/00_raw/mineru_output \
         --threshold 0.75
 """
 
@@ -614,7 +614,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--elements", type=Path,
-        default=Path("data111/multimodal_elements_enriched.json"),
+        default=Path("data/02_enriched/multimodal_elements_enriched.json"),
         help="Multimodal elements JSON (enriched preferred)",
     )
     ap.add_argument(

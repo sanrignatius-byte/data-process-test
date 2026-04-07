@@ -119,17 +119,17 @@ def main():
     )
     parser.add_argument(
         "--mineru-dir",
-        default="data/mineru_output",
+        default="data/00_raw/mineru_output",
         help="Path to MinerU output directory",
     )
     parser.add_argument(
         "--output",
-        default="data/multimodal_elements.json",
+        default="data/01_graphs/multimodal_elements.json",
         help="Output path for elements + DAG + pairs",
     )
     parser.add_argument(
         "--report",
-        default="data/multimodal_report.json",
+        default="data/01_graphs/multimodal_report.json",
         help="Output path for statistics report",
     )
     parser.add_argument(
@@ -176,7 +176,7 @@ def main():
     fallback_path = Path(args.fallback_pairs) if args.fallback_pairs else None
     if not fallback_path and not has_mineru:
         # Auto-detect fallback
-        default_fallback = Path("data/figure_text_pairs.json")
+        default_fallback = Path("data/02_enriched/figure_text_pairs.json")
         if default_fallback.exists():
             fallback_path = default_fallback
             print(f"MinerU output dir empty, using fallback: {fallback_path}")

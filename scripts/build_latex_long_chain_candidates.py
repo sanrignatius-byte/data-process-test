@@ -297,9 +297,9 @@ def select_endpoint_pairs(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Build long-chain candidates from latex cross-modal pairs")
-    ap.add_argument("--input", default="data/latex_cross_modal_pairs.json", help="Input pair JSON")
-    ap.add_argument("--output-pairs", default="data/latex_long_chain_pairs.json", help="Output pair-sliced candidates")
-    ap.add_argument("--output-chains", default="data/latex_long_chains.json", help="Output native chain records")
+    ap.add_argument("--input", default="data/01_graphs/latex_cross_modal_pairs.json", help="Input pair JSON")
+    ap.add_argument("--output-pairs", default="data/01_graphs/latex_long_chain_pairs.json", help="Output pair-sliced candidates")
+    ap.add_argument("--output-chains", default="data/01_graphs/latex_long_chains.json", help="Output native chain records")
     ap.add_argument("--min-hops", type=int, default=2, help="Minimum chain hops")
     ap.add_argument("--max-hops", type=int, default=4, help="Maximum chain hops")
     ap.add_argument("--max-chains-per-doc", type=int, default=800, help="Cap chains per doc")

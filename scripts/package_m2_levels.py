@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-M2_DIR = DATA_DIR / "m2"
+M2_DIR = DATA_DIR / "05_eval" / "m2"
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -42,7 +42,7 @@ def save_jsonl(rows: List[Dict[str, Any]], path: Path) -> None:
 
 def package_level1() -> List[Dict[str, Any]]:
     """Level 1: Single-element cross-modal queries."""
-    path = DATA_DIR / "l1_cross_modal_queries_v3.jsonl"
+    path = DATA_DIR / "03_queries" / "l1_cross_modal_queries_v3.jsonl"
     rows = load_jsonl(path)
     for r in rows:
         r["difficulty_level"] = 1
@@ -65,8 +65,8 @@ def _glob_l2_pass_files() -> List[Path]:
     """Find all L2 pass files (including production batches)."""
     import glob
     files = [
-        DATA_DIR / "l1_dual_evidence_queries_v3_pass.jsonl",
-        DATA_DIR / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl",
+        PROJECT_ROOT / "archive" / "data_legacy" / "queries_v1_v3" / "l1_dual_evidence_queries_v3_pass.jsonl",
+        PROJECT_ROOT / "archive" / "data_legacy" / "queries_v1_v3" / "l1_dual_evidence_queries_v4_4_run1_pass.jsonl",
         M2_DIR / "l2_new_batch_pass.jsonl",
     ]
     # Auto-discover production batch L2 pass files
@@ -153,9 +153,9 @@ def package_level3() -> List[Dict[str, Any]]:
 def repackage_exp_b() -> Dict[str, Any]:
     """Repackage Phase0 eval report for Experiment B."""
     report_paths = [
-        DATA_DIR / "phase0_eval_report_v3_tuned.json",
+        DATA_DIR / "05_eval" / "phase0_eval_report_v3_final.json",
+        PROJECT_ROOT / "archive" / "data_legacy" / "eval_old" / "phase0_eval_report_v3_tuned.json",
         DATA_DIR / "phase0_eval_report_bugfix.json",
-        DATA_DIR / "phase0_eval_report_tuned.json",
     ]
     report: Dict[str, Any] = {}
     for p in report_paths:

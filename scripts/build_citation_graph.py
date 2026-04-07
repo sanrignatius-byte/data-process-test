@@ -605,12 +605,12 @@ def main():
     )
     parser.add_argument(
         "--input",
-        default="data/latex_reference_graph.json",
+        default="data/01_graphs/latex_reference_graph.json",
         help="Input: LaTeX reference graph JSON (from build_latex_reference_graph.py)",
     )
     parser.add_argument(
         "--output",
-        default="data/citation_graph.json",
+        default="data/01_graphs/citation_graph.json",
         help="Output: citation graph JSON",
     )
     parser.add_argument(

@@ -1737,15 +1737,15 @@ def write_json(path: Path, payload: Dict[str, Any]) -> None:
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Analyze LaTeX topology (v2) with backbone + cross-doc edges.")
-    ap.add_argument("--latex-graph", default="data/latex_reference_graph.json")
-    ap.add_argument("--elements", default="data/multimodal_elements.json")
-    ap.add_argument("--cross-modal-pairs", default="data/latex_cross_modal_pairs.json")
-    ap.add_argument("--citation-graph", default="data/citation_graph.json")
-    ap.add_argument("--mineru-output", default="data/mineru_output",
+    ap.add_argument("--latex-graph", default="data/01_graphs/latex_reference_graph.json")
+    ap.add_argument("--elements", default="data/01_graphs/multimodal_elements.json")
+    ap.add_argument("--cross-modal-pairs", default="data/01_graphs/latex_cross_modal_pairs.json")
+    ap.add_argument("--citation-graph", default="data/01_graphs/citation_graph.json")
+    ap.add_argument("--mineru-output", default="data/00_raw/mineru_output",
                     help="MinerU output directory containing per-doc content_list.json files")
-    ap.add_argument("--output-report", default="data/latex_graph_topology_report.json")
-    ap.add_argument("--output-hubs", default="data/latex_graph_hubs.json")
-    ap.add_argument("--output-candidates", default="data/latex_hub_multihop_candidates.json")
+    ap.add_argument("--output-report", default="data/01_graphs/latex_graph_topology_report.json")
+    ap.add_argument("--output-hubs", default="data/01_graphs/latex_graph_hubs.json")
+    ap.add_argument("--output-candidates", default="data/01_graphs/latex_hub_multihop_candidates.json")
     ap.add_argument("--top-k-hubs", type=int, default=60)
     ap.add_argument("--min-hops", type=int, default=2,
                     help="Recorded in output metadata only; does NOT filter enumeration (paths are 2-4 hops by design).")

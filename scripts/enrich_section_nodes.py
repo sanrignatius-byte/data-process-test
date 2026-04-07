@@ -176,8 +176,8 @@ def build_prompt(row: Dict[str, Any]) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Enrich section/subsection nodes with semantic summaries")
-    ap.add_argument("--reference-graph", default="data/latex_reference_graph.json")
-    ap.add_argument("--output", default="data/section_nodes_enriched.json")
+    ap.add_argument("--reference-graph", default="data/01_graphs/latex_reference_graph.json")
+    ap.add_argument("--output", default="data/02_enriched/section_nodes_enriched.json")
     ap.add_argument("--provider", choices=["anthropic", "openai", "company"], default="company")
     ap.add_argument("--model", default=None)
     ap.add_argument("--company-api-url", default=os.environ.get("COMPANY_API_URL", ""))

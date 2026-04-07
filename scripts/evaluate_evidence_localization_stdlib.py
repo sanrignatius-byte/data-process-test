@@ -599,16 +599,16 @@ def evaluate_method(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Classic retrieval eval (pure stdlib)")
-    ap.add_argument("--q1", type=Path, default=Path("data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
-    ap.add_argument("--q2", type=Path, default=Path("data/l1_dual_evidence_queries_v3_pass.jsonl"))
+    ap.add_argument("--q1", type=Path, default=Path("data/03_queries/l1_dual_evidence_queries_v4_4_run1_pass.jsonl"))
+    ap.add_argument("--q2", type=Path, default=Path("data/03_queries/l1_dual_evidence_queries_v3_pass.jsonl"))
     ap.add_argument("--q3", type=Path, default=None)
-    ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
-    ap.add_argument("--hub-candidates", type=Path, default=Path("data111/hub_candidates_enriched_v2.json"))
-    ap.add_argument("--citation-graph", type=Path, default=Path("data/citation_graph.json"))
+    ap.add_argument("--elements", type=Path, default=Path("data/02_enriched/multimodal_elements_enriched.json"))
+    ap.add_argument("--hub-candidates", type=Path, default=Path("data/02_enriched/hub_candidates_enriched_v2.json"))
+    ap.add_argument("--citation-graph", type=Path, default=Path("data/01_graphs/citation_graph.json"))
     ap.add_argument("--methods", nargs="+", default=DEFAULT_METHODS)
     ap.add_argument("--top-k", type=int, default=20)
     ap.add_argument("--max-chars", type=int, default=2000)
-    ap.add_argument("--output", type=Path, default=Path("data/m2/eval_classic_stdlib.json"))
+    ap.add_argument("--output", type=Path, default=Path("data/05_eval/m2/eval_classic_stdlib.json"))
     args = ap.parse_args()
 
     rows = load_jsonl(args.q1) + load_jsonl(args.q2)

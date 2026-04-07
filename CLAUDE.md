@@ -52,6 +52,48 @@ log_run(
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-04-05 更新｜GraphAware 负样本实现 + 全量导出验证）
+
+### 本轮完成（相对 2026-04-03）
+
+- **GraphAwareNegativeSampler 实现**（`src/sampling/negative_sampler.py`）
+  - `_build_adjacency()` 从 `hub_candidates_enriched_v3.json` 构建元素邻接表
+    - Source 1：`adjacent_bridge_adjacency` → intra-doc element ↔ element 边（224 条）
+    - Source 2：`pairs.path` → 过滤 hub 节点后，路径端点直接连边（cross-doc）
+    - 结果：**365 个 element 节点，530 条边**
+  - `sample()` 优先采 1-hop 邻居（结构 hard negatives），不足时 random 补齐
+  - `build_sampler()` factory 支持 `hub_candidates_path` 参数
+  - 替换原有 stub（原 stub 直接 fallback 到 random，无图信息）
+
+- **`_build_element_index` bug 修复**（`src/export/dataset_builder.py`）
+  - 原代码只处理 list 或 `{"elements": [...]}` 格式
+  - 项目实际格式为 `{"documents": {doc_id: {"elements": {...}}}}` 嵌套字典
+  - 修复后：`Element index: 0 entries` → **1316 entries**，`hard_negatives` 从全空到正确填充
+
+- **全量导出验证（1461 条）**
+  - `normalize_queries.py` → 1461/1461 成功转换
+  - `export_training_data.py --negative-strategy graph_aware` → 全链路跑通
+  - train/val/test：1368 / 48 / 45（doc-level hash split，93.6% / 3.3% / 3.1%）
+  - graph-adjacent negatives：1034/4104（**25.2%**）；其余 random 补齐
+
+- **新增 8 个测试**（`tests/test_negative_sampling.py`）
+  - `TestBuildAdjacency`（3 项）：intra-doc 边、cross-doc 路径边、missing file fallback
+  - `TestGraphAwareNegativeSampler`（5 项）：邻居优先、排除正样本、random 补齐、无图 fallback、factory 构建
+  - 总测试：**70/70 pass**（原 62）
+
+### 本轮核心教训
+
+> **`_build_element_index` 要适配实际的 JSON 格式。** 云端写代码时假设了 `{"elements": [...]}` 结构，本地运行才发现项目实际格式是三层嵌套 `documents → doc_id → elements`。本地测试是发现这类格式假设 bug 的唯一途径。
+
+### 图贯穿全链路（novelty 角度）
+
+图在 pipeline 的三个阶段都有实质贡献：
+1. **生成阶段**：bridge grounding 注入 query prompt（P0-P4，MRR +0.121）
+2. **检索阶段**：neighbor propagation 沿图传播（R@10 = 1.000）
+3. **训练阶段**：graph-aware negatives 迫使模型学习精确证据定位（25.2% 结构 hard negatives）
+
+---
+
 ## 当前状态（2026-04-03 更新｜Phase A Training Pipeline + Review 修复）
 
 ### 本轮完成（相对 2026-03-30）
@@ -133,11 +175,13 @@ log_run(
 | Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
 | Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | 已完成 |
 | Phase 1.5 ✅ | Enrichment 消融实验 + Exp C enriched 复验 | 已完成 |
-| **Phase 1.7 ✅** | **P0-P4 Bridge Grounding 增强 + L3 质量验证** | **2026-03-24 完成** |
-| **Phase 2A ⏳** | **L3 全量重跑 + 量产 1500+ queries** → 初代 benchmark | 本周 |
-| **Phase 2B ⏳** | **Embedding 语义边** → 图增强 v2 | 本周 |
-| Phase 3 | 合并 2A+2B → 增强图 + 大数据集 → 最终实验 | 下周 |
-| Phase 4 | Multi-turn session + M4 联合验证 | 1-2 周 |
+| Phase 1.7 ✅ | P0-P4 Bridge Grounding 增强 + L3 质量验证 | 2026-03-24 完成 |
+| **Phase A ✅** | **Training Pipeline：Schema + Export + GraphAware Negative Sampling（70 tests）** | **2026-04-05 完成** |
+| **Phase 2A ⏳** | **L3 全量重跑 + 量产 1500+ queries** → 初代 benchmark（需新 API key） | 待执行 |
+| **Phase B ⏳** | **Embedding Hard Negative Sampler**（Qwen3-Embedding-4B，GPU，$0 LLM） | 下一步 |
+| Phase 2B | Embedding 语义边 → 图增强 v2 | 待执行 |
+| Phase 3 | 合并 2A+2B → 增强图 + 大数据集 → 最终实验 | 后续 |
+| Phase 4 | Multi-turn session + M4 联合验证 | 后续 |
 
 ---
 
@@ -183,7 +227,7 @@ log_run(
 - **组件权重解耦**：新增 `--hub-weight/--nprop-weight/--cite-weight` 独立调参；最优配置 hw=0.15, nd=0.20, cw=0.0
 - **关键发现**：neighbor_prop（1-hop 邻域标签传播）是核心信号，能拯救 11 条 BM25 遗漏的 queries；citation_walk 为负贡献（doc-level 粒度与 element-level 证据定位不匹配），应在 graph_full 中关闭；2-hop 不如 1-hop
 - **MoDora 工作流代码已实现并通过静态审计**（A1/A2/B1/B2/C1 + PersonaHub；其余子项以脚本能力为准），但尚未完成 500 candidates 全量运行验证
-- **产物文件**：`data111/hub_candidates_enriched_v3.json`、`data/phase0_eval_report_v3_tuned.json`
+- **产物文件**：`data/02_enriched/hub_candidates_enriched_v3.json`、`data/05_eval/phase0_eval_report_v3_tuned.json`
 
 ### 本轮关键结论
 - **Graph 效果验证已达标，支撑 4 月专利申请**。核心机制（bridge hub topology → element adjacency → 1-hop label propagation）全程纯规则，零 LLM 成本
@@ -273,13 +317,13 @@ log_run(
 - **Section-level Enrichment 完成**
   - `enrich_section_nodes.py` 新增 `--incremental` + `--flush-every`（断点续跑）
   - 1417 个 section/subsection/subsubsection 节点全部 enriched（82 篇文档）
-  - 输出：`data/m2/section_nodes_enriched_2026-03-26.json`
+  - 输出：`data/05_eval/m2/section_nodes_enriched_2026-03-26.json`
   - 费用：$8.29（gpt-5.4）
 
 - **Section-Enriched Query 生成完成**
   - L2: 249 pass / 428 total（58.2%，vs baseline 57.2%）
   - L3: **80 pass / 122 total（65.6%，vs baseline 48.1%）** — 数量翻倍
-  - 输出：`data/m2/l{2,3}_production_2026-03-26_section_enriched{,_pass}.jsonl`
+  - 输出：`data/05_eval/m2/l{2,3}_production_2026-03-26_section_enriched{,_pass}.jsonl`
 
 - **graph_full 权重调优完成**
   - Grid search: nprop_weight 0.20 → 1.00 是最大改进
@@ -355,7 +399,7 @@ log_run(
   - 对 figure/table/formula 三类元素分别用类型特化 prompt 生成结构化描述
   - 输出 `enriched_title` / `enriched_metadata` / `enriched_content` 三个新字段（不覆盖原字段）
   - 支持 `--provider`（anthropic/openai/company）、`--incremental`（增量模式）、`--dry-run`
-  - 输出：`data/multimodal_elements_enriched.json`
+  - 输出：`data/02_enriched/multimodal_elements_enriched.json`
 - **P1：Hub Cascade Summary 增强**
   - `enrich_hub_candidates.py` 新增 `--enriched-elements` 参数
   - 新增 `build_hub_semantic_summary()` 函数：聚合两端元素 enriched 描述 + edge context + keywords
@@ -375,24 +419,24 @@ log_run(
 ```bash
 # Step 0: Element enrichment（MoDora-style [T]/[M]/[C]）
 python scripts/enrich_elements_modora.py \
-    --input data/multimodal_elements.json \
-    --output data/multimodal_elements_enriched.json \
+    --input data/01_graphs/multimodal_elements.json \
+    --output data/02_enriched/multimodal_elements_enriched.json \
     --provider anthropic \
     --model claude-sonnet-4-5-20250929 \
     --delay 0.3
 
 # Step 1: Hub enrichment（传入 enriched elements）
 python scripts/enrich_hub_candidates.py \
-    --hub-candidates data/latex_hub_multihop_candidates.json \
-    --elements data/multimodal_elements.json \
-    --latex-graph data/latex_reference_graph.json \
-    --enriched-elements data/multimodal_elements_enriched.json \
-    --output data/hub_candidates_enriched_v2.json
+    --hub-candidates data/01_graphs/latex_hub_multihop_candidates.json \
+    --elements data/01_graphs/multimodal_elements.json \
+    --latex-graph data/01_graphs/latex_reference_graph.json \
+    --enriched-elements data/02_enriched/multimodal_elements_enriched.json \
+    --output data/02_enriched/hub_candidates_enriched_v2.json
 
 # Step 2: Query generation（自动使用 enriched context）
 python scripts/generate_multihop_l1_queries.py \
-    --candidates data/hub_candidates_enriched_v2.json \
-    --output data/l1_dual_evidence_queries_hub_enriched_v1.jsonl \
+    --candidates data/02_enriched/hub_candidates_enriched_v2.json \
+    --output data/03_queries/l1_dual_evidence_queries_hub_enriched_v1.jsonl \
     --pass-only \
     --provider anthropic \
     --model claude-sonnet-4-5-20250929 \
@@ -412,8 +456,8 @@ python scripts/generate_multihop_l1_queries.py \
   - 图像用 OpenAI 兼容 `image_url` 格式发送（yunwu.ai 是 OpenAI-compat 代理）
   - `main.py` demo 脚本可做连通性测试
 - **v4.4 run1 已有真实产物**（前序补记）
-  - `data/l1_dual_evidence_queries_v4_4_run1.jsonl`：252 条
-  - `data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：113 条（44.8% pass）
+  - `data/03_queries/l1_dual_evidence_queries_v4_4_run1.jsonl`：252 条
+  - `data/03_queries/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：113 条（44.8% pass）
 
 ### 本轮关键技术发现
 - **公司 API 是 OpenAI-compat**：endpoint `/v1/chat/completions`，请求格式与 OpenAI SDK 一致，但走 `local_api_logger` 包装器自动记录 token 统计
@@ -462,9 +506,9 @@ python scripts/generate_multihop_l1_queries.py \
 - **Bridge hub vs Authority hub 区分**：高被引 formula 节点（如 in_from_paragraphs=49）会主导旧评分，实为 authority sink；真正有用的是覆盖多模态的 paragraph bridge
 
 ### 输出文件（新增）
-- `data/latex_graph_topology_report.json` — 拓扑统计报告（节点/边/label匹配/hub分类）
-- `data/latex_graph_hubs.json` — bridge_hubs 60 个 + adjacent_backbone_bridges 369 条
-- `data/latex_hub_multihop_candidates.json` — **500 条候选对**（含 path, seed_question, page_span, line_no_span）
+- `data/01_graphs/latex_graph_topology_report.json` — 拓扑统计报告（节点/边/label匹配/hub分类）
+- `data/01_graphs/latex_graph_hubs.json` — bridge_hubs 60 个 + adjacent_backbone_bridges 369 条
+- `data/01_graphs/latex_hub_multihop_candidates.json` — **500 条候选对**（含 path, seed_question, page_span, line_no_span）
 
 ### 下一步（已确定）
 1. **P0（最高优先）**：将 500 条 topology candidates 喂给 `generate_multihop_l1_queries.py` 生成新 L1 hub-multihop queries
@@ -476,7 +520,7 @@ python scripts/generate_multihop_l1_queries.py \
 ## 当前状态（2026-02-24 更新｜Dual-evidence + Cross-doc）
 
 ### 本轮完成（相对 2026-02-22）
-- **L1 dual-evidence 官方批次完成**（`data/l1_dual_evidence_queries_slurm_img150_tuned_v4_official.jsonl`）
+- **L1 dual-evidence 官方批次完成**（`data/03_queries/l1_dual_evidence_queries_slurm_img150_tuned_v4_official.jsonl`）
   - 总量 222，QC pass 173，pass rate 77.93%
   - pair_type: figure+table 144 / figure+formula 62 / formula+table 16
 - **Triplet 构建完成（v1 + v2）**
@@ -484,10 +528,10 @@ python scripts/generate_multihop_l1_queries.py \
   - v2：`in_doc_swap + same_type_hard_plus`，并加入 `text_short`、图像覆盖统计
   - v2 all：222 triplets，avg_difficulty 0.7288，positive image coverage 100%
 - **本地 embedding 跨文档匹配跑通（Qwen3-Embedding-4B）**
-  - 输出：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B.jsonl`
+  - 输出：`data/00_raw/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B.jsonl`
   - records 590（top-k=20，总 match 11800）
 - **4B 匹配审计完成**
-  - 报告：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_audit.json`
+  - 报告：`data/00_raw/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_audit.json`
   - baseline: top1_mean 0.8822，top10 target concentration 0.3153，unique top1 targets 186，suspicious 241
 - **Stage-B Utility-aware Rerank 已落地**
   - 脚本：`scripts/rerank_mineru_crossdoc_matches.py`
@@ -513,10 +557,10 @@ python scripts/generate_multihop_l1_queries.py \
   - `figure+formula`
   - `formula+table`
 - **不含单独 `figure+text / table+text / formula+text` 作为本轮 dual-evidence 训练单元**
-  - 单图文 L1 历史线仍在：`data/l1_cross_modal_queries_v3.jsonl`
+  - 单图文 L1 历史线仍在：`data/03_queries/l1_cross_modal_queries_v3.jsonl`
 
 ### 下一步（已确定）
-1. 冻结平衡版 cross-doc 候选：`data/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_v2b_cap10.jsonl`
+1. 冻结平衡版 cross-doc 候选：`data/00_raw/mineru_crossdoc_embedding_matches_Qwen3-Embedding-4B_v2b_cap10.jsonl`
 2. 建立 100-300 条人工标注小基准（relevance / hop_utility / redundancy / error_type）
 3. 生成 triplet v3：在保留 `in_doc_swap` 基础上，引入 reranked cross-doc hard negatives
 4. 做最小消融：embedding-only vs +hub/diversity rerank vs +context rerank
@@ -540,7 +584,7 @@ python scripts/generate_multihop_l1_queries.py \
   - v3: 42 条, **19 QC pass** (anchor_leakage 仍是主因: 21/23 fail)
 - **L1 Cross-modal Dual-evidence v1** — 300 条, **43 QC pass (14.3%)**
 - **L1 Cross-modal Dual-evidence v2（hard-gate）** — 296 条, **19 QC pass (6.42%)**，已导出 pass 子集
-- **Step 0 v3.2 v3（G1+G2，集群已跑）** — **118 对**（proximity:105 + direct:13），gold:6 + silver:112，label 匹配率 28.8%（`data/latex_cross_modal_pairs.json`）
+- **Step 0 v3.2 v3（G1+G2，集群已跑）** — **118 对**（proximity:105 + direct:13），gold:6 + silver:112，label 匹配率 28.8%（`data/01_graphs/latex_cross_modal_pairs.json`）
   - G1: hub de-dup（每 element ≤3 pairs by quality_score）
   - G2: cross-reference gate（ctx_a mention label_b OR ctx_b mention label_a，否则 hard drop）
   - char_proximity_limit: 300 chars（从 1000 缩紧）
@@ -553,19 +597,19 @@ python scripts/generate_multihop_l1_queries.py \
   - 核心改进: Rule 8 DE-NAME→Conceptual Masking；新增 cross-modal operator 约束；required_evidence_spans 字段；bridge_entity_leakage 降为软警告 (Option A)
   - figure+table: ~69%；figure+formula: 24/74 (32.4%)；formula+table: 9/16 (56.3%)
   - QC 主失败: single_element_answer:60, anchor_leakage:20, weak_reasoning_connector:19
-  - 输出: `data/l1_dual_evidence_queries_v1.jsonl`
+  - 输出: `data/03_queries/l1_dual_evidence_queries_v1.jsonl`
 - **L1 Dual-evidence v4.1（opus figure+formula prompt + operator diversity + is_yes_no fix）** — **236 条, 138 QC pass (58.5%)**, $2.39
   - 输入: 同 118 对 latex_cross_modal_pairs
   - 核心改进: opus-4-6 重设计 PROMPT_FIGURE_FORMULA（Figure Type Strategy, 双 field）；禁 instantiate；is_yes_no_question WH-word 修复；--pass-only 硬门禁
   - figure+table: 101/146 (69.2%) ↑；figure+formula: 30/74 (40.5%) ↑；formula+table: 7/16 (43.8%) ↓
   - QC 主失败: single_element_answer:62, anchor_leakage:39 ↑（回归），weak_reasoning_connector:6 ↓
-  - 输出: `data/l1_dual_evidence_queries_v2.jsonl`（138 条纯净 pass-only）
+  - 输出: `data/03_queries/l1_dual_evidence_queries_v2.jsonl`（138 条纯净 pass-only）
 - **L1 Dual-evidence v4.2（PhD persona + verb diversity + natural operators）** — **236 条, 152 QC pass (64.4%)**, $2.57
   - 输入: 同 118 对 latex_cross_modal_pairs
   - 核心改进: persona "PhD student at lab meeting"（消除学术腔）；verb 黑名单（validate/quantify/justify/demonstrate 等）；SENTENCE STRUCTURE 多样性约束（GIVEN-WHY/WHAT-IF/WHY-INCONSISTENT/WHEN-CONDITION/WHAT-CAUSES）；CROSS_MODAL_OPERATORS 扩展自然英文动词（affect/differ/produce/achieve 等）；双文件输出（full + _pass）；is_yes_no WH-word 修复完善
   - figure+table: 111/146 (**76.0%**) ↑↑；figure+formula: 34/74 (**45.9%**) ↑；formula+table: 7/16 (43.8%)
   - QC 主失败: single_element_answer:57 ↓, anchor_leakage:29 ↓↓, weak_reasoning_connector:4 ↓
-  - 输出: `data/l1_dual_evidence_queries_v3.jsonl`（全量 236 条）+ `data/l1_dual_evidence_queries_v3_pass.jsonl`（152 条）
+  - 输出: `data/03_queries/l1_dual_evidence_queries_v3.jsonl`（全量 236 条）+ `data/03_queries/l1_dual_evidence_queries_v3_pass.jsonl`（152 条）
 
 ### L2 迭代历史
 | 版本 | 结果 | 核心问题 |
@@ -614,27 +658,27 @@ python scripts/generate_multihop_l1_queries.py \
 | `scripts/generate_multihop_l1_queries.py` | **L1 multihop/cross-modal 生成脚本（本轮重点）** |
 | `scripts/build_multimodal_relationships.py` | **Step 0 v2: 多模态关系构建（DAG + 全模态）** |
 | `src/linkers/multimodal_relationship_builder.py` | **多模态关系核心模块（figure/table/formula/section DAG）** |
-| `data/figure_text_pairs.json` | 351 figure-text pairs (Step 0 v1 输出) |
-| `data/multimodal_elements.json` | **1316 多模态元素 + 1261 引用边 + 1135 跨模态 pair (Step 0 v2)** |
-| `data/multimodal_report.json` | Step 0 v2 统计报告 |
-| `data/l1_cross_modal_queries_v3.jsonl` | **最终输出：974 条 L1 queries** |
-| `data/l1_triage_v3.jsonl` | **L1 分拣结果（含 triage/reasons 字段）** |
-| `data/l1_triage_report_v3.json` | L1 分拣统计报告 |
-| `data/l2_candidate_pairs_v1.json` | L2 候选文档对 top-100 (v1, 含 generic entities) |
-| `data/l2_candidate_pairs_v2.json` | **L2 候选文档对 43 对 (v2, filtered)** |
-| `data/l2_queries_v1.jsonl` | L2 跨文档 queries 50 条 (v1, QC 过松) |
-| `data/l2_queries_v2.jsonl` | L2 跨文档 queries 32 条 (v2, 16 QC pass) |
-| `data/l2_queries_v2_tagged.jsonl` | L2 v2 reviewer-tagged (keep/fix/drop) |
-| `data/l2_queries_v3.jsonl` | **L2 v3 输出 (待生成)** |
-| `data/l1_multihop_queries_v1.jsonl` | L1 multihop v1（300 条，43 pass） |
-| `data/l1_multihop_queries_v2.jsonl` | L1 multihop v2 hard-gate（296 条，19 pass） |
-| `data/l1_multihop_queries_v2_pass.jsonl` | v2 通过集（19 条） |
-| `data/l1_multihop_queries_v3.jsonl` | L1 multihop v3 LaTeX-bridge（236 条，72 pass，30.5%） |
-| `data/l1_dual_evidence_queries_v1.jsonl` | **L1 dual-evidence v4（236 条，139 pass，58.9%）** |
-| `data/l1_dual_evidence_queries_v2.jsonl` | L1 dual-evidence v4.1（138 条，pass-only） |
-| `data/l1_dual_evidence_queries_v3.jsonl` | **L1 dual-evidence v4.2 全量（236 条，含 fail）** |
-| `data/l1_dual_evidence_queries_v3_pass.jsonl` | **L1 dual-evidence v4.2 通过集（152 条，64.4%）** |
-| `data/figure_descriptions_v3_api.json` | 完整 API 返回（含 raw response） |
+| `data/02_enriched/figure_text_pairs.json` | 351 figure-text pairs (Step 0 v1 输出) |
+| `data/01_graphs/multimodal_elements.json` | **1316 多模态元素 + 1261 引用边 + 1135 跨模态 pair (Step 0 v2)** |
+| `data/01_graphs/multimodal_report.json` | Step 0 v2 统计报告 |
+| `data/03_queries/l1_cross_modal_queries_v3.jsonl` | **最终输出：974 条 L1 queries** |
+| `data/03_queries/l1_triage_v3.jsonl` | **L1 分拣结果（含 triage/reasons 字段）** |
+| `data/03_queries/l1_triage_report_v3.json` | L1 分拣统计报告 |
+| `data/03_queries/l2_candidate_pairs_v1.json` | L2 候选文档对 top-100 (v1, 含 generic entities) |
+| `data/03_queries/l2_candidate_pairs_v2.json` | **L2 候选文档对 43 对 (v2, filtered)** |
+| `data/03_queries/l2_queries_v1.jsonl` | L2 跨文档 queries 50 条 (v1, QC 过松) |
+| `data/03_queries/l2_queries_v2.jsonl` | L2 跨文档 queries 32 条 (v2, 16 QC pass) |
+| `data/03_queries/l2_queries_v2_tagged.jsonl` | L2 v2 reviewer-tagged (keep/fix/drop) |
+| `data/03_queries/l2_queries_v3.jsonl` | **L2 v3 输出 (待生成)** |
+| `data/03_queries/l1_multihop_queries_v1.jsonl` | L1 multihop v1（300 条，43 pass） |
+| `data/03_queries/l1_multihop_queries_v2.jsonl` | L1 multihop v2 hard-gate（296 条，19 pass） |
+| `data/03_queries/l1_multihop_queries_v2_pass.jsonl` | v2 通过集（19 条） |
+| `data/03_queries/l1_multihop_queries_v3.jsonl` | L1 multihop v3 LaTeX-bridge（236 条，72 pass，30.5%） |
+| `data/03_queries/l1_dual_evidence_queries_v1.jsonl` | **L1 dual-evidence v4（236 条，139 pass，58.9%）** |
+| `data/03_queries/l1_dual_evidence_queries_v2.jsonl` | L1 dual-evidence v4.1（138 条，pass-only） |
+| `data/03_queries/l1_dual_evidence_queries_v3.jsonl` | **L1 dual-evidence v4.2 全量（236 条，含 fail）** |
+| `data/03_queries/l1_dual_evidence_queries_v3_pass.jsonl` | **L1 dual-evidence v4.2 通过集（152 条，64.4%）** |
+| `data/03_queries/figure_descriptions_v3_api.json` | 完整 API 返回（含 raw response） |
 | `data/validation_report_v3.json` | Validation 报告 |
 | `docs/L1_query_iteration_report.md` | 迭代改进报告（含 L1 triage + L2 候选） |
 | `src/parsers/latex_reference_extractor.py` | **Step 0 v3: LaTeX 引用解析（label/ref/cite/bbl + title 提取）** |
@@ -642,17 +686,17 @@ python scripts/generate_multihop_l1_queries.py \
 | `scripts/build_citation_graph.py` | **Step 0 v3.1: 跨文档引用图（.bbl → corpus 匹配）** |
 | `scripts/build_latex_cross_modal_links.py` | **Step 0 v3.2: LaTeX \ref{} 共引 → MinerU 跨模态对 + bridge evidence** |
 | `scripts/download_latex_sources.py` | LaTeX 源码下载脚本（arXiv API） |
-| `data/latex_reference_graph.json` | 73 篇文档内引用 DAG（labels + refs + edges + bib） |
-| `data/citation_graph.json` | **跨文档引用图：100 条引用边, 49 篇最大连通分量** |
-| `data/latex_cross_modal_pairs.json` | **LaTeX 增强跨模态对（v2: 175 对；重跑 v3 后更新）** |
-| `data/latex_reference_report.json` | 引用图统计报告 |
+| `data/01_graphs/latex_reference_graph.json` | 73 篇文档内引用 DAG（labels + refs + edges + bib） |
+| `data/01_graphs/citation_graph.json` | **跨文档引用图：100 条引用边, 49 篇最大连通分量** |
+| `data/01_graphs/latex_cross_modal_pairs.json` | **LaTeX 增强跨模态对（v2: 175 对；重跑 v3 后更新）** |
+| `data/01_graphs/latex_reference_report.json` | 引用图统计报告 |
 | `src/linkers/figure_text_associator.py` | Step 0: 图文关联模块 |
 | `scripts/analyze_latex_graph_topology.py` | **LaTeX 拓扑分析 v2（backbone+bridge-first+adj_bridge+cross_doc+page_idx）** |
-| `data/latex_graph_topology_report.json` | 拓扑统计报告（2551 nodes, 3471 edges, 49.8% label match） |
-| `data/latex_graph_hubs.json` | bridge_hubs 60 个 + adjacent_backbone_bridges 369 条 |
-| `data/latex_hub_multihop_candidates.json` | **Hub multi-hop 候选对 500 条（含 page_span/line_no_span/seed）** |
+| `data/01_graphs/latex_graph_topology_report.json` | 拓扑统计报告（2551 nodes, 3471 edges, 49.8% label match） |
+| `data/01_graphs/latex_graph_hubs.json` | bridge_hubs 60 个 + adjacent_backbone_bridges 369 条 |
+| `data/01_graphs/latex_hub_multihop_candidates.json` | **Hub multi-hop 候选对 500 条（含 page_span/line_no_span/seed）** |
 | `scripts/enrich_elements_modora.py` | **MoDora-style [T]/[M]/[C] 元素语义增强（figure/table/formula）** |
-| `data/multimodal_elements_enriched.json` | **MoDora enriched 元素（含 enriched_title/metadata/content）——待生成** |
+| `data/02_enriched/multimodal_elements_enriched.json` | **MoDora enriched 元素（含 enriched_title/metadata/content）——待生成** |
 | `docs/MODORA_INTEGRATION_ANALYSIS.md` | **MoDora CCTree 整合分析文档** |
 | `docs/M4_STRATEGY_REVIEW_2026-03-18.md` | **M4 战略重定位文档（诚实现状评估 + 路线图）** |
 | `docs/M4_SCHEMAS.md` | **M4 三套数据 Schema（multi-hop / cross-doc / multi-turn）** |
@@ -661,11 +705,11 @@ python scripts/generate_multihop_l1_queries.py \
 | `scripts/package_m2_levels.py` | **M2: 三层数据打包（L1+L2+combined，统一 schema）** |
 | `scripts/run_exp_a_difficulty.py` | **M2 Exp A: BM25 Recall@10 难度梯度实验（L1 vs L2 vs L3）** |
 | `scripts/run_exp_c_qa_triangle.py` | **M2 Exp C: BM25 vs Graph 证据覆盖 + LLM QA 对比** |
-| `data/m2/level1_single_element.jsonl` | **M2 Level 1 数据（974 条单元素 query）** |
-| `data/m2/level2_dual_evidence.jsonl` | **M2 Level 2 数据（157 条双证据 query）** |
-| `data/m2/all_levels_combined.jsonl` | **M2 全量合并（1131 条，含 difficulty_level 字段）** |
-| `data/m2/l3_candidates_filtered.json` | **M2 Level 3 候选（130 条 3-hop 候选，待生成 query）** |
-| `data/m2/exp_b_retrieval_enhancement.json` | **M2 Exp B 结果（复用 Phase0 eval v3）** |
+| `data/05_eval/m2/level1_single_element.jsonl` | **M2 Level 1 数据（974 条单元素 query）** |
+| `data/05_eval/m2/level2_dual_evidence.jsonl` | **M2 Level 2 数据（157 条双证据 query）** |
+| `data/05_eval/m2/all_levels_combined.jsonl` | **M2 全量合并（1131 条，含 difficulty_level 字段）** |
+| `data/05_eval/m2/l3_candidates_filtered.json` | **M2 Level 3 候选（130 条 3-hop 候选，待生成 query）** |
+| `data/05_eval/m2/exp_b_retrieval_enhancement.json` | **M2 Exp B 结果（复用 Phase0 eval v3）** |
 | `main.py` | **公司 API 连通性测试脚本（yunwu.ai demo）** |
 | `local_api_logger/` | **公司 API 日志库（wrap_requests_call + token 统计）——需用户放入** |
 | `src/models/training.py` | **Phase A: Pydantic 训练数据 Schema（StandardQuery/Triplet/EvidenceSpan/ReasoningStep）** |
@@ -727,8 +771,8 @@ python scripts/generate_multihop_l1_queries.py \
   - 生成与QC：`scripts/generate_multihop_l1_queries.py`
   - 集群入口：`slurm_scripts/07_generate_l1_multihop_v2.sh`
 - **最新一代输出**：
-  - 主文件：`data/l1_multihop_queries_v2.jsonl`（296 条）
-  - 通过子集：`data/l1_multihop_queries_v2_pass.jsonl`（19 条）
+  - 主文件：`data/03_queries/l1_multihop_queries_v2.jsonl`（296 条）
+  - 通过子集：`data/03_queries/l1_multihop_queries_v2_pass.jsonl`（19 条）
   - 作业：`job 27477`（`logs/l1_mh_v2_27477.out`）
 
 ### v2 本轮落地改动（hard-gate）
@@ -775,7 +819,7 @@ python scripts/generate_multihop_l1_queries.py \
 | C1: Enrichment 噪声过滤器 | ✅ | `scripts/generate_multihop_l1_queries.py` | 随 query 生成自动生效 |
 | C3: Hub summary 压缩重写 | ✅ | `scripts/enrich_hub_candidates.py` | 已在 v3 enrichment 中使用 |
 | D1: `qc_real_user_query()` | ✅ | `scripts/generate_multihop_l1_queries.py` | 需 real_user queries 触发 |
-| PersonaHub 人设 (50 类) | ✅ | `scripts/generate_multihop_l1_queries.py` + `data/personahub_academic_personas.json` | 需 `--use-persona` 全量跑 |
+| PersonaHub 人设 (50 类) | ✅ | `scripts/generate_multihop_l1_queries.py` + `data/02_enriched/personahub_academic_personas.json` | 需 `--use-persona` 全量跑 |
 | MoDora enrichment 脚本 | ✅ | `scripts/enrich_elements_modora.py` | 需跑生成 `multimodal_elements_enriched.json` |
 
 ### P0（本周，M2 实验执行 — L3 生成 + Exp A/C）
@@ -792,7 +836,7 @@ python scripts/generate_multihop_l1_queries.py \
 ### P0.5（并行保底交付线 — 不因战略升级停摆已有可交付）
 
 8. **全量生成 real-user + persona queries**：`--provider company --query-style mixed --use-persona` 跑 500 hub candidates
-9. **跑 MoDora element enrichment**：生成 `data/multimodal_elements_enriched.json`
+9. **跑 MoDora element enrichment**：生成 `data/02_enriched/multimodal_elements_enriched.json`
 10. **扩充 `docs/GRAPH_ARCHITECTURE.md`**：补充 eval 结果 + 最优配置 + hub 评分细节
 
 ### P1（2 周内，M4 Phase 2 — Multi-document）
@@ -1030,9 +1074,9 @@ python scripts/build_latex_cross_modal_links.py --elements data/multimodal_eleme
    - `scripts/analyze_latex_graph_topology.py`
    - `scripts/analyze_query_quality_focus.py`
    - 产物：
-     - `data/latex_graph_topology_report.json`
-     - `data/latex_graph_hubs.json`
-     - `data/latex_hub_multihop_candidates.json`
+     - `data/01_graphs/latex_graph_topology_report.json`
+     - `data/01_graphs/latex_graph_hubs.json`
+     - `data/01_graphs/latex_hub_multihop_candidates.json`
      - `data/query_quality_focus_report_v4_official.json`
 2. 升级 `scripts/generate_multihop_l1_queries.py` 到 v4.4（长度混合 + 架构图专项 QC）。
 3. 为避免 `anthropic` 依赖问题，已给 `generate_multihop_l1_queries.py` 增加 `--provider openai` 兼容路径（可用 `OpenAI` 客户端直接跑）。
@@ -1054,8 +1098,8 @@ python scripts/build_latex_cross_modal_links.py --elements data/multimodal_eleme
 - 代码侧改造已完成，运行链路已打通到 API 调用前/调用层。
 - 目前缺的是**可用运行环境 + 可用额度 key**，不是 pipeline 代码缺失。
 - 全量 run（150 candidates）尚未产出新文件：
-  - 目标文件：`data/l1_dual_evidence_queries_v4_4_run1.jsonl`
-  - `pass` 子集：`data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`
+  - 目标文件：`data/03_queries/l1_dual_evidence_queries_v4_4_run1.jsonl`
+  - `pass` 子集：`data/03_queries/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`
 
 ### 下一步最短恢复路径
 1. 修复/切换 `minerU` 环境（优先，保证 Anthropic 路径可跑），或
@@ -1068,8 +1112,8 @@ python scripts/build_latex_cross_modal_links.py --elements data/multimodal_eleme
 - 当前仓库已存在并可读取 `v4.4 run1` 产物，状态以本节为准。
 
 ### 已核验产物
-- `data/l1_dual_evidence_queries_v4_4_run1.jsonl`：252 条
-- `data/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：113 条
+- `data/03_queries/l1_dual_evidence_queries_v4_4_run1.jsonl`：252 条
+- `data/03_queries/l1_dual_evidence_queries_v4_4_run1_pass.jsonl`：113 条
 
 ### 本轮结果摘要（run1）
 - 总体：`qc_pass=113`，`qc_fail=139`（44.8% pass）
@@ -1092,7 +1136,7 @@ python scripts/build_latex_cross_modal_links.py --elements data/multimodal_eleme
 - **Phase0 Eval A/B 实验执行完成**（`scripts/run_phase0_eval_ab.py`）
   - 评测集：261 条通过 QC 的 L1 dual-evidence queries（v4_4_run1 113条 + v3 152条），候选库 1314 chunks
   - 运行两轮：保守版（alpha=0.3, citation_decay=0.0）+ Bug修复版（alpha=0.1, citation_decay=0.15）
-  - 产物：`data/phase0_eval_report_tuned.json`、`data/phase0_eval_report_bugfix.json`
+  - 产物：`data/05_eval/phase0_eval_report_tuned.json`、`data/05_eval/phase0_eval_report_bugfix.json`
 
 ### 关键数字（Bug修复版）
 

@@ -930,8 +930,8 @@ def normalize_pair_types(path_nodes: Sequence[Dict[str, Any]]) -> Tuple[str, str
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Iterative long-chain query generation (v2)")
-    ap.add_argument("--candidates", default="data/latex_long_chain_pairs_all_q0.json")
-    ap.add_argument("--output", default="data/l1_dual_evidence_long_chain_queries_v2_iterative.jsonl")
+    ap.add_argument("--candidates", default="data/01_graphs/latex_long_chain_pairs_all_q0.json")
+    ap.add_argument("--output", default="data/03_queries/l1_dual_evidence_long_chain_queries_v2_iterative.jsonl")
     ap.add_argument("--pass-only", action="store_true")
     ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
     ap.add_argument("--judge-model", default="claude-sonnet-4-5-20250929")

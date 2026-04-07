@@ -6,7 +6,7 @@ End-to-end pipeline::
     raw L1/L2/L3 JSONL
         → normalize_queries.py  (if not already done)
         → export_training_data.py
-        → data/contrastive_data/v<N>/
+        → data/04_triplets/contrastive_data/v<N>/
               train.jsonl
               val.jsonl
               test.jsonl
@@ -22,8 +22,8 @@ Usage
     # Custom paths / config
     python scripts/export_training_data.py \\
         --queries  data/queries_normalized.jsonl \\
-        --elements data/multimodal_elements.json \\
-        --output   data/contrastive_data/v2 \\
+        --elements data/01_graphs/multimodal_elements.json \\
+        --output   data/04_triplets/contrastive_data/v2 \\
         --train-ratio 0.85 \\
         --num-negatives 5 \\
         --negative-strategy in_doc_swap

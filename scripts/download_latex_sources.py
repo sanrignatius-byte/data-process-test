@@ -15,13 +15,13 @@ Usage:
     python scripts/download_latex_sources.py --id-file data/arxiv_ids.txt
 
     # From the existing figure_text_pairs.json (auto-extract unique doc IDs):
-    python scripts/download_latex_sources.py --from-pairs data/figure_text_pairs.json
+    python scripts/download_latex_sources.py --from-pairs data/02_enriched/figure_text_pairs.json
 
     # Just a few IDs on the command line:
     python scripts/download_latex_sources.py --ids 1908.09635 1412.3756 2005.07293
 
     # Skip download, only re-extract / locate main .tex:
-    python scripts/download_latex_sources.py --from-pairs data/figure_text_pairs.json --extract-only
+    python scripts/download_latex_sources.py --from-pairs data/02_enriched/figure_text_pairs.json --extract-only
 """
 
 from __future__ import annotations

@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO_ROOT=${REPO_ROOT:-/projects/myyyx1/data-process-test}
-OUTPUT_DIR=${OUTPUT_DIR:-data/raw_pdfs}
+OUTPUT_DIR=${OUTPUT_DIR:-data/00_raw/raw_pdfs}
 ARXIV_ID=${ARXIV_ID:-}
 MAX_REFERENCES=${MAX_REFERENCES:-200}
 MIN_CITATIONS=${MIN_CITATIONS:-0}

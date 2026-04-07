@@ -373,19 +373,19 @@ def run_eval(
 def main() -> None:
     ap = argparse.ArgumentParser(description="C-Pool keyword_boost + graph evaluation")
     ap.add_argument("--queries", type=Path,
-                    default=Path("data/m2/c_pool_universal_queries_proxy_merged.jsonl"))
+                    default=Path("data/05_eval/m2/c_pool_universal_queries_proxy_merged.jsonl"))
     ap.add_argument("--elements", type=Path,
-                    default=Path("data111/multimodal_elements_enriched.json"))
+                    default=Path("data/02_enriched/multimodal_elements_enriched.json"))
     ap.add_argument("--hub-candidates-old", type=Path,
-                    default=Path("data111/hub_candidates_enriched_v3.json"),
+                    default=Path("data/02_enriched/hub_candidates_enriched_v3.json"),
                     help="Original hubs (no keyword_boost)")
     ap.add_argument("--hub-candidates-kb", type=Path,
-                    default=Path("data/m2/hub_candidates_enriched_keyword_boost_full_2026-03-24.json"),
+                    default=Path("data/05_eval/m2/hub_candidates_enriched_keyword_boost_full_2026-03-24.json"),
                     help="keyword_boost enhanced hubs")
     ap.add_argument("--citation-graph", type=Path,
-                    default=Path("data/citation_graph.json"))
+                    default=Path("data/01_graphs/citation_graph.json"))
     ap.add_argument("--output", type=Path,
-                    default=Path("data/m2/_eval_cpool_merged_keyword_boost_graph.json"))
+                    default=Path("data/05_eval/m2/_eval_cpool_merged_keyword_boost_graph.json"))
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--section-enrich", type=Path, default=None,
                     help="Optional section enrichment JSON (section_nodes_enriched.json). "

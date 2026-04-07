@@ -259,8 +259,8 @@ def build_proxy_rows(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Build proxy JSONL for C-Pool evaluation")
-    ap.add_argument("--input", type=Path, default=Path("data/c_pool_universal_queries.json"))
-    ap.add_argument("--elements", type=Path, default=Path("data111/multimodal_elements_enriched.json"))
+    ap.add_argument("--input", type=Path, default=Path("data/03_queries/c_pool_universal_queries.json"))
+    ap.add_argument("--elements", type=Path, default=Path("data/02_enriched/multimodal_elements_enriched.json"))
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--summary", type=Path, default=None)
     args = ap.parse_args()

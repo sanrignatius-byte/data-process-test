@@ -216,17 +216,17 @@ def main():
     )
     parser.add_argument(
         "--source-dir",
-        default="data/latex_sources/extracted",
+        default="data/00_raw/latex_sources/extracted",
         help="Directory with extracted LaTeX sources (one subdir per paper)",
     )
     parser.add_argument(
         "--output",
-        default="data/latex_reference_graph.json",
+        default="data/01_graphs/latex_reference_graph.json",
         help="Output path for LaTeX reference graph",
     )
     parser.add_argument(
         "--report",
-        default="data/latex_reference_report.json",
+        default="data/01_graphs/latex_reference_report.json",
         help="Output path for statistics report",
     )
     parser.add_argument(
@@ -248,7 +248,7 @@ def main():
     )
     parser.add_argument(
         "--merged-output",
-        default="data/multimodal_elements_v2.json",
+        default="data/01_graphs/multimodal_elements_v2.json",
         help="Output path for merged graph (only used with --merge-with)",
     )
     args = parser.parse_args()
