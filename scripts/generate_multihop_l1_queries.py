@@ -100,6 +100,7 @@ from src.qc.reasoning import (
     classify_reasoning_structure,
     qc_reasoning_depth,
 )
+from src.qc.llm_judge import run_llm_qc
 
 from src.prompts.templates import (
     SYSTEM_PROMPT,
@@ -883,6 +884,12 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="Print prompts without calling API")
     ap.add_argument("--no-images", action="store_true", help="Skip sending images")
     ap.add_argument(
+        "--skip-llm-qc",
+        action="store_true",
+        default=False,
+        help="Skip LLM-based QC (ablation + grounding). Rule-based QC still runs.",
+    )
+    ap.add_argument(
         "--query-style",
         choices=["academic", "real_user", "mixed"],
         default="academic",
@@ -934,6 +941,16 @@ def main() -> None:
             "the prompt as additional section-level semantic context."
         ),
     )
+    ap.add_argument(
+        "--skip-done",
+        default="",
+        metavar="JSONL",
+        help=(
+            "Path to an existing output .jsonl file. Any pair_id already present "
+            "in that file will be skipped (resume / incremental run support). "
+            "Useful when a previous run was interrupted mid-way."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -957,6 +974,29 @@ def main() -> None:
         random.shuffle(pairs)
     if args.limit > 0:
         pairs = pairs[:args.limit]
+
+    # Resume support: skip pair_ids already present in a previous output file
+    if args.skip_done:
+        skip_path = Path(args.skip_done)
+        if not skip_path.is_absolute():
+            skip_path = PROJECT_ROOT / skip_path
+        if skip_path.exists():
+            import json as _json
+            done_ids: set = set()
+            with open(skip_path) as _sf:
+                for _line in _sf:
+                    _line = _line.strip()
+                    if _line:
+                        try:
+                            done_ids.add(_json.loads(_line)["pair_id"])
+                        except (KeyError, ValueError):
+                            pass
+            before = len(pairs)
+            pairs = [p for p in pairs if p["pair_id"] not in done_ids]
+            print(f"  --skip-done: {len(done_ids)} pair_ids found in {skip_path.name}, "
+                  f"skipping {before - len(pairs)} pairs → {len(pairs)} remaining")
+        else:
+            print(f"  WARNING: --skip-done file not found: {skip_path}, running all pairs")
 
     # P0: Load reference graph for bridge paragraph text resolution
     ref_graph_path = Path(args.reference_graph)
@@ -1192,6 +1232,31 @@ def main() -> None:
                 # Normalize image paths
                 img_a_path = normalize_path(pair["element_a"].get("image_path", "") or "")
                 img_b_path = normalize_path(pair["element_b"].get("image_path", "") or "")
+
+                # LLM QC — 独立于规则 QC 运行（伪多跳和幻觉是规则抓不到的）
+                if not args.dry_run and not args.skip_llm_qc:
+                    llm_images = []
+                    if not args.no_images:
+                        from src.utils.image_utils import encode_image as _enc
+                        llm_images = [
+                            _enc(pair["element_a"].get("image_path")),
+                            _enc(pair["element_b"].get("image_path")),
+                        ]
+                    llm_issues, llm_metrics, llm_in, llm_out = run_llm_qc(
+                        obj=q_obj,
+                        pair=pair,
+                        client=client,
+                        model=args.model,
+                        provider=args.provider,
+                        images=llm_images,
+                        dry_run=args.dry_run,
+                        skip_ablation=False,
+                        skip_grounding=False,
+                    )
+                    total_input_tokens += llm_in
+                    total_output_tokens += llm_out
+                    issues.extend(llm_issues)
+                    metrics.update(llm_metrics)
 
                 entry = {
                     "query_id": f"l{'3' if is_l3 else '1'}_de_{doc_id}_{query_idx:04d}",

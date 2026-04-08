@@ -32,7 +32,9 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.utils.image_utils import encode_image  # noqa: E402
 from src.qc.pipelines import qc_multihop_query  # noqa: E402
-from src.api import call_llm, parse_json  # noqa: E402
+from src.qc.llm_judge import run_ablation_qc, judge_answer_grounding  # noqa: E402
+from src.api import call_llm, parse_json, set_company_credentials  # noqa: E402
+from src.utils.token_logger import log_run  # noqa: E402
 
 # normalize_path is still local to generate_multihop_l1_queries
 from generate_multihop_l1_queries import normalize_path  # noqa: E402
@@ -489,41 +491,6 @@ Return JSON:
 """.strip()
 
 
-def judge_can_answer(
-    client: Any,
-    model: str,
-    question: str,
-    reference_answer: str,
-    evidence_nodes: Sequence[Dict[str, Any]],
-    scenario_name: str,
-    dry_run: bool,
-) -> Tuple[bool, float, str, int, int]:
-    if dry_run:
-        # In dry-run we do not call model; return a neutral default.
-        return False, 0.0, "dry-run", 0, 0
-
-    prompt = build_ablation_prompt(
-        question=question,
-        reference_answer=reference_answer,
-        evidence_nodes=evidence_nodes,
-        scenario_name=scenario_name,
-    )
-    raw, in_tok, out_tok = call_llm(
-        client,
-        model,
-        prompt,
-        images=[],
-        system_prompt=SYSTEM_JUDGE_PROMPT,
-        max_tokens=256,
-        temperature=0.0,
-    )
-    obj = parse_json(raw) or {}
-    can_answer = bool(obj.get("can_answer", False))
-    conf = float(obj.get("confidence", 0.0) or 0.0)
-    reason = str(obj.get("reason", ""))[:200]
-    return can_answer, conf, reason, in_tok, out_tok
-
-
 def compose_required_evidence_spans(
     endpoint_spans: Sequence[Dict[str, Any]],
     bridge_steps: Sequence[Dict[str, Any]],
@@ -546,82 +513,6 @@ def compose_required_evidence_spans(
     return required_evidence_spans
 
 
-def run_ablation_checks(
-    client: Any,
-    judge_model: str,
-    question: str,
-    reference_answer: str,
-    nodes: Sequence[Dict[str, Any]],
-    dry_run: bool,
-    skip_ablation: bool,
-) -> Tuple[Dict[str, Any], bool, Dict[str, int], Optional[str]]:
-    """Returns (ablation_metrics, is_fake_long_chain, token_usage, error_tag)."""
-    usage = {"in": 0, "out": 0}
-    if skip_ablation:
-        return {"skipped": True}, False, usage, None
-
-    start = nodes[0]
-    end = nodes[-1]
-    full_nodes = list(nodes)
-    endpoint_only = [start, end]
-
-    try:
-        full_can, full_conf, _, in_tok, out_tok = judge_can_answer(
-            client=client,
-            model=judge_model,
-            question=question,
-            reference_answer=reference_answer,
-            evidence_nodes=full_nodes,
-            scenario_name="full_path",
-            dry_run=dry_run,
-        )
-        usage["in"] += in_tok
-        usage["out"] += out_tok
-
-        endpoint_can, endpoint_conf, _, in_tok, out_tok = judge_can_answer(
-            client=client,
-            model=judge_model,
-            question=question,
-            reference_answer=reference_answer,
-            evidence_nodes=endpoint_only,
-            scenario_name="endpoints_only",
-            dry_run=dry_run,
-        )
-        usage["in"] += in_tok
-        usage["out"] += out_tok
-
-        drop_flags = []
-        drop_conf = []
-        for drop_idx in range(1, len(nodes) - 1):
-            kept = [n for i, n in enumerate(nodes) if i != drop_idx]
-            can_ans, conf, _, in_tok, out_tok = judge_can_answer(
-                client=client,
-                model=judge_model,
-                question=question,
-                reference_answer=reference_answer,
-                evidence_nodes=kept,
-                scenario_name=f"drop_node_{drop_idx}",
-                dry_run=dry_run,
-            )
-            usage["in"] += in_tok
-            usage["out"] += out_tok
-            drop_flags.append(can_ans)
-            drop_conf.append(conf)
-
-        ablation = {
-            "full_can_answer": full_can,
-            "full_confidence": round(full_conf, 4),
-            "endpoints_can_answer": endpoint_can,
-            "endpoints_confidence": round(endpoint_conf, 4),
-            "drop_node_can_answer": drop_flags,
-            "drop_node_confidence": [round(c, 4) for c in drop_conf],
-        }
-        fake = (not full_can) or endpoint_can or any(drop_flags)
-        return ablation, fake, usage, None
-    except Exception:
-        return {}, False, usage, "ablation_check_failed"
-
-
 def maybe_repair_candidate(
     client: Any,
     model: str,
@@ -633,6 +524,7 @@ def maybe_repair_candidate(
     issues: Sequence[str],
     no_images: bool,
     dry_run: bool,
+    provider: str = "company",
 ) -> Tuple[Optional[Dict[str, Any]], int, int]:
     if dry_run:
         return None, 0, 0
@@ -652,6 +544,7 @@ def maybe_repair_candidate(
         model,
         prompt,
         images=imgs,
+        provider=provider,
         system_prompt=SYSTEM_FINAL_PROMPT,
         max_tokens=1024,
         temperature=0.15,
@@ -668,6 +561,7 @@ def run_iterative_generation_for_pair(
     no_images: bool,
     skip_ablation: bool,
     repair_attempts: int,
+    provider: str = "company",
 ) -> Tuple[Optional[Dict[str, Any]], Dict[str, int], Optional[str]]:
     """Return (entry, token_usage, error_message)."""
     usage = {"in": 0, "out": 0}
@@ -710,6 +604,7 @@ def run_iterative_generation_for_pair(
                 model,
                 prompt,
                 images=imgs,
+                provider=provider,
                 system_prompt=SYSTEM_STEP_PROMPT,
                 max_tokens=512,
                 temperature=0.2,
@@ -762,6 +657,7 @@ def run_iterative_generation_for_pair(
             model,
             final_prompt,
             images=imgs,
+            provider=provider,
             system_prompt=SYSTEM_FINAL_PROMPT,
             max_tokens=1024,
             temperature=0.25,
@@ -807,24 +703,49 @@ def run_iterative_generation_for_pair(
             "text_evidence": cur_text_evidence,
         }
         cur_issues, cur_metrics = qc_multihop_query(qc_obj, qc_pair)
-        ablation, fake, ab_usage, ab_err = run_ablation_checks(
-            client=client,
-            judge_model=judge_model,
+
+        # LLM judge ablation (step-deletion) — via shared src.qc.llm_judge
+        ablation, fake, ab_in, ab_out = run_ablation_qc(
             question=cur_query,
             reference_answer=cur_answer,
-            nodes=nodes,
+            elements=nodes,
+            client=client,
+            model=judge_model,
+            provider=provider,
             dry_run=dry_run,
-            skip_ablation=skip_ablation,
+            skip=skip_ablation,
         )
-        usage["in"] += ab_usage["in"]
-        usage["out"] += ab_usage["out"]
-        if ab_err:
-            cur_issues.append(ab_err)
-            cur_metrics[f"{ab_err}_warn"] = True
+        usage["in"] += ab_in
+        usage["out"] += ab_out
         if fake:
             cur_issues.append("fake_long_chain")
             cur_metrics["fake_long_chain_warn"] = True
-        cur_metrics["ablation"] = ablation
+        cur_metrics["llm_ablation"] = ablation
+
+        # LLM grounding check — answer must be traceable to evidence
+        if not skip_ablation:
+            is_grounded, hallucinations, g_conf, g_reason, g_in, g_out = judge_answer_grounding(
+                question=cur_query,
+                answer=cur_answer,
+                elements=nodes,
+                text_evidence=cur_text_evidence,
+                client=client,
+                model=judge_model,
+                provider=provider,
+                dry_run=dry_run,
+            )
+            usage["in"] += g_in
+            usage["out"] += g_out
+            cur_metrics["llm_grounding"] = {
+                "is_grounded": is_grounded,
+                "confidence": round(g_conf, 4),
+                "hallucinations": hallucinations[:5],
+                "reason": g_reason,
+            }
+            if not is_grounded:
+                cur_issues.append("llm_answer_hallucination")
+                cur_metrics["llm_hallucination_warn"] = True
+
         cur_issues = list(dict.fromkeys(cur_issues))
         return cur_issues, cur_metrics
 
@@ -862,6 +783,7 @@ def run_iterative_generation_for_pair(
             issues=issues,
             no_images=no_images,
             dry_run=dry_run,
+            provider=provider,
         )
         usage["in"] += in_tok
         usage["out"] += out_tok
@@ -933,8 +855,24 @@ def main() -> None:
     ap.add_argument("--candidates", default="data/01_graphs/latex_long_chain_pairs_all_q0.json")
     ap.add_argument("--output", default="data/03_queries/l1_dual_evidence_long_chain_queries_v2_iterative.jsonl")
     ap.add_argument("--pass-only", action="store_true")
-    ap.add_argument("--model", default="claude-sonnet-4-5-20250929")
-    ap.add_argument("--judge-model", default="claude-sonnet-4-5-20250929")
+    ap.add_argument(
+        "--provider",
+        choices=["anthropic", "openai", "company"],
+        default="company",
+        help="LLM provider backend (company = OpenAI-compat proxy via local_api_logger)",
+    )
+    ap.add_argument("--model", default=None, help="Model name (default: auto per provider)")
+    ap.add_argument("--judge-model", default=None, help="Judge model name (default: same as --model)")
+    ap.add_argument(
+        "--company-api-url",
+        default=os.environ.get("COMPANY_API_URL", ""),
+        help="Company API endpoint URL (default: $COMPANY_API_URL)",
+    )
+    ap.add_argument(
+        "--company-api-key",
+        default=os.environ.get("COMPANY_API_KEY", ""),
+        help="Company API key (default: $COMPANY_API_KEY)",
+    )
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--delay", type=float, default=0.5)
     ap.add_argument("--dry-run", action="store_true")
@@ -942,6 +880,17 @@ def main() -> None:
     ap.add_argument("--skip-ablation", action="store_true")
     ap.add_argument("--repair-attempts", type=int, default=1)
     args = ap.parse_args()
+
+    # Resolve model defaults per provider
+    if args.model is None:
+        if args.provider == "anthropic":
+            args.model = "claude-sonnet-4-5-20250929"
+        elif args.provider == "openai":
+            args.model = "gpt-4o"
+        else:
+            args.model = "gpt-5.4"
+    if args.judge_model is None:
+        args.judge_model = args.model
 
     cand_path = Path(args.candidates)
     if not cand_path.exists():
@@ -954,8 +903,9 @@ def main() -> None:
 
     print("Iterative Long-Chain Generation (v2)")
     print(f"  Candidates: {len(pairs)}")
-    print(f"  Model: {args.model}")
-    print(f"  Judge model: {args.judge_model}")
+    print(f"  Provider:   {args.provider}")
+    print(f"  Model:      {args.model}")
+    print(f"  Judge model:{args.judge_model}")
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Ablation QC: {'disabled' if args.skip_ablation else 'enabled'}")
     print(f"  Repair attempts: {max(0, args.repair_attempts)}")
@@ -964,12 +914,21 @@ def main() -> None:
 
     client = None
     if not args.dry_run:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            print("ERROR: ANTHROPIC_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
-            sys.exit(1)
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
+        if args.provider == "company":
+            if not args.company_api_key or not args.company_api_url:
+                print("ERROR: COMPANY_API_KEY / COMPANY_API_URL not set. Run: export $(grep -v '^#' .env | xargs)")
+                sys.exit(1)
+            set_company_credentials(args.company_api_url, args.company_api_key)
+        elif args.provider == "openai":
+            import openai
+            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+        else:
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not api_key:
+                print("ERROR: ANTHROPIC_API_KEY not set. Run: export $(grep -v '^#' .env | xargs)")
+                sys.exit(1)
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1002,6 +961,7 @@ def main() -> None:
                     no_images=args.no_images,
                     skip_ablation=args.skip_ablation,
                     repair_attempts=max(0, args.repair_attempts),
+                    provider=args.provider,
                 )
             except Exception as e:
                 print(f"ERROR: {e}")
@@ -1099,6 +1059,21 @@ def main() -> None:
         for k, v in sorted(issue_stats.items(), key=lambda x: -x[1]):
             print(f"    {k}: {v}")
     print("=" * 64)
+
+    log_run(
+        script="generate_long_chain_iterative_queries",
+        model=f"{args.provider}:{args.model}",
+        purpose=f"长链多跳 query 生成（iterative bridge-step + LLM judge ablation QC），{len(pairs)} pairs → {q_idx} entries，pass {kept}",
+        input_tokens=total_in,
+        output_tokens=total_out,
+        extra={
+            "pairs_processed": len(pairs),
+            "entries_written": q_idx,
+            "qc_pass": kept,
+            "skipped": skipped,
+            "output": str(out_path),
+        },
+    )
 
 
 if __name__ == "__main__":

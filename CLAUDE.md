@@ -41,6 +41,7 @@ log_run(
 - `run_exp_c_qa_triangle.py` ✅ 已接入
 - `build_embedding_edges.py` — 不调用 LLM，无需接入
 - `run_production_batch.py` — 包装脚本，内部调用 generate_multihop_l1_queries.py（已接入）
+- `rerun_llm_qc.py` ⚠️ 调用 LLM（ablation + grounding），**尚未接入 `log_run()`**，需补入
 - **新增任何调用 LLM 的脚本时必须同步接入**
 
 **违规判定**：任何发起 API 请求但未调用 `log_run()` 的 PR 视为未通过 review。
@@ -51,6 +52,75 @@ log_run(
 这是一个以 **Document Graph for Document Understanding** 为核心的研究系统。核心创新是面向学术论文的多层异构图构建方法，支持多种下游任务（query 生成、QA、文档总结、多文档推理、证据定位）。M4 Query 生成（Multi-hop, Multi-modal, Multi-document, Multi-turn）是图的第一个应用示例，也是当前主要交付物。
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
+
+## 当前状态（2026-04-08 更新｜LLM Judge 模块集中化 + L3 Rerun2 全量完成 + Resume/Flush 修复）
+
+### 本轮完成（相对 2026-04-05）
+
+- **`src/qc/llm_judge.py` 新模块**（~280 行）
+  - 将 `judge_evidence_necessity()`、`judge_answer_grounding()`、`run_ablation_qc()`、`run_llm_qc()` 集中到独立模块
+  - `run_ablation_qc()` 修正 fake_multihop 判定：不再用 `full_can_answer=False` 作为 fake 标准（假阳过多），改为 `any(single_flags) or any(drop_flags)`
+  - `run_llm_qc()` 一站式入口：先 ablation → 再 grounding → 返回 `(qc_pass, qc_issues, qc_metrics)`
+  - `src/qc/__init__.py` 导出 4 个公共函数
+
+- **`scripts/generate_long_chain_iterative_queries.py` 去重**（-133/+50 行）
+  - 删除内联 `judge_can_answer()` + `run_ablation_checks()` 约 120 行重复代码
+  - 改为 `from src.qc.llm_judge import run_ablation_qc`，消除维护双份逻辑的风险
+
+- **`scripts/generate_multihop_l1_queries.py` 增强**（+65 行）
+  - 新增 `--skip-done`：读取已有输出文件的 pair_id 集合，跳过已处理 pair，实现断点续跑
+  - 新增 `--skip-llm-qc`：跳过 LLM QC 阶段（用于快速调试 prompt/rule QC）
+  - 集成 `run_llm_qc()` 调用，rule QC pass 后自动执行 LLM ablation + grounding
+
+- **`scripts/rerun_llm_qc.py` Resume + Flush 修复**
+  - 新增 `--resume` flag：输出文件用 append 模式，从已有输出构建 `done_keys` 跳过已处理条目
+  - 每次 `write()` 后立即 `fout.flush()` / `fpass.flush()`，配合 `python -u` 消除缓冲丢数据风险
+  - 新增 `skipped_resume` 计数器，运行结束摘要包含断点续跑统计
+  - **修复根因**：之前两次运行（161/295、207/295）因 Python 缓冲 + 进程中断导致输出文件 0 字节
+
+### Rerun2 结果
+
+| 批次 | 总条目 | Pass | Pass 率 | 文档数 | Grounding 平均置信度 |
+|------|--------|------|---------|--------|---------------------|
+| old（295 条原始 L3） | 295 | 93 | 31.5% | 21 | 0.87 |
+| new82（156 条新增） | 156 | 53 | 34.0% | 20 | 0.83 |
+| **合并去重** | **451** | **145** | **32.1%** | **—** | **—** |
+
+- 两批重叠 1 条，合并后 **145 条唯一 pass queries**
+- old 批次 top 失败原因：`llm_answer_hallucination`(79)、`length_mix_missing`(51)、`single_element_answer`(40)
+- new82 有 1 条 grounding 调用返回 error（`l1_de_1607.06520_0117`），不影响 pass 判定
+
+### Long-chain v2 试跑
+
+- `long_chain_v2_2026-04-07.jsonl`：20 条生成，0 条 pass
+- 原因待分析（4-hop 长链 QC 标准过严或 prompt 需迭代）
+
+### 本轮核心教训
+
+> **flush 是生产脚本的硬性要求。** 任何跑 >5 分钟的脚本，输出文件必须每条 flush，否则进程中断 = 全部白跑。`python -u` + `file.flush()` 双重保险。
+> **resume 是默认需求。** 长时间批量脚本应始终支持 `--resume`（append + skip done），而非 `open("w")` 覆写。
+
+### 铁律合规更新
+
+- `rerun_llm_qc.py` ⚠️ 调用 LLM 但 **尚未接入 `log_run()`**，需后续补入
+- `generate_long_chain_iterative_queries.py` — 已通过 `src.qc.llm_judge` 间接调用 LLM，本身已接入 `log_run()` ✅
+
+### M4 路线图（更新）
+| 阶段 | 目标 | 时间 |
+|------|------|------|
+| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
+| Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | 已完成 |
+| Phase 1.5 ✅ | Enrichment 消融实验 + Exp C enriched 复验 | 已完成 |
+| Phase 1.7 ✅ | P0-P4 Bridge Grounding 增强 + L3 质量验证 | 2026-03-24 完成 |
+| Phase A ✅ | Training Pipeline：Schema + Export + GraphAware Negative Sampling（70 tests） | 2026-04-05 完成 |
+| **Phase A.1 ✅** | **LLM Judge 集中化 + Rerun2 全量 QC（145 pass queries）** | **2026-04-08 完成** |
+| **Phase 2A ⏳** | **L3 全量重跑 + 量产 1500+ queries** → 初代 benchmark（需新 API key） | 待执行 |
+| Phase B ⏳ | Embedding Hard Negative Sampler（Qwen3-Embedding-4B，GPU，$0 LLM） | 下一步 |
+| Phase 2B | Embedding 语义边 → 图增强 v2 | 待执行 |
+| Phase 3 | 合并 2A+2B → 增强图 + 大数据集 → 最终实验 | 后续 |
+| Phase 4 | Multi-turn session + M4 联合验证 | 后续 |
+
+---
 
 ## 当前状态（2026-04-05 更新｜GraphAware 负样本实现 + 全量导出验证）
 
