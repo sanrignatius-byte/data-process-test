@@ -589,7 +589,7 @@ class TestGetPathNodesCompat:
 
         for elem in pair.get("intermediate_elements") or []:
             eid = elem.get("element_id")
-            if eid:
+            if eid and eid not in node_map:
                 node_map[eid] = {
                     "element_id": eid,
                     "element_type": elem.get("element_type", "unknown"),

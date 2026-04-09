@@ -343,7 +343,7 @@ def get_path_nodes(pair: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
     # Support old format: intermediate_elements (only intermediates)
     for elem in pair.get("intermediate_elements") or []:
         eid = elem.get("element_id")
-        if eid:
+        if eid and eid not in node_map:
             node_map[eid] = {
                 "element_id": eid,
                 "element_type": elem.get("element_type", "unknown"),
@@ -351,7 +351,8 @@ def get_path_nodes(pair: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
             }
 
     # Support new format: node_group (all elements in chain path, from
-    # src/pairing CandidatePair schema)
+    # src/pairing CandidatePair schema).  Skip IDs already populated by
+    # element_a / element_b (authoritative endpoint data takes priority).
     for elem in pair.get("node_group") or []:
         eid = elem.get("element_id")
         if eid and eid not in node_map:
