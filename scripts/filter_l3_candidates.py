@@ -55,6 +55,7 @@ def main() -> None:
             DATA_DIR / "02_enriched" / "hub_candidates_enriched.json",
             DATA_DIR / "02_enriched" / "hub_candidates_enriched_v3.json",
             DATA_DIR / "02_enriched" / "hub_candidates_enriched_v2.json",
+            DATA_DIR / "02_enriched" / "intra_doc_pairs_v1.json",
         ]
         cand_path = None
         for p in candidates_search:
@@ -144,7 +145,9 @@ def main() -> None:
     cross_doc = 0
     for p in filtered:
         type_dist[p["pair_type"]] = type_dist.get(p["pair_type"], 0) + 1
-        if p.get("is_cross_doc"):
+        # Support both old format (top-level is_cross_doc) and new pairing
+        # format (hub_metadata.is_cross_doc)
+        if p.get("is_cross_doc") or p.get("hub_metadata", {}).get("is_cross_doc", False):
             cross_doc += 1
     print(f"\nPair type distribution:")
     for t, c in sorted(type_dist.items(), key=lambda x: -x[1]):
