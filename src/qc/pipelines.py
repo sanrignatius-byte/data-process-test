@@ -28,6 +28,7 @@ from src.qc.checks import (
     check_single_element_answer,
     formula_symbol_hit,
     has_architecture_intent,
+    has_bare_deictic,
     has_min_reasoning_chain,
     has_no_cross_modal_operator,
     has_numeric_leakage,
@@ -86,6 +87,11 @@ def qc_multihop_query(
     # 2c. Numeric leakage in query
     if has_numeric_leakage(q):
         issues.append("numeric_leakage")
+
+    # 2c2. Bare deictic references (advisory, not hard fail)
+    if has_bare_deictic(q):
+        issues.append("bare_deictic")
+        metrics["bare_deictic_warn"] = True
 
     # 2d. Weak shortcut templates
     if has_shortcut_template(q):

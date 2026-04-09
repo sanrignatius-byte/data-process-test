@@ -1089,8 +1089,9 @@ def main() -> None:
     qc_issue_stats = defaultdict(int)
 
     # Dry-run should never mutate output files.
-    out_stream = open(os.devnull, "w", encoding="utf-8") if args.dry_run else out_path.open("w", encoding="utf-8")
-    pass_stream = open(os.devnull, "w", encoding="utf-8") if (args.dry_run or not pass_path) else pass_path.open("w", encoding="utf-8")
+    _file_mode = "a" if args.skip_done else "w"
+    out_stream = open(os.devnull, "w", encoding="utf-8") if args.dry_run else out_path.open(_file_mode, encoding="utf-8")
+    pass_stream = open(os.devnull, "w", encoding="utf-8") if (args.dry_run or not pass_path) else pass_path.open(_file_mode, encoding="utf-8")
 
     with out_stream as f, pass_stream as fp:
         for i, pair in enumerate(pairs):
@@ -1298,9 +1299,11 @@ def main() -> None:
                 }
                 # Always write all entries to main file
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                f.flush()
                 # Also write to pass-only file if enabled
                 if pass_path and entry["qc_pass"]:
                     fp.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                    fp.flush()
                 query_idx += 1
 
                 if entry["qc_pass"]:

@@ -32,7 +32,10 @@ def load_personahub_personas(path: Optional[str] = None) -> List[Dict[str, str]]
         return _PERSONAHUB_PERSONAS
 
     if path is None:
-        path = str(PROJECT_ROOT / "data" / "personahub_academic_personas.json")
+        # Primary: data/02_enriched/; fallback: data/ for backward compat
+        primary = PROJECT_ROOT / "data" / "02_enriched" / "personahub_academic_personas.json"
+        fallback = PROJECT_ROOT / "data" / "personahub_academic_personas.json"
+        path = str(primary if primary.exists() else fallback)
 
     try:
         with open(path, "r", encoding="utf-8") as f:

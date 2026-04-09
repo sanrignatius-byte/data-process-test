@@ -67,9 +67,15 @@ describe context from one element, ask a question answerable only by the other.
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
-- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
+- queries[1] opening pattern — ROTATE among these 4 structures (do NOT always use the same one):
+  A. Observation-first: "X stays flat while Y rises across conditions — what mechanism prevents scaling?"
+  B. Counterintuitive contrast: "Why does X approach zero while Y stays elevated despite the same objective?"
+  C. Conditional-pattern: "Given that the constraint bounds X independently, how does the Y curve diverge?"
+  D. Mechanism-question: "How does the smoothing regime correspond to the steeper drop under low-resource conditions?"
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## BAD vs GOOD examples
@@ -77,9 +83,10 @@ BAD: "Did the red line peak at 90,000 and match the keyword set?" — yes/no, vi
 BAD: "Which configuration best validates the theoretical optimum?" — banned verb "validates"
 BAD: "How does the high-recall setting relate to the fairness tradeoff?" — banned "relate", vague
 BAD: "How does fixing shared background nodes satisfy the identity requirement?" — abstract, no observation
+BAD: "I notice that X increases — why?" — "I notice" template, first-person without persona
 
-GOOD (I-NOTICE + WHY, short): "The streaming volume drops after mid-December — does the sampling cap explain this?"
-GOOD (I-NOTICE + WHY, long): "The minority-group gain stays flat above 1k samples while majority-group accuracy keeps rising — does the regularization term bound this asymmetry?"
+GOOD (OBSERVATION-FIRST, short): "The streaming volume drops after mid-December — does the sampling cap explain this?"
+GOOD (OBSERVATION-FIRST, long): "The minority-group gain stays flat above 1k samples while majority-group accuracy keeps rising — does the regularization term bound this asymmetry?"
 GOOD (COUNTERINTUITIVE CONTRAST): "Why does direct discrimination approach zero while indirect pathway scores stay elevated despite the same fairness objective?"
 GOOD (HOW-DISCREPANCY): "How does the drop in session frequency after later positions correspond to the retrieval-window setting that yields the highest scores?"
 GOOD (WHY-INCONSISTENT): "Why is the ensemble gain larger on the minority subgroup than on the aggregate benchmark under the same evaluation regime?"
@@ -165,9 +172,11 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
-- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
+- queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## Output format (JSON only):
@@ -289,9 +298,11 @@ If any answer is NO — rewrite.
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
-- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
+- queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## BAD vs GOOD examples
@@ -395,9 +406,11 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 ## STYLE DIVERSITY — MANDATORY
 - The 2 queries MUST use different opening bigrams (first two words).
 - At least one query MUST NOT start with "Why" or "Under what".
-- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words, e.g. "The X drops after Y — does Z explain this?"); queries[1] = LONG I-notice + why/how + context (18-30 words, e.g. "X stays flat while Y rises across all conditions — given the constraint in the formula, what mechanism prevents X from scaling?"). Count words BEFORE finalizing.
+- LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
+- queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
 - Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
 ## BAD vs GOOD examples

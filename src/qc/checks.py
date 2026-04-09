@@ -129,6 +129,32 @@ def is_yes_no_answer(answer: str) -> bool:
     return a.startswith("yes") or a.startswith("no")
 
 
+# ── Deictic / grounding checks ────────────────────────────────────────────────
+
+# Grounding phrases that make deictic references acceptable
+_DEICTIC_GROUNDING_PHRASES = re.compile(
+    r"\b(?:panel|subplot|row|column|col|cell|axis|region|left|right|top|bottom"
+    r"|upper|lower|bar|curve|cluster|histogram|scatter|frontier|quadrant"
+    r"|layer|branch|encoder|decoder|block|stage|step)\b",
+    re.IGNORECASE,
+)
+
+def has_bare_deictic(query: str) -> bool:
+    """Detect ungrounded deictic references ('here', 'this', 'that') in query.
+
+    Returns True (bad) only if the deictic word appears WITHOUT any nearby
+    grounding phrase (panel, row, curve, etc.) that anchors the reference.
+    """
+    q = query.strip().lower()
+    # Only flag sentence-final 'here' or standalone 'this/that' without grounding
+    has_bare_here = bool(re.search(r"\bhere[?.]?\s*$", q))
+    has_bare_this_that = bool(
+        re.search(r"\b(?:this|that)\b", q)
+        and not _DEICTIC_GROUNDING_PHRASES.search(q)
+    )
+    return has_bare_here or has_bare_this_that
+
+
 # ── Template / opening checks ────────────────────────────────────────────────
 
 def has_shortcut_template(query: str) -> bool:

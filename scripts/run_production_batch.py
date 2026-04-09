@@ -151,6 +151,7 @@ def run_generation(
     limit: int = 0,
     delay: float = 0.5,
     query_style: str = "mixed",
+    use_persona: bool = False,
 ) -> None:
     """Run generate_multihop_l1_queries.py on candidates."""
     cmd = [
@@ -163,6 +164,8 @@ def run_generation(
         "--query-style", query_style,
         "--delay", str(delay),
     ]
+    if use_persona:
+        cmd.append("--use-persona")
     if limit > 0:
         cmd.extend(["--limit", str(limit)])
 
@@ -259,6 +262,14 @@ def main() -> None:
         help="Query style",
     )
     ap.add_argument(
+        "--use-persona", action="store_true", default=False,
+        help=(
+            "Inject PersonaHub persona prefix into prompts (76 diverse reader "
+            "personas, deterministic by pair_id hash). Strongly recommended "
+            "for production runs to improve query diversity."
+        ),
+    )
+    ap.add_argument(
         "--dry-run", action="store_true",
         help="Show plan without executing",
     )
@@ -331,6 +342,7 @@ def main() -> None:
         limit=args.limit,
         delay=args.delay,
         query_style=args.query_style,
+        use_persona=args.use_persona,
     )
 
     # Step 5: Merge into level files

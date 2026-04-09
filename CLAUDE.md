@@ -46,6 +46,45 @@ log_run(
 
 **违规判定**：任何发起 API 请求但未调用 `log_run()` 的 PR 视为未通过 review。
 
+### 铁律 2：长时间后台任务绝不能被终端操作打断
+
+**启动方式**：任何预计运行 >2 分钟的批量任务（query 生成、LLM QC、rerun 等），必须用 `nohup` 启动，日志写入文件：
+```bash
+cd /projects/myyyx1/data-process-test && set -a && source .env && set +a && \
+nohup python3 scripts/xxx.py [args] > logs/xxx_run.log 2>&1 &
+echo "PID=$!"
+```
+
+**查看进度**：只用 `tail` 读日志文件或 `wc -l` 读输出文件，**绝对不能**在运行进程的终端里执行任何命令：
+```bash
+# ✅ 安全：读日志 / 统计输出 / 检查进程
+tail -20 logs/xxx_run.log
+wc -l data/03_queries/xxx.jsonl
+ps aux | grep xxx.py
+
+# ❌ 禁止：在后台进程的终端里运行任何命令（会发送 Ctrl+C 打断进程）
+```
+
+**血泪教训**：2026-04-08 因 `run_in_terminal` 被分配到后台进程终端，连续 3 次 `^C` 打断生成进程，浪费大量 API token 和时间。
+
+### 铁律 3：环境变量通过 `.env` 加载，不硬编码
+
+运行任何需要 API key 的脚本前，必须先加载 `.env`：
+```bash
+set -a && source .env && set +a
+```
+- `COMPANY_API_KEY`、`COMPANY_API_URL`、`OPENAI_API_KEY`、`ANTHROPIC_API_KEY` 均在 `.env` 中管理
+- **禁止**在代码或命令行中硬编码 API key
+- **禁止**将 `.env` 提交到 git（已在 `.gitignore`）
+
+### 铁律 4：路径必须保持相对，保证可迁移性
+
+- 代码中使用 `PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent` 动态获取项目根目录
+- 数据路径一律用相对于项目根的相对路径（如 `data/mineru_output/...`），**禁止**硬编码绝对路径（如 `/projects/_hdd/myyyx1/...`）
+- 跨目录引用用 symlink 解决（如 `data/mineru_output -> 00_raw/mineru_output`），symlink 使用相对目标路径
+- `image_utils.py` 中的 `_KNOWN_PREFIXES` 仅作为兜底兼容层，新路径不应依赖它
+- **检查标准**：项目整体 `mv` 到另一个路径后，所有脚本必须无需修改即可运行
+
 ---
 
 ## 项目简介

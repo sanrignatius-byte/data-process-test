@@ -66,6 +66,7 @@ QUERY_SHORTCUT_PATTERNS = [
 TEMPLATED_QUERY_OPENINGS: Tuple[str, ...] = (
     "given that",
     "what causes",
+    "i notice",
 )
 
 TEMPLATE_COLLAPSE_PATTERNS: Tuple[str, ...] = (
