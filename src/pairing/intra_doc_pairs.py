@@ -32,6 +32,11 @@ from src.pairing.pair_schema import CandidatePair, ElementDetail
 # Element types eligible for pairing (non-text modalities).
 MODAL_TYPES = frozenset({"figure", "table", "formula"})
 
+# Truncation limits for element detail fields (match enrich_hub_candidates.py).
+MAX_CONTENT_LENGTH = 2000
+MAX_CONTEXT_LENGTH = 300
+MAX_CAPTION_DISPLAY = 200
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -43,10 +48,10 @@ def _element_detail(el: Dict[str, Any]) -> ElementDetail:
         element_id=el.get("element_id", ""),
         element_type=el.get("element_type", ""),
         caption=el.get("caption", "") or "",
-        content=(el.get("content", "") or "")[:2000],
+        content=(el.get("content", "") or "")[:MAX_CONTENT_LENGTH],
         image_path=el.get("image_path", "") or "",
-        context_before=(el.get("context_before", "") or "")[:300],
-        context_after=(el.get("context_after", "") or "")[:300],
+        context_before=(el.get("context_before", "") or "")[:MAX_CONTEXT_LENGTH],
+        context_after=(el.get("context_after", "") or "")[:MAX_CONTEXT_LENGTH],
         enriched_title=el.get("enriched_title", "") or "",
         enriched_content=el.get("enriched_content", "") or "",
         enriched_metadata=el.get("enriched_metadata", {}) or {},
@@ -60,15 +65,15 @@ def _make_pair_type(type_a: str, type_b: str) -> str:
 def _build_hub_summary(el_a: Dict[str, Any], el_b: Dict[str, Any],
                        edge_text: str = "") -> str:
     """Build a brief textual summary describing both elements."""
-    cap_a = (el_a.get("caption", "") or "")[:200]
-    cap_b = (el_b.get("caption", "") or "")[:200]
+    cap_a = (el_a.get("caption", "") or "")[:MAX_CAPTION_DISPLAY]
+    cap_b = (el_b.get("caption", "") or "")[:MAX_CAPTION_DISPLAY]
     parts = []
     if cap_a:
-        parts.append(f"[{el_a.get('element_type','').upper()} A] {cap_a}")
+        parts.append(f"[{el_a.get('element_type','').upper()} A] {cap_a[:MAX_CAPTION_DISPLAY]}")
     if cap_b:
-        parts.append(f"[{el_b.get('element_type','').upper()} B] {cap_b}")
+        parts.append(f"[{el_b.get('element_type','').upper()} B] {cap_b[:MAX_CAPTION_DISPLAY]}")
     if edge_text:
-        parts.append(f"[BRIDGE] {edge_text[:200]}")
+        parts.append(f"[BRIDGE] {edge_text[:MAX_CAPTION_DISPLAY]}")
     return " | ".join(parts) if parts else ""
 
 

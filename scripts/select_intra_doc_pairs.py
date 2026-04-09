@@ -115,8 +115,9 @@ def main() -> None:
         "--pair-type",
         type=str,
         default=None,
-        help="Filter by pair type, e.g. 'figure+table'. "
-             "Comma-separated for multiple: 'figure+table,figure+formula'",
+        help="Filter by pair type (types are auto-sorted, e.g. 'figure+table' "
+             "not 'table+figure'). Comma-separated for multiple: "
+             "'figure+table,figure+formula'",
     )
     parser.add_argument(
         "--min-quality",
