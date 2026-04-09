@@ -182,7 +182,7 @@ def call_llm(
             payload=payload,
             user=user_tag,
             verify=False,
-            timeout=180,
+            timeout=300,
         )
         text, in_tok, out_tok = collect_company_stream(stream)
         return text, in_tok, out_tok
