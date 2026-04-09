@@ -201,6 +201,8 @@ def enumerate_doc_chains(
                         "pair_type": normalize_pair_type(ta, tb),
                         "intermediate_ids": path[1:-1],
                         "intermediate_elements": [node_map[mid] for mid in path[1:-1] if mid in node_map],
+                        # node_group: all elements in path (compat with CandidatePair schema)
+                        "node_group": [node_map[nid] for nid in path if nid in node_map],
                         "edge_contexts": aggregate_edge_contexts(path, edge_map),
                         "latex_bridge": aggregate_bridge(path, edge_map),
                         "quality_score": chain_quality(path, edge_map),
@@ -286,6 +288,8 @@ def select_endpoint_pairs(
             "element_b": c["element_b"] if c["element_b_id"] == b else c["element_a"],
             "intermediate_ids": c.get("intermediate_ids", []),
             "intermediate_elements": c.get("intermediate_elements", []),
+            # node_group: all elements in path (compat with CandidatePair schema)
+            "node_group": c.get("node_group", []),
             "edge_contexts": c["edge_contexts"],
             "latex_bridge": c["latex_bridge"],
             "chain_count_for_endpoints": multi_counts[key],

@@ -282,6 +282,28 @@ def main() -> None:
         default=DATA_DIR / "02_enriched" / "multimodal_elements_enriched.json",
         help="Path to MoDora-enriched elements JSON (default: data/02_enriched/multimodal_elements_enriched.json)",
     )
+    ap.add_argument(
+        "--use-pairing-module", action="store_true",
+        help=(
+            "Use new src/pairing module (select_intra_doc_pairs.py) instead of "
+            "legacy hub_candidates_enriched JSON. Generates fresh pairs directly "
+            "from multimodal_elements.json with strict doc-boundary enforcement."
+        ),
+    )
+    ap.add_argument(
+        "--pairing-elements", type=Path,
+        default=DATA_DIR / "01_graphs" / "multimodal_elements.json",
+        help="Path to multimodal_elements.json for --use-pairing-module",
+    )
+    ap.add_argument(
+        "--pairing-strategy", type=str, default="all",
+        choices=["direct", "2hop", "section", "chain", "all"],
+        help="Pairing strategy when using --use-pairing-module (default: all)",
+    )
+    ap.add_argument(
+        "--pairing-max-per-doc", type=int, default=15,
+        help="Max pairs per document when using --use-pairing-module (default: 15)",
+    )
     args = ap.parse_args()
 
     print("=" * 60)
@@ -293,9 +315,24 @@ def main() -> None:
     used_pair_ids = get_used_pair_ids()
     print(f"  Found {len(used_pair_ids)} already-used pair_ids")
 
-    # Step 2: Optionally enrich raw candidates
+    # Step 2: Optionally enrich raw candidates, or use new pairing module
     enriched_path = args.enriched_candidates
-    if args.enrich_first:
+    if args.use_pairing_module:
+        print("\n[2/5] Generating pairs via src/pairing module...")
+        enriched_path = M2_DIR / f"pairing_pairs_{args.batch_name}.json"
+        cmd = [
+            sys.executable, str(PROJECT_ROOT / "scripts" / "select_intra_doc_pairs.py"),
+            "--elements", str(args.pairing_elements),
+            "--output", str(enriched_path),
+            "--strategy", args.pairing_strategy,
+            "--max-per-doc", str(args.pairing_max_per_doc),
+        ]
+        print(f"  Running: {' '.join(cmd[-8:])}")
+        result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
+        if result.returncode != 0:
+            print(f"  ERROR: Pairing module failed with code {result.returncode}")
+            sys.exit(1)
+    elif args.enrich_first:
         print("\n[2/5] Enriching raw candidates...")
         enriched_path = M2_DIR / f"hub_candidates_enriched_{args.batch_name}.json"
         run_enrichment(
