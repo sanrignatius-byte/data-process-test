@@ -33,7 +33,13 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.utils.image_utils import resolve_image_path  # noqa: E402
 
 # Markers used to extract the MinerU-relative suffix from any image_path format.
-_MINERU_MARKERS = ("/data/00_raw/mineru_output/", "/data/mineru_output/")
+# Includes both embedded absolute markers and relative path prefixes.
+_MINERU_MARKERS = (
+    "/data/00_raw/mineru_output/",
+    "/data/mineru_output/",
+    "data/00_raw/mineru_output/",
+    "data/mineru_output/",
+)
 
 # The canonical local directory (relative to project root) where MinerU images live.
 _LOCAL_MINERU_BASE = Path("data") / "00_raw" / "mineru_output"
@@ -94,14 +100,11 @@ def _extract_mineru_suffix(raw_path: str) -> Optional[str]:
     if not raw_path:
         return None
     normed = raw_path.replace("\\", "/")
+    # Check all known markers (both absolute embedded and relative prefixes)
     for marker in _MINERU_MARKERS:
         idx = normed.find(marker)
         if idx >= 0:
             return normed[idx + len(marker):]
-    # Also handle relative paths without leading /data/
-    for prefix in ("data/00_raw/mineru_output/", "data/mineru_output/"):
-        if normed.startswith(prefix):
-            return normed[len(prefix):]
     return None
 
 
@@ -171,7 +174,7 @@ def generate_evidence_md(
     query: Dict[str, Any],
     element_index: Dict[str, Dict[str, Any]],
     output_dir: Path,
-) -> tuple:
+) -> tuple[Path, int, int]:
     """Generate one MD file for a single query.
 
     Returns ``(md_path, images_embedded, images_missing)`` counts.
