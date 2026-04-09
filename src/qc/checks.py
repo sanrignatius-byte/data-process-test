@@ -1,12 +1,13 @@
-"""原子 QC 检查函数 —— 每个函数只干一件事，返回 True/False。
+"""Atomic QC check functions — each does exactly one thing, returns True/False.
 
-这里有 25+ 个检查，分成几大类：
-  - 泄漏检查：数值泄漏、anchor 泄漏（Jaccard）、证据 token 抄袭
-  - 格式检查：yes/no 题、模板开头、太长太短
-  - 逻辑检查：单元素作答、前提-答案矛盾、并行双问
-  - 领域检查：跨模态算子、公式符号接地、架构图意图
+25+ checks organized by category:
+  - Leakage: numeric leakage, anchor leakage (Jaccard), evidence token copy
+  - Format: yes/no, templated openings, too long / too short
+  - Logic: single-element answer, premise-answer contradiction, parallel dual-ask
+  - Domain: cross-modal operator, formula symbol grounding, architecture intent
+  - Answer quality: conditional hedge overload, bridge overclaim signal
 
-pipeline（pipelines.py）负责把这些原子函数串成完整 QC 流程。
+Pipelines (pipelines.py) compose these atomic functions into full QC flows.
 """
 
 from __future__ import annotations
@@ -443,10 +444,63 @@ def answer_text_evidence_overlap(answer: str, evidence: str) -> float:
 # ── Enrichment noise filter ──────────────────────────────────────────────────
 
 def is_noisy_enrichment(text: str) -> bool:
-    """检测 enrichment 噪声 —— glyph/icon/OCR error 这种垃圾直接扔掉。"""
+    """Detect enrichment noise — glyph/icon/OCR junk gets discarded."""
     if not text:
         return True
     stripped = text.strip()
     if len(stripped) < 15:
         return True
     return bool(ENRICHMENT_NOISE_RE.search(stripped))
+
+
+# ── Answer well-posedness checks ─────────────────────────────────────────────
+
+_HEDGE_RE = re.compile(
+    r"\b(if |assuming |suppose |provided that |in case |depending on |were to )",
+    re.IGNORECASE,
+)
+
+
+def has_conditional_hedge_overload(answer: str, threshold: int = 3) -> bool:
+    """Detect underdetermined queries via excessive conditional hedging.
+
+    An answer that needs 3+ if/assuming/suppose clauses to survive likely
+    corresponds to an under-specified question that has no right to be in
+    the formal set.
+
+    Returns True (bad) when hedge count >= threshold.
+    """
+    hedges = _HEDGE_RE.findall(answer or "")
+    return len(hedges) >= threshold
+
+
+# ── Bridge overclaim detection ───────────────────────────────────────────────
+
+_STRONG_CAUSAL_RE = re.compile(
+    r"\b(causes?|leads? to|results? in|produces?|drives?|ensures?|guarantees?|proves? that)\b",
+    re.IGNORECASE,
+)
+_WEAK_HEDGE_RE = re.compile(
+    r"\b(may|might|could|possibly|potentially|suggests?|tends? to|appears? to)\b",
+    re.IGNORECASE,
+)
+
+
+def has_bridge_overclaim_signal(query: str, answer: str) -> bool:
+    """Detect when a query implies strong causation but the answer hedges.
+
+    Pattern: query uses strong causal language ("causes", "leads to") but the
+    answer uses weak hedges ("may", "might", "suggests"). This mismatch
+    indicates the bridge relationship is weaker than the query claims.
+
+    Returns True (bad) when query has strong causal verbs AND answer has
+    more hedge words than causal verbs (i.e. the evidence only weakly supports
+    the claimed relationship).
+    """
+    q_causal = len(_STRONG_CAUSAL_RE.findall(query or ""))
+    if q_causal == 0:
+        return False
+    a_causal = len(_STRONG_CAUSAL_RE.findall(answer or ""))
+    a_hedge = len(_WEAK_HEDGE_RE.findall(answer or ""))
+    # If answer has more hedges than causal assertions, the bridge is overclaimed
+    return a_hedge > a_causal and a_hedge >= 2

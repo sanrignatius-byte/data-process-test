@@ -1,10 +1,10 @@
-"""QC 组合流水线 —— 把原子检查串成完整质量关卡。
+"""QC composition pipelines — compose atomic checks into full quality gates.
 
-两条流水线：
-  - qc_multihop_query：严格版（学术风格），15+ 个检查全上，anchor 泄漏有 amnesty 机制
-  - qc_real_user_query：宽松版（真人用户风格），不查 template，yes/no 只是 issue 不硬 fail
+Two pipelines:
+  - qc_multihop_query: strict (academic style), 15+ checks, anchor amnesty mechanism
+  - qc_real_user_query: relaxed (real-user style), no template checks, yes/no is soft
 
-每个函数返回 (issues列表, metrics字典)，调用方根据 issues 决定 pass/fail。
+Each function returns (issues_list, metrics_dict); caller decides pass/fail.
 """
 
 from __future__ import annotations
@@ -29,6 +29,8 @@ from src.qc.checks import (
     formula_symbol_hit,
     has_architecture_intent,
     has_bare_deictic,
+    has_bridge_overclaim_signal,
+    has_conditional_hedge_overload,
     has_min_reasoning_chain,
     has_no_cross_modal_operator,
     has_numeric_leakage,
@@ -53,13 +55,16 @@ def qc_multihop_query(
     obj: Dict[str, Any],
     pair: Dict[str, Any],
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """严格学术风格 QC —— 15+ 个检查串起来跑，不合格的 query 一个都不放过。
+    """Strict academic-style QC — 15+ checks in sequence, no bad query escapes.
 
-    检查顺序大致是：元语言 → yes/no → 数值泄漏 → 模板 → 逻辑 → anchor 泄漏
-    → 单元素作答 → 证据长度 → 公式接地 → 推理连接器 → 架构图意图。
+    Check order: meta-language → yes/no → numeric leakage → template → logic
+    → anchor leakage → single-element answer → evidence length → formula grounding
+    → reasoning connector → architecture intent → answer well-posedness.
 
-    anchor 泄漏有 amnesty 机制：如果重叠 token 全是领域必需词（accuracy/f1 等），
-    就豁免，不误杀。返回 (issues列表, metrics字典)。
+    Anchor leakage has an amnesty mechanism: if overlapping tokens are all
+    domain-essential terms (accuracy/f1 etc.), the issue is pardoned.
+
+    Returns (issues_list, metrics_dict).
     """
     issues: List[str] = []
     metrics: Dict[str, Any] = {}
@@ -230,6 +235,16 @@ def qc_multihop_query(
     if is_arch_case and not has_architecture_intent(q, a):
         issues.append("architecture_intent_missing")
 
+    # 11. Conditional hedge overload (underdetermined query)
+    if has_conditional_hedge_overload(a):
+        issues.append("underdetermined_query")
+        metrics["conditional_hedge_overload"] = True
+
+    # 12. Bridge overclaim (query implies strong causation, answer hedges)
+    if has_bridge_overclaim_signal(q, a):
+        issues.append("bridge_overclaim")
+        metrics["bridge_overclaim_warn"] = True
+
     return issues, metrics
 
 
@@ -238,11 +253,11 @@ def qc_real_user_query(
     pair: Dict[str, Any],
     persona: str = "",
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """宽松版 QC —— 面向真人用户风格的 query，门槛适当放低。
+    """Relaxed QC for real-user style queries — lower bar, broader tolerance.
 
-    相比 academic 版：不查 template shortcuts，yes/no 只是 issue 不硬 fail，
-    新增 retrievability_score（答案长度+evidence+spans 三维评分）和
-    numeric_unsupported（答案里的数字在证据里找不到 → 可能是编造的）。
+    Compared to academic: no template shortcut checks, yes/no is soft issue
+    only, adds retrievability_score (answer length + evidence + spans) and
+    numeric_unsupported (answer numbers not found in evidence).
     """
     issues: List[str] = []
     metrics: Dict[str, Any] = {}
@@ -339,5 +354,15 @@ def qc_real_user_query(
         metrics["formula_symbol_grounded"] = formula_symbol_hit(a, formula_terms)
         if formula_terms and not metrics["formula_symbol_grounded"]:
             issues.append("formula_symbol_grounding_missing")
+
+    # 9. Conditional hedge overload (underdetermined query)
+    if has_conditional_hedge_overload(a):
+        issues.append("underdetermined_query")
+        metrics["conditional_hedge_overload"] = True
+
+    # 10. Bridge overclaim
+    if has_bridge_overclaim_signal(q, a):
+        issues.append("bridge_overclaim")
+        metrics["bridge_overclaim_warn"] = True
 
     return issues, metrics
