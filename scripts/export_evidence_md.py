@@ -143,6 +143,92 @@ def _resolve_image_for_md(
 
 
 # ---------------------------------------------------------------------------
+# content_list_v2-based image finder (for formulas & tables without image_path)
+# ---------------------------------------------------------------------------
+
+def _build_content_list_image_map(
+    mineru_base: Path,
+    doc_ids: set[str],
+) -> Dict[str, str]:
+    """Scan ``content_list_v2.json`` for each *doc_id* and build a mapping
+    ``{element_id: relative_image_path}`` for formula and table elements.
+
+    MinerU stores hash-named screenshot JPGs for every equation and table in
+    ``content_list_v2.json`` → ``content.image_source.path``, but these paths
+    are **not** recorded in ``multimodal_elements.json``.  This function
+    bridges that gap by matching:
+
+    * **Formulas**: LaTeX content prefix match between ``formulas.jsonl`` and
+      ``equation_interline`` blocks in ``content_list_v2.json``.
+    * **Tables**: Sequential index match (``table_N`` ↔ N-th ``table`` block
+      in document order in ``content_list_v2.json``).
+
+    Returns paths like ``data/00_raw/mineru_output/DOC/DOC/hybrid_auto/images/HASH.jpg``.
+    """
+    mapping: Dict[str, str] = {}
+    for doc_id in doc_ids:
+        doc_base = mineru_base / doc_id / doc_id / "hybrid_auto"
+        cl_path = doc_base / f"{doc_id}_content_list_v2.json"
+        if not cl_path.exists():
+            continue
+
+        with open(cl_path, encoding="utf-8") as f:
+            cl = json.load(f)
+
+        # ── Collect equation and table images from content_list_v2 ──
+        cl_equations: List[tuple[str, str]] = []  # (latex, img_rel_path)
+        cl_tables: List[str] = []                 # img_rel_path in doc order
+
+        for page in cl:
+            if not isinstance(page, list):
+                continue
+            for block in page:
+                if not isinstance(block, dict):
+                    continue
+                btype = block.get("type", "")
+                content = block.get("content", {})
+                img_rel = content.get("image_source", {}).get("path", "")
+                if not img_rel:
+                    continue
+
+                if btype == "equation_interline":
+                    latex = content.get("math_content", "")
+                    cl_equations.append((latex, img_rel))
+                elif btype == "table":
+                    cl_tables.append(img_rel)
+
+        # ── Match formulas via formulas.jsonl ──
+        formulas_path = mineru_base / doc_id / "formulas.jsonl"
+        if formulas_path.exists():
+            with open(formulas_path, encoding="utf-8") as f:
+                formulas = [json.loads(line) for line in f if line.strip()]
+
+            for fm in formulas:
+                fm_id = fm.get("element_id", "")
+                fm_latex = fm.get("latex", "").strip()
+                if not fm_id or not fm_latex:
+                    continue
+                # Match by first 50 chars of LaTeX (robust against trailing whitespace)
+                prefix = fm_latex[:50]
+                for eq_latex, eq_img in cl_equations:
+                    if eq_latex.strip()[:50] == prefix:
+                        full_rel = str(doc_base / eq_img)
+                        mapping[fm_id] = full_rel
+                        break
+
+        # ── Match tables by sequential index ──
+        # Element IDs are like ``{doc_id}_table_1``, ``{doc_id}_table_2``, etc.
+        # content_list_v2 tables appear in document order → 1-indexed match.
+        for idx, tbl_img in enumerate(cl_tables, start=1):
+            tbl_eid = f"{doc_id}_table_{idx}"
+            if tbl_eid not in mapping:  # don't override formula-matched ids
+                full_rel = str(doc_base / tbl_img)
+                mapping[tbl_eid] = full_rel
+
+    return mapping
+
+
+# ---------------------------------------------------------------------------
 # Element index
 # ---------------------------------------------------------------------------
 
@@ -174,8 +260,17 @@ def generate_evidence_md(
     query: Dict[str, Any],
     element_index: Dict[str, Dict[str, Any]],
     output_dir: Path,
+    cl_image_map: Optional[Dict[str, str]] = None,
 ) -> tuple[Path, int, int]:
     """Generate one MD file for a single query.
+
+    Parameters
+    ----------
+    cl_image_map : dict, optional
+        Mapping ``{element_id: absolute_or_relative_image_path}`` built from
+        ``content_list_v2.json``.  Used as fallback when the element has no
+        ``image_path`` in ``multimodal_elements.json`` (e.g. formulas, some
+        tables).
 
     Returns ``(md_path, images_embedded, images_missing)`` counts.
     """
@@ -235,6 +330,9 @@ def generate_evidence_md(
 
         # Image — deterministic path builder (works even if file absent on this machine)
         img_path_raw = elem.get("image_path")
+        # Fallback: check content_list_v2-based map for formulas/tables
+        if not img_path_raw and cl_image_map:
+            img_path_raw = cl_image_map.get(eid)
         img_rel = _resolve_image_for_md(img_path_raw, output_dir)
         if img_rel:
             lines.append(f'<img src="{html.escape(img_rel, quote=True)}" width="600">\n')
@@ -378,6 +476,26 @@ def main() -> None:
                 queries.append(json.loads(line))
     print(f"Loaded {len(queries)} queries from {args.queries}")
 
+    # Build content_list_v2 image map for elements without image_path
+    # Collect doc_ids that have formula/table elements missing images
+    needed_doc_ids: set[str] = set()
+    for q in queries:
+        for eid in q.get("element_ids", []):
+            elem = element_index.get(eid, {})
+            if not elem.get("image_path"):
+                # Extract doc_id from element_id (e.g. "1802.08139_formula_1" → "1802.08139")
+                for sep in ("_formula_", "_table_"):
+                    if sep in eid:
+                        needed_doc_ids.add(eid.rsplit(sep, 1)[0])
+                        break
+
+    cl_image_map: Dict[str, str] = {}
+    if needed_doc_ids:
+        mineru_base = PROJECT_ROOT / _LOCAL_MINERU_BASE
+        print(f"Scanning content_list_v2 for {len(needed_doc_ids)} docs with missing images ...")
+        cl_image_map = _build_content_list_image_map(mineru_base, needed_doc_ids)
+        print(f"  → {len(cl_image_map)} formula/table images found")
+
     # Create output dir
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -387,7 +505,7 @@ def main() -> None:
     total_missing = 0
     for q in queries:
         md_path, n_embedded, n_missing = generate_evidence_md(
-            q, element_index, args.output_dir,
+            q, element_index, args.output_dir, cl_image_map,
         )
         generated.append(md_path)
         total_embedded += n_embedded
