@@ -59,6 +59,7 @@ REFERENCE_GRAPH=${REFERENCE_GRAPH:-data/01_graphs/latex_reference_graph.json}
 TOPOLOGY_CANDIDATES=${TOPOLOGY_CANDIDATES:-data/01_graphs/latex_hub_multihop_candidates.json}
 LIMIT=${LIMIT:-0}
 SKIP_SELECT=${SKIP_SELECT:-0}
+MAX_QUERY_HOPS=${MAX_QUERY_HOPS:-5}
 
 cd "$REPO_ROOT"
 mkdir -p logs "$(dirname "$CANDIDATES")" "$(dirname "$OUTPUT")"
@@ -130,6 +131,10 @@ fi
 
 if [[ "$LIMIT" -gt 0 ]]; then
     GEN_CMD+=(--limit "$LIMIT")
+fi
+
+if [[ "$MAX_QUERY_HOPS" -gt 0 ]]; then
+    GEN_CMD+=(--max-query-hops "$MAX_QUERY_HOPS")
 fi
 
 "${GEN_CMD[@]}"

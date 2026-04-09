@@ -1000,6 +1000,57 @@ def run_iterative_generation_for_pair(
     return entry, usage, None
 
 
+def split_pair_into_subchains(pair: Dict[str, Any], max_hops: int) -> List[Dict[str, Any]]:
+    """Slice an over-long chain pair into contiguous sub-chain pairs.
+
+    Each sub-chain has at most `max_hops` hops (= max_hops + 1 nodes).
+    Sub-chains are non-overlapping and contiguous; the last segment keeps
+    whatever nodes remain (down to the minimum of 3 hops).
+
+    Returns a list with the original pair unchanged if hop_count <= max_hops,
+    or 2+ sub-pairs otherwise.  Each sub-pair gets a new pair_id suffix
+    (e.g. ``pair_1_seg0``, ``pair_1_seg1``) so skip-done and dedup work
+    per-segment.
+    """
+    if max_hops <= 0:
+        return [pair]
+    nodes = get_path_nodes(pair)
+    if not nodes:
+        return [pair]
+    n_nodes = len(nodes)
+    n_hops = n_nodes - 1
+    if n_hops <= max_hops:
+        return [pair]
+
+    base_path = pair.get("path") or []
+    base_id = str(pair.get("pair_id", "pair"))
+    base_doc = pair.get("doc_id", "")
+    sub_pairs: List[Dict[str, Any]] = []
+    seg_idx = 0
+    i = 0
+    while i < n_nodes - 1:  # need at least 2 nodes (1 hop)
+        j = min(i + max_hops + 1, n_nodes)  # end index (exclusive)
+        seg_nodes = nodes[i:j]
+        seg_hops = len(seg_nodes) - 1
+        if seg_hops < 3:  # skip trailing stubs shorter than 3 hops
+            break
+        seg_path = base_path[i:j] if base_path else [n.get("element_id", "") for n in seg_nodes]
+        sub = dict(pair)  # shallow copy keeps all metadata
+        sub["pair_id"] = f"{base_id}_seg{seg_idx}"
+        sub["path"] = seg_path
+        sub["hop_distance"] = seg_hops
+        # Rebuild node_group to only include this segment's nodes.
+        if "node_group" in pair:
+            sub["node_group"] = pair["node_group"][i:j]
+        sub["_sub_chain"] = True
+        sub["_parent_pair_id"] = base_id
+        sub["_seg_idx"] = seg_idx
+        sub_pairs.append(sub)
+        seg_idx += 1
+        i += max_hops  # non-overlapping stride
+    return sub_pairs if sub_pairs else [pair]
+
+
 def normalize_pair_types(path_nodes: Sequence[Dict[str, Any]]) -> Tuple[str, str, str]:
     a_type = str(path_nodes[0].get("element_type", "unknown"))
     b_type = str(path_nodes[-1].get("element_type", "unknown"))
@@ -1200,6 +1251,17 @@ def main() -> None:
             "Set 0 to disable."
         ),
     )
+    ap.add_argument(
+        "--max-query-hops",
+        type=int,
+        default=5,
+        help=(
+            "Maximum chain hops fed into a single query. Longer chains are "
+            "split into non-overlapping contiguous sub-chains of this length, "
+            "each generating an independent query. Set 0 to disable splitting "
+            "(not recommended for chains > 6 hops)."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model defaults per provider
@@ -1221,6 +1283,21 @@ def main() -> None:
     pairs = cand_data.get("pairs", [])
     if args.limit > 0:
         pairs = pairs[:args.limit]
+
+    # Expand over-long chains into contiguous sub-chain pairs before any
+    # skip-done filtering so that sub-chain pair_ids are stable across runs.
+    if args.max_query_hops > 0:
+        expanded = []
+        for p in pairs:
+            expanded.extend(split_pair_into_subchains(p, args.max_query_hops))
+        n_orig = len(pairs)
+        pairs = expanded
+        if len(pairs) != n_orig:
+            print(
+                f"  --max-query-hops={args.max_query_hops}: "
+                f"{n_orig} input pairs → {len(pairs)} sub-chain pairs "
+                f"(+{len(pairs) - n_orig} from long-chain splits)"
+            )
 
     # Resume support: skip pair_ids already present in a previous output file.
     # Also pre-load pass counts and prior query tokens per pair_id for cap +
@@ -1534,6 +1611,7 @@ def main() -> None:
             "reference_graph_loaded": len(_BRIDGE_TEXT_CACHE) > 0,
             "max_pass_per_pair": args.max_pass_per_pair,
             "dedup_jaccard": args.dedup_jaccard,
+            "max_query_hops": args.max_query_hops,
         },
     )
 
