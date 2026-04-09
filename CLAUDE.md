@@ -92,6 +92,80 @@ set -a && source .env && set +a
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-04-09 更新｜Intra-doc Pairing 模块 + Evidence MD 导出 + 数据清理）
+
+### 本轮完成（相对 2026-04-08，PR #154–#158）
+
+- **PR #154: 数据目录重组 + 废弃文件清理**
+  - `data/` 从平铺结构重组为 `00_raw/` / `01_graphs/` / `02_enriched/` / `03_queries/` / `05_eval/` 子目录
+  - 删除 ~65 个废弃数据文件（smoke test、demo、审计、M4 artifacts、过期版本）
+  - 删除 6 个废弃脚本：`build_dual_evidence_triplets.py`、`evaluate_review.py`、`export_review_csv.py`、`inspect_graph.py`、`run_ablation_enrich.py`、`run_dual_evidence_retrieval_baseline.py`
+  - `src/utils/image_utils.py` 路径解析重构：新增 `_resolve_core()` DRY helper，支持 `data/00_raw/mineru_output/` 路径
+  - LaTeX 源码路径统一到 `data/00_raw/latex_sources/`（所有脚本 + 文档同步更新）
+  - LLM Judge 模块集中化 (`src/qc/llm_judge.py`)、Rerun2 全量 QC（145 pass queries）
+
+- **PR #155: 代码质量修复**（由 PR #154 大量改动触发的检查）
+  - 统一 LaTeX 源码路径到 `data/00_raw/latex_sources/`（`download_latex_sources.py`、`download_papers_semantic_scholar.py`、`build_latex_reference_graph.py`、`build_citation_graph.py`、`.gitignore`）
+  - 路径解析 `_resolve_core()` 重构完成
+
+- **PR #156: Evidence Markdown 导出脚本**（`scripts/export_evidence_md.py`，新增 336 行）
+  - 从 query JSONL 生成 per-query 的 Markdown 文件，含：query/answer/reasoning chain、每个 evidence element 的 caption/content/context/image、evidence_spans/visual_anchors/text_evidence
+  - CLI：`--queries`、`--elements`、`--output-dir`、`--summary`（生成 index.md 汇总）
+  - `.gitignore` 新增 `data/06_evidence_export/` 排除生成产物
+
+- **PR #157: Evidence MD 图像显示增强**（+252 行改进）
+  - 新增 `_build_content_list_image_map()`：从 MinerU `content_list_v2.json` 查找 formula/table 的 JPG 图像路径（LaTeX 前缀匹配 + 顺序索引匹配）
+  - 确定性路径解析：`_resolve_image_for_element()` 按 4 级优先级查找图像
+  - 提取 `LATEX_MATCH_PREFIX_LEN` 常量和 `_doc_id_from_element_id()` helper
+
+- **PR #158: Intra-doc Pairing 模块**（新增 ~2134 行，核心新模块）
+  - **`src/pairing/` 新包**（4 个子模块）：
+    - `pair_schema.py`：`CandidatePair` Pydantic schema（兼容 `hub_candidates_enriched_v3.json` 格式）
+    - `intra_doc_pairs.py`：`IntraDocPairSelector`，3 种策略（`direct` 直接引用 / `2hop` 两跳 / `section` 同 section）
+    - `chain_finder.py`：`ChainFinder` 多跳链发现（DFS，可探索到图直径，`ChainResult` 含 score/path/hop_count/modality_sequence）
+    - `context_dedup.py`：`dedup_context()` 消除相邻元素的 context_before/context_after 重叠（`MIN_DEDUP_LENGTH=30`）
+  - **`scripts/select_intra_doc_pairs.py`**：CLI 脚本，产出与 `hub_candidates_enriched_v3.json` 格式兼容的 pair JSON
+    - 策略选择：`--strategy {direct,2hop,section,chain,all}`
+    - 过滤：`--pair-type`、`--min-quality`、`--min-chain-hops`、`--max-per-doc`、`--limit`
+  - **严格文档边界**：所有策略强制 intra-doc，零跨文档泄漏（修复 v3 的 60 条 mislabel 问题）
+  - 更新 `filter_l3_candidates.py`、`generate_long_chain_iterative_queries.py`、`run_production_batch.py` 兼容新模块
+  - 新增 **47 个测试**（`tests/test_intra_doc_pairing.py`），总测试 107 pass
+
+### bridge_quality 全 null 根因分析
+
+**问题**：`data/03_queries/m2_diverse_v1_hub_kb_pass.jsonl` 中 23 条 query 全部 `bridge_quality: null`，无桥接段落。
+
+**根因**（两层叠加）：
+1. **代码层**：`generate_multihop_l1_queries.py:1292-1294` 中 `bridge_quality` 仅在 `is_l3=True` 时计算，否则硬编码 `None`。`is_l3` 取决于 candidate 的 `reasoning_chain_target=True`（L3 专属标记）。`m2_diverse_candidates.json` 的 142 个 pair **全部 `reasoning_chain_target=False`**（它们是 L2 dual-evidence，不是 L3 reasoning chain），所以输出全部 `bridge_quality: null`。
+2. **数据层**：即使强制计算 bridge_quality，结果仍为空。因为：
+   - `m2_diverse_candidates.json` 的 **142 个 pair 全部 `edge_contexts: []`**（空列表）
+   - `hub_candidates_enriched_v3.json` 的 **230 个 pair 也全部 `edge_contexts: []`**
+   - bridge 文本的来源是 `latex_reference_graph.json` 中的 edge context（通过 `_ELEMENT_TO_LABELS` 映射 MinerU element_id → LaTeX label → edge context）。这个映射依赖 `load_reference_graph_bridge_texts()` 在运行时构建，但 `edge_contexts` 字段在 enrichment 阶段（`enrich_hub_candidates.py`）就已经是空的，说明 **enrichment 时未能将 latex_reference_graph 的 edge context 注入到 candidate pairs 中**
+   - 根本原因：`enrich_hub_candidates.py` 构建 pair 时，`edge_contexts` 来自 topology candidates 的原始数据，而 topology candidates (`latex_hub_multihop_candidates.json`) 本身就不包含 edge_contexts。这不是 bug——`analyze_latex_graph_topology.py` 按设计只输出拓扑路径，bridge text 解析被推迟到生成阶段（`load_reference_graph_bridge_texts()`）。但 enrichment 阶段没有预填充 `edge_contexts`，导致下游无法在不加载 reference graph 的情况下获得 bridge text。
+
+**修复方向**：两条路径二选一：
+  - **方案 A（推荐）**：在 `enrich_hub_candidates.py` 中新增 `--reference-graph` 参数，enrichment 时直接解析 edge context 并填充到 `edge_contexts` 字段
+  - **方案 B**：保持现状，确保生成脚本始终传入 `--reference-graph data/01_graphs/latex_reference_graph.json`，依赖运行时的 `resolve_bridge_texts_for_path()` 动态解析
+  - 另外需要将 `bridge_quality` 的计算从 L3-only 扩展到所有 pair（移除 `if is_l3 else None` 条件）
+
+### M4 路线图（更新）
+| 阶段 | 目标 | 时间 |
+|------|------|------|
+| Phase 0 ✅ | 锁定 M1.5 基线 + 定义 M4 schema + reasoning-depth tagging | 已完成 |
+| Phase 1 ✅ | M2 pipeline + L3 生成 + 三实验全量运行 | 已完成 |
+| Phase 1.5 ✅ | Enrichment 消融实验 + Exp C enriched 复验 | 已完成 |
+| Phase 1.7 ✅ | P0-P4 Bridge Grounding 增强 + L3 质量验证 | 2026-03-24 完成 |
+| Phase A ✅ | Training Pipeline：Schema + Export + GraphAware Negative Sampling（70 tests） | 2026-04-05 完成 |
+| Phase A.1 ✅ | LLM Judge 集中化 + Rerun2 全量 QC（145 pass queries） | 2026-04-08 完成 |
+| **Phase A.2 ✅** | **Intra-doc Pairing 模块 + Evidence MD 导出 + 数据清理（107 tests）** | **2026-04-09 完成** |
+| **Phase 2A ⏳** | **L3 全量重跑 + 量产 1500+ queries** → 初代 benchmark（需新 API key） | 待执行 |
+| Phase B ⏳ | Embedding Hard Negative Sampler（Qwen3-Embedding-4B，GPU，$0 LLM） | 下一步 |
+| Phase 2B | Embedding 语义边 → 图增强 v2 | 待执行 |
+| Phase 3 | 合并 2A+2B → 增强图 + 大数据集 → 最终实验 | 后续 |
+| Phase 4 | Multi-turn session + M4 联合验证 | 后续 |
+
+---
+
 ## 当前状态（2026-04-08 更新｜LLM Judge 模块集中化 + L3 Rerun2 全量完成 + Resume/Flush 修复）
 
 ### 本轮完成（相对 2026-04-05）
@@ -830,6 +904,14 @@ python scripts/generate_multihop_l1_queries.py \
 | `tests/test_schema.py` | **Phase A 测试：9 个 Pydantic 验证测试** |
 | `tests/test_text_utils.py` | **Phase A 测试：14 个分词/文本工具测试** |
 | `tests/test_negative_sampling.py` | **Phase A 测试：12 个负样本策略测试** |
+| `scripts/export_evidence_md.py` | **Evidence MD 导出：从 query JSONL 生成 per-query Markdown（含图像/evidence/reasoning chain）** |
+| `scripts/select_intra_doc_pairs.py` | **Intra-doc 元素配对 CLI（direct/2hop/section/chain 策略，输出兼容 hub_candidates_enriched 格式）** |
+| `src/pairing/__init__.py` | **Pairing 模块入口（CandidatePair, IntraDocPairSelector, ChainFinder, dedup_context）** |
+| `src/pairing/pair_schema.py` | **CandidatePair Pydantic schema（兼容 hub_candidates_enriched_v3.json 格式）** |
+| `src/pairing/intra_doc_pairs.py` | **IntraDocPairSelector：3 种文档内配对策略（direct/2hop/section），严格文档边界** |
+| `src/pairing/chain_finder.py` | **ChainFinder：DFS 多跳链发现（可达图直径，ChainResult 含 score/path/modality_sequence）** |
+| `src/pairing/context_dedup.py` | **context_dedup：消除相邻元素 context_before/context_after 重叠** |
+| `tests/test_intra_doc_pairing.py` | **Pairing 模块测试：47 个测试（策略/链发现/去重/CLI）** |
 
 ## Mentor 建议（2026-02-11）& 执行优先级
 
@@ -905,7 +987,7 @@ python scripts/generate_multihop_l1_queries.py \
   - `weak_reasoning_connector`: 100
   - `anchor_leakage`: 68
 
-## 下一步 TODO（2026-04-03 更新）
+## 下一步 TODO（2026-04-09 更新）
 
 ### 已完成（历史）
 - ~~**M4 Strategy Review + Schema 设计**~~ ✅ **完成** — 诚实重定位为 M4-Foundation；三套 Schema 落地；step-deletion QC 集成
@@ -915,6 +997,8 @@ python scripts/generate_multihop_l1_queries.py \
 - ~~**MoDora 四工作流代码实现**~~ ✅ **完成** — A1/A2/B1/B2/C1/C3/D1 + PersonaHub 全部已实现（代码就绪，未全量运行）
 - ~~**M2 pipeline 代码 + 数据打包**~~ ✅ **完成** — 三层数据 + L3 候选筛选 + 3-step prompt + 三组实验脚本
 - ~~**Phase A: Training Pipeline Foundation**~~ ✅ **完成** — Pydantic Schema + DatasetBuilder + NegativeSampler Protocol + normalize/export CLI + 62 tests + review 修复 5 项
+- ~~**Phase A.1: LLM Judge 集中化**~~ ✅ **完成** — `src/qc/llm_judge.py` + Rerun2 全量 145 pass
+- ~~**Phase A.2: Intra-doc Pairing + Evidence MD + 数据清理**~~ ✅ **完成** — `src/pairing/` 模块 + `export_evidence_md.py` + 数据目录重组 + 107 tests
 - ~~前序历史~~ ✅ 见 `docs/DISCUSSION_LOG.md`
 
 ### MoDora 工作流代码完成度（代码就绪，待全量验证）
@@ -1095,6 +1179,44 @@ python scripts/generate_multihop_l1_queries.py \
     --provider anthropic \
     --model claude-sonnet-4-5-20250929 \
     --delay 0.3
+
+# === Intra-doc Pairing pipeline（新增 2026-04-09）===
+# 从 multimodal_elements.json 选取文档内元素对（替代 hub_candidates，零跨文档泄漏）
+python scripts/select_intra_doc_pairs.py \
+    --elements data/01_graphs/multimodal_elements.json \
+    --output data/02_enriched/intra_doc_pairs_v1.json \
+    --strategy all \
+    --max-per-doc 15
+
+# 仅选 figure+table 的直接引用对
+python scripts/select_intra_doc_pairs.py \
+    --elements data/01_graphs/multimodal_elements.json \
+    --output data/02_enriched/intra_doc_pairs_direct_ft.json \
+    --strategy direct \
+    --pair-type figure+table
+
+# 多跳链发现（≥3 hop）
+python scripts/select_intra_doc_pairs.py \
+    --elements data/01_graphs/multimodal_elements.json \
+    --output data/02_enriched/intra_doc_chain_pairs.json \
+    --strategy chain \
+    --min-chain-hops 3
+
+# 用 intra-doc pairs 跑 query 生成（与 hub_candidates 格式兼容）
+python scripts/generate_multihop_l1_queries.py \
+    --candidates data/02_enriched/intra_doc_pairs_v1.json \
+    --output data/03_queries/intra_doc_queries_v1.jsonl \
+    --pass-only \
+    --provider company \
+    --delay 0.5
+
+# === Evidence Markdown 导出（新增 2026-04-09）===
+# 从 query JSONL 生成 per-query 的 Markdown 文件（含图像、evidence、reasoning chain）
+python scripts/export_evidence_md.py \
+    --queries data/03_queries/m2_diverse_v1_hub_kb_pass.jsonl \
+    --elements data/01_graphs/multimodal_elements.json \
+    --output-dir data/06_evidence_export/m2_diverse_v1 \
+    --summary
 ```
 
 ## 关键命令（PowerShell 版，本地 Windows 使用）
@@ -1144,6 +1266,22 @@ python scripts/analyze_latex_graph_topology.py
 
 # LaTeX cross-modal links
 python scripts/build_latex_cross_modal_links.py --elements data/multimodal_elements.json --latex-graph data/latex_reference_graph.json --output data/latex_cross_modal_pairs.json
+
+# === Intra-doc Pairing pipeline（新增 2026-04-09）===
+# 文档内元素配对（全策略）
+python scripts/select_intra_doc_pairs.py --elements data/01_graphs/multimodal_elements.json --output data/02_enriched/intra_doc_pairs_v1.json --strategy all --max-per-doc 15
+
+# 仅 direct figure+table
+python scripts/select_intra_doc_pairs.py --elements data/01_graphs/multimodal_elements.json --output data/02_enriched/intra_doc_pairs_direct_ft.json --strategy direct --pair-type figure+table
+
+# 多跳链发现
+python scripts/select_intra_doc_pairs.py --elements data/01_graphs/multimodal_elements.json --output data/02_enriched/intra_doc_chain_pairs.json --strategy chain --min-chain-hops 3
+
+# 用 intra-doc pairs 生成 queries
+python scripts/generate_multihop_l1_queries.py --candidates data/02_enriched/intra_doc_pairs_v1.json --output data/03_queries/intra_doc_queries_v1.jsonl --pass-only --provider company --delay 0.5
+
+# === Evidence Markdown 导出（新增 2026-04-09）===
+python scripts/export_evidence_md.py --queries data/03_queries/m2_diverse_v1_hub_kb_pass.jsonl --elements data/01_graphs/multimodal_elements.json --output-dir data/06_evidence_export/m2_diverse_v1 --summary
 ```
 
 ## 日期：2026-02-10（L2 v3 三方毒舌评审共识总结）
