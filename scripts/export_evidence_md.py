@@ -27,6 +27,12 @@ from typing import Any, Dict, List, Optional
 
 SUMMARY_QUERY_MAX_LEN = 80
 
+# Number of leading LaTeX characters used for prefix matching between
+# formulas.jsonl and content_list_v2 equation blocks.  50 chars is enough to
+# disambiguate formulas within a single document while tolerating minor
+# whitespace differences at the tail.
+_LATEX_MATCH_PREFIX_LEN = 50
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -48,6 +54,24 @@ _LOCAL_MINERU_BASE = Path("data") / "00_raw" / "mineru_output"
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+# Separators used in element IDs to delimit the doc_id from the type + index.
+# E.g. ``1802.08139_formula_1`` → doc_id = ``1802.08139``.
+_ELEMENT_TYPE_SEPS = ("_formula_", "_table_", "_figure_")
+
+
+def _doc_id_from_element_id(eid: str) -> Optional[str]:
+    """Extract the doc_id prefix from an element_id string.
+
+    Element IDs follow the pattern ``{doc_id}_{type}_{index}``, e.g.
+    ``1802.08139_formula_1`` or ``1711.07076_figure_3``.
+    Returns the doc_id part, or ``None`` if the pattern is not recognized.
+    """
+    for sep in _ELEMENT_TYPE_SEPS:
+        if sep in eid:
+            return eid.rsplit(sep, 1)[0]
+    return None
+
 
 def _make_relative(abs_path: Path, md_dir: Path) -> str:
     """Make a path relative to the MD file's directory for embedding.
@@ -208,10 +232,9 @@ def _build_content_list_image_map(
                 fm_latex = fm.get("latex", "").strip()
                 if not fm_id or not fm_latex:
                     continue
-                # Match by first 50 chars of LaTeX (robust against trailing whitespace)
-                prefix = fm_latex[:50]
+                prefix = fm_latex[:_LATEX_MATCH_PREFIX_LEN]
                 for eq_latex, eq_img in cl_equations:
-                    if eq_latex.strip()[:50] == prefix:
+                    if eq_latex.strip()[:_LATEX_MATCH_PREFIX_LEN] == prefix:
                         full_rel = str(doc_base / eq_img)
                         mapping[fm_id] = full_rel
                         break
@@ -483,11 +506,9 @@ def main() -> None:
         for eid in q.get("element_ids", []):
             elem = element_index.get(eid, {})
             if not elem.get("image_path"):
-                # Extract doc_id from element_id (e.g. "1802.08139_formula_1" → "1802.08139")
-                for sep in ("_formula_", "_table_"):
-                    if sep in eid:
-                        needed_doc_ids.add(eid.rsplit(sep, 1)[0])
-                        break
+                doc_id = _doc_id_from_element_id(eid)
+                if doc_id:
+                    needed_doc_ids.add(doc_id)
 
     cl_image_map: Dict[str, str] = {}
     if needed_doc_ids:
