@@ -1007,6 +1007,101 @@ def normalize_pair_types(path_nodes: Sequence[Dict[str, Any]]) -> Tuple[str, str
     return a_type, b_type, pair_type
 
 
+# ── Semantic dedup + per-pair cap + qc_summary_label helpers ────────────────
+
+_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
+_DEDUP_STOPWORDS = frozenset(
+    {
+        "a", "an", "the", "of", "in", "on", "at", "to", "for", "and", "or",
+        "but", "is", "are", "was", "were", "be", "been", "being", "by", "with",
+        "as", "that", "this", "these", "those", "it", "its", "from", "which",
+        "how", "what", "why", "when", "where", "who", "whom", "does", "do",
+        "did", "has", "have", "had", "can", "could", "would", "should", "will",
+        "between", "into", "about", "than", "then", "so", "if", "not", "no",
+    }
+)
+
+
+def _tokenize_for_dedup(text: str) -> set:
+    """Lowercased alphanumeric tokens minus stopwords, for Jaccard."""
+    if not text:
+        return set()
+    toks = {t.lower() for t in _TOKEN_RE.findall(text)}
+    return {t for t in toks if t not in _DEDUP_STOPWORDS and len(t) > 1}
+
+
+def _jaccard(a: set, b: set) -> float:
+    if not a or not b:
+        return 0.0
+    inter = len(a & b)
+    union = len(a | b)
+    return inter / union if union else 0.0
+
+
+def derive_qc_summary_label(
+    qc_pass: bool,
+    qc_issues: Sequence[str],
+    qc_metrics: Dict[str, Any],
+) -> str:
+    """Condense qc_issues + grounding metrics into one human-readable tag.
+
+    Priority order (first match wins):
+      over_capped → duplicate → hallucinated → fake_multihop →
+      bridge_overclaim → conditional_hedge → leakage → weak_chain →
+      single_evidence → underdetermined → grounded_pass → rule_fail
+    """
+    issues = set(qc_issues or [])
+
+    # Hard labels injected by dedup / cap checks run first.
+    if "over_capped" in issues:
+        return "over_capped"
+    if "duplicate" in issues:
+        return "duplicate"
+
+    # Grounding-based labels (from llm_grounding metrics).
+    grounding = qc_metrics.get("llm_grounding") if isinstance(qc_metrics, dict) else None
+    if isinstance(grounding, dict):
+        if grounding.get("hallucination"):
+            return "hallucinated"
+        if grounding.get("underdetermined"):
+            return "underdetermined"
+
+    # Ablation / fake multihop.
+    if {"fake_long_chain", "fake_multihop", "ablation_check_failed"} & issues:
+        return "fake_multihop"
+
+    # Bridge / conditional overclaim (from qc_multihop_query).
+    if "bridge_overclaim" in issues:
+        return "bridge_overclaim"
+    if "conditional_hedge" in issues:
+        return "conditional_hedge"
+
+    # Leakage family.
+    if any(i in issues for i in ("anchor_leakage", "bridge_entity_leakage", "template_shortcut")):
+        return "leakage"
+
+    # Reasoning chain weaknesses.
+    if any(
+        i in issues
+        for i in (
+            "missing_reasoning_chain",
+            "weak_reasoning_connector",
+            "pseudo_multihop_parallel",
+        )
+    ):
+        return "weak_chain"
+
+    # Evidence insufficiency.
+    if "single_element_answer" in issues:
+        return "single_evidence"
+
+    if qc_pass:
+        return "grounded_pass"
+    if issues:
+        return "rule_fail"
+    return "unknown"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Iterative long-chain query generation (v3)")
     ap.add_argument("--candidates", default="data/01_graphs/latex_long_chain_pairs_all_q0.json")
@@ -1084,6 +1179,27 @@ def main() -> None:
             "stream is opened in append mode."
         ),
     )
+    ap.add_argument(
+        "--max-pass-per-pair",
+        type=int,
+        default=2,
+        help=(
+            "Maximum pass queries allowed per pair_id across all runs (counts "
+            "entries from --skip-done file as prior). Extra passes are marked "
+            "qc_fail with label 'over_capped'. Set 0 to disable."
+        ),
+    )
+    ap.add_argument(
+        "--dedup-jaccard",
+        type=float,
+        default=0.4,
+        help=(
+            "Token-level Jaccard threshold for semantic dedup across queries "
+            "sharing the same pair_id. New query exceeding this vs any prior "
+            "same-pair query is marked qc_fail with label 'duplicate'. "
+            "Set 0 to disable."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model defaults per provider
@@ -1107,7 +1223,11 @@ def main() -> None:
         pairs = pairs[:args.limit]
 
     # Resume support: skip pair_ids already present in a previous output file.
+    # Also pre-load pass counts and prior query tokens per pair_id for cap +
+    # semantic dedup checks that run during generation.
     done_ids: set = set()
+    pass_count_by_pair: Dict[str, int] = defaultdict(int)
+    prior_query_tokens_by_pair: Dict[str, List[set]] = defaultdict(list)
     skip_done_active = False
     if args.skip_done:
         skip_path = Path(args.skip_done)
@@ -1120,15 +1240,29 @@ def main() -> None:
                     if not _line:
                         continue
                     try:
-                        done_ids.add(json.loads(_line)["pair_id"])
-                    except (KeyError, ValueError, json.JSONDecodeError):
-                        pass
+                        _rec = json.loads(_line)
+                    except json.JSONDecodeError:
+                        continue
+                    _pid = _rec.get("pair_id")
+                    if not _pid:
+                        continue
+                    done_ids.add(_pid)
+                    if _rec.get("qc_pass"):
+                        pass_count_by_pair[_pid] += 1
+                        _q = _rec.get("query", "")
+                        if _q:
+                            prior_query_tokens_by_pair[_pid].append(_tokenize_for_dedup(_q))
             before = len(pairs)
             pairs = [p for p in pairs if p.get("pair_id") not in done_ids]
             print(
                 f"  --skip-done: {len(done_ids)} pair_ids found in {skip_path.name}, "
                 f"skipping {before - len(pairs)} pairs → {len(pairs)} remaining"
             )
+            if pass_count_by_pair:
+                print(
+                    f"  --skip-done: loaded pass counts for {len(pass_count_by_pair)} pair_ids "
+                    f"(max={max(pass_count_by_pair.values())})"
+                )
             skip_done_active = True
         else:
             print(f"  WARNING: --skip-done file not found: {skip_path}, running all pairs")
@@ -1250,6 +1384,40 @@ def main() -> None:
             start_elem = nodes[0]
             end_elem = nodes[-1]
 
+            # Per-pair cap + semantic dedup are enforced here, after the
+            # generator + rule QC + LLM QC have decided on qc_pass. They can
+            # only downgrade a pass to fail (never the other way around).
+            final_issues = list(obj["qc_issues"])
+            final_pass = bool(obj["qc_pass"])
+            new_query_tokens = _tokenize_for_dedup(obj["query"])
+
+            if final_pass and args.max_pass_per_pair > 0:
+                if pass_count_by_pair.get(pair_id, 0) >= args.max_pass_per_pair:
+                    final_issues.append("over_capped")
+                    final_pass = False
+
+            max_dup_jaccard = 0.0
+            if final_pass and args.dedup_jaccard > 0 and prior_query_tokens_by_pair.get(pair_id):
+                for prior_tokens in prior_query_tokens_by_pair[pair_id]:
+                    j = _jaccard(new_query_tokens, prior_tokens)
+                    if j > max_dup_jaccard:
+                        max_dup_jaccard = j
+                if max_dup_jaccard > args.dedup_jaccard:
+                    final_issues.append("duplicate")
+                    final_pass = False
+
+            metrics_with_post = dict(obj["qc_metrics"])
+            metrics_with_post["pair_pass_count_prior"] = pass_count_by_pair.get(pair_id, 0)
+            metrics_with_post["max_dup_jaccard"] = round(max_dup_jaccard, 3)
+            metrics_with_post["over_capped"] = "over_capped" in final_issues
+            metrics_with_post["duplicate"] = "duplicate" in final_issues
+
+            qc_summary_label = derive_qc_summary_label(
+                qc_pass=final_pass,
+                qc_issues=final_issues,
+                qc_metrics=metrics_with_post,
+            )
+
             entry = {
                 "query_id": f"l1_de_lc_{pair.get('doc_id', 'unknown')}_{q_idx:04d}",
                 "query": obj["query"],
@@ -1277,13 +1445,19 @@ def main() -> None:
                 "text_evidence": obj["text_evidence"],
                 "bridge_steps": obj["bridge_steps"],
                 "hop_subqueries": obj["hop_subqueries"],
-                "qc_issues": obj["qc_issues"],
-                "qc_pass": obj["qc_pass"],
-                "qc_metrics": obj["qc_metrics"],
+                "qc_issues": final_issues,
+                "qc_pass": final_pass,
+                "qc_metrics": metrics_with_post,
+                "qc_summary_label": qc_summary_label,
                 "query_style": obj.get("query_style", args.query_style),
                 "persona_id": obj.get("persona_id", "none"),
                 "persona_text": obj.get("persona_text", ""),
             }
+
+            # Update in-memory trackers so same-batch duplicates are caught too.
+            if final_pass:
+                pass_count_by_pair[pair_id] += 1
+                prior_query_tokens_by_pair[pair_id].append(new_query_tokens)
 
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
             f.flush()
@@ -1358,6 +1532,8 @@ def main() -> None:
             "use_persona": args.use_persona,
             "skip_done": bool(args.skip_done),
             "reference_graph_loaded": len(_BRIDGE_TEXT_CACHE) > 0,
+            "max_pass_per_pair": args.max_pass_per_pair,
+            "dedup_jaccard": args.dedup_jaccard,
         },
     )
 
