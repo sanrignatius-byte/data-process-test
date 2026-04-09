@@ -118,10 +118,13 @@ class ChainFinder:
     MODAL_TYPES = frozenset({"figure", "table", "formula"})
 
     # Default maximum chain length (nodes) to prevent exponential blowup
-    # on dense graphs.  Can be overridden per call.
+    # on dense graphs (e.g. 1901.10436 has 70 elements / 79 edges).
+    # Value 12 covers 99%+ of real chains (max observed: 14 in 1 doc).
     DEFAULT_MAX_LENGTH = 12
 
-    # Maximum number of chains to collect before stopping DFS early.
+    # Maximum chains to collect before stopping DFS early.
+    # 2000 is sufficient for typical 76-doc corpus; avoids memory blowup
+    # on dense subgraphs.
     MAX_RESULTS = 2000
 
     def __init__(
@@ -353,8 +356,9 @@ class ChainFinder:
         if cross_modal_only and types[0] == types[-1]:
             return
 
-        # Canonical dedup: use frozenset of the full path (order-agnostic)
-        # to avoid emitting A→B→C and C→B→A as separate chains.
+        # Canonical dedup: frozenset treats A→B→C and C→B→A as the same
+        # chain.  This is correct because our edges are undirected
+        # (adjacency built symmetrically in from_doc).
         canon = frozenset(path)
         if canon in seen_paths:
             return

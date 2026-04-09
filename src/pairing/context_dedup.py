@@ -18,6 +18,11 @@ Typical usage::
 from __future__ import annotations
 
 
+# Strings shorter than this are unlikely to have meaningful overlap;
+# skip dedup to avoid false positives from common short phrases.
+MIN_DEDUP_LENGTH = 30
+
+
 def dedup_context(
     context_before: str,
     context_after: str,
@@ -57,7 +62,7 @@ def dedup_context(
         return before, after
 
     min_len = min(len(before), len(after))
-    if min_len < 30:
+    if min_len < MIN_DEDUP_LENGTH:
         return before, after
 
     # Pattern 1: Prefix overlap — context_after starts same as context_before

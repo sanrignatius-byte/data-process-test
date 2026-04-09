@@ -249,9 +249,6 @@ class IntraDocPairSelector:
             tb = el_b.get("element_type", "")
             if ta == tb:
                 continue  # same modality → not cross-modal
-            # Strict doc boundary check
-            if _doc_id_from_element_id(src) != _doc_id_from_element_id(tgt):
-                continue
 
             key = frozenset([src, tgt])
             if key in seen:
