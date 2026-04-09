@@ -29,15 +29,30 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 from src.utils.image_utils import encode_image  # noqa: E402
 from src.qc.pipelines import qc_multihop_query  # noqa: E402
 from src.qc.llm_judge import run_ablation_qc, judge_answer_grounding  # noqa: E402
+from src.qc.checks import is_noisy_enrichment as _is_noisy_enrichment  # noqa: E402
 from src.api import call_llm, parse_json, set_company_credentials  # noqa: E402
 from src.utils.token_logger import log_run  # noqa: E402
+from src.prompts.personas import (  # noqa: E402
+    load_personahub_personas as _load_personahub_personas,
+    resolve_persona,
+    resolve_persona_id,
+    inject_persona_prefix,
+)
+from src.prompts.styles import resolve_query_style  # noqa: E402
 
-# normalize_path is still local to generate_multihop_l1_queries
-from generate_multihop_l1_queries import normalize_path  # noqa: E402
+# Reuse multihop's reference-graph + bridge-text resolver, plus normalize_path.
+from generate_multihop_l1_queries import (  # noqa: E402
+    normalize_path,
+    load_reference_graph_bridge_texts,
+    resolve_bridge_texts_for_path,
+    _BRIDGE_TEXT_CACHE,
+    _ELEMENT_TO_LABELS,
+)
 
 
 SYSTEM_STEP_PROMPT = (
@@ -311,7 +326,12 @@ def short_text(text: str, limit: int = 420) -> str:
 
 def element_context(elem: Dict[str, Any], context_limit: int = 280) -> str:
     caption = short_text(elem.get("caption", ""), 220)
-    content = short_text(elem.get("content", ""), context_limit)
+    # Prefer enriched content (MoDora-style) when present and not noisy.
+    enriched = (elem.get("enriched_content", "") or "").strip()
+    if enriched and _is_noisy_enrichment(enriched):
+        enriched = ""
+    raw_content = short_text(elem.get("content", ""), context_limit)
+    content = short_text(enriched, context_limit) if enriched else raw_content
     before = short_text(elem.get("context_before", ""), 180)
     after = short_text(elem.get("context_after", ""), 180)
     return (
@@ -322,6 +342,71 @@ def element_context(elem: Dict[str, Any], context_limit: int = 280) -> str:
         f"Context before: {before}\n"
         f"Context after: {after}"
     )
+
+
+def build_chain_enriched_section(nodes: Sequence[Dict[str, Any]]) -> str:
+    """Build an enriched-description block covering every node in the chain.
+
+    For each chain node we include enriched_title + enriched_content (when
+    present and not flagged as noisy by the C1 noise filter).  This is the
+    long-chain analogue of build_enriched_context_section() in the multihop
+    script — but covers all hops, not just two endpoints.
+    """
+    parts: List[str] = []
+    for idx, elem in enumerate(nodes, 1):
+        et = (elem.get("enriched_title", "") or "").strip()
+        ec = (elem.get("enriched_content", "") or "").strip()
+        if et and _is_noisy_enrichment(et):
+            et = ""
+        if ec and _is_noisy_enrichment(ec):
+            ec = ""
+        if not (et or ec):
+            continue
+        eid = elem.get("element_id", f"node_{idx}")
+        line = f"[Node {idx} {eid} enriched]"
+        if et:
+            line += f" {et}."
+        if ec:
+            line += f" {ec[:600]}"
+        parts.append(line)
+    if not parts:
+        return ""
+    return "## Enriched node descriptions\n" + "\n".join(parts)
+
+
+def build_chain_bridge_section(pair: Dict[str, Any], nodes: Sequence[Dict[str, Any]]) -> str:
+    """Resolve real LaTeX bridge paragraph text along the chain.
+
+    Walks consecutive (a, b) endpoint pairs along the chain and queries the
+    pre-loaded reference-graph cache (resolve_bridge_texts_for_path) for each
+    pair.  Caps total output at ~1200 chars to keep prompt tight.
+    """
+    if not _BRIDGE_TEXT_CACHE:
+        return ""
+    seen: set = set()
+    bridges: List[str] = []
+    for a, b in zip(nodes, nodes[1:]):
+        sub_pair = {
+            "element_a_id": a.get("element_id", ""),
+            "element_b_id": b.get("element_id", ""),
+        }
+        for txt in resolve_bridge_texts_for_path(sub_pair):
+            if txt and txt not in seen:
+                seen.add(txt)
+                bridges.append(txt)
+    # Fallback: pair-level bridge_contexts (older format).
+    if not bridges:
+        for bc in pair.get("bridge_contexts", []) or []:
+            txt = (bc.get("text", "") or "").strip()
+            if txt and txt not in seen:
+                seen.add(txt)
+                bridges.append(txt)
+    if not bridges:
+        return ""
+    joined = "\n".join(f"- {b}" for b in bridges[:6])
+    if len(joined) > 1200:
+        joined = joined[:1200] + "..."
+    return "## Author's connection (from LaTeX source)\n" + joined
 
 
 def get_path_nodes(pair: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
@@ -419,12 +504,36 @@ def build_final_prompt(
     start_elem: Dict[str, Any],
     end_elem: Dict[str, Any],
     bridge_steps: Sequence[Dict[str, Any]],
+    query_style: str = "academic",
+    persona_text: str = "",
+    enriched_section: str = "",
+    bridge_section: str = "",
 ) -> str:
     steps_txt = "\n".join(
         f"- hop{s['hop_index']} ({s['element_id']}): anchor={s['anchor']}; span={s['evidence_span']}; fact={s['step_answer']}"
         for s in bridge_steps
     )
-    return f"""
+
+    # Style-specific framing.  Academic = strict scholar voice.
+    # Real-user   = a curious reader phrasing it naturally, but still required
+    # to traverse all bridge facts (so multi-hop signal is preserved).
+    if query_style == "real_user":
+        framing = (
+            "You are a curious technical reader who has just walked through "
+            "the chain of evidence below.  Phrase the final question the way "
+            "such a reader would actually ask it — natural, direct, no jargon "
+            "stacking — but the question must still require ALL of the bridge "
+            "facts to be answered."
+        )
+    else:
+        framing = (
+            "You are generating a strict multi-hop academic retrieval query "
+            "that must traverse the entire chain.  Use precise scholarly voice."
+        )
+
+    prompt = f"""
+{framing}
+
 Generate a FINAL retrieval query for this path: {' -> '.join(path)}.
 
 START ENDPOINT:
@@ -466,6 +575,16 @@ Output JSON:
   "text_evidence": "string"
 }}
 """.strip()
+
+    # Append optional sections (enriched descriptions, real LaTeX bridge text)
+    # before injecting persona prefix at the very top.
+    if enriched_section:
+        prompt = prompt + "\n\n" + enriched_section
+    if bridge_section:
+        prompt = prompt + "\n\n" + bridge_section
+    if persona_text:
+        prompt = inject_persona_prefix(prompt, persona_text)
+    return prompt
 
 
 def build_ablation_prompt(
@@ -538,6 +657,7 @@ def maybe_repair_candidate(
     no_images: bool,
     dry_run: bool,
     provider: str = "company",
+    persona_text: str = "",
 ) -> Tuple[Optional[Dict[str, Any]], int, int]:
     if dry_run:
         return None, 0, 0
@@ -549,6 +669,8 @@ def maybe_repair_candidate(
         end_elem=end_elem,
         bridge_steps=bridge_steps,
     )
+    if persona_text:
+        prompt = inject_persona_prefix(prompt, persona_text)
     imgs: List[Optional[Tuple[str, str]]] = []
     if not no_images:
         imgs = [encode_image(start_elem.get("image_path")), encode_image(end_elem.get("image_path"))]
@@ -575,6 +697,8 @@ def run_iterative_generation_for_pair(
     skip_ablation: bool,
     repair_attempts: int,
     provider: str = "company",
+    query_style: str = "academic",
+    use_persona: bool = False,
 ) -> Tuple[Optional[Dict[str, Any]], Dict[str, int], Optional[str]]:
     """Return (entry, token_usage, error_message)."""
     usage = {"in": 0, "out": 0}
@@ -588,6 +712,13 @@ def run_iterative_generation_for_pair(
     start = nodes[0]
     end = nodes[-1]
     intermediates = nodes[1:-1]
+
+    # Per-pair style + persona + enrichment + bridge text resolution.
+    pair_id_str = str(pair.get("pair_id", ""))
+    effective_style = resolve_query_style(query_style, pair_id_str)
+    persona_text = resolve_persona(pair_id_str) if use_persona else ""
+    enriched_section = build_chain_enriched_section(nodes)
+    bridge_section = build_chain_bridge_section(pair, nodes)
 
     # Stage-wise generation for bridge steps.
     bridge_steps: List[Dict[str, Any]] = []
@@ -645,6 +776,10 @@ def run_iterative_generation_for_pair(
         start_elem=start,
         end_elem=end,
         bridge_steps=bridge_steps,
+        query_style=effective_style,
+        persona_text=persona_text,
+        enriched_section=enriched_section,
+        bridge_section=bridge_section,
     )
     if dry_run:
         final_obj = {
@@ -797,6 +932,7 @@ def run_iterative_generation_for_pair(
             no_images=no_images,
             dry_run=dry_run,
             provider=provider,
+            persona_text=persona_text,
         )
         usage["in"] += in_tok
         usage["out"] += out_tok
@@ -838,6 +974,11 @@ def run_iterative_generation_for_pair(
             if not issues:
                 break
 
+    metrics["query_style"] = effective_style
+    metrics["persona_id"] = resolve_persona_id(pair_id_str) if use_persona else "none"
+    metrics["enriched_section_used"] = bool(enriched_section)
+    metrics["bridge_section_used"] = bool(bridge_section)
+
     entry = {
         "query": query,
         "answer": answer,
@@ -852,6 +993,9 @@ def run_iterative_generation_for_pair(
         "qc_issues": issues,
         "qc_pass": len(issues) == 0,
         "qc_metrics": metrics,
+        "query_style": effective_style,
+        "persona_id": metrics["persona_id"],
+        "persona_text": persona_text,
     }
     return entry, usage, None
 
@@ -864,9 +1008,14 @@ def normalize_pair_types(path_nodes: Sequence[Dict[str, Any]]) -> Tuple[str, str
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Iterative long-chain query generation (v2)")
+    ap = argparse.ArgumentParser(description="Iterative long-chain query generation (v3)")
     ap.add_argument("--candidates", default="data/01_graphs/latex_long_chain_pairs_all_q0.json")
     ap.add_argument("--output", default="data/03_queries/l1_dual_evidence_long_chain_queries_v2_iterative.jsonl")
+    ap.add_argument(
+        "--pass-output",
+        default="",
+        help="Optional explicit pass-only JSONL path. If set, pass-only entries are written here regardless of --pass-only.",
+    )
     ap.add_argument("--pass-only", action="store_true")
     ap.add_argument(
         "--provider",
@@ -892,6 +1041,49 @@ def main() -> None:
     ap.add_argument("--no-images", action="store_true")
     ap.add_argument("--skip-ablation", action="store_true")
     ap.add_argument("--repair-attempts", type=int, default=1)
+    ap.add_argument(
+        "--query-style",
+        choices=["academic", "real_user", "mixed"],
+        default="academic",
+        help=(
+            "Query style for the FINAL prompt: 'academic' (default, scholarly "
+            "voice), 'real_user' (curious-reader natural language), 'mixed' "
+            "(50/50 by pair_id hash)."
+        ),
+    )
+    ap.add_argument(
+        "--use-persona",
+        action="store_true",
+        default=False,
+        help=(
+            "Inject a PersonaHub persona prefix into the final prompt. Persona "
+            "is assigned deterministically by pair_id hash for reproducibility."
+        ),
+    )
+    ap.add_argument(
+        "--reference-graph",
+        default="data/01_graphs/latex_reference_graph.json",
+        help=(
+            "Path to latex_reference_graph.json. When present, the script "
+            "resolves real LaTeX bridge paragraph text along the chain and "
+            "appends it to the final prompt."
+        ),
+    )
+    ap.add_argument(
+        "--topology-candidates",
+        default="data/01_graphs/latex_hub_multihop_candidates.json",
+        help="Path to topology candidates JSON (used for element→label mapping).",
+    )
+    ap.add_argument(
+        "--skip-done",
+        default="",
+        metavar="JSONL",
+        help=(
+            "Path to an existing output JSONL. Pair IDs already present in "
+            "that file are skipped (resume support). When set, the output "
+            "stream is opened in append mode."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model defaults per provider
@@ -914,7 +1106,52 @@ def main() -> None:
     if args.limit > 0:
         pairs = pairs[:args.limit]
 
-    print("Iterative Long-Chain Generation (v2)")
+    # Resume support: skip pair_ids already present in a previous output file.
+    done_ids: set = set()
+    skip_done_active = False
+    if args.skip_done:
+        skip_path = Path(args.skip_done)
+        if not skip_path.is_absolute():
+            skip_path = PROJECT_ROOT / skip_path
+        if skip_path.exists():
+            with open(skip_path, encoding="utf-8") as _sf:
+                for _line in _sf:
+                    _line = _line.strip()
+                    if not _line:
+                        continue
+                    try:
+                        done_ids.add(json.loads(_line)["pair_id"])
+                    except (KeyError, ValueError, json.JSONDecodeError):
+                        pass
+            before = len(pairs)
+            pairs = [p for p in pairs if p.get("pair_id") not in done_ids]
+            print(
+                f"  --skip-done: {len(done_ids)} pair_ids found in {skip_path.name}, "
+                f"skipping {before - len(pairs)} pairs → {len(pairs)} remaining"
+            )
+            skip_done_active = True
+        else:
+            print(f"  WARNING: --skip-done file not found: {skip_path}, running all pairs")
+
+    # Load reference graph for bridge paragraph text resolution.
+    ref_graph_path = Path(args.reference_graph)
+    if not ref_graph_path.is_absolute():
+        ref_graph_path = PROJECT_ROOT / ref_graph_path
+    topo_cand_path = Path(args.topology_candidates)
+    if not topo_cand_path.is_absolute():
+        topo_cand_path = PROJECT_ROOT / topo_cand_path
+    if ref_graph_path.exists():
+        print(f"Loading reference graph for bridge text resolution: {ref_graph_path}")
+        load_reference_graph_bridge_texts(
+            str(ref_graph_path),
+            topology_candidates_path=str(topo_cand_path) if topo_cand_path.exists() else "",
+        )
+        print(f"  Loaded bridge texts for {len(_BRIDGE_TEXT_CACHE)} documents")
+        print(f"  Element→label mappings: {len(_ELEMENT_TO_LABELS)} elements")
+    else:
+        print(f"WARNING: Reference graph not found at {ref_graph_path}")
+
+    print("Iterative Long-Chain Generation (v3)")
     print(f"  Candidates: {len(pairs)}")
     print(f"  Provider:   {args.provider}")
     print(f"  Model:      {args.model}")
@@ -922,6 +1159,15 @@ def main() -> None:
     print(f"  Images: {'disabled' if args.no_images else 'enabled'}")
     print(f"  Ablation QC: {'disabled' if args.skip_ablation else 'enabled'}")
     print(f"  Repair attempts: {max(0, args.repair_attempts)}")
+    print(f"  Query style: {args.query_style}")
+    if args.use_persona:
+        try:
+            _personas = _load_personahub_personas()
+            print(f"  PersonaHub:  enabled ({len(_personas)} personas loaded)")
+        except Exception as _exc:
+            print(f"  PersonaHub:  enabled (failed to load count: {_exc})")
+    else:
+        print(f"  PersonaHub:  disabled")
     print(f"  Output: {args.output}")
     print()
 
@@ -945,7 +1191,13 @@ def main() -> None:
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    pass_path = out_path.with_name(out_path.stem + "_pass" + out_path.suffix) if args.pass_only else None
+    if args.pass_output:
+        pass_path = Path(args.pass_output)
+        pass_path.parent.mkdir(parents=True, exist_ok=True)
+    elif args.pass_only:
+        pass_path = out_path.with_name(out_path.stem + "_pass" + out_path.suffix)
+    else:
+        pass_path = None
 
     total_in = 0
     total_out = 0
@@ -956,8 +1208,10 @@ def main() -> None:
     issue_stats: Dict[str, int] = defaultdict(int)
     type_stats: Dict[str, int] = defaultdict(int)
 
-    out_stream = open(os.devnull, "w", encoding="utf-8") if args.dry_run else out_path.open("w", encoding="utf-8")
-    pass_stream = open(os.devnull, "w", encoding="utf-8") if (args.dry_run or not pass_path) else pass_path.open("w", encoding="utf-8")
+    # Append mode when resuming from a previous run, otherwise overwrite.
+    file_mode = "a" if skip_done_active else "w"
+    out_stream = open(os.devnull, "w", encoding="utf-8") if args.dry_run else out_path.open(file_mode, encoding="utf-8")
+    pass_stream = open(os.devnull, "w", encoding="utf-8") if (args.dry_run or not pass_path) else pass_path.open(file_mode, encoding="utf-8")
 
     with out_stream as f, pass_stream as fp:
         for i, pair in enumerate(pairs, 1):
@@ -975,6 +1229,8 @@ def main() -> None:
                     skip_ablation=args.skip_ablation,
                     repair_attempts=max(0, args.repair_attempts),
                     provider=args.provider,
+                    query_style=args.query_style,
+                    use_persona=args.use_persona,
                 )
             except Exception as e:
                 print(f"ERROR: {e}")
@@ -1024,9 +1280,17 @@ def main() -> None:
                 "qc_issues": obj["qc_issues"],
                 "qc_pass": obj["qc_pass"],
                 "qc_metrics": obj["qc_metrics"],
+                "query_style": obj.get("query_style", args.query_style),
+                "persona_id": obj.get("persona_id", "none"),
+                "persona_text": obj.get("persona_text", ""),
             }
 
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            f.flush()
+            try:
+                os.fsync(f.fileno())
+            except (OSError, ValueError):
+                pass
             q_idx += 1
 
             if entry["qc_pass"]:
@@ -1034,6 +1298,11 @@ def main() -> None:
                 type_stats[pair_type] += 1
                 if pass_path:
                     fp.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                    fp.flush()
+                    try:
+                        os.fsync(fp.fileno())
+                    except (OSError, ValueError):
+                        pass
                 print("OK")
             else:
                 failed += 1
@@ -1085,6 +1354,10 @@ def main() -> None:
             "qc_pass": kept,
             "skipped": skipped,
             "output": str(out_path),
+            "query_style": args.query_style,
+            "use_persona": args.use_persona,
+            "skip_done": bool(args.skip_done),
+            "reference_graph_loaded": len(_BRIDGE_TEXT_CACHE) > 0,
         },
     )
 
