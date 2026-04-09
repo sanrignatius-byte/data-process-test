@@ -32,17 +32,27 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utils.image_utils import resolve_image_path  # noqa: E402
 
+# Markers used to extract the MinerU-relative suffix from any image_path format.
+_MINERU_MARKERS = ("/data/00_raw/mineru_output/", "/data/mineru_output/")
+
+# The canonical local directory (relative to project root) where MinerU images live.
+_LOCAL_MINERU_BASE = Path("data") / "00_raw" / "mineru_output"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def _make_relative(abs_path: Path, md_dir: Path) -> str:
-    """Make a path relative to the MD file's directory for embedding."""
+    """Make a path relative to the MD file's directory for embedding.
+
+    Always returns forward-slash paths so ``<img src="...">`` works on all
+    platforms (Windows ``os.path.relpath`` returns backslash paths).
+    """
     try:
-        return os.path.relpath(abs_path, md_dir)
+        return os.path.relpath(abs_path, md_dir).replace("\\", "/")
     except ValueError:
-        return str(abs_path)
+        return str(abs_path).replace("\\", "/")
 
 
 def _html_table_to_md(html: str) -> str:
@@ -66,6 +76,67 @@ def _truncate(text: str, max_len: int = 1000) -> str:
     if len(text) <= max_len:
         return text
     return text[:max_len] + "\n\n... (truncated)"
+
+
+def _extract_mineru_suffix(raw_path: str) -> Optional[str]:
+    """Extract the MinerU-relative suffix from any image_path format.
+
+    Handles all known path formats:
+      - /projects/_hdd/myyyx1/.../data/mineru_output/SUFFIX
+      - /projects/myyyx1/.../data/mineru_output/SUFFIX
+      - data/mineru_output/SUFFIX
+      - data/00_raw/mineru_output/SUFFIX
+      - Windows backslash variants of the above
+
+    Returns the SUFFIX part (e.g. ``1711.07076/1711.07076/hybrid_auto/images/foo.jpg``),
+    or ``None`` if the path doesn't match any known pattern.
+    """
+    if not raw_path:
+        return None
+    normed = raw_path.replace("\\", "/")
+    for marker in _MINERU_MARKERS:
+        idx = normed.find(marker)
+        if idx >= 0:
+            return normed[idx + len(marker):]
+    # Also handle relative paths without leading /data/
+    for prefix in ("data/00_raw/mineru_output/", "data/mineru_output/"):
+        if normed.startswith(prefix):
+            return normed[len(prefix):]
+    return None
+
+
+def _resolve_image_for_md(
+    raw_path: Optional[str],
+    output_dir: Path,
+) -> Optional[str]:
+    """Resolve an image_path into a relative ``src`` suitable for ``<img>`` in MD.
+
+    Two-stage approach:
+      1. Try :func:`resolve_image_path` — if the file exists locally, compute
+         a verified relative path.
+      2. **Fallback**: extract the MinerU suffix and build a deterministic
+         relative path ``../../00_raw/mineru_output/SUFFIX`` that will work
+         when the MD is viewed on the user's local machine (even if the file
+         doesn't exist on the current machine).
+
+    Returns a forward-slash relative path string, or ``None`` if the raw_path
+    cannot be mapped at all.
+    """
+    if not raw_path:
+        return None
+
+    # Stage 1: verified resolve (file exists on disk)
+    resolved = resolve_image_path(raw_path)
+    if resolved:
+        return _make_relative(resolved, output_dir)
+
+    # Stage 2: deterministic fallback from suffix
+    suffix = _extract_mineru_suffix(raw_path)
+    if suffix:
+        expected_local = PROJECT_ROOT / _LOCAL_MINERU_BASE / suffix
+        return _make_relative(expected_local, output_dir)
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -100,10 +171,15 @@ def generate_evidence_md(
     query: Dict[str, Any],
     element_index: Dict[str, Dict[str, Any]],
     output_dir: Path,
-) -> Path:
-    """Generate one MD file for a single query."""
+) -> tuple:
+    """Generate one MD file for a single query.
+
+    Returns ``(md_path, images_embedded, images_missing)`` counts.
+    """
     qid = query["query_id"]
     md_path = output_dir / f"{qid}.md"
+    images_embedded = 0
+    images_missing = 0
 
     lines: List[str] = []
 
@@ -154,14 +230,15 @@ def generate_evidence_md(
         if caption:
             lines.append(f"**Caption**: {caption}\n")
 
-        # Image — use the shared resolver from src/utils/image_utils
+        # Image — deterministic path builder (works even if file absent on this machine)
         img_path_raw = elem.get("image_path")
-        local_img = resolve_image_path(img_path_raw) if img_path_raw else None
-        if local_img:
-            rel = html.escape(_make_relative(local_img, output_dir), quote=True)
-            lines.append(f'<img src="{rel}" width="600">\n')
+        img_rel = _resolve_image_for_md(img_path_raw, output_dir)
+        if img_rel:
+            lines.append(f'<img src="{html.escape(img_rel, quote=True)}" width="600">\n')
+            images_embedded += 1
         elif img_path_raw:
-            lines.append(f"*Image path (not found locally)*: `{img_path_raw}`\n")
+            lines.append(f"*Image path (could not resolve)*: `{img_path_raw}`\n")
+            images_missing += 1
 
         # Content (table → MD, formula → $$, else plain text)
         content = elem.get("content", "")
@@ -230,12 +307,13 @@ def generate_evidence_md(
     if image_paths:
         lines.append("## Query-level Image Paths\n")
         for ip in image_paths:
-            local = resolve_image_path(ip)
-            if local:
-                rel = html.escape(_make_relative(local, output_dir), quote=True)
-                lines.append(f'<img src="{rel}" width="600">\n')
+            img_rel = _resolve_image_for_md(ip, output_dir)
+            if img_rel:
+                lines.append(f'<img src="{html.escape(img_rel, quote=True)}" width="600">\n')
+                images_embedded += 1
             else:
-                lines.append(f"- `{ip}` *(not found locally)*\n")
+                lines.append(f"- `{ip}` *(could not resolve)*\n")
+                images_missing += 1
         lines.append("")
 
     # ── QC Info ──
@@ -252,7 +330,7 @@ def generate_evidence_md(
 
     # Write
     md_path.write_text("\n".join(lines), encoding="utf-8")
-    return md_path
+    return md_path, images_embedded, images_missing
 
 
 # ---------------------------------------------------------------------------
@@ -302,10 +380,19 @@ def main() -> None:
 
     # Generate MD for each query
     generated: List[Path] = []
+    total_embedded = 0
+    total_missing = 0
     for q in queries:
-        md_path = generate_evidence_md(q, element_index, args.output_dir)
+        md_path, n_embedded, n_missing = generate_evidence_md(
+            q, element_index, args.output_dir,
+        )
         generated.append(md_path)
-        print(f"  ✓ {md_path.name}")
+        total_embedded += n_embedded
+        total_missing += n_missing
+        status = f"  ✓ {md_path.name}"
+        if n_embedded:
+            status += f"  ({n_embedded} images)"
+        print(status)
 
     # Summary index
     if args.summary:
@@ -330,6 +417,9 @@ def main() -> None:
         print(f"\n  ✓ index.md")
 
     print(f"\nDone! {len(generated)} evidence MD files exported to {args.output_dir}")
+    print(f"  Images embedded: {total_embedded}")
+    if total_missing:
+        print(f"  Images unresolved: {total_missing}")
 
 
 if __name__ == "__main__":

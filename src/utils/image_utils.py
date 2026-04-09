@@ -26,6 +26,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 # When a stored path starts with one of these but doesn't exist locally,
 # we strip the prefix and re-root under PROJECT_ROOT.
 _KNOWN_PREFIXES = [
+    "/projects/_hdd/myyyx1/data-process-test/",
     "/projects/myyyx1/data-process-test/",
     "/cluster/scratch/myyyx1/data-process-test/",
     "/home/runner/work/data-process-test/data-process-test/",
