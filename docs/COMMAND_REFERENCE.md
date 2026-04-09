@@ -26,7 +26,7 @@ export $(grep -v '^#' .env | xargs)
 ```bash
 python scripts/download_latex_sources.py \
   --from-mineru data/mineru_output \
-  --output data/latex_sources \
+  --output data/00_raw/latex_sources \
   --delay 4.0 \
   --extract-only        # 仅解压已下载的
 ```
@@ -37,7 +37,7 @@ python scripts/download_latex_sources.py \
 | `--id-file` | — | 从文件读 arXiv ID |
 | `--from-pairs` | — | 从 paper_pairs 目录推断 |
 | `--from-mineru` | — | 从 mineru_output 目录推断 |
-| `--output` | `data/latex_sources` | 输出目录 |
+| `--output` | `data/00_raw/latex_sources` | 输出目录 |
 | `--delay` | `4.0` | 请求间隔（秒） |
 | `--extract-only` | False | 仅解压 |
 | `--no-verify` | False | 跳过 SSL 验证 |
@@ -78,14 +78,14 @@ python scripts/download_pdf_latex_pairs_snowball.py \
 
 ```bash
 python scripts/build_latex_reference_graph.py \
-  --source-dir data/latex_sources/extracted \
+  --source-dir data/00_raw/latex_sources/extracted \
   --output data/latex_reference_graph.json \
   --report data/latex_reference_report.json
 ```
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--source-dir` | `data/latex_sources/extracted` | LaTeX 源码目录 |
+| `--source-dir` | `data/00_raw/latex_sources/extracted` | LaTeX 源码目录 |
 | `--output` | `data/latex_reference_graph.json` | 输出引用图 |
 | `--report` | `data/latex_reference_report.json` | 输出报告 |
 | `--doc-ids` | — | 仅处理指定文档 |
@@ -585,10 +585,10 @@ python scripts/rerank_mineru_crossdoc_matches.py \
 
 ```bash
 # Step 1: 下载 + 解析
-python scripts/download_latex_sources.py --from-mineru data/mineru_output --output data/latex_sources
+python scripts/download_latex_sources.py --from-mineru data/mineru_output --output data/00_raw/latex_sources
 
 # Step 2: 构建图
-python scripts/build_latex_reference_graph.py --source-dir data/latex_sources/extracted --output data/latex_reference_graph.json
+python scripts/build_latex_reference_graph.py --source-dir data/00_raw/latex_sources/extracted --output data/latex_reference_graph.json
 python scripts/build_citation_graph.py --input data/latex_reference_graph.json --output data/citation_graph.json
 python scripts/build_latex_cross_modal_links.py --elements data/multimodal_elements.json --latex-graph data/latex_reference_graph.json --output data/latex_cross_modal_pairs.json
 

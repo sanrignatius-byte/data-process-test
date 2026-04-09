@@ -17,7 +17,7 @@ Usage:
     python scripts/build_citation_graph.py
 
     # From LaTeX sources directly
-    python scripts/build_citation_graph.py --from-sources data/latex_sources/extracted
+    python scripts/build_citation_graph.py --from-sources data/00_raw/latex_sources/extracted
 
     # Custom paths
     python scripts/build_citation_graph.py \

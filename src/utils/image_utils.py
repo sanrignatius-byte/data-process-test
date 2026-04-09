@@ -31,6 +31,70 @@ _KNOWN_PREFIXES = [
     "/home/runner/work/data-process-test/data-process-test/",
 ]
 
+_MINERU_PREFIX = "data/mineru_output/"
+_MINERU_00RAW_PREFIX = "data/00_raw/mineru_output/"
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
+
+def _try_00raw_variant(relative: str) -> Optional[Path]:
+    """If *relative* contains ``data/mineru_output/``, try ``data/00_raw/mineru_output/``."""
+    if _MINERU_PREFIX not in relative:
+        return None
+    alt = relative.replace(_MINERU_PREFIX, _MINERU_00RAW_PREFIX, 1)
+    candidate = PROJECT_ROOT / alt
+    return candidate if candidate.exists() else None
+
+
+def _resolve_core(normed: str) -> Optional[Path]:
+    """Shared resolution logic used by both public and fallback resolvers.
+
+    Strategies (in order):
+      0. Relative ``data/mineru_output/...`` → ``data/00_raw/mineru_output/...``
+      1. Known prefix stripping  (+00_raw variant)
+      2. ``/data/mineru_output/`` or ``/data/00_raw/mineru_output/`` suffix extraction
+      3. Generic ``/data/`` re-root  (+00_raw variant)
+    """
+    # Strategy 0: relative path starting with data/mineru_output/
+    if normed.startswith(_MINERU_PREFIX):
+        suffix = normed[len(_MINERU_PREFIX):]
+        candidate = PROJECT_ROOT / _MINERU_00RAW_PREFIX / suffix
+        if candidate.exists():
+            return candidate
+
+    # Strategy 1: known prefix stripping
+    for prefix in _KNOWN_PREFIXES:
+        if normed.startswith(prefix):
+            relative = normed[len(prefix):]
+            candidate = PROJECT_ROOT / relative
+            if candidate.exists():
+                return candidate
+            alt = _try_00raw_variant(relative)
+            if alt:
+                return alt
+
+    # Strategy 2: extract suffix after /data/mineru_output/ (or /data/00_raw/...)
+    for marker in ("/data/00_raw/mineru_output/", "/data/mineru_output/"):
+        parts = normed.split(marker)
+        if len(parts) == 2:
+            for base in (_MINERU_00RAW_PREFIX, _MINERU_PREFIX):
+                candidate = PROJECT_ROOT / base / parts[1]
+                if candidate.exists():
+                    return candidate
+
+    # Strategy 3: generic – find '/data/' and re-root
+    idx = normed.find("/data/")
+    if idx >= 0:
+        relative = normed[idx + 1:]  # keep 'data/...'
+        candidate = PROJECT_ROOT / relative
+        if candidate.exists():
+            return candidate
+        alt = _try_00raw_variant(relative)
+        if alt:
+            return alt
+
+    return None
+
 
 # ── Path resolution ───────────────────────────────────────────────────────────
 
@@ -54,29 +118,9 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
         return p
 
     normed = raw_path.replace("\\", "/")
-
-    # Strategy 1: known prefix stripping
-    for prefix in _KNOWN_PREFIXES:
-        if normed.startswith(prefix):
-            relative = normed[len(prefix):]
-            candidate = PROJECT_ROOT / relative
-            if candidate.exists():
-                return candidate
-
-    # Strategy 2: extract suffix after '/data/mineru_output/'
-    parts = normed.split("/data/mineru_output/")
-    if len(parts) == 2:
-        candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
-        if candidate.exists():
-            return candidate
-
-    # Strategy 3: generic – find '/data/' and re-root everything after it
-    idx = normed.find("/data/")
-    if idx >= 0:
-        relative = normed[idx + 1:]  # keep 'data/...'
-        candidate = PROJECT_ROOT / relative
-        if candidate.exists():
-            return candidate
+    result = _resolve_core(normed)
+    if result:
+        return result
 
     print(f"  [resolve_image_path] MISS: {raw_path!r}", file=sys.stderr)
     return None
@@ -86,30 +130,12 @@ def _fallback_image_path(raw_path: str) -> Optional[Path]:
     """Resolve cross-environment paths via known prefix stripping.
 
     Called as a fallback by :func:`encode_image` when the direct path fails.
-    Tries ``/data/mineru_output/`` split as well.
+    Delegates to the same core resolver as :func:`resolve_image_path`.
     """
     if not raw_path:
         return None
     normed = raw_path.replace("\\", "/")
-    for prefix in _KNOWN_PREFIXES:
-        if normed.startswith(prefix):
-            relative = normed[len(prefix):]
-            candidate = PROJECT_ROOT / relative
-            if candidate.exists():
-                return candidate
-    # /data/mineru_output/ split
-    parts = normed.split("/data/mineru_output/")
-    if len(parts) == 2:
-        candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
-        if candidate.exists():
-            return candidate
-    # generic /data/ re-root
-    idx = normed.find("/data/")
-    if idx >= 0:
-        candidate = PROJECT_ROOT / normed[idx + 1:]
-        if candidate.exists():
-            return candidate
-    return None
+    return _resolve_core(normed)
 
 
 # ── Image encoding ────────────────────────────────────────────────────────────

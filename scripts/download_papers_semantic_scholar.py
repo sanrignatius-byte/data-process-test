@@ -291,7 +291,7 @@ def main():
         print(f"Excluding {len(existing_ids)} already-downloaded IDs", flush=True)
 
     # Also auto-detect existing LaTeX sources
-    latex_dir = _PROJECT_ROOT / "data" / "latex_sources" / "extracted"
+    latex_dir = _PROJECT_ROOT / "data" / "00_raw" / "latex_sources" / "extracted"
     if latex_dir.exists():
         for d in latex_dir.iterdir():
             if d.is_dir():

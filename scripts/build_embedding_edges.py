@@ -183,7 +183,7 @@ def _resolve_image_path(
 ) -> Optional[str]:
     """Find the image file for a figure element.
 
-    Searches common MinerU output locations.
+    Searches common MinerU output locations, including data/00_raw/mineru_output/.
     """
     if elem.get("element_type", "").lower() != "figure":
         return None
@@ -211,6 +211,15 @@ def _resolve_image_path(
             p4 = Path(image_dir) / doc_id / doc_id / "hybrid_auto" / image_path
             if p4.exists():
                 return str(p4)
+
+    # Fallback: use the shared cross-environment resolver
+    try:
+        from src.utils.image_utils import resolve_image_path
+        resolved = resolve_image_path(image_path)
+        if resolved:
+            return str(resolved)
+    except ImportError:
+        pass
 
     return None
 

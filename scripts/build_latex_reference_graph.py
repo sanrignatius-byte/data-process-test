@@ -9,12 +9,12 @@ This produces a *structural* reference graph that complements the
 MinerU-based multimodal DAG (data/multimodal_elements.json).
 
 Usage:
-    # Process all extracted sources (auto-detect from latex_sources/extracted/)
+    # Process all extracted sources (auto-detect from 00_raw/latex_sources/extracted/)
     python scripts/build_latex_reference_graph.py
 
     # With custom paths
     python scripts/build_latex_reference_graph.py \
-        --source-dir data/latex_sources/extracted \
+        --source-dir data/00_raw/latex_sources/extracted \
         --output data/latex_reference_graph.json \
         --report data/latex_reference_report.json
 

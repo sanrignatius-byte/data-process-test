@@ -121,7 +121,7 @@ python scripts/build_multimodal_relationships.py
 
 # 4. 构建 LaTeX 基础图 + 跨文档引用图
 python scripts/build_latex_reference_graph.py \
-    --source-dir data/latex_sources/extracted \
+    --source-dir data/00_raw/latex_sources/extracted \
     --output data/latex_reference_graph.json
 python scripts/build_citation_graph.py \
     --input data/latex_reference_graph.json \
@@ -230,9 +230,10 @@ negative_sampling:
 ```
 data-process-test/
 ├── data/
-│   ├── raw_pdfs/                         # 下载的 PDF
-│   ├── latex_sources/extracted/          # LaTeX 源码
-│   ├── mineru_output/                    # MinerU 解析输出
+│   ├── 00_raw/
+│   │   ├── raw_pdfs/                     # 下载的 PDF
+│   │   ├── latex_sources/extracted/      # LaTeX 源码
+│   │   └── mineru_output/                # MinerU 解析输出
 │   ├── multimodal_elements.json          # MinerU 基础图
 │   ├── latex_reference_graph.json        # LaTeX 引用 DAG
 │   ├── citation_graph.json               # 跨文档引用图
