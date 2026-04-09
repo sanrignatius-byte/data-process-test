@@ -1018,7 +1018,7 @@ python scripts/generate_l2_queries.py --limit 50 --delay 0.5
 # === LaTeX reference graph pipeline ===
 # 构建文档内引用 DAG（含 title 提取 + constrained multi-hop paths）
 python scripts/build_latex_reference_graph.py \
-    --source-dir data/latex_sources/extracted \
+    --source-dir data/00_raw/latex_sources/extracted \
     --output data/latex_reference_graph.json
 
 # 构建跨文档引用图（从 .bbl 匹配 corpus 内互引）
@@ -1028,7 +1028,7 @@ python scripts/build_citation_graph.py \
 
 # 也可直接从 LaTeX 源码构建引用图
 python scripts/build_citation_graph.py \
-    --from-sources data/latex_sources/extracted
+    --from-sources data/00_raw/latex_sources/extracted
 
 # === Step 0 v3.2: LaTeX cross-modal links ===
 # MinerU 为主，LaTeX \ref{} 为 bridge evidence 增强层

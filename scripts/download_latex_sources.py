@@ -51,7 +51,7 @@ from src.utils.file_utils import ensure_dir, safe_json_dump  # noqa: E402
 # Constants
 # ---------------------------------------------------------------------------
 ARXIV_EPRINT_URL = "https://arxiv.org/e-print/{arxiv_id}"
-DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "data" / "latex_sources"
+DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "data" / "00_raw" / "latex_sources"
 DEFAULT_DELAY = 3.0  # arXiv requests polite delay (seconds)
 USER_AGENT = "m4-latex-collector/1.0 (research; mailto:research@example.com)"
 
