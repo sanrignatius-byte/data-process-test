@@ -101,7 +101,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--strategy",
-        choices=["direct", "2hop", "section", "all"],
+        choices=["direct", "2hop", "section", "chain", "all"],
         default="all",
         help="Pair selection strategy (default: all)",
     )
@@ -110,6 +110,12 @@ def main() -> None:
         type=int,
         default=15,
         help="Maximum pairs per document (default: 15)",
+    )
+    parser.add_argument(
+        "--min-chain-hops",
+        type=int,
+        default=2,
+        help="Minimum hops for chain strategy (default: 2)",
     )
     parser.add_argument(
         "--pair-type",
@@ -150,13 +156,15 @@ def main() -> None:
     print(f"\nSelecting pairs: strategy={args.strategy}, "
           f"max_per_doc={args.max_per_doc}, "
           f"pair_types={pair_types or 'all'}, "
-          f"min_quality={args.min_quality}")
+          f"min_quality={args.min_quality}, "
+          f"min_chain_hops={args.min_chain_hops}")
 
     pairs = selector.select(
         strategy=args.strategy,
         max_per_doc=args.max_per_doc,
         pair_types=pair_types,
         min_quality=args.min_quality,
+        min_chain_hops=args.min_chain_hops,
     )
 
     if args.limit > 0:

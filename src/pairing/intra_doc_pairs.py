@@ -1,12 +1,14 @@
 """Intra-document element pair selector.
 
 Generates pairs of multimodal elements within a single document using
-three complementary strategies:
+four complementary strategies:
 
 - **direct**: Elements linked by a direct cross-reference edge (hop=1).
 - **2hop**: Elements reachable via a 2-hop path through a shared
   intermediate element (e.g. figure→table→formula).
 - **section**: Elements co-located in the same document section.
+- **chain**: Multi-hop chains discovered via DFS traversal — no fixed
+  hop limit.  Emits pairs at chain endpoints with the full path.
 
 All strategies enforce a strict same-document boundary check.
 Cross-document pairs are never produced.
@@ -28,6 +30,8 @@ from pathlib import Path
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 from src.pairing.pair_schema import CandidatePair, ElementDetail
+from src.pairing.chain_finder import ChainFinder
+from src.pairing.context_dedup import dedup_context
 
 # Element types eligible for pairing (non-text modalities).
 MODAL_TYPES = frozenset({"figure", "table", "formula"})
@@ -44,14 +48,17 @@ MAX_CAPTION_DISPLAY = 200
 
 def _element_detail(el: Dict[str, Any]) -> ElementDetail:
     """Build an ElementDetail from a raw element dict."""
+    raw_before = (el.get("context_before", "") or "")[:MAX_CONTEXT_LENGTH]
+    raw_after = (el.get("context_after", "") or "")[:MAX_CONTEXT_LENGTH]
+    cleaned_before, cleaned_after = dedup_context(raw_before, raw_after)
     return ElementDetail(
         element_id=el.get("element_id", ""),
         element_type=el.get("element_type", ""),
         caption=el.get("caption", "") or "",
         content=(el.get("content", "") or "")[:MAX_CONTENT_LENGTH],
         image_path=el.get("image_path", "") or "",
-        context_before=(el.get("context_before", "") or "")[:MAX_CONTEXT_LENGTH],
-        context_after=(el.get("context_after", "") or "")[:MAX_CONTEXT_LENGTH],
+        context_before=cleaned_before,
+        context_after=cleaned_after,
         enriched_title=el.get("enriched_title", "") or "",
         enriched_content=el.get("enriched_content", "") or "",
         enriched_metadata=el.get("enriched_metadata", {}) or {},
@@ -135,13 +142,14 @@ class IntraDocPairSelector:
         max_per_doc: int = 20,
         pair_types: Optional[Set[str]] = None,
         min_quality: float = 0.0,
+        min_chain_hops: int = 2,
     ) -> List[CandidatePair]:
         """Select pairs across all documents.
 
         Parameters
         ----------
         strategy
-            ``"direct"`` | ``"2hop"`` | ``"section"`` | ``"all"``
+            ``"direct"`` | ``"2hop"`` | ``"section"`` | ``"chain"`` | ``"all"``
         max_per_doc
             Maximum pairs per document (applied per strategy, then merged).
         pair_types
@@ -149,10 +157,14 @@ class IntraDocPairSelector:
             E.g. ``{"figure+table", "figure+formula"}``.
         min_quality
             Minimum quality score (0-1) to include a pair.
+        min_chain_hops
+            Minimum number of hops for chain strategy (default 2).
         """
         all_pairs: List[CandidatePair] = []
         for doc_id in sorted(self._docs.keys()):
-            doc_pairs = self._select_for_doc(doc_id, strategy, max_per_doc)
+            doc_pairs = self._select_for_doc(
+                doc_id, strategy, max_per_doc, min_chain_hops,
+            )
             all_pairs.extend(doc_pairs)
 
         # Post-filter
@@ -170,6 +182,7 @@ class IntraDocPairSelector:
         doc_id: str,
         strategy: str,
         max_per_doc: int,
+        min_chain_hops: int = 2,
     ) -> List[CandidatePair]:
         elems = self._elements.get(doc_id, {})
         if len(elems) < 2:
@@ -203,6 +216,10 @@ class IntraDocPairSelector:
 
         if strategy in ("section", "all"):
             for p in self._section_pairs(doc_id, elems, _next_id):
+                _add(p)
+
+        if strategy in ("chain", "all"):
+            for p in self._chain_pairs(doc_id, elems, _next_id, min_chain_hops):
                 _add(p)
 
         # Sort by quality descending, then cap
@@ -410,6 +427,96 @@ class IntraDocPairSelector:
                 strategy="section",
                 hub_metadata={"is_cross_doc": False, "strategy": "section",
                               "relationship": rel},
+            ))
+
+        return pairs
+
+    # -- Strategy D: multi-hop chain discovery -----------------------------
+
+    def _chain_pairs(
+        self,
+        doc_id: str,
+        elems: Dict[str, Dict[str, Any]],
+        next_id,
+        min_hops: int = 2,
+    ) -> List[CandidatePair]:
+        """Pairs connected by multi-hop chains (variable length).
+
+        Uses :class:`ChainFinder` to discover all maximal simple paths
+        in the element graph, then emits pairs at chain endpoints with
+        the full path and intermediate nodes in ``node_group``.
+        """
+        doc = self._docs.get(doc_id, {})
+        finder = ChainFinder.from_doc(doc)
+        chains = finder.find_endpoint_pairs(
+            min_hops=min_hops,
+            cross_modal_only=True,
+        )
+
+        pairs: List[CandidatePair] = []
+        for chain in chains:
+            ea_id, eb_id = chain.endpoints
+            if ea_id not in elems or eb_id not in elems:
+                continue
+            el_a = elems[ea_id]
+            el_b = elems[eb_id]
+            ta = el_a.get("element_type", "")
+            tb = el_b.get("element_type", "")
+
+            # Build node_group with ALL elements in the chain path
+            node_group = []
+            for eid in chain.path:
+                if eid in elems:
+                    node_group.append(_element_detail(elems[eid]))
+
+            # Collect edge contexts along the path
+            edge_ctxs: List[Dict[str, Any]] = []
+            edges = self._edges.get(doc_id, [])
+            edge_lookup: Dict[FrozenSet[str], Dict[str, Any]] = {}
+            for edge in edges:
+                src = edge.get("source_id", "")
+                tgt = edge.get("target_id", "")
+                edge_lookup[frozenset([src, tgt])] = edge
+
+            for i in range(len(chain.path) - 1):
+                key = frozenset([chain.path[i], chain.path[i + 1]])
+                if key in edge_lookup:
+                    e = edge_lookup[key]
+                    edge_ctxs.append({
+                        "source": chain.path[i],
+                        "target": chain.path[i + 1],
+                        "ref_text": e.get("ref_text", ""),
+                        "context_snippet": e.get("context_snippet", ""),
+                    })
+
+            summary = _build_hub_summary(el_a, el_b)
+            modality_str = "→".join(chain.modality_sequence)
+
+            pairs.append(CandidatePair(
+                pair_id=next_id(),
+                doc_id=doc_id,
+                element_a_id=ea_id,
+                element_b_id=eb_id,
+                element_a_type=ta,
+                element_b_type=tb,
+                pair_type=_make_pair_type(ta, tb),
+                hop_distance=chain.hop_count,
+                path=list(chain.path),
+                quality_score=chain.score,
+                element_a=_element_detail(el_a),
+                element_b=_element_detail(el_b),
+                node_group=node_group,
+                edge_contexts=edge_ctxs,
+                hub_semantic_summary=f"{summary} | Chain: {modality_str}",
+                strategy="chain",
+                hub_metadata={
+                    "is_cross_doc": False,
+                    "strategy": "chain",
+                    "chain_hops": chain.hop_count,
+                    "modality_sequence": list(chain.modality_sequence),
+                    "cross_modal_transitions": chain.cross_modal_transitions,
+                    "unique_modalities": chain.unique_modalities,
+                },
             ))
 
         return pairs

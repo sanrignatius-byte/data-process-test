@@ -298,3 +298,248 @@ class TestRealData:
     def test_real_data_produces_pairs(self, real_selector):
         pairs = real_selector.select(strategy="direct", max_per_doc=10)
         assert len(pairs) > 0, "Expected at least some direct pairs from real data"
+
+
+# ---------------------------------------------------------------------------
+# ChainFinder tests
+# ---------------------------------------------------------------------------
+
+from src.pairing.chain_finder import ChainFinder, ChainResult, _score_chain
+
+
+def _chain_doc_data() -> dict:
+    """Document with 5 elements forming a chain: fig1→tbl1→fig2→formula1→tbl2."""
+    doc_id = "5555.5555"
+    elems = {
+        f"{doc_id}_figure_1": _make_element(doc_id, "figure", 1),
+        f"{doc_id}_table_1": _make_element(doc_id, "table", 1),
+        f"{doc_id}_figure_2": _make_element(doc_id, "figure", 2),
+        f"{doc_id}_formula_1": _make_element(doc_id, "formula", 1),
+        f"{doc_id}_table_2": _make_element(doc_id, "table", 2),
+    }
+    edges = [
+        _make_edge(f"{doc_id}_figure_1", f"{doc_id}_table_1", "see Table 1"),
+        _make_edge(f"{doc_id}_table_1", f"{doc_id}_figure_2", "cf. Figure 2"),
+        _make_edge(f"{doc_id}_figure_2", f"{doc_id}_formula_1", "using Eq 1"),
+        _make_edge(f"{doc_id}_formula_1", f"{doc_id}_table_2", "results in Table 2"),
+    ]
+    return {
+        "doc_id": doc_id,
+        "elements": elems,
+        "edges": edges,
+        "multimodal_pairs": [],
+    }
+
+
+class TestChainFinder:
+    def test_finds_chains(self):
+        finder = ChainFinder.from_doc(_chain_doc_data())
+        chains = finder.find_chains(min_length=3)
+        assert len(chains) > 0
+        for c in chains:
+            assert c.hop_count >= 2
+
+    def test_finds_longest_chain(self):
+        finder = ChainFinder.from_doc(_chain_doc_data())
+        chains = finder.find_longest(top_k=1)
+        assert len(chains) == 1
+        assert chains[0].hop_count == 4  # 5 nodes = 4 hops
+
+    def test_longest_chain_path(self):
+        finder = ChainFinder.from_doc(_chain_doc_data())
+        chains = finder.find_longest(top_k=1)
+        chain = chains[0]
+        assert len(chain.path) == 5
+        assert len(chain.modality_sequence) == 5
+
+    def test_cross_modal_only(self):
+        finder = ChainFinder.from_doc(_chain_doc_data())
+        chains = finder.find_endpoint_pairs(min_hops=2, cross_modal_only=True)
+        for c in chains:
+            assert c.modality_sequence[0] != c.modality_sequence[-1], \
+                f"Same modality endpoints: {c.modality_sequence}"
+
+    def test_endpoint_dedup(self):
+        finder = ChainFinder.from_doc(_chain_doc_data())
+        chains = finder.find_endpoint_pairs(min_hops=1)
+        endpoints = [frozenset(c.endpoints) for c in chains]
+        assert len(endpoints) == len(set(endpoints)), "Duplicate endpoint pairs"
+
+    def test_score_increases_with_length(self):
+        s1 = _score_chain(["a", "b"], ["figure", "table"])
+        s2 = _score_chain(["a", "b", "c", "d"], ["figure", "table", "formula", "figure"])
+        assert s2 > s1
+
+    def test_score_rewards_diversity(self):
+        s1 = _score_chain(["a", "b", "c"], ["figure", "figure", "figure"])
+        s2 = _score_chain(["a", "b", "c"], ["figure", "table", "formula"])
+        assert s2 > s1
+
+    def test_chain_result_ordering(self):
+        c1 = ChainResult(score=0.5, path=("a", "b"), doc_id="x",
+                         hop_count=1, modality_sequence=("f", "t"),
+                         cross_modal_transitions=1, unique_modalities=2)
+        c2 = ChainResult(score=0.8, path=("a", "b", "c"), doc_id="x",
+                         hop_count=2, modality_sequence=("f", "t", "f"),
+                         cross_modal_transitions=2, unique_modalities=2)
+        assert c1 < c2  # score-based ordering
+
+    def test_stats(self):
+        finder = ChainFinder.from_doc(_chain_doc_data())
+        s = finder.stats()
+        assert s["elements"] == 5
+        assert s["edges"] == 4
+        assert s["connected_components"] == 1
+
+    def test_disconnected_graph(self):
+        """Two disconnected components should not form cross-component chains."""
+        doc_id = "6666.6666"
+        elems = {
+            f"{doc_id}_figure_1": _make_element(doc_id, "figure", 1),
+            f"{doc_id}_table_1": _make_element(doc_id, "table", 1),
+            f"{doc_id}_figure_2": _make_element(doc_id, "figure", 2),
+            f"{doc_id}_formula_1": _make_element(doc_id, "formula", 1),
+        }
+        edges = [
+            _make_edge(f"{doc_id}_figure_1", f"{doc_id}_table_1"),
+            _make_edge(f"{doc_id}_figure_2", f"{doc_id}_formula_1"),
+        ]
+        doc = {
+            "doc_id": doc_id, "elements": elems,
+            "edges": edges, "multimodal_pairs": [],
+        }
+        finder = ChainFinder.from_doc(doc)
+        assert finder.stats()["connected_components"] == 2
+        chains = finder.find_chains(min_length=3)
+        assert len(chains) == 0  # no 3-node chain possible
+
+
+# ---------------------------------------------------------------------------
+# Context dedup tests
+# ---------------------------------------------------------------------------
+
+from src.pairing.context_dedup import dedup_context, _common_prefix_length, _fast_similarity
+
+
+class TestContextDedup:
+    def test_identical_strings(self):
+        text = "This is a paragraph about machine learning. " * 5
+        text = text.strip()  # dedup_context strips inputs
+        before, after = dedup_context(text, text)
+        # One should be cleared
+        assert (before == "" or after == "")
+        assert (before == text or after == text)
+
+    def test_prefix_overlap(self):
+        shared = "This is shared context about fairness. " * 3
+        unique_tail = " This part is unique to after context only."
+        combined = shared + unique_tail
+        before, after = dedup_context(shared.strip(), combined.strip())
+        # The shared prefix should be detected; either before is kept and
+        # after trimmed, or entire before is absorbed into after.
+        total_len = len(before) + len(after)
+        assert total_len < len(shared.strip()) + len(combined.strip()), \
+            "Expected dedup to reduce total text"
+
+    def test_no_overlap(self):
+        before = "Methods section: We use gradient descent for optimization."
+        after = "Results section: The model achieves 95% accuracy on test set."
+        b, a = dedup_context(before, after)
+        assert b == before
+        assert a == after
+
+    def test_short_strings_untouched(self):
+        before, after = dedup_context("short", "text")
+        assert before == "short"
+        assert after == "text"
+
+    def test_empty_strings(self):
+        assert dedup_context("", "") == ("", "")
+        assert dedup_context("hello", "") == ("hello", "")
+        assert dedup_context("", "world") == ("", "world")
+
+    def test_common_prefix_length(self):
+        assert _common_prefix_length("abcdef", "abcxyz") == 3
+        assert _common_prefix_length("hello", "hello world") == 5
+        assert _common_prefix_length("abc", "xyz") == 0
+
+    def test_fast_similarity_identical(self):
+        text = "The quick brown fox jumps over the lazy dog"
+        assert _fast_similarity(text, text) > 0.99
+
+    def test_fast_similarity_different(self):
+        assert _fast_similarity("aaaa", "zzzz") < 0.1
+
+    def test_real_duplicate_pattern(self):
+        """Simulate the 1904.03035 pattern: consecutive tables share context."""
+        shared = ("The tables show how the scores vary for the training text "
+                  "and the generated text for different values of the parameter. "
+                  "We observe consistent improvements across all metrics when "
+                  "the parameter is increased. This validates our hypothesis.")
+        before, after = dedup_context(shared, shared)
+        assert before == shared or after == shared
+        assert before == "" or after == ""
+
+
+# ---------------------------------------------------------------------------
+# Chain strategy integration tests
+# ---------------------------------------------------------------------------
+
+class TestChainStrategy:
+    def test_chain_strategy_finds_pairs(self):
+        docs = {"5555.5555": _chain_doc_data()}
+        sel = IntraDocPairSelector(docs)
+        pairs = sel.select(strategy="chain")
+        assert len(pairs) > 0
+        for p in pairs:
+            assert p.strategy == "chain"
+            assert p.hop_distance >= 2
+
+    def test_chain_has_full_path(self):
+        docs = {"5555.5555": _chain_doc_data()}
+        sel = IntraDocPairSelector(docs)
+        pairs = sel.select(strategy="chain")
+        for p in pairs:
+            assert len(p.path) == p.hop_distance + 1
+            assert len(p.node_group) >= 2
+
+    def test_chain_endpoints_cross_modal(self):
+        docs = {"5555.5555": _chain_doc_data()}
+        sel = IntraDocPairSelector(docs)
+        pairs = sel.select(strategy="chain")
+        for p in pairs:
+            assert p.element_a_type != p.element_b_type
+
+    def test_chain_min_hops_filter(self):
+        docs = {"5555.5555": _chain_doc_data()}
+        sel = IntraDocPairSelector(docs)
+        pairs = sel.select(strategy="chain", min_chain_hops=3)
+        for p in pairs:
+            assert p.hop_distance >= 3
+
+    def test_chain_metadata(self):
+        docs = {"5555.5555": _chain_doc_data()}
+        sel = IntraDocPairSelector(docs)
+        pairs = sel.select(strategy="chain")
+        for p in pairs:
+            assert "chain_hops" in p.hub_metadata
+            assert "modality_sequence" in p.hub_metadata
+            assert p.hub_metadata["is_cross_doc"] is False
+
+    def test_all_includes_chains(self):
+        docs = {"5555.5555": _chain_doc_data()}
+        sel = IntraDocPairSelector(docs)
+        pairs = sel.select(strategy="all")
+        strategies = {p.strategy for p in pairs}
+        assert "chain" in strategies
+
+    def test_real_data_chains(self):
+        import os
+        path = "data/01_graphs/multimodal_elements.json"
+        if not os.path.exists(path):
+            pytest.skip("multimodal_elements.json not available")
+        sel = IntraDocPairSelector.from_file(path)
+        pairs = sel.select(strategy="chain", max_per_doc=5, min_chain_hops=3)
+        assert len(pairs) > 0, "Expected chain pairs from real data"
+        max_hops = max(p.hop_distance for p in pairs)
+        assert max_hops >= 3, f"Expected chains with ≥3 hops, got max {max_hops}"
