@@ -55,6 +55,12 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
 
     normed = raw_path.replace("\\", "/")
 
+    # Quick check: relative path starting with data/mineru_output/ → try data/00_raw/mineru_output/
+    if normed.startswith("data/mineru_output/"):
+        alt = PROJECT_ROOT / "data" / "00_raw" / "mineru_output" / normed[len("data/mineru_output/"):]
+        if alt.exists():
+            return alt
+
     # Strategy 1: known prefix stripping
     for prefix in _KNOWN_PREFIXES:
         if normed.startswith(prefix):
@@ -62,13 +68,22 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
             candidate = PROJECT_ROOT / relative
             if candidate.exists():
                 return candidate
+            # If relative contains data/mineru_output/, also try data/00_raw/mineru_output/
+            alt = relative.replace("data/mineru_output/", "data/00_raw/mineru_output/", 1)
+            if alt != relative:
+                candidate = PROJECT_ROOT / alt
+                if candidate.exists():
+                    return candidate
 
-    # Strategy 2: extract suffix after '/data/mineru_output/'
-    parts = normed.split("/data/mineru_output/")
-    if len(parts) == 2:
-        candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
-        if candidate.exists():
-            return candidate
+    # Strategy 2: extract suffix after '/data/mineru_output/' (or '/data/00_raw/mineru_output/')
+    for marker in ("/data/00_raw/mineru_output/", "/data/mineru_output/"):
+        parts = normed.split(marker)
+        if len(parts) == 2:
+            # Always try 00_raw first (actual local layout), then flat
+            for base in ("data/00_raw/mineru_output", "data/mineru_output"):
+                candidate = PROJECT_ROOT / base / parts[1]
+                if candidate.exists():
+                    return candidate
 
     # Strategy 3: generic – find '/data/' and re-root everything after it
     idx = normed.find("/data/")
@@ -77,6 +92,12 @@ def resolve_image_path(raw_path: str) -> Optional[Path]:
         candidate = PROJECT_ROOT / relative
         if candidate.exists():
             return candidate
+        # Try inserting 00_raw/ for mineru_output paths
+        alt = relative.replace("data/mineru_output/", "data/00_raw/mineru_output/", 1)
+        if alt != relative:
+            candidate = PROJECT_ROOT / alt
+            if candidate.exists():
+                return candidate
 
     print(f"  [resolve_image_path] MISS: {raw_path!r}", file=sys.stderr)
     return None
@@ -91,24 +112,44 @@ def _fallback_image_path(raw_path: str) -> Optional[Path]:
     if not raw_path:
         return None
     normed = raw_path.replace("\\", "/")
+
+    # Quick check: relative path starting with data/mineru_output/ → try 00_raw
+    if normed.startswith("data/mineru_output/"):
+        alt = PROJECT_ROOT / "data" / "00_raw" / "mineru_output" / normed[len("data/mineru_output/"):]
+        if alt.exists():
+            return alt
+
     for prefix in _KNOWN_PREFIXES:
         if normed.startswith(prefix):
             relative = normed[len(prefix):]
             candidate = PROJECT_ROOT / relative
             if candidate.exists():
                 return candidate
-    # /data/mineru_output/ split
-    parts = normed.split("/data/mineru_output/")
-    if len(parts) == 2:
-        candidate = PROJECT_ROOT / "data" / "mineru_output" / parts[1]
-        if candidate.exists():
-            return candidate
+            alt = relative.replace("data/mineru_output/", "data/00_raw/mineru_output/", 1)
+            if alt != relative:
+                candidate = PROJECT_ROOT / alt
+                if candidate.exists():
+                    return candidate
+    # /data/mineru_output/ split (try 00_raw first, then flat)
+    for marker in ("/data/00_raw/mineru_output/", "/data/mineru_output/"):
+        parts = normed.split(marker)
+        if len(parts) == 2:
+            for base in ("data/00_raw/mineru_output", "data/mineru_output"):
+                candidate = PROJECT_ROOT / base / parts[1]
+                if candidate.exists():
+                    return candidate
     # generic /data/ re-root
     idx = normed.find("/data/")
     if idx >= 0:
-        candidate = PROJECT_ROOT / normed[idx + 1:]
+        relative = normed[idx + 1:]
+        candidate = PROJECT_ROOT / relative
         if candidate.exists():
             return candidate
+        alt = relative.replace("data/mineru_output/", "data/00_raw/mineru_output/", 1)
+        if alt != relative:
+            candidate = PROJECT_ROOT / alt
+            if candidate.exists():
+                return candidate
     return None
 
 
