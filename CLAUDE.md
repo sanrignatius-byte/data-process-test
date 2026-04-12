@@ -92,6 +92,65 @@ set -a && source .env && set +a
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-04-12 更新｜生产 Sweep 启动 + Method C 实验定论 + Intra-doc 过滤落地）
+
+### 本轮完成（相对 2026-04-09）
+
+- **Production Sweep 启动**（Job 58722，6 配置 array）
+  - 输入：`l3_candidates_v4_intra_doc.json`（88 pairs）+ `m2_diverse_candidates_intra_doc.json`（108 pairs）
+  - 6 个配置：L3×{academic, academic+persona, mixed, mixed+persona} + M2×{academic, mixed+persona}
+  - 输出到 `data/03_queries/sweep_2026-04-12/{tag}.jsonl`
+  - slurm: `slurm_scripts/12_production_sweep.sh`
+  - 收集工具: `scripts/collect_sweep_results.py --merge-existing`
+
+- **Method C 实验定论**
+  - 旧 enriched 数据 bridge=1/2 对比：0/48 vs 0/48 pass（两组实际都只有 1 个压缩桥，不是真对比）
+  - True-two-bridge 子集 bridge=1：2/47 pass（4.3%）
+  - True-two-bridge 子集 bridge=2 rerun（Job 58700）：**4/47 pass（8.5%）**
+  - 结论：C 方案概念成立、有早期正信号，但 pass rate 仍太低不能承担交付
+  - 主要失败项：`llm_fake_multihop`（39/47）、`text_evidence_over_reliance`（27/47）
+  - 实验结果：`pilot_method_c_v3_true2_bridge{1,2}_rerun.json`
+
+- **Strict Intra-doc 过滤落地**
+  - 新模块 `src/utils/pair_filters.py`：element_id + path + node_group + hub_metadata.is_cross_doc 联合判定
+  - 新脚本 `scripts/filter_pair_candidates.py`：批量清洗旧 pair 资产
+  - 已影响所有入口：`generate_multihop_l1_queries.py`、`pilot_method_c.py`、`build_latex_long_chain_candidates.py`
+  - 清洗结果：hub_v3 230→96、hub_v4 230→96（再过滤 hop>=3 得到 88）、m2 142→108
+
+- **Scale-up enrichment 后台进行中**
+  - Job 58353：Stage 3 bridge enrichment，约 300/5380
+  - 不阻塞交付线，完成后用于 Method C 下一轮 pilot
+
+### 当前可交付库存
+
+| 文件 | Pass |
+|------|------|
+| l3_enriched_v3_rerun2_pass.jsonl | 93 |
+| l3_enriched_v3_new82_rerun2_pass.jsonl | 53 |
+| m2_diverse_v1_hub_kb_pass.jsonl | 29 |
+| long_chain_iterative_pass.jsonl | 12 |
+| **合计** | **187** |
+
+### 冲 500 条路径
+
+- **主力**：Production Sweep（Job 58722）6 配置 × intra-doc candidates
+- **预期新增**：L3 88×4×0.27 ≈ 95 + M2 108×2×0.25 ≈ 54 = ~150 新 pass
+- **合计预估**：187 + 150 = ~337
+- **缺口方案**：如果不够，可追加 R2 sweep（不同 seed / 额外 QC 微调）
+
+### 关键文件新增
+
+```
+src/utils/pair_filters.py                          — strict intra-doc 过滤
+scripts/filter_pair_candidates.py                  — 批量清洗旧 pair
+scripts/collect_sweep_results.py                   — 汇总 sweep 产出
+slurm_scripts/12_production_sweep.sh               — 6 配置生产 sweep
+data/02_enriched/*_intra_doc*.json                 — 清洗后 candidate 文件
+data/03_queries/sweep_2026-04-12/                  — sweep 输出目录
+```
+
+---
+
 ## 当前状态（2026-04-09 更新｜Intra-doc Pairing 模块 + Evidence MD 导出 + 数据清理）
 
 ### 本轮完成（相对 2026-04-08，PR #154–#158）

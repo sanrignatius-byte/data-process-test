@@ -7,6 +7,28 @@ from typing import Any, Dict, List, Optional, Union
 import shutil
 
 
+# ── Path normalization for portable JSONL output ─────────────────────────────
+
+REPO_ROOTS = [
+    "/home/d00855555/query_myx/data-process-test/",
+    "/projects/_hdd/myyyx1/data-process-test/",
+    "/projects/myyyx1/data-process-test/",
+]
+
+
+def normalize_path(img_path: str) -> str:
+    """将集群绝对路径统一为 data/ 开头的相对路径，写入 JSONL 可移植。"""
+    normed = img_path.replace("\\", "/")
+    for root in REPO_ROOTS:
+        if normed.startswith(root):
+            return normed[len(root):]
+    # Generic fallback: find '/data/' and keep relative path from there
+    idx = normed.find("/data/")
+    if idx >= 0:
+        return normed[idx + 1:]  # 'data/...'
+    return img_path
+
+
 def ensure_dir(path: Union[str, Path]) -> Path:
     """Ensure directory exists, create if not."""
     path = Path(path)

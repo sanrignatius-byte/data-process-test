@@ -25,6 +25,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utils.token_logger import log_run
+from src.utils.pair_filters import filter_intra_doc_pairs
 
 # ── Shared modules (Phase 1-2 refactor) ──────────────────────────────────────
 from src.utils.text_utils import (
@@ -968,7 +969,16 @@ def main() -> None:
         print(f"ERROR: {cand_path} not found. Run select_multihop_candidates.py first.")
         sys.exit(1)
     cand_data = json.loads(cand_path.read_text(encoding="utf-8"))
-    pairs = cand_data.get("pairs", [])
+    raw_pairs = cand_data.get("pairs", [])
+    pairs, intra_stats = filter_intra_doc_pairs(raw_pairs)
+    if len(pairs) != len(raw_pairs):
+        print(
+            "  strict intra-doc filter:"
+            f" removed {len(raw_pairs) - len(pairs)} pairs"
+            f" (flag={intra_stats.get('drop_cross_doc_flag', 0)},"
+            f" mixed={intra_stats.get('drop_mixed_doc_ids', 0)},"
+            f" missing_doc={intra_stats.get('drop_missing_doc_ids', 0)})"
+        )
     if args.shuffle:
         random.seed(42)  # deterministic shuffle for reproducibility
         random.shuffle(pairs)

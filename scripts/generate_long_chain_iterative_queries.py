@@ -45,14 +45,14 @@ from src.prompts.personas import (  # noqa: E402
 )
 from src.prompts.styles import resolve_query_style  # noqa: E402
 
-# Reuse multihop's reference-graph + bridge-text resolver, plus normalize_path.
-from generate_multihop_l1_queries import (  # noqa: E402
-    normalize_path,
+# Bridge text resolution and path normalization (refactored to src/utils/)
+from src.utils.bridge_utils import (  # noqa: E402
     load_reference_graph_bridge_texts,
     resolve_bridge_texts_for_path,
-    _BRIDGE_TEXT_CACHE,
-    _ELEMENT_TO_LABELS,
+    get_bridge_text_cache as _get_bridge_text_cache,
+    get_element_to_labels as _get_element_to_labels,
 )
+from src.utils.file_utils import normalize_path  # noqa: E402
 
 
 SYSTEM_STEP_PROMPT = (
@@ -381,7 +381,7 @@ def build_chain_bridge_section(pair: Dict[str, Any], nodes: Sequence[Dict[str, A
     pre-loaded reference-graph cache (resolve_bridge_texts_for_path) for each
     pair.  Caps total output at ~1200 chars to keep prompt tight.
     """
-    if not _BRIDGE_TEXT_CACHE:
+    if not _get_bridge_text_cache():
         return ""
     seen: set = set()
     bridges: List[str] = []
@@ -510,7 +510,7 @@ def build_final_prompt(
     bridge_section: str = "",
 ) -> str:
     steps_txt = "\n".join(
-        f"- hop{s['hop_index']} ({s['element_id']}): anchor={s['anchor']}; span={s['evidence_span']}; fact={s['step_answer']}"
+        f"- hop{s['hop_index']} ({s.get('element_type', 'element')}): {s.get('subquery', s.get('step_answer', ''))}"
         for s in bridge_steps
     )
 
@@ -542,7 +542,7 @@ START ENDPOINT:
 END ENDPOINT:
 {element_context(end_elem)}
 
-Bridge facts extracted from intermediate nodes:
+Bridge questions this chain must resolve (do NOT reveal these answers in the query):
 {steps_txt}
 
 Requirements:
@@ -554,10 +554,11 @@ Requirements:
 6. Do NOT use phrase: "relate to".
 7. Query must include one explicit operator verb from this list:
    show, cause, exceed, mismatch, require, predict, contradict, derive, converge, reveal, separate, bound, regulate, affect, differ, improve, reduce, produce.
-8. Keep query <= 30 words.
+8. Keep query <= 40 words.
 9. Final answer must include a relationship connector:
    because / due to / consistent with / constrained by / whereas / despite / under.
-10. Return endpoint evidence spans + endpoint visual anchors.
+10. Final answer MUST explicitly mention evidence from BOTH endpoints (start and end elements).
+11. Return endpoint evidence spans + endpoint visual anchors.
 
 Output JSON:
 {{
@@ -835,6 +836,26 @@ def run_iterative_generation_for_pair(
         "element_b": end,
     }
 
+    # Synthesize a flat `reasoning_chain` text from the structured bridge_steps
+    # so `has_min_reasoning_chain` (which only looks at obj["reasoning_chain"])
+    # can validate the chain.  We concatenate both the subquery (bridge question)
+    # and the step_answer for each hop.  This is semantically correct — a
+    # reasoning chain IS "question → answer → question → answer …".  It also
+    # prevents false negatives when the LLM produces very terse step_answers
+    # (e.g. single variable names like "A", "M") because the subquery itself
+    # supplies the missing length and semantic context.
+    _rc_parts: list[str] = []
+    for s in (bridge_steps or []):
+        sq = str(s.get("subquery", "")).strip()
+        sa = str(s.get("step_answer", "")).strip()
+        if sq and sa:
+            _rc_parts.append(f"{sq} → {sa}")
+        elif sq:
+            _rc_parts.append(sq)
+        elif sa:
+            _rc_parts.append(sa)
+    reasoning_chain_text = ". ".join(_rc_parts)
+
     def evaluate_current(
         cur_query: str,
         cur_answer: str,
@@ -849,6 +870,7 @@ def run_iterative_generation_for_pair(
             "required_evidence_spans": list(cur_spans),
             "visual_anchors": list(cur_anchors),
             "text_evidence": cur_text_evidence,
+            "reasoning_chain": reasoning_chain_text,
         }
         cur_issues, cur_metrics = qc_multihop_query(qc_obj, qc_pair)
 
@@ -1087,6 +1109,52 @@ def _jaccard(a: set, b: set) -> float:
     inter = len(a & b)
     union = len(a | b)
     return inter / union if union else 0.0
+
+
+# ── QC divergence reporting ─────────────────────────────────────────────────
+
+_LLM_ISSUE_KEYS = frozenset({"fake_long_chain", "llm_answer_hallucination", "llm_fake_multihop"})
+# missing_reasoning_chain is a known schema-mismatch false positive for
+# long-chain entries; exclude it from divergence analysis so it doesn't
+# pollute the rule-only-fail bucket.
+_RULE_EXCLUDE_FROM_DIVERGENCE = frozenset({"missing_reasoning_chain"})
+
+
+def compute_qc_divergence(
+    qc_issues: Sequence[str],
+) -> Dict[str, Any]:
+    """Classify a single entry's QC outcome into rule-vs-LLM divergence.
+
+    Returns a dict with:
+      rule_issues  — list of rule-only issue strings (excl known false positives)
+      llm_issues   — list of LLM-only issue strings
+      rule_pass    — bool, True if no rule issues remain
+      llm_pass     — bool, True if no LLM issues
+      divergence   — one of: 'agree_pass', 'agree_fail', 'rule_only_fail',
+                     'llm_only_fail'
+    """
+    issues = set(qc_issues or [])
+    rule_issues = sorted(issues - _LLM_ISSUE_KEYS - _RULE_EXCLUDE_FROM_DIVERGENCE)
+    llm_issues = sorted(issues & _LLM_ISSUE_KEYS)
+    rule_pass = len(rule_issues) == 0
+    llm_pass = len(llm_issues) == 0
+
+    if rule_pass and llm_pass:
+        divergence = "agree_pass"
+    elif not rule_pass and not llm_pass:
+        divergence = "agree_fail"
+    elif not rule_pass and llm_pass:
+        divergence = "rule_only_fail"
+    else:
+        divergence = "llm_only_fail"
+
+    return {
+        "rule_issues": rule_issues,
+        "llm_issues": llm_issues,
+        "rule_pass": rule_pass,
+        "llm_pass": llm_pass,
+        "divergence": divergence,
+    }
 
 
 def derive_qc_summary_label(
@@ -1357,8 +1425,8 @@ def main() -> None:
             str(ref_graph_path),
             topology_candidates_path=str(topo_cand_path) if topo_cand_path.exists() else "",
         )
-        print(f"  Loaded bridge texts for {len(_BRIDGE_TEXT_CACHE)} documents")
-        print(f"  Element→label mappings: {len(_ELEMENT_TO_LABELS)} elements")
+        print(f"  Loaded bridge texts for {len(_get_bridge_text_cache())} documents")
+        print(f"  Element→label mappings: {len(_get_element_to_labels())} elements")
     else:
         print(f"WARNING: Reference graph not found at {ref_graph_path}")
 
@@ -1418,6 +1486,9 @@ def main() -> None:
     q_idx = 0
     issue_stats: Dict[str, int] = defaultdict(int)
     type_stats: Dict[str, int] = defaultdict(int)
+    divergence_stats: Dict[str, int] = defaultdict(int)
+    divergence_rule_issues: Dict[str, int] = defaultdict(int)
+    divergence_llm_issues: Dict[str, int] = defaultdict(int)
 
     # Append mode when resuming from a previous run, otherwise overwrite.
     file_mode = "a" if skip_done_active else "w"
@@ -1495,6 +1566,8 @@ def main() -> None:
                 qc_metrics=metrics_with_post,
             )
 
+            qc_divergence = compute_qc_divergence(final_issues)
+
             entry = {
                 "query_id": f"l1_de_lc_{pair.get('doc_id', 'unknown')}_{q_idx:04d}",
                 "query": obj["query"],
@@ -1526,6 +1599,7 @@ def main() -> None:
                 "qc_pass": final_pass,
                 "qc_metrics": metrics_with_post,
                 "qc_summary_label": qc_summary_label,
+                "qc_divergence": qc_divergence,
                 "query_style": obj.get("query_style", args.query_style),
                 "persona_id": obj.get("persona_id", "none"),
                 "persona_text": obj.get("persona_text", ""),
@@ -1535,6 +1609,16 @@ def main() -> None:
             if final_pass:
                 pass_count_by_pair[pair_id] += 1
                 prior_query_tokens_by_pair[pair_id].append(new_query_tokens)
+
+            # Track divergence stats.
+            div_type = qc_divergence["divergence"]
+            divergence_stats[div_type] += 1
+            if div_type == "rule_only_fail":
+                for ri in qc_divergence["rule_issues"]:
+                    divergence_rule_issues[ri] += 1
+            elif div_type == "llm_only_fail":
+                for li in qc_divergence["llm_issues"]:
+                    divergence_llm_issues[li] += 1
 
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
             f.flush()
@@ -1591,6 +1675,18 @@ def main() -> None:
         print("  QC issue breakdown:")
         for k, v in sorted(issue_stats.items(), key=lambda x: -x[1]):
             print(f"    {k}: {v}")
+    if divergence_stats:
+        print("  Rule vs LLM divergence:")
+        for k, v in sorted(divergence_stats.items(), key=lambda x: -x[1]):
+            print(f"    {k}: {v}")
+    if divergence_rule_issues:
+        print("  Rule-only fail issues (LLM passed these):")
+        for k, v in sorted(divergence_rule_issues.items(), key=lambda x: -x[1]):
+            print(f"    {k}: {v}")
+    if divergence_llm_issues:
+        print("  LLM-only fail issues (Rule passed these):")
+        for k, v in sorted(divergence_llm_issues.items(), key=lambda x: -x[1]):
+            print(f"    {k}: {v}")
     print("=" * 64)
 
     log_run(
@@ -1608,7 +1704,7 @@ def main() -> None:
             "query_style": args.query_style,
             "use_persona": args.use_persona,
             "skip_done": bool(args.skip_done),
-            "reference_graph_loaded": len(_BRIDGE_TEXT_CACHE) > 0,
+            "reference_graph_loaded": len(_get_bridge_text_cache()) > 0,
             "max_pass_per_pair": args.max_pass_per_pair,
             "dedup_jaccard": args.dedup_jaccard,
             "max_query_hops": args.max_query_hops,

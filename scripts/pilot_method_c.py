@@ -38,6 +38,7 @@ from src.api import call_llm, parse_json, set_company_credentials
 from src.qc.llm_judge import run_llm_qc
 from src.qc.pipelines import qc_multihop_query
 from src.utils.image_utils import encode_image
+from src.utils.pair_filters import filter_intra_doc_pairs
 from src.utils.token_logger import log_run
 
 
@@ -57,11 +58,7 @@ def load_enriched_pairs(
 
     pairs = data.get("pairs", [])
     if single_doc_only:
-        def _is_same_doc(p: Dict[str, Any]) -> bool:
-            a_doc = p["element_a_id"].rsplit("_", 2)[0]
-            b_doc = p["element_b_id"].rsplit("_", 2)[0]
-            return a_doc == b_doc
-        pairs = [p for p in pairs if _is_same_doc(p)]
+        pairs, _ = filter_intra_doc_pairs(pairs)
     return pairs
 
 
@@ -71,6 +68,13 @@ def sample_diverse(
     per_doc: int = 2,
 ) -> List[Dict[str, Any]]:
     """多样性采样：每个 doc 最多 per_doc 个。"""
+    if per_doc <= 0:
+        sampled = list(pairs)
+        random.shuffle(sampled)
+        if n <= 0 or n >= len(sampled):
+            return sampled
+        return sampled[:n]
+
     by_doc: Dict[str, List[Dict[str, Any]]] = {}
     for p in pairs:
         by_doc.setdefault(p["doc_id"], []).append(p)
@@ -79,6 +83,8 @@ def sample_diverse(
         random.shuffle(doc_pairs)
         sampled.extend(doc_pairs[:per_doc])
     random.shuffle(sampled)
+    if n <= 0 or n >= len(sampled):
+        return sampled
     return sampled[:n]
 
 
@@ -615,6 +621,12 @@ def main() -> None:
     parser.add_argument("--model", default="gpt-4.1")
     parser.add_argument("--judge-model", default="gpt-4.1")
     parser.add_argument("--num-samples", type=int, default=10)
+    parser.add_argument(
+        "--per-doc-cap",
+        type=int,
+        default=2,
+        help="Max samples per doc during diversity sampling; 0 = no per-doc cap",
+    )
     parser.add_argument("--output", default="data/03_queries/pilot_method_c_v3.json")
     parser.add_argument("--enriched-path", default=None)
     parser.add_argument("--dry-run", action="store_true")
@@ -640,7 +652,7 @@ def main() -> None:
     ]
     print(f"  After hop filter ({args.min_hop}-{args.max_hop}): {len(filtered)}")
 
-    sampled = sample_diverse(filtered, n=args.num_samples, per_doc=2)
+    sampled = sample_diverse(filtered, n=args.num_samples, per_doc=args.per_doc_cap)
     print(f"  Sampled: {len(sampled)}")
 
     results = []
@@ -825,6 +837,7 @@ def main() -> None:
                     "min_hop": args.min_hop,
                     "max_hop": args.max_hop,
                     "max_bridge_nodes": args.max_bridge_nodes,
+                    "per_doc_cap": args.per_doc_cap,
                     "seed": args.seed,
                 },
                 "results": results,
@@ -851,6 +864,7 @@ def main() -> None:
             "dry_run": args.dry_run,
             "skip_llm_qc": args.skip_llm_qc,
             "max_bridge_nodes": args.max_bridge_nodes,
+            "per_doc_cap": args.per_doc_cap,
         },
     )
 

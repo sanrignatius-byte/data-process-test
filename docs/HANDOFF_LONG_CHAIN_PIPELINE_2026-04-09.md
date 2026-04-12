@@ -367,3 +367,76 @@ src/qc/pipelines.py | +53 lines  (wire new checks + docstring translation zh→e
 5. **Commit all changes** and push
 6. **Submit slurm job**: `select_intra_doc_pairs.py --strategy chain` → `generate_long_chain_iterative_queries.py`
 7. After completion: merge with existing pass queries, run coverage analysis
+
+---
+
+## 11. Code Changes — 2026-04-09 / 2026-04-10 Session
+
+All changes are in `scripts/generate_long_chain_iterative_queries.py` unless noted.
+
+### Fix 1: `reasoning_chain` synthesis from `bridge_steps`
+
+**Problem**: `evaluate_current()` never populated the `reasoning_chain` field in `qc_obj`, but `has_min_reasoning_chain` in `src/qc/checks.py` checks `obj.get("reasoning_chain", "")`. Result: **100% false-positive** `missing_reasoning_chain` on all entries.
+
+**Root cause**: The long-chain pipeline stores reasoning data in `bridge_steps` (structured list of `{hop_index, subquery, step_answer, ...}`), not in a flat `reasoning_chain` string. This mismatch existed since the pipeline was created.
+
+**Fix v1 (2026-04-09)**: Synthesize `reasoning_chain_text` from `bridge_steps[].step_answer` only, then inject into `qc_obj["reasoning_chain"]`.
+
+**Residual issue**: step_answers can be extremely terse (single variable names like `"A"`, `"M"`, or bare numbers like `"134.21"`). When all step_answers in a chain are short, the joined text is < 40 chars and still fails.
+
+**Fix v2 (2026-04-10)**: Include `subquery` (bridge question) in the synthesis, format: `"{subquery} -> {step_answer}"`. A reasoning chain = question -> answer -> question -> answer.
+
+**Impact**:
+- Old entries (pre-fix): 41% hit rate -> N/A (not re-evaluated, `--skip-done`)
+- New entries (fix v1): 6% (3/47 still failing)
+- New entries (fix v2): Expected ~0% -- all 3 residual failures now produce 278-339 chars
+
+**Location**: Lines ~838-857
+
+### Fix 2: `steps_txt` prompt format — hide answers (2026-04-09)
+
+**Problem**: `build_final_prompt()` exposed `anchor=X; span=Y; fact=Z` in the steps summary, which the LLM copied verbatim into queries -> inflated word count -> `query_too_long`.
+
+**Fix**: Changed steps_txt from `anchor/span/fact` format to question-oriented format using `subquery`. Changed prompt label from "Bridge facts extracted from intermediate nodes:" to "Bridge questions this chain must resolve (do NOT reveal these answers in the query):".
+
+**Impact**: Partial -- `query_too_long` still 53% (many queries inherently 28-33 words, boundary effect with `MAX_QUERY_WORDS=30`).
+
+**Location**: Lines ~513-544
+
+### Fix 3: QC divergence reporting (2026-04-09)
+
+**Problem**: Rule QC and LLM QC systematically disagreed, but there was no way to see where or how much.
+
+**Fix**: Added `compute_qc_divergence()` function + per-entry `qc_divergence` field + end-of-run summary classifying each issue as `agree_pass | agree_fail | rule_only_fail | llm_only_fail`.
+
+**Location**: Lines ~1100-1148 (function), ~1555+1588 (per-entry), ~1599-1681 (stats + summary)
+
+### Summary Table
+
+| # | Fix | Lines Changed | Effect |
+|---|-----|--------------|--------|
+| 1 | `reasoning_chain` synthesis v1->v2 (subquery+answer) | ~838-857 | `missing_reasoning_chain`: 100%->41%->6%->~0% |
+| 2 | `steps_txt` question-oriented, hide answers | ~513-544 | `query_too_long`: reduced but still ~53% |
+| 3 | QC divergence reporting | ~1100-1681 | New diagnostic: rule vs LLM disagreement tracking |
+
+### Known Remaining Issues (post-fix)
+
+| Issue | Hit Rate | Root Cause | Proposed Fix |
+|-------|----------|-----------|-------------|
+| `query_too_long` | 53% | `MAX_QUERY_WORDS=30` too tight for long-chain (median ~30 words) | Raise to 35-40, or make warning |
+| `fake_long_chain` | 47% | LLM ablation finds intermediate hops skippable | Structural: foreground/background architecture |
+| `single_element_answer` | 37% | Token-overlap rule disagrees with LLM ablation | Downgrade to warning for long-chain |
+| `text_evidence_over_reliance` | 28% | Queries rely too heavily on text evidence | Prompt improvement |
+| `missing_reasoning_chain` | 26% total (mostly old data) | Historical entries from before fix | Will disappear in clean re-run |
+
+---
+
+## 12. Immediate Next Steps (Priority Order)
+
+1. **Wait for Job 57369** to complete (~8h remaining, 43/211 done)
+2. **Analyze full run results**: issue distribution, divergence stats, pass rate
+3. **Decide on `MAX_QUERY_WORDS`**: raise 30->35-40 if query_too_long remains dominant
+4. **Decide on `single_element_answer`**: downgrade to warning for long-chain if divergence persists
+5. **Consider foreground/background architecture** if pass rate still < 5%
+6. **Clean re-run** without old entries to get accurate stats
+7. **Commit all changes** and push

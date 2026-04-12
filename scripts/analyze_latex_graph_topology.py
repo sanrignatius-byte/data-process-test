@@ -1768,13 +1768,17 @@ def main() -> None:
     pairs_path = Path(args.cross_modal_pairs)
     citation_path = Path(args.citation_graph)
 
-    for p in (latex_path, elements_path, pairs_path):
+    for p in (latex_path, elements_path):
         if not p.exists():
             raise FileNotFoundError(f"Missing: {p}")
 
     latex_data = json.loads(latex_path.read_text(encoding="utf-8"))
     mm_data = json.loads(elements_path.read_text(encoding="utf-8"))
-    cross_modal_pairs = json.loads(pairs_path.read_text(encoding="utf-8"))
+    cross_modal_pairs: Dict[str, Any] = {}
+    if pairs_path.exists():
+        cross_modal_pairs = json.loads(pairs_path.read_text(encoding="utf-8"))
+    else:
+        print(f"[WARN] Cross-modal pairs not found at {pairs_path}, using empty.")
     citation_graph: Dict[str, Any] = {}
     if citation_path.exists():
         citation_graph = json.loads(citation_path.read_text(encoding="utf-8"))

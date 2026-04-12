@@ -22,6 +22,12 @@ from typing import Any, Dict, List
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
+import sys
+
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.utils.pair_filters import is_intra_doc_pair
+
 
 def has_context(elem: Dict[str, Any]) -> bool:
     """Check element has usable context text."""
@@ -78,6 +84,10 @@ def main() -> None:
     skip_reasons: Dict[str, int] = {}
 
     for pair in all_pairs:
+        if not is_intra_doc_pair(pair):
+            skip_reasons["cross_doc"] = skip_reasons.get("cross_doc", 0) + 1
+            continue
+
         hop = pair.get("hop_distance", 0)
         if hop < args.min_hops:
             skip_reasons["hop_too_short"] = skip_reasons.get("hop_too_short", 0) + 1
@@ -125,6 +135,7 @@ def main() -> None:
             "total_pairs": len(all_pairs),
             "filtered": len(filtered),
             "min_hops": args.min_hops,
+            "strict_intra_doc_only": True,
         },
         "pairs": filtered,
     }
@@ -145,9 +156,7 @@ def main() -> None:
     cross_doc = 0
     for p in filtered:
         type_dist[p["pair_type"]] = type_dist.get(p["pair_type"], 0) + 1
-        # Support both old format (top-level is_cross_doc) and new pairing
-        # format (hub_metadata.is_cross_doc)
-        if p.get("is_cross_doc") or p.get("hub_metadata", {}).get("is_cross_doc", False):
+        if not is_intra_doc_pair(p):
             cross_doc += 1
     print(f"\nPair type distribution:")
     for t, c in sorted(type_dist.items(), key=lambda x: -x[1]):

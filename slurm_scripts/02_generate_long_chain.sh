@@ -3,7 +3,7 @@
 #SBATCH --job-name=long_chain_gen
 #SBATCH --output=logs/long_chain_gen_%j.out
 #SBATCH --error=logs/long_chain_gen_%j.err
-#SBATCH --time=8:00:00
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G

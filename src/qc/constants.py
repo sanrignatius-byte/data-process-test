@@ -6,7 +6,7 @@
 关键阈值（别乱改，这些都是实验调出来的）：
   - ANCHOR_LEAK_THRESHOLD = 0.20：query 和 anchor 的 Jaccard 超 20% 就算泄漏
   - ANSWER_BALANCE_THRESHOLD = 0.20：答案不能只靠一个元素
-  - MAX_QUERY_WORDS = 30：query 超 30 词就太长了
+  - MAX_QUERY_WORDS = 40：query 超 40 词就太长了 (2026-04-11: 从 30 提升，多跳 query 需要更多空间)
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ MIN_OVERLAP_BY_TYPE: Dict[str, int] = {
 SHORT_QUERY_MIN_WORDS = 8
 SHORT_QUERY_MAX_WORDS = 14
 LONG_QUERY_MIN_WORDS = 18
-MAX_QUERY_WORDS = 30
+MAX_QUERY_WORDS = 40  # Raised from 30: multi-hop queries need more words
 TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.4
 
 # ── Template shortcut patterns ────────────────────────────────────────────────

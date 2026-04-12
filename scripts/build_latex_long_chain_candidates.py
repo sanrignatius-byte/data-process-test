@@ -22,6 +22,13 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.utils.pair_filters import filter_intra_doc_pairs
+
 
 def normalize_pair_type(a_type: str, b_type: str) -> str:
     types = sorted([a_type, b_type])
@@ -317,9 +324,18 @@ def main() -> None:
         raise FileNotFoundError(f"Input not found: {in_path}")
 
     data = json.loads(in_path.read_text(encoding="utf-8"))
-    in_pairs = data.get("pairs", [])
+    raw_pairs = data.get("pairs", [])
+    in_pairs, intra_stats = filter_intra_doc_pairs(raw_pairs)
     if not in_pairs:
         raise RuntimeError("Input has no pairs")
+    if len(in_pairs) != len(raw_pairs):
+        print(
+            "[strict intra-doc filter]"
+            f" removed {len(raw_pairs) - len(in_pairs)} pairs"
+            f" (flag={intra_stats.get('drop_cross_doc_flag', 0)},"
+            f" mixed={intra_stats.get('drop_mixed_doc_ids', 0)},"
+            f" missing_doc={intra_stats.get('drop_missing_doc_ids', 0)})"
+        )
 
     by_doc: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for p in in_pairs:
@@ -376,7 +392,9 @@ def main() -> None:
             "min_quality": args.min_quality,
             "only_novel_endpoints": args.only_novel_endpoints,
             "prefer_longer": args.prefer_longer,
+            "num_input_pairs_raw": len(raw_pairs),
             "num_input_pairs": len(in_pairs),
+            "strict_intra_doc_stats": intra_stats,
             "num_output_pairs": len(pair_candidates),
             "num_output_chains": len(all_chains),
         },

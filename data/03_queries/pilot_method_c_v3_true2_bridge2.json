@@ -1,0 +1,630 @@
+{
+  "metadata": {
+    "version": "v3_method_c_compressed_chain",
+    "model": "gpt-4.1",
+    "judge_model": "gpt-4.1",
+    "num_samples": 48,
+    "tokens_gen": {
+      "in": 4133,
+      "out": 1641
+    },
+    "tokens_qc": {
+      "in": 32484,
+      "out": 2021
+    },
+    "skip_llm_qc": false,
+    "min_hop": 4,
+    "max_hop": 5,
+    "max_bridge_nodes": 2,
+    "per_doc_cap": 0,
+    "seed": 42
+  },
+  "results": [
+    {
+      "pair_id": "2104.06599_lc_1639",
+      "pair_info": {
+        "doc_id": "2104.06599",
+        "hop_distance": 4,
+        "pair_type": "equation+table",
+        "element_a_id": "2104.06599_formula_1",
+        "element_b_id": "2104.06599_table_4"
+      },
+      "method_c": {
+        "full_path_ids": [
+          "2104.06599_formula_1",
+          "2104.06599::sec:trainobj",
+          "2104.06599_formula_2",
+          "2104.06599::sec:splits",
+          "2104.06599_table_4"
+        ],
+        "compressed_bridge_count": 2,
+        "compressed_chain_ids": [
+          "2104.06599_formula_1",
+          "2104.06599_formula_2",
+          "2104.06599_bridge_1",
+          "2104.06599_table_4"
+        ],
+        "compressed_chain_types": [
+          "formula",
+          "formula",
+          "bridge",
+          "table"
+        ],
+        "compressed_bridge_summaries": [
+          "This equation computes the model's overall probability of producing output y for input x under relation r by averaging over multiple candidate soft prompts. Each prompt contributes according to a learned weight p(t | r), while p_LM(y | t, x",
+          "While we could directly build a neural softmax model for $p(\\pP \\mid \\pr, \\px)$, it seems useful to capture the intuition that $\\pP$ may work better if $\\px$ is plausible in its \\blankx. Thus, we instead use Bayes' Theorem to write $p(\\pP \\"
+        ],
+        "compression_summary": {
+          "full_path_length": 5,
+          "full_internal_nodes": 3,
+          "compressed_bridge_count": 2,
+          "selected_bridge_ids": [
+            "2104.06599_formula_2",
+            "2104.06599_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "formula",
+            "bridge"
+          ]
+        }
+      },
+      "generated": {
+        "query": "How does decomposing input sequences into fixed and learned prompt segments contribute to improvements in single-word answer extraction using pretrained language models?",
+        "answer": "Decomposing input sequences into fixed task inputs and learned prompt tokens enables the model to flexibly adapt to various tasks by optimizing the prompt segment. This decomposition is operationalized through a probabilistic framework that averages over candidate prompts, weighting each by its relevance to the relation and input. By leveraging this approach, the model can more effectively tailor its responses, which leads to substantial and consistent gains in extracting single-word answers from pretrained language models like BERT and BART, as evidenced by observed improvements in cloze-style querying performance.",
+        "text_evidence": "The schematic decomposition of the input sequence into original input and learned prompt tokens allows the model to distinguish between fixed task information and adaptable prompt segments. This is further refined by averaging over multiple candidate prompts, each weighted according to its suitability for the given relation and input. Such a strategy enables the model to rapidly learn effective prompts, which, as discussed in the narrative, results in large and consistent gains for single-word answer extraction tasks using pretrained models such as BERT and BART.",
+        "reasoning_chain": [
+          {
+            "step": 1,
+            "element_id": "2104.06599_formula_1",
+            "finding": "Input sequences are decomposed into fixed task inputs and a block of learned prompt tokens.",
+            "depends_on": null
+          },
+          {
+            "step": 2,
+            "element_id": "bridge_1",
+            "finding": "Averaging over candidate prompts with learned weights enables the model to select the most effective prompt for each relation and input.",
+            "depends_on": 1
+          },
+          {
+            "step": 3,
+            "element_id": "2104.06599_table_4",
+            "finding": "This approach yields large and consistent improvements in single-word answer extraction for pretrained language models.",
+            "depends_on": 2
+          }
+        ],
+        "visual_anchors": [
+          {
+            "element_id": "2104.06599_formula_1",
+            "anchor_text": "Decomposition into input and learned prompt tokens"
+          },
+          {
+            "element_id": "2104.06599_table_4",
+            "anchor_text": "Improvements in single-word answer extraction"
+          }
+        ],
+        "hop_count": 4,
+        "compressed_bridge_count": 2,
+        "mentions_both_endpoints": true
+      },
+      "qc_obj_text_evidence_len": 569,
+      "qc": {
+        "passed": true,
+        "all_issues": [],
+        "rule_issues": [],
+        "llm_issues": [],
+        "rule_metrics": {
+          "query_word_count": 22,
+          "query_length_bucket": "long",
+          "anchor_leak_jaccard": 0.0,
+          "anchor_token_copy_count": 0,
+          "has_cross_modal_operator": false,
+          "anchor_count": 2,
+          "answer_overlap_a": 8,
+          "answer_overlap_b": 8,
+          "answer_balance": 0.5,
+          "text_evidence_overlap": 0.375,
+          "is_architecture_case": false
+        },
+        "llm_metrics": {
+          "llm_ablation": {
+            "full_can_answer": true,
+            "full_confidence": 1.0,
+            "single_element_can_answer": [
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "single_element_confidence": [
+              0.3,
+              0.2,
+              0.3,
+              0.0,
+              0.2
+            ],
+            "drop_element_can_answer": [
+              false,
+              false,
+              false
+            ],
+            "drop_element_confidence": [
+              0.5,
+              0.4,
+              0.6
+            ]
+          },
+          "llm_grounding": {
+            "is_grounded": true,
+            "confidence": 1.0,
+            "hallucinations": [],
+            "reason": "The answer accurately synthesizes information from the evidence: it describes decomposing input into fixed and learned prompt segments, optimizing prompts, and using a probabilistic mixture over promp"
+          }
+        }
+      },
+      "tokens": {
+        "gen_in": 1411,
+        "gen_out": 526
+      }
+    },
+    {
+      "pair_id": "2101.08521_lc_1536",
+      "pair_info": {
+        "doc_id": "2101.08521",
+        "hop_distance": 4,
+        "pair_type": "figure+table",
+        "element_a_id": "2101.08521_figure_6",
+        "element_b_id": "2101.08521_table_1"
+      },
+      "method_c": {
+        "full_path_ids": [
+          "2101.08521_figure_6",
+          "2101.08521::appendix_CMI",
+          "2101.08521::sec5",
+          "2101.08521::appendix_vlcs",
+          "2101.08521_table_1"
+        ],
+        "compressed_bridge_count": 2,
+        "compressed_chain_ids": [
+          "2101.08521_figure_6",
+          "2101.08521_bridge_2",
+          "2101.08521_bridge_1",
+          "2101.08521_table_1"
+        ],
+        "compressed_chain_types": [
+          "figure",
+          "bridge",
+          "bridge",
+          "table"
+        ],
+        "compressed_bridge_summaries": [
+          "The whole results in VLCS can also be found in the same appendix, and the comparison of the proposed metric with the IRM penalty in formula~\\ref{IRM_penal} can be found there too. Besides, we show the comparison with Conditional Mutual Info",
+          "\\end{center} \\caption{Experiments of the relationship between OOD accuracy and CMI (true or estimated using the method in \\cite{ccitmethod}). Models are trained by REx (left) and IRM (right) with $\\lambda \\in \\{0,10,100,1000\\}$. We train 50"
+        ],
+        "compression_summary": {
+          "full_path_length": 5,
+          "full_internal_nodes": 3,
+          "compressed_bridge_count": 2,
+          "selected_bridge_ids": [
+            "2101.08521_bridge_2",
+            "2101.08521_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "bridge",
+            "bridge"
+          ]
+        }
+      },
+      "generated": {
+        "query": "How do trends in conditional mutual information for REx and IRM models inform the selection of algorithms that achieve strong in-distribution accuracy before out-of-distribution evaluation?",
+        "answer": "The observed monotonic relationship between conditional mutual information and out-of-distribution accuracy for REx and IRM models indicates that models with more negative conditional mutual information tend to perform better in challenging environments. This relationship, highlighted in the experimental comparison, provides insight into which algorithms are more robust. By connecting this finding to the initial screening process, where only algorithms with high in-distribution accuracy are advanced for further analysis, we see that understanding conditional mutual information trends helps prioritize algorithms likely to generalize well. Thus, the evidence from the conditional mutual information analysis directly informs the selection of candidates that pass the in-distribution accuracy threshold for subsequent out-of-distribution assessment.",
+        "text_evidence": "The experiments compare REx and IRM across different environments, showing that models with lower conditional mutual information achieve higher performance in challenging settings. This relationship is further explored in the appendix, where the connection between out-of-distribution accuracy and conditional mutual information is emphasized. Before conducting out-of-distribution analysis, the study screens algorithms based on their average test accuracy over several runs, ensuring only those with strong in-distribution performance are considered. This approach leverages the observed trends in conditional mutual information to guide the selection of robust algorithms for further evaluation.",
+        "reasoning_chain": [
+          {
+            "step": 1,
+            "element_id": "2101.08521_figure_6",
+            "finding": "REx and IRM models show a monotonic link between conditional mutual information and out-of-distribution accuracy.",
+            "depends_on": null
+          },
+          {
+            "step": 2,
+            "element_id": "bridge_1",
+            "finding": "Experiments demonstrate that this relationship helps identify models likely to generalize better across environments.",
+            "depends_on": 1
+          },
+          {
+            "step": 3,
+            "element_id": "2101.08521_table_1",
+            "finding": "Algorithms are screened for strong in-distribution accuracy before out-of-distribution analysis, leveraging the earlier findings.",
+            "depends_on": 2
+          }
+        ],
+        "visual_anchors": [
+          {
+            "element_id": "2101.08521_figure_6",
+            "anchor_text": "CMI and OOD accuracy trends for REx and IRM"
+          },
+          {
+            "element_id": "2101.08521_table_1",
+            "anchor_text": "Average test accuracy for candidate algorithms"
+          }
+        ],
+        "hop_count": 4,
+        "compressed_bridge_count": 2,
+        "mentions_both_endpoints": true
+      },
+      "qc_obj_text_evidence_len": 698,
+      "qc": {
+        "passed": false,
+        "all_issues": [
+          "bare_deictic",
+          "llm_fake_multihop"
+        ],
+        "rule_issues": [
+          "bare_deictic"
+        ],
+        "llm_issues": [
+          "llm_fake_multihop"
+        ],
+        "rule_metrics": {
+          "query_word_count": 25,
+          "query_length_bucket": "long",
+          "bare_deictic_warn": true,
+          "anchor_leak_jaccard": 0.0,
+          "anchor_token_copy_count": 0,
+          "has_cross_modal_operator": true,
+          "anchor_count": 2,
+          "answer_overlap_a": 11,
+          "answer_overlap_b": 5,
+          "answer_balance": 0.3125,
+          "text_evidence_overlap": 0.3636,
+          "is_architecture_case": false
+        },
+        "llm_metrics": {
+          "llm_ablation": {
+            "full_can_answer": true,
+            "full_confidence": 0.95,
+            "single_element_can_answer": [
+              true,
+              true,
+              false,
+              false,
+              false
+            ],
+            "single_element_confidence": [
+              1.0,
+              0.9,
+              0.1,
+              0.2,
+              0.2
+            ],
+            "drop_element_can_answer": [
+              true,
+              true,
+              true
+            ],
+            "drop_element_confidence": [
+              0.95,
+              0.95,
+              0.95
+            ]
+          },
+          "llm_fake_multihop_warn": true,
+          "llm_grounding": {
+            "is_grounded": true,
+            "confidence": 0.95,
+            "hallucinations": [],
+            "reason": "The answer accurately synthesizes evidence from the provided elements. The monotonic (highly correlated) relationship between conditional mutual information (CMI) and out-of-distribution (OOD) accurac"
+          }
+        }
+      },
+      "tokens": {
+        "gen_in": 1483,
+        "gen_out": 581
+      }
+    },
+    {
+      "pair_id": "2009.06573_lc_1345",
+      "pair_info": {
+        "doc_id": "2009.06573",
+        "hop_distance": 4,
+        "pair_type": "equation+figure",
+        "element_a_id": "2009.06573_formula_1",
+        "element_b_id": "2009.06573_figure_1"
+      },
+      "method_c": {
+        "full_path_ids": [
+          "2009.06573_formula_1",
+          "2009.06573::sec:experiment",
+          "2009.06573_figure_2",
+          "2009.06573::sec:intro",
+          "2009.06573_figure_1"
+        ],
+        "compressed_bridge_count": 2,
+        "compressed_chain_ids": [
+          "2009.06573_formula_1",
+          "2009.06573_figure_2",
+          "2009.06573_bridge_3",
+          "2009.06573_figure_1"
+        ],
+        "compressed_chain_types": [
+          "formula",
+          "figure",
+          "bridge",
+          "figure"
+        ],
+        "compressed_bridge_summaries": [
+          "Paired bars compare category-level AUC performance with corresponding sample sizes across domains such as IT, Transportation, Games, Cosmetic, and Food, with a horizontal reference line marking a baseline AUC of 0.5558. Most categories clus",
+          "We also performed evaluations within each theme category (shown in Figure \\ref{fig:cateauc}), where all the testing candidates were from the same category in AUC computation. Since all the testing candidates had the same theme ground-truth,"
+        ],
+        "compression_summary": {
+          "full_path_length": 5,
+          "full_internal_nodes": 3,
+          "compressed_bridge_count": 2,
+          "selected_bridge_ids": [
+            "2009.06573_figure_2",
+            "2009.06573_bridge_3"
+          ],
+          "selected_bridge_types": [
+            "figure",
+            "bridge"
+          ]
+        }
+      },
+      "generated": {
+        "query": "How does quantifying individual input source contributions inform the interpretation of theme-based model performance in the shared visual-audio architecture?",
+        "answer": "First, the computation of total contribution for each input source aggregates the absolute weighted effects of individual features, highlighting which modalities most influence the model. This quantification is crucial when evaluating performance within specific theme categories, as it allows researchers to link feature importance to observed outcome differences across domains. Finally, understanding these contributions is essential for interpreting the results of the shared visual-and-audio framework, where both image and audio branches are integrated, since the architecture's effectiveness in theme learning depends on how each modality's features drive performance in the context of the model's design.",
+        "text_evidence": "The model computes the total contribution of each input source by summing the absolute weighted effects of its features, providing a measure of how strongly each modality influences predictions. Evaluations are performed within theme categories, where all candidates share the same ground-truth, allowing for a focused analysis of how feature contributions relate to performance differences across domains. The overall framework integrates visual and audio processing through parallel branches, each with dedicated layers, supporting theme and correspondence learning. This design enables the assessment of how individual modality contributions impact the model's effectiveness in capturing thematic relationships.",
+        "reasoning_chain": [
+          {
+            "step": 1,
+            "element_id": "2009.06573_formula_1",
+            "finding": "The model sums absolute weighted effects of input features to quantify each source's contribution.",
+            "depends_on": null
+          },
+          {
+            "step": 2,
+            "element_id": "bridge_1",
+            "finding": "Evaluations within theme categories link feature contributions to performance differences across domains.",
+            "depends_on": 1
+          },
+          {
+            "step": 3,
+            "element_id": "2009.06573_figure_1",
+            "finding": "The shared visual-audio architecture integrates both modalities for theme and correspondence learning.",
+            "depends_on": 2
+          }
+        ],
+        "visual_anchors": [
+          {
+            "element_id": "2009.06573_formula_1",
+            "anchor_text": "Total contribution of input source via weighted feature sum"
+          },
+          {
+            "element_id": "2009.06573_figure_1",
+            "anchor_text": "Shared visual and audio processing architecture"
+          }
+        ],
+        "hop_count": 4,
+        "compressed_bridge_count": 2,
+        "mentions_both_endpoints": true
+      },
+      "qc_obj_text_evidence_len": 714,
+      "qc": {
+        "passed": false,
+        "all_issues": [
+          "text_evidence_over_reliance"
+        ],
+        "rule_issues": [
+          "text_evidence_over_reliance"
+        ],
+        "llm_issues": [],
+        "rule_metrics": {
+          "query_word_count": 19,
+          "query_length_bucket": "long",
+          "anchor_leak_jaccard": 0.0,
+          "anchor_token_copy_count": 0,
+          "has_cross_modal_operator": false,
+          "anchor_count": 2,
+          "answer_overlap_a": 8,
+          "answer_overlap_b": 8,
+          "answer_balance": 0.5,
+          "text_evidence_overlap": 0.4561,
+          "is_architecture_case": true
+        },
+        "llm_metrics": {
+          "llm_ablation": {
+            "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+          },
+          "llm_grounding": {
+            "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+          }
+        }
+      },
+      "tokens": {
+        "gen_in": 1239,
+        "gen_out": 534
+      }
+    },
+    {
+      "pair_id": "2004.02984_lc_1219",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2003.05161_lc_1190",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1909.08053_lc_0951",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2008.01018_lc_1326",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2105.04165_lc_1726",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1912.04838_lc_1111",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2109.13396_lc_2022",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1907.02893_lc_0886",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2109.08238_lc_1966",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2003.05161_lc_1203",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2109.12098_lc_1990",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1905.03375_lc_0852",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1611.06440_lc_0209",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1706.03741_lc_0253",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2109.13396_lc_2030",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2106.11297_lc_1815",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1811.02790_lc_0633",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1811.00491_lc_0603",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2106.14405_lc_1838",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1904.09751_lc_0834",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1901.08396_lc_0699",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2008.01018_lc_1335",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1606.00061_lc_0153",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1511.06939_lc_0079",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1810.02508_lc_0539",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1808.10654_lc_0485",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1606.00061_lc_0155",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2007.00072_lc_1306",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2108.10470_lc_1890",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1805.11818_lc_0420",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2108.03272_lc_1873",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2103.08022_lc_1611",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2007.04954_lc_1313",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1911.08772_lc_1077",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2109.12171_lc_2008",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1909.08053_lc_0937",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2002.07948_lc_1186",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1511.06939_lc_0069",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2003.05161_lc_1189",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2008.01018_lc_1324",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1405.0312_lc_0024",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1603.04779_lc_0123",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1911.07848_lc_1061",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "1604.07316_lc_0141",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    },
+    {
+      "pair_id": "2008.01018_lc_1333",
+      "error": "403 Client Error: Forbidden for url: https://az.gptplus5.com/v1/chat/completions"
+    }
+  ]
+}
