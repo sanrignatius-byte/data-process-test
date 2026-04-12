@@ -265,6 +265,8 @@ def process_elements(
     no_images: bool,
     dry_run: bool,
     existing_enriched: Optional[Dict[str, Dict]] = None,
+    output_path: Optional[Path] = None,
+    flush_every: int = 0,
 ) -> Dict[str, Dict[str, Any]]:
     """Process all elements and return enrichment results.
 
@@ -277,6 +279,16 @@ def process_elements(
     skipped_existing = 0
     skipped_no_prompt = 0
     failed = 0
+    new_count = 0
+
+    def _flush_partial(reason: str = "") -> None:
+        if output_path is None:
+            return
+        snapshot = merge_enrichments(mm_data, results, quiet=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(snapshot, f, indent=2, ensure_ascii=False)
+        if reason:
+            print(f"  [flush] {reason} — {len(results)} enrichments saved")
 
     # Collect all elements
     all_elements: List[Dict[str, Any]] = []
@@ -323,6 +335,9 @@ def process_elements(
                 "content": "[DRY RUN]",
                 "validation_issues": [],
             }
+            new_count += 1
+            if flush_every > 0 and new_count % flush_every == 0:
+                _flush_partial(f"after {new_count} new items")
             continue
 
         # Load image
@@ -349,10 +364,13 @@ def process_elements(
             parsed["validation_issues"] = issues
             results[eid] = parsed
             processed += 1
+            new_count += 1
 
             status = "PASS" if not issues else f"WARN({','.join(issues)})"
             print(f"  [{idx+1}/{total}] {eid} ({etype}) — {status}"
                   f"  [tok: {in_tok}+{out_tok}]")
+            if flush_every > 0 and new_count % flush_every == 0:
+                _flush_partial(f"after {new_count} new items")
 
         except Exception as exc:
             print(f"  [{idx+1}/{total}] {eid} — ERROR: {exc}")
@@ -379,6 +397,7 @@ def process_elements(
 def merge_enrichments(
     mm_data: Dict[str, Any],
     enrichments: Dict[str, Dict[str, Any]],
+    quiet: bool = False,
 ) -> Dict[str, Any]:
     """Merge enrichment results back into multimodal_elements structure.
 
@@ -409,7 +428,8 @@ def merge_enrichments(
         ),
     }
 
-    print(f"  Merged enrichments for {merged_count} elements")
+    if not quiet:
+        print(f"  Merged enrichments for {merged_count} elements")
     return enriched_data
 
 
@@ -435,6 +455,8 @@ def main():
                     help="Build prompts but don't call API")
     ap.add_argument("--incremental", action="store_true",
                     help="Load existing output and only enrich missing elements")
+    ap.add_argument("--flush-every", type=int, default=0,
+                    help="Flush partial merged output every N new enrichments (0=disabled)")
     # Provider-specific args
     ap.add_argument("--company-api-key", default=None)
     ap.add_argument("--company-api-url", default=None)
@@ -451,8 +473,16 @@ def main():
             args.model = "claude-sonnet-4-20250514"
 
     # Load input
+    input_path = Path(args.input)
+    if not input_path.is_absolute():
+        input_path = PROJECT_ROOT / input_path
+    out_path = Path(args.output)
+    if not out_path.is_absolute():
+        out_path = PROJECT_ROOT / out_path
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
     print("Loading data...")
-    with open(args.input, encoding="utf-8") as f:
+    with open(input_path, encoding="utf-8") as f:
         mm_data = json.load(f)
     n_docs = len(mm_data["documents"])
     n_elements = sum(
@@ -462,9 +492,9 @@ def main():
 
     # Load existing enrichments for incremental mode
     existing_enriched: Optional[Dict[str, Dict]] = None
-    if args.incremental and Path(args.output).exists():
-        print(f"  Loading existing enrichments from {args.output}...")
-        with open(args.output, encoding="utf-8") as f:
+    if args.incremental and out_path.exists():
+        print(f"  Loading existing enrichments from {out_path}...")
+        with open(out_path, encoding="utf-8") as f:
             existing_data = json.load(f)
         existing_enriched = {}
         for doc in existing_data["documents"].values():
@@ -516,14 +546,16 @@ def main():
         no_images=args.no_images,
         dry_run=args.dry_run,
         existing_enriched=existing_enriched,
+        output_path=out_path,
+        flush_every=args.flush_every,
     )
 
     # Merge and write
     enriched_data = merge_enrichments(mm_data, enrichments)
 
-    with open(args.output, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(enriched_data, f, indent=2, ensure_ascii=False)
-    print(f"\nWritten to {args.output}")
+    print(f"\nWritten to {out_path}")
 
     # Iron Rule: log token usage
     log_run(
@@ -535,7 +567,7 @@ def main():
         extra={
             "pairs_processed": processed,
             "parse_failures": failed,
-            "output": str(args.output),
+            "output": str(out_path),
         },
     )
 

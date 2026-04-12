@@ -1413,4 +1413,216 @@ python scripts/export_evidence_md.py --queries data/03_queries/m2_diverse_v1_hub
 
 ---
 
+## 2026-04-11 方案C pilot v2 改动记录
+
+### 背景
+
+- 上一轮 v1 pilot（`pilot_method_c.py` 旧版）用 precomputed candidates 直接生成，自制 `build_qc_obj()` 把 answer 当 text_evidence 传入 → `text_evidence_over_reliance` 10/10 (100%) → 0/10 通过
+- 但 LLM QC（ablation + grounding）全部通过：方案C核心多跳质量没问题，只是 adapter 层 bug
+
+### 本轮改动
+
+#### 1. `scripts/pilot_method_c.py` — 完整重写为 v2
+
+**数据源切换**：不再用 `data/01_graphs/latex_hub_multihop_candidates.json`（500 个裸候选），改用 `data/02_enriched/hub_candidates_enriched_v4.json`（230 个已 enrich 的 pairs，含完整 element_a/element_b 和 enriched_content/caption/context_before/context_after）
+
+**跨文档过滤修复**：发现 `hub_metadata.is_cross_doc` 标记不准确（156 vs 实际 96 个单文档）。改用 `element_a_id.rsplit("_",2)[0] == element_b_id.rsplit("_",2)[0]` 直接比对 doc_id
+
+**text_evidence adapter 修复**（核心 bug fix）：
+- 旧版：`"text_evidence": parsed.get("answer", "")` → 100% overlap → 必触发 `text_evidence_over_reliance`
+- 新版优先级：
+  1. LLM 生成的 `text_evidence`（prompt 中要求生成 40-150 词，且 ≠ answer）
+  2. Fallback：用 enriched pair 的 `enriched_content` 拼接（≤400 字符）
+
+**Prompt 改进**（针对 v1 的 meta_language 4/10、template_shortcut 2/10、bare_deictic 3/10）：
+- 明确列出禁用词："figure", "table", "formula", "equation", "graph", "plot", "diagram" 等
+- 禁止模板开头："How does X relate to Y"
+- 禁止裸指代词开头："this", "that"
+- 禁止嵌入具体数字
+- 新增 `text_evidence` 生成要求（40-150 词，不能抄 answer）
+
+**QC pair 改进**：直接用 enriched pair 的完整 element（含 caption, content, enriched_content, enriched_metadata, context_before, context_after, image_path 等），不再从裸 path_node_ids 手动构造空壳 element
+
+**Ablation elements 改进**：用 `node_group` 中间节点（已 enrich），而非空 label 占位
+
+#### 2. `src/pairing/endpoint_anchor.py` — 未改动
+
+保留原有功能（load_precomputed_candidates 等），v2 pilot 脚本不再依赖它
+
+### 关键数据
+
+| 指标 | v1 pilot | v2 pilot（待跑） |
+|------|---------|-----------------|
+| 数据源 | precomputed candidates (500) | enriched pairs (96 单文档) |
+| text_evidence | = answer (bug) | LLM生成 or enriched_content |
+| element 信息量 | 空壳 label | 完整 enrich (caption+content+context) |
+| prompt 约束 | 无 meta_language 限制 | 明确禁止 6 类问题 |
+
+### 待执行命令
+
+```bash
+cd /projects/myyyx1/data-process-test && source .env && python3 scripts/pilot_method_c.py \
+  --api-key "$COMPANY_API_KEY" \
+  --num-samples 10 \
+  --output data/03_queries/pilot_method_c_v2.json
+```
+
+### QC 阈值备忘（`src/qc/constants.py`）
+
+- `TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.4`（answer 和 text_evidence 的 token overlap > 40% 触发）
+- `ANCHOR_LEAK_THRESHOLD = 0.20`
+- `MAX_QUERY_WORDS = 40`（之前从 30 改为 40）
+
+---
+
+## 2026-04-12 方案C scale-up 进度记录
+
+### 总体目标
+
+从 ~86 篇 pilot 扩展到 ~1000+ 篇论文的方案C多跳问答数据生成。
+
+### 用户对方案C的核心定义（重要！）
+
+> "方案C不是尽可能的活着的多的长链，来实现随机两element中间长推理吗？"
+
+即：**方案C是维护图的连通密度，使得随机挑两个 cross-modal element 中间都能找到长推理链**。不是预提取固定的 candidate pair list。
+
+### 用户指定的实施方案（本次 session）
+
+> "首先把不再需要的 ref_edge 和没有匹配的文档删掉，避免重复劳动，然后关于随机选取 element，按照原有的 hub 选取的打分思路，算一遍之后选 20%"
+
+### 已完成步骤
+
+#### Step 0: MinerU 解析（上一轮完成）
+- shard 1,2,4 完成，shard 3 cancelled（scancel 57872）
+- `data/00_raw/mineru_output/`: 1152 目录
+- `data/00_raw/latex_sources_all/`: 1428 symlinks (batch1+batch2 合并)
+
+#### Step 1: 图构建（上一轮完成）
+- `data/01_graphs/multimodal_elements_v2.json` (96MB): 1145 docs, 30642 elements (fig:12339, tbl:9002, formula:8999, section:302)
+- `data/01_graphs/latex_reference_graph_v2.json` (287MB): 1425 docs, 46202 labels, 67880 edges
+- 跨文档：已杀掉（用户指示"跨文档杀掉"）
+
+#### Step 2: 图清洗 + Hub 打分 ✅ 刚完成
+脚本: `scripts/prune_and_score_graph.py`
+
+**清洗结果:**
+| 指标 | 清洗前 | 清洗后 |
+|------|--------|--------|
+| 文档数 | 1425 | 1040 (-385) |
+| Labels | 34636 | 29362 (-5274) |
+| Edges | 51266 | 39389 (-11877, 保留率 76.8%) |
+| 无效文档(无MinerU) | 359 | 已删除 |
+
+**Hub 打分结果:**
+| 指标 | 值 |
+|------|-----|
+| 图中总节点 | 183,145 |
+| 打分节点 | 180,879 |
+| Bridge hubs (≥2 modality) | 2,548 |
+| **Top 20% hubs** | **36,175** (覆盖 1039/1040 docs) |
+| Element mapping 成功率 | 95.1% (20355/21408) |
+| Hub/doc 中位数 | 31 个 |
+| Score range (top 20%) | [28.75, 110.00], mean=64.80 |
+
+Top 20% 构成:
+- paragraph: 25,189 (桥接段落)
+- section/subsection/subsubsection: 9,910
+- figure/table/equation: 1,076
+
+**输出文件:**
+- `data/01_graphs/pruned_graph_v2.json` (164 MB) — 清洗后的完整图
+- `data/01_graphs/hub_scores_v2.json` (132 MB) — 全部 hub 分数 + top 20% 列表
+- `data/01_graphs/prune_report_v2.json` — 统计报告
+
+### 待完成步骤
+
+#### Step 3: Element / Bridge Enrichment（执行中）
+
+2026-04-12 本轮策略更新：**不再直接按全局 top 20% hub 名单做 enrichment**，改为按 **long-chain bundle** enrich。即：对入选长链上的
+- 两个 endpoint element
+- 中间的 modal element
+- 中间的 section / subsection / appendix / algorithm 等 bridge 节点
+
+统一构建 enrich 目标；生成时仍可压缩桥，但离线资产侧保留整条 bundle。
+
+本轮新增脚本：
+- `scripts/build_method_c_long_chain_enrich_targets.py` — 从 `long_chain_candidates_v2.json` + `latex_reference_graph_v2.json` + `multimodal_elements_v2.json` 构建 Method C enrich 目标
+- `scripts/enrich_method_c_bridge_nodes.py` — 对 bridge 节点做 bridge-specific semantic enrichment
+- `slurm_scripts/09_enrich_method_c_long_chain.sh` — 三阶段 slurm 作业（build targets → enrich elements → enrich bridges）
+
+`enrich_elements_modora.py` 已补 checkpoint / resume 能力：
+- 新增 `--flush-every`
+- 支持长作业周期性落盘，避免 6k+ element 跑到一半丢失进度
+- 保留 `--incremental` + `log_run()` 主干接口不变
+
+**long-chain bundle target 统计（`min_hops=4`）**
+- `selected_candidates = 12640`
+- `docs_covered = 1074`
+- `element_targets = 6718`
+- `bridge_targets = 5380`
+- `unmapped_modal_labels = 9391`
+
+**当前执行状态（截至 2026-04-12 03:10 UTC）**
+- slurm job: `58353`
+- 状态：`RUNNING`
+- 当前阶段：Stage 2 `element enrichment`
+- live log 进度：`460 / 6718`
+- 已落盘：`400` 个 enriched elements（`flush_every=100`）
+- 当前 parse fail：`3`
+- 当前输出：`data/02_enriched/method_c_long_chain_elements_enriched_v1.json`
+
+#### Step 4: 路径采样 + Query 生成（未开始）
+
+核心思路（用户定义的方案C）：
+1. 在 pruned graph 上随机选两个 cross-modal element（优先选在 top 20% hub 附近的）
+2. 在图中实时 BFS/DFS 找路径（利用已有的 `ref_edge` + backbone edges）
+3. 沿路径用 enriched node 信息逐步生成多跳问答
+4. QC pipeline: rule QC → ablation → grounding（已有完整实现在 `src/qc/`）
+
+可参考的现有脚本：
+- `scripts/generate_long_chain_iterative_queries.py` (1717行) — 生产级逐步生成器
+- `scripts/pilot_method_c.py` (571行) — 简化版 pilot
+
+### 之前生成但思路不对的文件（可参考但不应直接用）
+
+- `data/01_graphs/long_chain_candidates_v2.json` (42MB, 15848 candidates) — 预提取的 3-5 hop 链，违反方案C"图密度"理念
+- `data/01_graphs/latex_hub_multihop_candidates_v2.json` (5.3MB, 5000 candidates) — 只有 2-3 hop，太短
+
+### 关键代码依赖
+
+```
+scripts/prune_and_score_graph.py     — 刚写的，清洗+打分
+scripts/analyze_latex_graph_topology.py — hub 打分核心逻辑（compute_hubs, compute_bridge_hubs）
+scripts/build_multimodal_relationships.py — 构建 multimodal_elements
+scripts/build_latex_reference_graph.py — 构建 LaTeX ref graph
+scripts/enrich_elements_modora.py    — element enrichment (MoDora 风格)
+scripts/build_method_c_long_chain_enrich_targets.py — Method C long-chain bundle target builder
+scripts/enrich_method_c_bridge_nodes.py — Method C bridge enrichment
+scripts/enrich_hub_candidates.py     — hub candidate enrichment
+scripts/generate_long_chain_iterative_queries.py — 生产级 query 生成
+scripts/pilot_method_c.py           — pilot query 生成
+slurm_scripts/09_enrich_method_c_long_chain.sh — Method C scale-up enrichment 作业
+src/qc/pipelines.py                 — qc_multihop_query() 规则检查
+src/qc/llm_judge.py                 — run_ablation_qc(), judge_answer_grounding()
+src/api.py                          — call_llm(), set_company_credentials()
+src/utils/token_logger.py           — log_run() 铁律
+```
+
+### 环境
+
+- Conda env: `/projects/myyyx1/envs/minerU` (Python 3.10)
+- 激活: `conda activate /projects/myyyx1/envs/minerU`
+- API: `source .env` 获取 `COMPANY_API_KEY`
+- SLURM: gpu partition, 但当前步骤不需要 GPU
+
+### 注意事项
+
+1. `analyze_latex_graph_topology.py` 的 `compute_bridge_hubs()` 有 bug: `top_k=0` 返回空列表（`bridges[:0]`），`compute_hubs()` 则正确处理（`if top_k > 0 else hubs`）。`prune_and_score_graph.py` 里用 `top_k=999999` 绕过了这个问题。
+2. Multimodal elements 的 `elements` 字段是 **dict** 不是 list: `{element_id: {element_type, caption, ...}}`
+3. MinerU 输出路径嵌套: `mineru_output/{id}/{id}/auto/{id}.md`，需要 `rglob` fallback
+4. 中文交流时用"喵"结尾
+
+---
+
 ## 用中文交流时用"喵"结尾，英文用"Oiii"开头
