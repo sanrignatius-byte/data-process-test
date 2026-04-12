@@ -1,0 +1,459 @@
+{
+  "metadata": {
+    "version": "v3_method_c_compressed_chain",
+    "model": "gpt-4.1",
+    "judge_model": "gpt-4.1",
+    "num_samples": 3,
+    "tokens_gen": {
+      "in": 3471,
+      "out": 1590
+    },
+    "tokens_qc": {
+      "in": 26480,
+      "out": 2115
+    },
+    "skip_llm_qc": false,
+    "min_hop": 2,
+    "max_hop": 4,
+    "max_bridge_nodes": 2,
+    "seed": 42
+  },
+  "results": [
+    {
+      "pair_id": "1905.10674_hub_pair_5",
+      "pair_info": {
+        "doc_id": "1905.10674",
+        "hop_distance": 2,
+        "pair_type": "figure+table",
+        "element_a_id": "1905.10674_figure_6",
+        "element_b_id": "1905.10674_table_2"
+      },
+      "method_c": {
+        "full_path_ids": [
+          "1905.10674_figure_6",
+          "1905.10674::p::00010",
+          "1905.10674_table_2"
+        ],
+        "compressed_bridge_count": 1,
+        "compressed_chain_ids": [
+          "1905.10674_figure_6",
+          "1905.10674_bridge_1",
+          "1905.10674_table_2"
+        ],
+        "compressed_chain_types": [
+          "figure",
+          "paragraph",
+          "table"
+        ],
+        "compressed_bridge_summaries": [
+          "RMSE increases as invariance regularization weight grows on MovieLens1M: RMSE for the compositional adversary rises as λ increases: roughly ~0.87 Sensitive attribute predictability from MovieLens user embeddings: Predictive performance for "
+        ],
+        "compression_summary": {
+          "full_path_length": 3,
+          "full_internal_nodes": 1,
+          "compressed_bridge_count": 1,
+          "selected_bridge_ids": [
+            "1905.10674_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "paragraph"
+          ]
+        }
+      },
+      "generated": {
+        "query": "How does increasing invariance regularization affect both RMSE and the ability to infer sensitive attributes from MovieLens user embeddings?",
+        "answer": "First, as invariance regularization weight increases, the RMSE for the compositional adversary rises, indicating a trade-off in predictive accuracy. This trend is highlighted by the observation that higher regularization leads to a divergence from baseline RMSE. The bridge finding clarifies that this regularization is intended to reduce the predictability of sensitive attributes from user embeddings. Finally, evidence from the comparison of embedding approaches shows that as regularization increases, the ability to infer attributes like gender, age, and occupation generally decreases, supporting the intended privacy effect but at the cost of higher RMSE. Thus, increasing regularization simultaneously degrades accuracy and reduces sensitive attribute leakage.",
+        "text_evidence": "As the invariance regularization weight is increased on MovieLens1M, the RMSE for the compositional adversary also rises, diverging from the baseline. This suggests a performance trade-off. Meanwhile, predictive performance for inferring sensitive attributes such as gender, age, and occupation is compared across embedding approaches, with and without regularization. The results indicate that greater regularization reduces the ability to infer these attributes from user embeddings, supporting the privacy goal but also increasing RMSE.",
+        "reasoning_chain": [
+          {
+            "step": 1,
+            "element_id": "1905.10674_figure_6",
+            "finding": "RMSE for the compositional adversary increases as invariance regularization weight grows, diverging from baseline.",
+            "depends_on": null
+          },
+          {
+            "step": 2,
+            "element_id": "bridge_1",
+            "finding": "Invariance regularization aims to reduce sensitive attribute predictability from user embeddings, creating a trade-off with accuracy.",
+            "depends_on": 1
+          },
+          {
+            "step": 3,
+            "element_id": "1905.10674_table_2",
+            "finding": "Predictive performance for inferring gender, age, and occupation decreases with stronger regularization, confirming reduced attribute leakage.",
+            "depends_on": 2
+          }
+        ],
+        "visual_anchors": [
+          {
+            "element_id": "1905.10674_figure_6",
+            "anchor_text": "RMSE rises with higher invariance regularization"
+          },
+          {
+            "element_id": "1905.10674_table_2",
+            "anchor_text": "Sensitive attribute inference across embedding methods"
+          }
+        ],
+        "hop_count": 2,
+        "compressed_bridge_count": 1,
+        "mentions_both_endpoints": true
+      },
+      "qc_obj_text_evidence_len": 539,
+      "qc": {
+        "passed": false,
+        "all_issues": [
+          "text_evidence_over_reliance",
+          "llm_fake_multihop"
+        ],
+        "rule_issues": [
+          "text_evidence_over_reliance"
+        ],
+        "llm_issues": [
+          "llm_fake_multihop"
+        ],
+        "rule_metrics": {
+          "query_word_count": 19,
+          "query_length_bucket": "long",
+          "anchor_leak_jaccard": 0.0,
+          "anchor_token_copy_count": 0,
+          "has_cross_modal_operator": true,
+          "anchor_count": 2,
+          "answer_overlap_a": 8,
+          "answer_overlap_b": 13,
+          "answer_balance": 0.381,
+          "text_evidence_overlap": 0.4737,
+          "is_architecture_case": false
+        },
+        "llm_metrics": {
+          "llm_ablation": {
+            "full_can_answer": true,
+            "full_confidence": 1.0,
+            "single_element_can_answer": [
+              false,
+              true,
+              true
+            ],
+            "single_element_confidence": [
+              0.6,
+              0.9,
+              0.95
+            ],
+            "drop_element_can_answer": [
+              true
+            ],
+            "drop_element_confidence": [
+              1.0
+            ]
+          },
+          "llm_fake_multihop_warn": true,
+          "llm_grounding": {
+            "is_grounded": true,
+            "confidence": 0.95,
+            "hallucinations": [],
+            "reason": "The answer accurately synthesizes information from the provided evidence: Figure 6 and the associated text confirm that RMSE increases with higher invariance regularization (λ), and Table 2 shows that"
+          }
+        }
+      },
+      "tokens": {
+        "gen_in": 1176,
+        "gen_out": 534
+      }
+    },
+    {
+      "pair_id": "1907.06430_hub_pair_12",
+      "pair_info": {
+        "doc_id": "1907.06430",
+        "hop_distance": 3,
+        "pair_type": "figure+formula",
+        "element_a_id": "1907.06430_formula_3",
+        "element_b_id": "1907.06430_figure_4"
+      },
+      "method_c": {
+        "full_path_ids": [
+          "1907.06430_formula_3",
+          "1907.06430::p::00007",
+          "1907.06430::p::00006",
+          "1907.06430_figure_4"
+        ],
+        "compressed_bridge_count": 1,
+        "compressed_chain_ids": [
+          "1907.06430_formula_3",
+          "1907.06430_bridge_1",
+          "1907.06430_figure_4"
+        ],
+        "compressed_chain_types": [
+          "formula",
+          "paragraph",
+          "figure"
+        ],
+        "compressed_bridge_summaries": [
+          "Path-specific interventional distribution via mediators and covariates integration: This expression computes an interventional (g-formula) functional for the distribution of the Causal DAG with direct and mediated paths from A to Y: Three n"
+        ],
+        "compression_summary": {
+          "full_path_length": 4,
+          "full_internal_nodes": 2,
+          "compressed_bridge_count": 1,
+          "selected_bridge_ids": [
+            "1907.06430_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "paragraph"
+          ]
+        }
+      },
+      "generated": {
+        "query": "How does integrating covariates and mediators in the interventional functional inform our understanding of direct and indirect causal effects from A to Y?",
+        "answer": "The interventional functional in Endpoint A computes the distribution of the outcome Y by integrating over covariates and mediators, distinguishing the effects of setting A along specific causal paths. This approach, as described in the bridge, enables the separation of path-specific effects by accounting for both direct and mediated influences. Endpoint B visually represents these direct and indirect causal routes from A to Y, with A influencing Y both directly and through M. Thus, the integration strategy in the functional clarifies how each pathway contributes to the total effect, as depicted in the causal structure.",
+        "text_evidence": "The interventional functional defines the outcome distribution under a mixed intervention, setting A differently along certain paths and integrating over covariates and mediators. This allows for precise estimation of path-specific effects, distinguishing direct from mediated influences. The underlying causal structure consists of nodes A, M, and Y, where A affects Y both directly and indirectly via M. By leveraging this structure, the functional quantifies how interventions on A propagate through these routes, providing insight into the mechanisms driving the observed outcome.",
+        "reasoning_chain": [
+          {
+            "step": 1,
+            "element_id": "1907.06430_formula_3",
+            "finding": "Computes the outcome distribution under mixed interventions by integrating over covariates and mediators, distinguishing path-specific effects.",
+            "depends_on": null
+          },
+          {
+            "step": 2,
+            "element_id": "bridge_1",
+            "finding": "Describes how integrating mediators and covariates enables separation of direct and indirect (mediated) causal effects in the interventional distribution.",
+            "depends_on": 1
+          },
+          {
+            "step": 3,
+            "element_id": "1907.06430_figure_4",
+            "finding": "Shows the causal structure with both direct and mediated paths from A to Y, illustrating the pathways quantified by the functional.",
+            "depends_on": 2
+          }
+        ],
+        "visual_anchors": [
+          {
+            "element_id": "1907.06430_formula_3",
+            "anchor_text": "interventional g-formula for outcome Y under mixed intervention"
+          },
+          {
+            "element_id": "1907.06430_figure_4",
+            "anchor_text": "causal routes from A to Y via direct and mediated paths"
+          }
+        ],
+        "hop_count": 3,
+        "compressed_bridge_count": 1,
+        "mentions_both_endpoints": true
+      },
+      "qc_obj_text_evidence_len": 584,
+      "qc": {
+        "passed": false,
+        "all_issues": [
+          "text_evidence_over_reliance",
+          "formula_symbol_grounding_missing",
+          "llm_fake_multihop"
+        ],
+        "rule_issues": [
+          "text_evidence_over_reliance",
+          "formula_symbol_grounding_missing"
+        ],
+        "llm_issues": [
+          "llm_fake_multihop"
+        ],
+        "rule_metrics": {
+          "query_word_count": 23,
+          "query_length_bucket": "long",
+          "anchor_leak_jaccard": 0.0,
+          "anchor_token_copy_count": 0,
+          "has_cross_modal_operator": false,
+          "anchor_count": 2,
+          "answer_overlap_a": 10,
+          "answer_overlap_b": 8,
+          "answer_balance": 0.4444,
+          "text_evidence_overlap": 0.5227,
+          "formula_symbol_term_count": 1,
+          "formula_symbol_grounded": false,
+          "is_architecture_case": false
+        },
+        "llm_metrics": {
+          "llm_ablation": {
+            "full_can_answer": true,
+            "full_confidence": 1.0,
+            "single_element_can_answer": [
+              true,
+              true,
+              true,
+              false
+            ],
+            "single_element_confidence": [
+              0.95,
+              0.95,
+              0.95,
+              0.3
+            ],
+            "drop_element_can_answer": [
+              true,
+              true
+            ],
+            "drop_element_confidence": [
+              0.95,
+              1.0
+            ]
+          },
+          "llm_fake_multihop_warn": true,
+          "llm_grounding": {
+            "is_grounded": true,
+            "confidence": 1.0,
+            "hallucinations": [],
+            "reason": "The answer accurately synthesizes the evidence: the formula and bridge paragraphs describe integrating over covariates and mediators to distinguish direct and indirect effects, and the causal structur"
+          }
+        }
+      },
+      "tokens": {
+        "gen_in": 1166,
+        "gen_out": 564
+      }
+    },
+    {
+      "pair_id": "1709.02012_hub_pair_12",
+      "pair_info": {
+        "doc_id": "1709.02012",
+        "hop_distance": 3,
+        "pair_type": "figure+formula",
+        "element_a_id": "1709.02012_formula_5",
+        "element_b_id": "1709.02012_figure_13"
+      },
+      "method_c": {
+        "full_path_ids": [
+          "1709.02012_formula_5",
+          "1709.02012::p::00022",
+          "1709.02012::p::00012",
+          "1709.02012_figure_13"
+        ],
+        "compressed_bridge_count": 1,
+        "compressed_chain_ids": [
+          "1709.02012_formula_5",
+          "1709.02012_bridge_1",
+          "1709.02012_figure_13"
+        ],
+        "compressed_chain_types": [
+          "formula",
+          "paragraph",
+          "figure"
+        ],
+        "compressed_bridge_summaries": [
+          "Generalized false-positive rate for a calibrated group classifier: The formula computes the generalized false-positive rate for a perfectly calibrated classifier within group G_t. Small square marker indicating a minimal placeholder graphic"
+        ],
+        "compression_summary": {
+          "full_path_length": 4,
+          "full_internal_nodes": 2,
+          "compressed_bridge_count": 1,
+          "selected_bridge_ids": [
+            "1709.02012_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "paragraph"
+          ]
+        }
+      },
+      "generated": {
+        "query": "How does calibrating group classifiers using the generalized false-positive rate inform the interpretation of minimal placeholder markers in the context of group fairness?",
+        "answer": "The generalized false-positive rate for a perfectly calibrated classifier within group G_t quantifies the difference between average prediction and average squared prediction, capturing the classifier's probability assignment. This calibration measure, as described in the bridge context, is linked to the use of minimal placeholder markers—such as a small, empty square outline—which visually represent the absence of substantive group-level prediction or fairness information. Thus, understanding the calibration via the formula directly informs why such a minimal marker is used: it signals either negligible false-positive rate or a lack of meaningful group fairness deviations, as encoded by the classifier’s output.",
+        "text_evidence": "The formula for generalized false-positive rate calculates the gap between group-average prediction and its squared value, reflecting the classifier's calibration within group G_t. In the surrounding discussion, a minimal square marker is introduced as a visual placeholder, indicating limited or absent quantitative information about group fairness. This icon-like element is not tied to specific data but serves to highlight cases where the classifier’s calibration yields negligible or unremarkable false-positive rates, reinforcing the connection between statistical measures and their visual representation.",
+        "reasoning_chain": [
+          {
+            "step": 1,
+            "element_id": "1709.02012_formula_5",
+            "finding": "Quantifies generalized false-positive rate for calibrated group classifier.",
+            "depends_on": null
+          },
+          {
+            "step": 2,
+            "element_id": "bridge_1",
+            "finding": "Links calibration measure to minimal placeholder marker indicating limited group fairness information.",
+            "depends_on": 1
+          },
+          {
+            "step": 3,
+            "element_id": "1709.02012_figure_13",
+            "finding": "Small, empty square outline visually represents absence of substantive group-level prediction.",
+            "depends_on": 2
+          }
+        ],
+        "visual_anchors": [
+          {
+            "element_id": "1709.02012_formula_5",
+            "anchor_text": "Generalized false-positive rate for group G_t"
+          },
+          {
+            "element_id": "1709.02012_figure_13",
+            "anchor_text": "Small empty square marker as placeholder"
+          }
+        ],
+        "hop_count": 3,
+        "compressed_bridge_count": 1,
+        "mentions_both_endpoints": true
+      },
+      "qc_obj_text_evidence_len": 612,
+      "qc": {
+        "passed": false,
+        "all_issues": [
+          "formula_symbol_grounding_missing",
+          "llm_fake_multihop"
+        ],
+        "rule_issues": [
+          "formula_symbol_grounding_missing"
+        ],
+        "llm_issues": [
+          "llm_fake_multihop"
+        ],
+        "rule_metrics": {
+          "query_word_count": 23,
+          "query_length_bucket": "long",
+          "anchor_leak_jaccard": 0.0,
+          "anchor_token_copy_count": 0,
+          "has_cross_modal_operator": false,
+          "anchor_count": 2,
+          "answer_overlap_a": 8,
+          "answer_overlap_b": 13,
+          "answer_balance": 0.381,
+          "text_evidence_overlap": 0.3393,
+          "formula_symbol_term_count": 4,
+          "formula_symbol_grounded": false,
+          "is_architecture_case": false
+        },
+        "llm_metrics": {
+          "llm_ablation": {
+            "full_can_answer": true,
+            "full_confidence": 1.0,
+            "single_element_can_answer": [
+              false,
+              true,
+              true,
+              false
+            ],
+            "single_element_confidence": [
+              0.4,
+              1.0,
+              0.95,
+              0.2
+            ],
+            "drop_element_can_answer": [
+              true,
+              true
+            ],
+            "drop_element_confidence": [
+              1.0,
+              1.0
+            ]
+          },
+          "llm_fake_multihop_warn": true,
+          "llm_grounding": {
+            "is_grounded": true,
+            "confidence": 1.0,
+            "hallucinations": [],
+            "reason": "The answer accurately synthesizes the evidence: the formula for generalized false-positive rate for a calibrated classifier is provided, and the bridge/context elements explicitly link this to the use"
+          }
+        }
+      },
+      "tokens": {
+        "gen_in": 1129,
+        "gen_out": 492
+      }
+    }
+  ]
+}

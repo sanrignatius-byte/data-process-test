@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "version": "v3_method_c_compressed_chain",
+    "model": "gpt-4.1",
+    "judge_model": "gpt-4.1",
+    "num_samples": 2,
+    "tokens_gen": {
+      "in": 0,
+      "out": 0
+    },
+    "tokens_qc": {
+      "in": 0,
+      "out": 0
+    },
+    "skip_llm_qc": false,
+    "min_hop": 2,
+    "max_hop": 4,
+    "max_bridge_nodes": 2,
+    "seed": 42
+  },
+  "results": [
+    {
+      "pair_id": "1905.10674_hub_pair_5",
+      "method_c": {
+        "full_path_ids": [
+          "1905.10674_figure_6",
+          "1905.10674::p::00010",
+          "1905.10674_table_2"
+        ],
+        "compressed_bridge_count": 1,
+        "compressed_chain_ids": [
+          "1905.10674_figure_6",
+          "1905.10674_bridge_1",
+          "1905.10674_table_2"
+        ],
+        "compressed_chain_types": [
+          "figure",
+          "paragraph",
+          "table"
+        ],
+        "compressed_bridge_summaries": [
+          "RMSE increases as invariance regularization weight grows on MovieLens1M: RMSE for the compositional adversary rises as λ increases: roughly ~0.87 Sensitive attribute predictability from MovieLens user embeddings: Predictive performance for "
+        ],
+        "compression_summary": {
+          "full_path_length": 3,
+          "full_internal_nodes": 1,
+          "compressed_bridge_count": 1,
+          "selected_bridge_ids": [
+            "1905.10674_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "paragraph"
+          ]
+        }
+      },
+      "prompt": "Generate a natural multi-hop academic QA pair using Method C.\n\nMethod C policy:\n- The full discovery path was used to FIND a valid route in the graph.\n- You must NOT expose the full path directly in the final question.\n- Instead, use the compressed bridge chain below to write a genuinely multi-hop query.\n- The final question must require Endpoint A + at least one bridge finding + Endpoint B.\n\n=== ENDPOINT A (figure) ===\nID: 1905.10674_figure_6\nRMSE for the compositional adversary rises as λ increases: roughly ~0.87 at λ=1, ~0.89 at λ=10^2, then climbing sharply to just above 1.0 around λ=10^3 and remaining near ~1.01 at λ=10^4. The baseline RMSE appears as a flat dashed line near ~0.865 across all λ values. The gap between the adversarial method and baseline\n\n=== ENDPOINT B (table) ===\nID: 1905.10674_table_2\nPredictive performance for inferring sensitive attributes (gender, age, occupation) is compared across multiple embedding approaches on MovieLens, including variants with and without adversarial/invariance regularization. Gender inference is evaluated using AUC, while age and occupation inference use micro-averaged F1,\n\n=== COMPRESSED GENERATION CHAIN ===\nDiscovery hop count: 2\nPair type: figure+table\nFull discovery path IDs: 1905.10674_figure_6 -> 1905.10674::p::00010 -> 1905.10674_table_2\nCompressed generation chain IDs: 1905.10674_figure_6 -> 1905.10674_bridge_1 -> 1905.10674_table_2\n\nBRIDGE 1 (paragraph)\nID: 1905.10674_bridge_1\nRMSE increases as invariance regularization weight grows on MovieLens1M: RMSE for the compositional adversary rises as λ increases: roughly ~0.87 Sensitive attribute predictability from MovieLens user embeddings: Predictive performance for\n\nDISCOVERY NOTE (hidden reasoning support, not user-facing):\nRMSE increases as invariance regularization weight grows on MovieLens1M: RMSE for the compositional adversary rises as λ increases: roughly ~0.87 Sensitive attribute predictability from MovieLens user embeddings: Predictive performance for inferring sensitive attributes (gender, age, occupation) is compared across multiple MovieLens1M, RMSE, lambda, compositional adversary, baseline\nREFERENCE SEED (rephrase freely, do NOT copy):\n\"What explains the mismatch between fig:comp_gender_rmse and ml-table?\"\n=== HARD CONSTRAINTS (violating any = instant rejection) ===\n\n1. QUESTION (<= 40 words):\n   - Ask about the scientific relationship between Endpoint A and Endpoint B\n   - The answer MUST require information from BOTH endpoints and at least one bridge finding\n   - Do NOT use meta-language words: \"figure\", \"table\", \"formula\", \"equation\",\n     \"graph\", \"plot\", \"diagram\", \"chart\", \"panel\", \"subfigure\", \"column\", \"row\"\n   - Do NOT use template openings: \"How does X relate to Y\", \"What is the\n     relationship between X and Y\", \"In what way does X impact Y\"\n   - Do NOT use bare deictic pronouns without clear referent: \"this\", \"that\",\n     \"these\", \"those\" (at start of question)\n   - Do NOT embed specific numbers or values from the elements into the question\n   - Use natural, domain-specific language a researcher would actually ask\n\n2. ANSWER (serial chain reasoning):\n   - Must be >= 35 words\n   - Must explicitly follow endpoint A -> bridge finding(s) -> endpoint B\n   - Each step MUST depend on the previous step\n   - Must mention evidence from BOTH endpoints\n   - Do not mention path IDs or paragraph IDs\n\n3. TEXT_EVIDENCE (supporting excerpt):\n   - A passage (50-180 words) that a reader could use to verify the answer\n   - Must NOT be a copy of the answer\n   - Should combine endpoint evidence with the bridge context in different wording\n\n=== OUTPUT FORMAT (valid JSON, no markdown) ===\n{\n  \"query\": \"natural question under 40 words\",\n  \"answer\": \"serial chain reasoning >= 35 words with explicit dependencies\",\n  \"text_evidence\": \"supporting passage from paper context, 50-180 words\",\n  \"reasoning_chain\": [\n    {\"step\": 1, \"element_id\": \"1905.10674_figure_6\", \"finding\": \"...\", \"depends_on\": null},\n    {\"step\": 2, \"element_id\": \"bridge_1\", \"finding\": \"...\", \"depends_on\": 1},\n    {\"step\": 3, \"element_id\": \"1905.10674_table_2\", \"finding\": \"...\", \"depends_on\": 2}\n  ],\n  \"visual_anchors\": [\n    {\"element_id\": \"1905.10674_figure_6\", \"anchor_text\": \"brief anchor <= 60 chars\"},\n    {\"element_id\": \"1905.10674_table_2\", \"anchor_text\": \"brief anchor <= 60 chars\"}\n  ],\n  \"hop_count\": 2,\n  \"compressed_bridge_count\": 1,\n  \"mentions_both_endpoints\": true\n}",
+      "dry_run": true
+    },
+    {
+      "pair_id": "1907.06430_hub_pair_12",
+      "method_c": {
+        "full_path_ids": [
+          "1907.06430_formula_3",
+          "1907.06430::p::00007",
+          "1907.06430::p::00006",
+          "1907.06430_figure_4"
+        ],
+        "compressed_bridge_count": 1,
+        "compressed_chain_ids": [
+          "1907.06430_formula_3",
+          "1907.06430_bridge_1",
+          "1907.06430_figure_4"
+        ],
+        "compressed_chain_types": [
+          "formula",
+          "paragraph",
+          "figure"
+        ],
+        "compressed_bridge_summaries": [
+          "Path-specific interventional distribution via mediators and covariates integration: This expression computes an interventional (g-formula) functional for the distribution of the Causal DAG with direct and mediated paths from A to Y: Three n"
+        ],
+        "compression_summary": {
+          "full_path_length": 4,
+          "full_internal_nodes": 2,
+          "compressed_bridge_count": 1,
+          "selected_bridge_ids": [
+            "1907.06430_bridge_1"
+          ],
+          "selected_bridge_types": [
+            "paragraph"
+          ]
+        }
+      },
+      "prompt": "Generate a natural multi-hop academic QA pair using Method C.\n\nMethod C policy:\n- The full discovery path was used to FIND a valid route in the graph.\n- You must NOT expose the full path directly in the final question.\n- Instead, use the compressed bridge chain below to write a genuinely multi-hop query.\n- The final question must require Endpoint A + at least one bridge finding + Endpoint B.\n\n=== ENDPOINT A (formula) ===\nID: 1907.06430_formula_3\nThis expression computes an interventional (g-formula) functional for the distribution of the outcome Y under a mixed intervention that sets A=a along some causal paths while forcing A=bar{a} for the mechanism generating L. The integrand factors into the outcome model p(Y|A=a,C,M,L), the conditional model for L under t\n\n=== ENDPOINT B (figure) ===\nID: 1907.06430_figure_4\nThree nodes (A, M, Y) are connected by directed arrows forming two causal routes from A to Y. A points to M, and M points to Y, creating an indirect (mediated) path A → M → Y. A also points directly to Y, indicating an additional direct causal effect alongside the mediated effect.\n\n=== COMPRESSED GENERATION CHAIN ===\nDiscovery hop count: 3\nPair type: figure+formula\nFull discovery path IDs: 1907.06430_formula_3 -> 1907.06430::p::00007 -> 1907.06430::p::00006 -> 1907.06430_figure_4\nCompressed generation chain IDs: 1907.06430_formula_3 -> 1907.06430_bridge_1 -> 1907.06430_figure_4\n\nBRIDGE 1 (paragraph)\nID: 1907.06430_bridge_1\nPath-specific interventional distribution via mediators and covariates integration: This expression computes an interventional (g-formula) functional for the distribution of the Causal DAG with direct and mediated paths from A to Y: Three n\n\nDISCOVERY NOTE (hidden reasoning support, not user-facing):\nPath-specific interventional distribution via mediators and covariates integration: This expression computes an interventional (g-formula) functional for the distribution of the Causal DAG with direct and mediated paths from A to Y: Three nodes (A, M, Y) are connected by directed path-specific effect, intervention, mediators, g-formula, counterfactual\nREFERENCE SEED (rephrase freely, do NOT copy):\n\"Why does eq:AIE2 show a different trend than fig:CBN?\"\n=== HARD CONSTRAINTS (violating any = instant rejection) ===\n\n1. QUESTION (<= 40 words):\n   - Ask about the scientific relationship between Endpoint A and Endpoint B\n   - The answer MUST require information from BOTH endpoints and at least one bridge finding\n   - Do NOT use meta-language words: \"figure\", \"table\", \"formula\", \"equation\",\n     \"graph\", \"plot\", \"diagram\", \"chart\", \"panel\", \"subfigure\", \"column\", \"row\"\n   - Do NOT use template openings: \"How does X relate to Y\", \"What is the\n     relationship between X and Y\", \"In what way does X impact Y\"\n   - Do NOT use bare deictic pronouns without clear referent: \"this\", \"that\",\n     \"these\", \"those\" (at start of question)\n   - Do NOT embed specific numbers or values from the elements into the question\n   - Use natural, domain-specific language a researcher would actually ask\n\n2. ANSWER (serial chain reasoning):\n   - Must be >= 35 words\n   - Must explicitly follow endpoint A -> bridge finding(s) -> endpoint B\n   - Each step MUST depend on the previous step\n   - Must mention evidence from BOTH endpoints\n   - Do not mention path IDs or paragraph IDs\n\n3. TEXT_EVIDENCE (supporting excerpt):\n   - A passage (50-180 words) that a reader could use to verify the answer\n   - Must NOT be a copy of the answer\n   - Should combine endpoint evidence with the bridge context in different wording\n\n=== OUTPUT FORMAT (valid JSON, no markdown) ===\n{\n  \"query\": \"natural question under 40 words\",\n  \"answer\": \"serial chain reasoning >= 35 words with explicit dependencies\",\n  \"text_evidence\": \"supporting passage from paper context, 50-180 words\",\n  \"reasoning_chain\": [\n    {\"step\": 1, \"element_id\": \"1907.06430_formula_3\", \"finding\": \"...\", \"depends_on\": null},\n    {\"step\": 2, \"element_id\": \"bridge_1\", \"finding\": \"...\", \"depends_on\": 1},\n    {\"step\": 3, \"element_id\": \"1907.06430_figure_4\", \"finding\": \"...\", \"depends_on\": 2}\n  ],\n  \"visual_anchors\": [\n    {\"element_id\": \"1907.06430_formula_3\", \"anchor_text\": \"brief anchor <= 60 chars\"},\n    {\"element_id\": \"1907.06430_figure_4\", \"anchor_text\": \"brief anchor <= 60 chars\"}\n  ],\n  \"hop_count\": 3,\n  \"compressed_bridge_count\": 1,\n  \"mentions_both_endpoints\": true\n}",
+      "dry_run": true
+    }
+  ]
+}
