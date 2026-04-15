@@ -34,6 +34,73 @@ DEFAULT_TARGET_WORDS = 450
 DEFAULT_MIN_WORDS = 100  # minimum words for a standalone chunk
 
 
+# ── Word tokenization ────────────────────────────────────────────────────────
+#
+# Priority: nltk.word_tokenize > regex fallback.
+# We avoid spacy because spacy models add hundreds of MB of weights that
+# aren't justified for simple word counting. nltk falls back to a Treebank-
+# style regex if the `punkt` data is missing, so this function never crashes.
+
+_WORD_RE = re.compile(r"\w+|[^\w\s]", re.UNICODE)
+_TOKENIZER_STATE: dict = {"engine": None, "callable": None}
+
+
+def _resolve_tokenizer(preferred: str = "auto"):
+    """Pick a tokenizer once and cache it in _TOKENIZER_STATE.
+
+    preferred:
+        "auto"       — try nltk, then regex
+        "nltk"       — force nltk (errors if unavailable)
+        "regex"      — force regex fallback
+    """
+    if _TOKENIZER_STATE["callable"] is not None:
+        return _TOKENIZER_STATE["engine"], _TOKENIZER_STATE["callable"]
+
+    def _regex_tok(s: str) -> list[str]:
+        return _WORD_RE.findall(s)
+
+    if preferred == "regex":
+        _TOKENIZER_STATE.update({"engine": "regex", "callable": _regex_tok})
+        return "regex", _regex_tok
+
+    try:
+        from nltk.tokenize import word_tokenize  # type: ignore
+
+        # Sanity-check: word_tokenize requires the `punkt` resource. If
+        # missing, nltk raises LookupError on first call. Probe once here.
+        word_tokenize("probe sentence.")
+        _TOKENIZER_STATE.update({"engine": "nltk", "callable": word_tokenize})
+        return "nltk", word_tokenize
+    except Exception as e:
+        if preferred == "nltk":
+            raise RuntimeError(
+                "nltk tokenizer requested but unavailable. "
+                "Install nltk and run nltk.download('punkt') first."
+            ) from e
+        # auto mode: silently fall back
+        _TOKENIZER_STATE.update({"engine": "regex", "callable": _regex_tok})
+        return "regex", _regex_tok
+
+
+def tokenize_words(text: str) -> list[str]:
+    """Split text into word-like tokens using the configured tokenizer."""
+    _, tok = _resolve_tokenizer()
+    return tok(text)
+
+
+# ── Sentence splitting (for paragraph preview / first-sentence hooks) ───────
+
+_SENT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z\[(])")
+
+
+def split_sentences(text: str) -> list[str]:
+    """Regex sentence splitter. Good enough for academic English prose."""
+    text = text.strip()
+    if not text:
+        return []
+    return [s.strip() for s in _SENT_RE.split(text) if s.strip()]
+
+
 # ── Section-level inference ──────────────────────────────────────────────────
 
 def infer_section_level(title: str) -> int:
@@ -97,7 +164,7 @@ def _make_section(title: str, text: str) -> dict:
         p = p.strip()
         if not p:
             continue
-        words = p.split()
+        words = tokenize_words(p)
         paragraphs.append({
             "text": p,
             "word_count": len(words),
@@ -119,15 +186,18 @@ def merge_paragraphs_into_chunks(
     sections: list[dict],
     target_words: int = 450,
     min_words: int = 100,
-) -> list[dict]:
+) -> tuple[list[dict], list[dict]]:
     """Merge paragraphs into ~target_words chunks using a two-pass strategy.
-    
+
     Pass 1: Flatten all paragraphs (keeping section metadata), then greedily
             accumulate until target_words. Prefer breaking at section
             boundaries but allow merging short sections together.
     Pass 2: Merge any trailing runt chunk (< min_words) into its predecessor.
-    
-    Each chunk records all section titles it spans.
+
+    Returns:
+        (chunks, flat_paras) — flat_paras is the per-doc global paragraph
+        list, caller uses it to emit paragraph virtual nodes keyed by
+        para_idx.
     """
     # ── Pass 0: flatten paragraphs with section metadata ──
     flat_paras = []  # [{text, word_count, section_title, section_level, para_idx}]
@@ -144,8 +214,8 @@ def merge_paragraphs_into_chunks(
             global_para_idx += 1
     
     if not flat_paras:
-        return []
-    
+        return [], []
+
     # ── Pass 1: greedy chunking ──
     chunks = []
     buf_paras = []
@@ -201,8 +271,8 @@ def merge_paragraphs_into_chunks(
             )
         else:
             merged.append(chunk)
-    
-    return merged
+
+    return merged, flat_paras
 
 
 def _emit_chunk(
@@ -227,11 +297,22 @@ def _emit_chunk(
 
 # ── Build edges ──────────────────────────────────────────────────────────────
 
-def build_edges(doc_id: str, chunks: list[dict], sections: list[dict]) -> list[dict]:
-    """Build edges between chunks, sections, and sequential neighbors."""
-    edges = []
-    
-    # 1. section_contains_chunk: section → chunk (for ALL sections a chunk spans)
+def build_edges(
+    doc_id: str,
+    chunks: list[dict],
+    flat_paras: list[dict],
+) -> list[dict]:
+    """Build edges between chunks, sections, paragraphs, and sequential neighbors.
+
+    Edge types emitted:
+        section_contains_chunk      section → chunk   (existing)
+        chunk_sequence              chunk_i → chunk_i+1 (existing)
+        chunk_contains_paragraph    chunk → paragraph (new)
+        section_contains_paragraph  section → paragraph (new)
+    """
+    edges: list[dict] = []
+
+    # 1. section_contains_chunk (one section → many chunks if chunk spans)
     for i, chunk in enumerate(chunks):
         chunk_id = f"{doc_id}_chunk_{i}"
         for sec_title in chunk.get("section_titles", [chunk["section_title"]]):
@@ -242,8 +323,8 @@ def build_edges(doc_id: str, chunks: list[dict], sections: list[dict]) -> list[d
                 "target_type": "chunk",
                 "relation": "section_contains_chunk",
             })
-    
-    # 2. chunk_sequence: chunk_i → chunk_{i+1} (reading order)
+
+    # 2. chunk_sequence: reading order between adjacent chunks
     for i in range(len(chunks) - 1):
         edges.append({
             "source": f"{doc_id}_chunk_{i}",
@@ -252,7 +333,29 @@ def build_edges(doc_id: str, chunks: list[dict], sections: list[dict]) -> list[d
             "target_type": "chunk",
             "relation": "chunk_sequence",
         })
-    
+
+    # 3. chunk_contains_paragraph: chunk → each of its constituent paragraphs
+    for i, chunk in enumerate(chunks):
+        chunk_id = f"{doc_id}_chunk_{i}"
+        for para_idx in chunk.get("paragraph_indices", []):
+            edges.append({
+                "source": chunk_id,
+                "target": f"{doc_id}_para_{para_idx}",
+                "source_type": "chunk",
+                "target_type": "paragraph",
+                "relation": "chunk_contains_paragraph",
+            })
+
+    # 4. section_contains_paragraph: section → each paragraph directly
+    for fp in flat_paras:
+        edges.append({
+            "source": fp["section_title"],
+            "target": f"{doc_id}_para_{fp['para_idx']}",
+            "source_type": "section",
+            "target_type": "paragraph",
+            "relation": "section_contains_paragraph",
+        })
+
     return edges
 
 
@@ -283,13 +386,22 @@ def process_all_docs(
     target_words: int,
     min_words: int,
 ) -> dict:
-    """Process all MinerU documents and build chunk virtual nodes."""
+    """Process all MinerU documents and build chunk + paragraph virtual nodes."""
+    engine, _ = _resolve_tokenizer()
     result = {
         "metadata": {
             "source": "MinerU markdown outputs",
             "target_words": target_words,
             "min_words": min_words,
+            "tokenizer": engine,
             "script": "scripts/build_chunk_virtual_nodes.py",
+            "node_types": ["chunk", "paragraph"],
+            "edge_types": [
+                "section_contains_chunk",
+                "chunk_sequence",
+                "chunk_contains_paragraph",
+                "section_contains_paragraph",
+            ],
         },
         "documents": {},
         "stats": {
@@ -297,9 +409,11 @@ def process_all_docs(
             "docs_with_markdown": 0,
             "docs_with_chunks": 0,
             "total_chunks": 0,
+            "total_paragraphs": 0,
             "total_edges": 0,
             "total_words_in_chunks": 0,
             "avg_words_per_chunk": 0,
+            "avg_paragraphs_per_chunk": 0,
         },
     }
     
@@ -331,15 +445,17 @@ def process_all_docs(
         
         # Parse sections
         sections = parse_markdown_sections(md_text)
-        
-        # Merge into chunks
-        chunks = merge_paragraphs_into_chunks(sections, target_words, min_words)
-        
+
+        # Merge into chunks (also returns the flat paragraph list)
+        chunks, flat_paras = merge_paragraphs_into_chunks(
+            sections, target_words, min_words
+        )
+
         if not chunks:
             continue
-        
+
         result["stats"]["docs_with_chunks"] += 1
-        
+
         # Build chunk nodes
         nodes = OrderedDict()
         for i, chunk in enumerate(chunks):
@@ -355,35 +471,57 @@ def process_all_docs(
                 "word_count": chunk["word_count"],
                 "paragraph_indices": chunk["paragraph_indices"],
             }
-        
+
+        # Build paragraph virtual nodes (one per flat_paras entry)
+        paragraph_nodes = OrderedDict()
+        for fp in flat_paras:
+            para_id = f"{doc_id}_para_{fp['para_idx']}"
+            paragraph_nodes[para_id] = {
+                "paragraph_id": para_id,
+                "doc_id": doc_id,
+                "para_idx": fp["para_idx"],
+                "section_title": fp["section_title"],
+                "section_level": fp["section_level"],
+                "text": fp["text"],
+                "word_count": fp["word_count"],
+            }
+
         # Build edges
-        edges = build_edges(doc_id, chunks, sections)
-        
+        edges = build_edges(doc_id, chunks, flat_paras)
+
         result["documents"][doc_id] = {
             "doc_id": doc_id,
             "source_markdown": os.path.relpath(md_file, "."),
             "num_sections": len(sections),
             "num_chunks": len(chunks),
+            "num_paragraphs": len(paragraph_nodes),
             "num_edges": len(edges),
             "total_words": sum(c["word_count"] for c in chunks),
             "nodes": nodes,
+            "paragraph_nodes": paragraph_nodes,
             "edges": edges,
         }
-        
+
         result["stats"]["total_chunks"] += len(chunks)
+        result["stats"]["total_paragraphs"] += len(paragraph_nodes)
         result["stats"]["total_edges"] += len(edges)
         result["stats"]["total_words_in_chunks"] += sum(
             c["word_count"] for c in chunks
         )
     
-    # Compute average
+    # Compute averages
     if result["stats"]["total_chunks"] > 0:
         result["stats"]["avg_words_per_chunk"] = round(
             result["stats"]["total_words_in_chunks"]
             / result["stats"]["total_chunks"],
             1,
         )
-    
+        result["stats"]["avg_paragraphs_per_chunk"] = round(
+            result["stats"]["total_paragraphs"]
+            / result["stats"]["total_chunks"],
+            2,
+        )
+
     return result
 
 
@@ -407,17 +545,27 @@ def main():
         "--output", type=str, default=OUTPUT_PATH,
         help=f"Output JSON path (default: {OUTPUT_PATH})"
     )
+    parser.add_argument(
+        "--tokenizer", type=str, default="auto",
+        choices=["auto", "nltk", "regex"],
+        help="Word tokenizer backend (default: auto = nltk → regex fallback)"
+    )
     args = parser.parse_args()
-    
+
+    # Lock tokenizer choice early so word counts are consistent across docs
+    _resolve_tokenizer(args.tokenizer)
+    engine, _ = _resolve_tokenizer()
+
     print(f"Building chunk virtual nodes...")
     print(f"  MinerU base:  {args.mineru_base}")
     print(f"  Target words: {args.target_words}")
     print(f"  Min words:    {args.min_words}")
+    print(f"  Tokenizer:    {engine}")
     print(f"  Output:       {args.output}")
     print()
-    
+
     result = process_all_docs(args.mineru_base, args.target_words, args.min_words)
-    
+
     # Print stats
     stats = result["stats"]
     print(f"── Results ──")
@@ -425,8 +573,10 @@ def main():
     print(f"  Docs with markdown: {stats['docs_with_markdown']}")
     print(f"  Docs with chunks:   {stats['docs_with_chunks']}")
     print(f"  Total chunks:       {stats['total_chunks']}")
+    print(f"  Total paragraphs:   {stats['total_paragraphs']}")
     print(f"  Total edges:        {stats['total_edges']}")
     print(f"  Avg words/chunk:    {stats['avg_words_per_chunk']}")
+    print(f"  Avg paras/chunk:    {stats['avg_paragraphs_per_chunk']}")
     
     # Save
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
