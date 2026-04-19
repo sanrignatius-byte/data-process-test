@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 """
 Full delivery pipeline:
-  1. Download LaTeX sources for 53 delivery docs (arXiv e-print)
-  2. Build corpus.jsonl from MinerU parsed elements
+  1. Download LaTeX sources for delivery docs (arXiv e-print)
+  2. Build corpus.jsonl from graph + MinerU elements
   3. Build train_triplets.jsonl (query + pos + neg) for contrastive learning
   4. Build qrels.jsonl (query-passage relevance)
   5. Package everything into zip
-  6. Upload to ModelScope: IgnatiusMao/M4query_test
+  6. Optionally upload to ModelScope
 
 Usage (standalone or via SLURM):
-    python scripts/build_full_delivery.py
+    python scripts/build_full_delivery.py --skip-upload
 """
 
-import json, os, sys, shutil, random, collections, hashlib
+import argparse
+import json
+import os
+import sys
+import shutil
+import random
+import collections
 from pathlib import Path
 from datetime import datetime
 
@@ -26,6 +32,7 @@ MINERU_BASE  = ROOT / "data" / "00_raw" / "mineru_output"
 LATEX_OUTPUT = ROOT / "data" / "00_raw" / "latex_sources_delivery"
 GRAPH_DIR    = ROOT / "data" / "01_graphs"
 ENRICHED_DIR = ROOT / "data" / "02_enriched"
+GRAPH_ELEMENTS = GRAPH_DIR / "multimodal_elements_v2.json"
 
 PACK_NAME = "M4query_v1"
 PACK_DIR  = QUERY_DIR / PACK_NAME
@@ -38,18 +45,212 @@ MS_TOKEN   = "ms-4fcf0dbb-239b-4707-82a7-18f1c64f6dcb"
 MS_REPO    = "IgnatiusMao/M4query_test"
 
 
+def normalize_element_id(element_id):
+    """Canonicalize common element-id aliases so qrels and corpus share one namespace."""
+    eid = str(element_id or "").strip()
+    if not eid:
+        return ""
+    return eid.replace("_fig_", "_figure_").replace("_equation_", "_formula_")
+
+
+def infer_doc_id_from_element_id(element_id):
+    eid = normalize_element_id(element_id)
+    return eid.split("_", 1)[0] if "_" in eid else eid
+
+
+def infer_element_type(element_id, raw_type=None):
+    raw = str(raw_type or "").strip().lower()
+    if raw in {"figure", "image"}:
+        return "figure"
+    if raw in {"table"}:
+        return "table"
+    if raw in {"formula", "equation"}:
+        return "formula"
+    if raw in {"text", "paragraph", "section"}:
+        return "text"
+
+    eid = normalize_element_id(element_id)
+    if "_figure_" in eid:
+        return "figure"
+    if "_table_" in eid:
+        return "table"
+    if "_formula_" in eid:
+        return "formula"
+    return "text"
+
+
+def extract_caption(elem):
+    meta = elem.get("metadata")
+    if isinstance(meta, dict):
+        val = meta.get("caption")
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    return ""
+
+
+def extract_image_path(elem):
+    for key in ("image_path", "img_path"):
+        val = elem.get(key)
+        if isinstance(val, str) and val.strip() and val != "None":
+            return val.strip()
+    return ""
+
+
+def merge_element_records(existing, raw_elem, doc_id):
+    """Merge graph and MinerU element records keyed by canonical element_id."""
+    raw_id = raw_elem.get("element_id", raw_elem.get("id", ""))
+    eid = normalize_element_id(raw_id)
+    if not eid:
+        return existing
+
+    content = str(raw_elem.get("content", raw_elem.get("text", "")) or "").strip()
+    candidate = {
+        "element_id": eid,
+        "doc_id": doc_id or infer_doc_id_from_element_id(eid),
+        "type": infer_element_type(eid, raw_elem.get("type")),
+        "content": content,
+        "caption": extract_caption(raw_elem),
+        "section": str(raw_elem.get("section", "") or "").strip(),
+        "page": raw_elem.get("page_idx", raw_elem.get("page", -1)),
+        "image_path": extract_image_path(raw_elem),
+    }
+
+    if existing is None:
+        return candidate
+
+    if len(candidate["content"]) > len(existing.get("content", "")):
+        existing["content"] = candidate["content"]
+    if len(candidate["caption"]) > len(existing.get("caption", "")):
+        existing["caption"] = candidate["caption"]
+    if candidate["section"] and not existing.get("section"):
+        existing["section"] = candidate["section"]
+    if existing.get("page", -1) in (-1, None) and candidate["page"] not in (-1, None):
+        existing["page"] = candidate["page"]
+    if candidate["image_path"] and not existing.get("image_path"):
+        existing["image_path"] = candidate["image_path"]
+    if existing.get("type") == "text" and candidate["type"] != "text":
+        existing["type"] = candidate["type"]
+    return existing
+
+
+def collect_target_doc_ids(base_doc_ids, queries):
+    """Include query-owning docs plus any cross-doc positive evidence docs."""
+    doc_ids = {d for d in base_doc_ids if d}
+    for q in queries:
+        if q.get("doc_id"):
+            doc_ids.add(q["doc_id"])
+        for eid in q.get("element_ids", []):
+            doc_ids.add(infer_doc_id_from_element_id(eid))
+    return sorted(d for d in doc_ids if d)
+
+
+def load_doc_elements(doc_ids):
+    """Load and merge graph elements with MinerU structure by canonical element_id."""
+    with open(GRAPH_ELEMENTS) as f:
+        raw = json.load(f)
+
+    doc_elements = {}
+    docs_data = raw.get("documents", {})
+    for did in doc_ids:
+        merged = {}
+
+        doc_entry = docs_data.get(did, {})
+        raw_elems = doc_entry.get("elements", doc_entry.get("nodes", []))
+        if isinstance(raw_elems, dict):
+            raw_elems = list(raw_elems.values())
+        for elem in raw_elems:
+            existing = merged.get(normalize_element_id(elem.get("element_id", elem.get("id", ""))))
+            merged[normalize_element_id(elem.get("element_id", elem.get("id", "")))] = merge_element_records(existing, elem, did)
+
+        struct_path = MINERU_BASE / did / "structure.json"
+        if struct_path.exists():
+            with open(struct_path) as f:
+                struct = json.load(f)
+            for elem in struct.get("elements", []):
+                norm_id = normalize_element_id(elem.get("element_id", elem.get("id", "")))
+                existing = merged.get(norm_id)
+                merged[norm_id] = merge_element_records(existing, elem, did)
+
+        doc_elements[did] = [elem for eid, elem in sorted(merged.items()) if eid]
+    return doc_elements
+
+
+def build_evidence_fallbacks(queries):
+    """Aggregate short query-side evidence descriptions to rescue empty multimodal elements."""
+    fallback_parts = collections.defaultdict(list)
+    for q in queries:
+        for span in q.get("required_evidence_spans", []) or []:
+            if not isinstance(span, dict):
+                continue
+            eid = normalize_element_id(span.get("element_id", ""))
+            text = str(span.get("span", "") or "").strip()
+            if eid and text:
+                fallback_parts[eid].append(text)
+        for anchor in q.get("visual_anchors", []) or []:
+            if not isinstance(anchor, dict):
+                continue
+            eid = normalize_element_id(anchor.get("element_id", ""))
+            text = str(anchor.get("anchor", "") or "").strip()
+            if eid and text:
+                fallback_parts[eid].append(text)
+
+    fallbacks = {}
+    for eid, parts in fallback_parts.items():
+        dedup = []
+        seen = set()
+        for part in parts:
+            key = part.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            dedup.append(part)
+        fallbacks[eid] = " ".join(dedup[:2]).strip()
+    return fallbacks
+
+
+def element_to_passage(elem, fallback_text=""):
+    """Build a retrieval passage, preferring real element text and falling back to query-side evidence when needed."""
+    eid = normalize_element_id(elem.get("element_id", ""))
+    etype = infer_element_type(eid, elem.get("type"))
+    content = str(elem.get("content", "") or "").strip()
+    caption = str(elem.get("caption", "") or "").strip()
+    fallback_text = str(fallback_text or "").strip()
+
+    parts = []
+    if etype in {"figure", "table"}:
+        if caption:
+            parts.append(f"[{etype.upper()}] {caption}")
+        if content and content != caption:
+            parts.append(content)
+        if fallback_text:
+            parts.append(fallback_text)
+        if not parts and elem.get("image_path"):
+            parts.append(f"[{etype.upper()}] {Path(elem['image_path']).name}")
+    elif etype == "formula":
+        if content:
+            parts.append(f"[FORMULA] {content}")
+        if fallback_text:
+            parts.append(fallback_text)
+    else:
+        if content:
+            parts.append(content)
+        if fallback_text and fallback_text not in content:
+            parts.append(fallback_text)
+
+    if not parts:
+        parts.append(f"[{etype.upper()}] {eid}")
+    return " ".join(" ".join(parts).split())
+
+
 # ══════════════════════════════════════════════════════════════════════
 # Step 1: Download LaTeX sources
 # ══════════════════════════════════════════════════════════════════════
 
-def step1_download_latex():
-    """Download LaTeX sources for all 53 docs via existing script."""
+def step1_download_latex(doc_ids):
+    """Download LaTeX sources for the docs we need to ship."""
     print("\n" + "=" * 60)
     print("STEP 1: Download LaTeX sources")
     print("=" * 60)
-
-    # Check which docs already have latex
-    doc_ids = [l.strip() for l in open(DOC_IDS_FILE) if l.strip()]
 
     latex_ext = LATEX_OUTPUT / "extracted"
     already = [d for d in doc_ids if (latex_ext / d).is_dir()]
@@ -119,43 +320,72 @@ def step1_download_latex():
 # Step 2: Build corpus (all passage chunks from MinerU)
 # ══════════════════════════════════════════════════════════════════════
 
-def step2_build_corpus(doc_ids):
-    """
-    Build corpus.jsonl: one passage per MinerU element.
-    Each passage has: passage_id, doc_id, text, type, metadata.
-    """
+def step2_build_corpus(doc_ids, queries):
+    """Build corpus.jsonl from merged graph + MinerU elements, guaranteeing positive coverage."""
     print("\n" + "=" * 60)
-    print("STEP 2: Build corpus from MinerU elements")
+    print("STEP 2: Build corpus from graph + MinerU elements")
     print("=" * 60)
 
+    doc_elements = load_doc_elements(doc_ids)
+    fallback_texts = build_evidence_fallbacks(queries)
+    positive_ids = {
+        normalize_element_id(eid)
+        for q in queries
+        for eid in q.get("element_ids", [])
+        if normalize_element_id(eid)
+    }
+
     corpus = []
+    passage_lookup = {}
+    type_counts = collections.Counter()
+
     for did in sorted(doc_ids):
-        struct_path = MINERU_BASE / did / "structure.json"
-        if not struct_path.exists():
-            continue
-        with open(struct_path) as f:
-            doc = json.load(f)
-        elements = doc.get("elements", [])
-        for elem in elements:
-            eid = elem.get("element_id", elem.get("id", ""))
-            text = elem.get("content", elem.get("text", ""))
-            if not text or len(text.strip()) < 10:
+        for elem in doc_elements.get(did, []):
+            eid = normalize_element_id(elem.get("element_id", ""))
+            if not eid or eid in passage_lookup:
+                continue
+            text = element_to_passage(elem, fallback_texts.get(eid, "") if eid in positive_ids else "")
+            if len(text) < 10 and eid not in positive_ids:
                 continue
             passage = {
-                "passage_id": f"{did}_{eid}" if eid else f"{did}_{hashlib.md5(text[:100].encode()).hexdigest()[:8]}",
-                "doc_id": did,
+                "passage_id": eid,
+                "doc_id": elem.get("doc_id", did),
                 "text": text,
-                "type": elem.get("type", "unknown"),
+                "type": infer_element_type(eid, elem.get("type")),
                 "section": elem.get("section", ""),
-                "page": elem.get("page_idx", elem.get("page", -1)),
+                "page": elem.get("page", -1),
             }
-            # Add image path if multimodal
-            img = elem.get("image_path", elem.get("img_path", ""))
-            if img and img != "None":
-                passage["image_path"] = img
+            if elem.get("image_path"):
+                passage["image_path"] = elem["image_path"]
             corpus.append(passage)
+            passage_lookup[eid] = passage
+            type_counts[passage["type"]] += 1
 
+    supplemental = 0
+    for eid in sorted(positive_ids):
+        if eid in passage_lookup:
+            continue
+        text = fallback_texts.get(eid, "")
+        if not text:
+            text = f"[{infer_element_type(eid).upper()}] {eid}"
+        passage = {
+            "passage_id": eid,
+            "doc_id": infer_doc_id_from_element_id(eid),
+            "text": text,
+            "type": infer_element_type(eid),
+            "section": "",
+            "page": -1,
+            "source": "query_fallback",
+        }
+        corpus.append(passage)
+        passage_lookup[eid] = passage
+        type_counts[passage["type"]] += 1
+        supplemental += 1
+
+    corpus.sort(key=lambda x: x["passage_id"])
     print(f"  Total passages: {len(corpus)} from {len(doc_ids)} docs")
+    print(f"  Type breakdown: {dict(sorted(type_counts.items()))}")
+    print(f"  Supplemental positive passages: {supplemental}")
     return corpus
 
 
@@ -185,38 +415,33 @@ def step3_build_triplets(queries, corpus):
 
     all_doc_ids = list(doc_passages.keys())
     triplets = []
-    qrels = []  # query-passage relevance pairs
+    qrels = []  # standard positive-only qrels
+    unresolved = 0
 
     for q in queries:
         qid = q["query_id"]
         doc_id = q.get("doc_id", "")
-        pos_eids = set(q.get("element_ids", []))
-        text_evidence = q.get("text_evidence", "")
+        pos_eids = [normalize_element_id(eid) for eid in q.get("element_ids", []) if normalize_element_id(eid)]
 
         # --- Positive passages ---
         positives = []
         for eid in pos_eids:
-            pid = f"{doc_id}_{eid}"
-            if pid in passage_lookup:
+            if eid in passage_lookup:
                 positives.append({
-                    "passage_id": pid,
-                    "text": passage_lookup[pid]["text"][:1000],
-                    "type": passage_lookup[pid].get("type", ""),
+                    "passage_id": eid,
+                    "text": passage_lookup[eid]["text"][:1000],
+                    "type": passage_lookup[eid].get("type", ""),
                 })
-        # If element_ids didn't match corpus, use text_evidence as synthetic positive
-        if not positives and text_evidence:
-            positives.append({
-                "passage_id": f"{doc_id}_evidence_{hashlib.md5(text_evidence[:50].encode()).hexdigest()[:8]}",
-                "text": text_evidence[:1000],
-                "type": "text_evidence",
-            })
+        if len(positives) != len(pos_eids):
+            unresolved += 1
 
         # --- Negative passages ---
         negatives = []
+        positive_ids = {pp["passage_id"] for pp in positives}
 
         # Intra-doc hard negatives (same doc, different element)
         intra_pool = [p for p in doc_passages.get(doc_id, [])
-                      if p["passage_id"] not in {pp["passage_id"] for pp in positives}]
+                      if p["passage_id"] not in positive_ids]
         intra_sampled = random.sample(intra_pool, min(2, len(intra_pool)))
         for p in intra_sampled:
             negatives.append({
@@ -232,7 +457,8 @@ def step3_build_triplets(queries, corpus):
             rand_doc = random.choice(other_docs)
             pool = doc_passages[rand_doc]
             if pool:
-                p = random.choice(pool)
+                candidates = [p for p in pool if p["passage_id"] not in positive_ids]
+                p = random.choice(candidates or pool)
                 negatives.append({
                     "passage_id": p["passage_id"],
                     "text": p["text"][:1000],
@@ -258,12 +484,6 @@ def step3_build_triplets(queries, corpus):
                 "passage_id": pp["passage_id"],
                 "relevance": 1,
             })
-        for nn in negatives:
-            qrels.append({
-                "query_id": qid,
-                "passage_id": nn["passage_id"],
-                "relevance": 0,
-            })
 
     pos_counts = [len(t["positive"]) for t in triplets]
     neg_counts = [len(t["negative"]) for t in triplets]
@@ -271,6 +491,7 @@ def step3_build_triplets(queries, corpus):
     print(f"  Avg positives/query: {sum(pos_counts)/len(pos_counts):.1f}")
     print(f"  Avg negatives/query: {sum(neg_counts)/len(neg_counts):.1f}")
     print(f"  Qrels: {len(qrels)}")
+    print(f"  Queries with unresolved positives: {unresolved}")
 
     return triplets, qrels
 
@@ -604,6 +825,11 @@ def step5_upload(zip_path):
 # ══════════════════════════════════════════════════════════════════════
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--skip-upload", action="store_true",
+                    help="Build and zip locally without uploading to ModelScope.")
+    args = ap.parse_args()
+
     print("=" * 60)
     print(f"M4query Full Delivery Pipeline")
     print(f"Started: {datetime.now().isoformat()}")
@@ -620,20 +846,29 @@ def main():
             queries.append(json.loads(line.strip()))
     print(f"Queries: {len(queries)}")
 
+    target_doc_ids = collect_target_doc_ids(doc_ids, queries)
+    extra_docs = [d for d in target_doc_ids if d not in doc_ids]
+    if extra_docs:
+        print(f"Expanded docs for cross-doc positives: +{len(extra_docs)} -> {extra_docs}")
+    print(f"Final docs to package: {len(target_doc_ids)}")
+
     # Step 1: LaTeX
-    latex_docs = step1_download_latex()
+    latex_docs = step1_download_latex(target_doc_ids)
 
     # Step 2: Corpus
-    corpus = step2_build_corpus(doc_ids)
+    corpus = step2_build_corpus(target_doc_ids, queries)
 
     # Step 3: Triplets
     triplets, qrels = step3_build_triplets(queries, corpus)
 
     # Step 4: Package
-    zip_path = step4_package(queries, corpus, triplets, qrels, doc_ids, latex_docs)
+    zip_path = step4_package(queries, corpus, triplets, qrels, target_doc_ids, latex_docs)
 
     # Step 5: Upload
-    step5_upload(zip_path)
+    if args.skip_upload:
+        print("\nSkipping upload (--skip-upload).")
+    else:
+        step5_upload(zip_path)
 
     print("\n" + "=" * 60)
     print(f"DONE: {datetime.now().isoformat()}")

@@ -742,12 +742,38 @@ def main():
              "included as bridge context in hub_semantic_summary.",
     )
     ap.add_argument("--limit", type=int, default=0, help="Limit candidates (0=all)")
+    ap.add_argument(
+        "--hub-scores",
+        default=None,
+        help="hub_scores_v2.json with pre-computed hub_score per node_id (for --top-ratio filtering)",
+    )
+    ap.add_argument(
+        "--top-ratio",
+        type=float,
+        default=0.0,
+        help="Keep only top fraction of candidates ranked by hub_score (0=disabled, e.g. 0.25)",
+    )
     args = ap.parse_args()
 
     print("Loading data...")
     with open(args.hub_candidates, encoding="utf-8") as f:
         hub_data = json.load(f)
     print(f"  Hub candidates: {len(hub_data['candidates'])}")
+
+    # ── Top-ratio filtering by hub_score ─────────────────────────────────────
+    if args.top_ratio > 0:
+        if not args.hub_scores or not Path(args.hub_scores).exists():
+            print(f"  WARNING: --top-ratio set but --hub-scores file not found; skipping filter")
+        else:
+            with open(args.hub_scores, encoding="utf-8") as f:
+                scores_data = json.load(f)
+            score_idx = {h["node_id"]: h["hub_score"] for h in scores_data.get("all_hubs", [])}
+            candidates = hub_data["candidates"]
+            scored = sorted(candidates, key=lambda c: -score_idx.get(c.get("hub_node_id", ""), 0.0))
+            top_n = max(1, int(len(scored) * args.top_ratio))
+            hub_data["candidates"] = scored[:top_n]
+            min_score = score_idx.get(scored[top_n - 1].get("hub_node_id", ""), 0.0)
+            print(f"  top-ratio={args.top_ratio}: kept {top_n}/{len(candidates)} candidates (min hub_score={min_score:.2f})")
 
     with open(args.elements, encoding="utf-8") as f:
         mm_data = json.load(f)

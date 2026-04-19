@@ -8,11 +8,11 @@ designed for contrastive learning and embedding model training.
 ```
 M4query_v1/
 ├── queries.jsonl              # 473 QC-passed queries
-├── corpus.jsonl               # 1798 passage chunks (MinerU elements)
+├── corpus.jsonl               # 2809 passage chunks (MinerU elements)
 ├── train_triplets.jsonl       # 473 contrastive triplets (query→pos/neg)
-├── qrels.jsonl                # 1892 query-passage relevance labels
+├── qrels.jsonl                # 946 query-passage relevance labels
 ├── stats.json                 # Dataset statistics
-├── documents/                 # Source documents (53 papers)
+├── documents/                 # Source documents (57 papers)
 │   └── {doc_id}/
 │       ├── mineru/            # MinerU parsed: structure.json, images, formulas
 │       └── latex/             # LaTeX source (when available)
@@ -74,12 +74,12 @@ Each line:
 ## Statistics
 
 - Queries: 473
-- Corpus passages: 1798
+- Corpus passages: 2809
 - Training triplets: 473
-- Unique documents: 53
+- Unique documents: 57
 - Hop distribution: {2: 189, 3: 275, 4: 2, 5: 7}
 - Style: {'academic': 354, 'real_user': 119}
-- MinerU coverage: 53/53
-- LaTeX coverage: 52/53
+- MinerU coverage: 57/57
+- LaTeX coverage: 56/57
 
-Generated: 2026-04-14 01:58
+Generated: 2026-04-16 14:13

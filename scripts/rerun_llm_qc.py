@@ -31,6 +31,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from src.qc.llm_judge import run_llm_qc
 from src.utils.image_utils import encode_image
 from src.api import set_company_credentials, get_company_credentials
+from src.utils.token_logger import log_run
 
 # LLM QC fields that must be stripped and re-computed
 _LLM_ISSUES  = {"llm_fake_multihop", "llm_answer_hallucination"}
@@ -215,6 +216,22 @@ def main():
     print(f"  Output: {out_path}")
     if pass_path:
         print(f"  Pass:   {pass_path}")
+
+    log_run(
+        script="rerun_llm_qc",
+        model=args.model,
+        purpose=f"LLM QC rerun — {Path(args.input).name}",
+        input_tokens=total_in,
+        output_tokens=total_out,
+        extra={
+            "provider": args.provider,
+            "input": args.input,
+            "output": str(out_path),
+            "total_entries": len(entries),
+            "qc_pass": kept,
+            "skipped_resume": skipped_resume,
+        },
+    )
 
 
 if __name__ == "__main__":

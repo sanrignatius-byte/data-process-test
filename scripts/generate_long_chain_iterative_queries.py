@@ -684,6 +684,7 @@ def maybe_repair_candidate(
         system_prompt=SYSTEM_FINAL_PROMPT,
         max_tokens=1024,
         temperature=0.15,
+        user_tag="v2_query_gen",
     )
     return parse_json(raw), in_tok, out_tok
 
@@ -753,6 +754,7 @@ def run_iterative_generation_for_pair(
                 system_prompt=SYSTEM_STEP_PROMPT,
                 max_tokens=512,
                 temperature=0.2,
+                user_tag="v2_query_gen",
             )
             usage["in"] += in_tok
             usage["out"] += out_tok
@@ -810,6 +812,7 @@ def run_iterative_generation_for_pair(
             system_prompt=SYSTEM_FINAL_PROMPT,
             max_tokens=1024,
             temperature=0.25,
+            user_tag="v2_query_gen",
         )
         usage["in"] += in_tok
         usage["out"] += out_tok

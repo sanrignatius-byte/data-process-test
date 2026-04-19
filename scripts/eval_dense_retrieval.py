@@ -278,16 +278,17 @@ def main() -> None:
     corpus_path = Path(args.corpus) if args.corpus else data_dir / "corpus.jsonl"
     qrels_path = Path(args.qrels) if args.qrels else data_dir / "qrels.jsonl"
 
-    for p in (queries_path, corpus_path, qrels_path):
+    for p in (queries_path, corpus_path):
         if not p.exists():
             print(f"[fatal] missing file: {p}", file=sys.stderr)
             sys.exit(1)
+    has_qrels = qrels_path.exists()
 
     # ── Load data ──
     t0 = time.time()
     queries_raw = load_jsonl(queries_path)
     corpus_raw = load_jsonl(corpus_path)
-    qrels_raw = load_jsonl(qrels_path)
+    qrels_raw = load_jsonl(qrels_path) if has_qrels else []
     print(
         f"[info] loaded {len(queries_raw)} queries / "
         f"{len(corpus_raw)} passages / {len(qrels_raw)} qrels "
@@ -337,9 +338,10 @@ def main() -> None:
 
     covered_q = sum(1 for qid in query_ids if qrels.get(qid))
     print(f"[info] {covered_q}/{len(query_ids)} queries have qrels")
-    if covered_q == 0:
+    if covered_q == 0 and has_qrels and len(qrels_raw) > 0:
         print("[fatal] no qrels overlap any query_id — check schema", file=sys.stderr)
         sys.exit(1)
+    retrieval_only = (covered_q == 0)
 
     # ── Load model ──
     try:
@@ -389,7 +391,11 @@ def main() -> None:
     print(f"[info] retrieval done in {time.time() - t0:.1f}s")
 
     # ── Metrics ──
-    metrics = compute_metrics(ranking, qrels, ks=(1, 5, 10, 100))
+    if not retrieval_only:
+        metrics = compute_metrics(ranking, qrels, ks=(1, 2, 5, 10, 100))
+    else:
+        metrics = {}
+        print("[info] retrieval-only mode (no qrels) — skipping metrics")
     metrics.update({
         "num_queries_total": float(len(query_ids)),
         "num_queries_with_qrels": float(covered_q),
@@ -417,13 +423,16 @@ def main() -> None:
 
     # ── Print summary ──
     print()
-    print("── Eval summary ──")
-    for k in (1, 5, 10, 100):
-        print(f"  Recall@{k:<3}  = {metrics[f'recall@{k}']:.4f}")
-    for k in (1, 5, 10, 100):
-        print(f"  NDCG@{k:<3}    = {metrics[f'ndcg@{k}']:.4f}")
-    print(f"  MRR         = {metrics['mrr']:.4f}")
-    print(f"  Covered     = {int(covered_q)}/{len(query_ids)}")
+    if not retrieval_only:
+        print("── Eval summary ──")
+        for k in (1, 2, 5, 10, 100):
+            print(f"  Recall@{k:<3}  = {metrics[f'recall@{k}']:.4f}")
+        for k in (1, 2, 5, 10, 100):
+            print(f"  NDCG@{k:<3}    = {metrics[f'ndcg@{k}']:.4f}")
+        print(f"  MRR         = {metrics['mrr']:.4f}")
+        print(f"  Covered     = {int(covered_q)}/{len(query_ids)}")
+    else:
+        print(f"── Retrieval-only: {len(ranking)} queries, {len(passage_ids)} passages ──")
     print(f"\n[info] wrote {out_path}")
 
 

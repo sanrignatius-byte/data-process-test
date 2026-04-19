@@ -267,6 +267,7 @@ def process_elements(
     existing_enriched: Optional[Dict[str, Dict]] = None,
     output_path: Optional[Path] = None,
     flush_every: int = 0,
+    max_retries: int = 0,
 ) -> Dict[str, Dict[str, Any]]:
     """Process all elements and return enrichment results.
 
@@ -347,34 +348,43 @@ def process_elements(
             if img_path:
                 image = load_image_b64(img_path)
 
-        try:
-            text, in_tok, out_tok = call_api(client, model, prompt, image, provider)
-            total_in_tok += in_tok
-            total_out_tok += out_tok
+        success = False
+        for attempt in range(max_retries + 1):
+            try:
+                text, in_tok, out_tok = call_api(client, model, prompt, image, provider)
+                total_in_tok += in_tok
+                total_out_tok += out_tok
 
-            parsed = extract_json(text)
-            if parsed is None:
-                # Show first 200 chars of LLM output for debugging prompt/format issues
-                snippet = (text or "")[:200].replace("\n", " ")
-                print(f"  [{idx+1}/{total}] {eid} — PARSE FAIL | raw: {snippet!r}")
-                failed += 1
-                continue
+                parsed = extract_json(text)
+                if parsed is None:
+                    snippet = (text or "")[:200].replace("\n", " ")
+                    print(f"  [{idx+1}/{total}] {eid} — PARSE FAIL | raw: {snippet!r}")
+                    failed += 1
+                    success = True  # don't retry parse failures
+                    break
 
-            issues = validate_enrichment(parsed, etype)
-            parsed["validation_issues"] = issues
-            results[eid] = parsed
-            processed += 1
-            new_count += 1
+                issues = validate_enrichment(parsed, etype)
+                parsed["validation_issues"] = issues
+                results[eid] = parsed
+                processed += 1
+                new_count += 1
 
-            status = "PASS" if not issues else f"WARN({','.join(issues)})"
-            print(f"  [{idx+1}/{total}] {eid} ({etype}) — {status}"
-                  f"  [tok: {in_tok}+{out_tok}]")
-            if flush_every > 0 and new_count % flush_every == 0:
-                _flush_partial(f"after {new_count} new items")
+                status = "PASS" if not issues else f"WARN({','.join(issues)})"
+                print(f"  [{idx+1}/{total}] {eid} ({etype}) — {status}"
+                      f"  [tok: {in_tok}+{out_tok}]")
+                if flush_every > 0 and new_count % flush_every == 0:
+                    _flush_partial(f"after {new_count} new items")
+                success = True
+                break
 
-        except Exception as exc:
-            print(f"  [{idx+1}/{total}] {eid} — ERROR: {exc}")
-            failed += 1
+            except Exception as exc:
+                if attempt < max_retries:
+                    wait = delay + 2 ** attempt * 5  # 5s, 10s, 20s, ...
+                    print(f"  [{idx+1}/{total}] {eid} — RETRY {attempt+1}/{max_retries} after {wait:.0f}s: {exc}")
+                    time.sleep(wait)
+                else:
+                    print(f"  [{idx+1}/{total}] {eid} — ERROR: {exc}")
+                    failed += 1
 
         if delay > 0:
             time.sleep(delay)
@@ -458,6 +468,8 @@ def main():
     ap.add_argument("--flush-every", type=int, default=0,
                     help="Flush partial merged output every N new enrichments (0=disabled)")
     # Provider-specific args
+    ap.add_argument("--max-retries", type=int, default=0,
+                    help="Retry failed API calls N times with exponential backoff (default: 0)")
     ap.add_argument("--company-api-key", default=None)
     ap.add_argument("--company-api-url", default=None)
 
@@ -548,6 +560,7 @@ def main():
         existing_enriched=existing_enriched,
         output_path=out_path,
         flush_every=args.flush_every,
+        max_retries=args.max_retries,
     )
 
     # Merge and write
