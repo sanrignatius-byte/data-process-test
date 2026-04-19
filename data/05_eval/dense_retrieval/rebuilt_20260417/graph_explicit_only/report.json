@@ -1,0 +1,128 @@
+{
+  "config": {
+    "top_k": 100,
+    "rerank_topn": 100,
+    "score_mode": "linear",
+    "static_weight": 0.03,
+    "neighbor_decay": 0.2,
+    "boost_cap": 0.2,
+    "graph_sources": [
+      "explicit"
+    ],
+    "edge_types": [
+      "chunk_sequence",
+      "same_chunk",
+      "same_section_nonseq"
+    ],
+    "ranking": "/projects/_hdd/myyyx1/data-process-test/data/05_eval/dense_retrieval/rebuilt_20260417/ranking_v1_enriched.jsonl",
+    "qrels": "/projects/_hdd/myyyx1/data-process-test/data/03_queries/M4query_v1/qrels.jsonl",
+    "corpus": "/projects/_hdd/myyyx1/data-process-test/data/03_queries/M4query_v1/corpus.jsonl",
+    "chunk_graph": "/projects/_hdd/myyyx1/data-process-test/data/01_graphs/chunk_virtual_nodes.json",
+    "elements_graph": "/projects/_hdd/myyyx1/data-process-test/data/01_graphs/multimodal_elements.json",
+    "hub_candidates": "/projects/_hdd/myyyx1/data-process-test/data/02_enriched/hub_candidates_enriched_v4_intra_doc.json"
+  },
+  "graph_stats": {
+    "num_valid_pids": 2809,
+    "graph_sources": [
+      "explicit"
+    ],
+    "num_explicit_graph_pids": 338,
+    "explicit_graph_mapping_pct": 12.03,
+    "explicit_edge_counts_directed": {
+      "hub_pair": 192,
+      "adjacent_bridge": 868
+    },
+    "explicit_degree_stats": {
+      "median_degree": 1.0,
+      "mean_degree": 2.437869822485207,
+      "max_degree": 17.0
+    },
+    "num_union_graph_pids": 338,
+    "union_graph_mapping_pct": 12.03,
+    "num_queries": 473,
+    "queries_with_static_overlap": 473,
+    "queries_with_static_overlap_pct": 100.0,
+    "queries_with_neighbor_signal": 452,
+    "queries_with_neighbor_signal_pct": 95.56,
+    "avg_mapped_candidates_per_query": 27.924,
+    "avg_boosted_candidates_per_query": 8.431
+  },
+  "results": {
+    "baseline": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.6121181470053377,
+      "mean_first_hit_rank": 5.59830866807611,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.23361522198731502,
+      "ndcg@1": 0.46723044397463004,
+      "hit@1": 0.46723044397463004,
+      "recall@5": 0.5274841437632135,
+      "ndcg@5": 0.4747212612228394,
+      "hit@5": 0.7991543340380549,
+      "recall@10": 0.6194503171247357,
+      "ndcg@10": 0.5117516914083028,
+      "hit@10": 0.8731501057082452,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5733401499616316,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    },
+    "graph_static_prior": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.6309304833718055,
+      "mean_first_hit_rank": 5.450317124735729,
+      "median_first_hit_rank": 1.0,
+      "recall@1": 0.2463002114164905,
+      "ndcg@1": 0.492600422832981,
+      "hit@1": 0.492600422832981,
+      "recall@5": 0.540169133192389,
+      "ndcg@5": 0.49251227066583564,
+      "hit@5": 0.8012684989429175,
+      "recall@10": 0.6236786469344608,
+      "ndcg@10": 0.5258784429152704,
+      "hit@10": 0.8752642706131079,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5864277836100931,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    },
+    "graph_neighbor_prop": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.5859675640865074,
+      "mean_first_hit_rank": 5.4778012684989426,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.21458773784355178,
+      "ndcg@1": 0.42917547568710357,
+      "hit@1": 0.42917547568710357,
+      "recall@5": 0.5739957716701902,
+      "ndcg@5": 0.49502115154415655,
+      "hit@5": 0.7991543340380549,
+      "recall@10": 0.6606765327695561,
+      "ndcg@10": 0.52931593992856,
+      "hit@10": 0.86892177589852,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5815245636378138,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    },
+    "graph_static_plus_neighbor": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.5975262936781798,
+      "mean_first_hit_rank": 5.355179704016913,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.22410147991543342,
+      "ndcg@1": 0.44820295983086683,
+      "hit@1": 0.44820295983086683,
+      "recall@5": 0.572938689217759,
+      "ndcg@5": 0.5007676233055388,
+      "hit@5": 0.7928118393234672,
+      "recall@10": 0.6649048625792812,
+      "ndcg@10": 0.5374536236487613,
+      "hit@10": 0.8731501057082452,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.588751140554778,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    }
+  }
+}

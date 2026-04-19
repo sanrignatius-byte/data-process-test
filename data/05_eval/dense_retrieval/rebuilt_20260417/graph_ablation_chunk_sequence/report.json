@@ -1,0 +1,131 @@
+{
+  "config": {
+    "top_k": 100,
+    "rerank_topn": 20,
+    "score_mode": "linear",
+    "static_weight": 0.03,
+    "neighbor_decay": 0.05,
+    "boost_cap": 0.2,
+    "edge_types": [
+      "chunk_sequence"
+    ],
+    "ranking": "/projects/_hdd/myyyx1/data-process-test/data/05_eval/dense_retrieval/rebuilt_20260417/ranking_v1_enriched.jsonl",
+    "qrels": "/projects/_hdd/myyyx1/data-process-test/data/03_queries/M4query_v1/qrels.jsonl",
+    "corpus": "/projects/_hdd/myyyx1/data-process-test/data/03_queries/M4query_v1/corpus.jsonl",
+    "chunk_graph": "/projects/_hdd/myyyx1/data-process-test/data/01_graphs/chunk_virtual_nodes.json",
+    "elements_graph": "/projects/_hdd/myyyx1/data-process-test/data/01_graphs/multimodal_elements.json"
+  },
+  "graph_stats": {
+    "num_valid_pids": 2809,
+    "num_graph_mapped_pids": 1076,
+    "graph_mapping_pct": 38.31,
+    "edge_types_active": [
+      "chunk_sequence"
+    ],
+    "edge_type_counts_directed": {
+      "chunk_sequence": 4386
+    },
+    "edge_type_degree_stats": {
+      "same_chunk": {
+        "median_degree": 0.0,
+        "mean_degree": 0.0,
+        "max_degree": 0.0
+      },
+      "chunk_sequence": {
+        "median_degree": 3.0,
+        "mean_degree": 4.0762081784386615,
+        "max_degree": 22.0
+      },
+      "same_section_nonseq": {
+        "median_degree": 0.0,
+        "mean_degree": 0.0,
+        "max_degree": 0.0
+      }
+    },
+    "num_queries": 473,
+    "queries_with_static_overlap": 473,
+    "queries_with_static_overlap_pct": 100.0,
+    "queries_with_neighbor_signal": 452,
+    "queries_with_neighbor_signal_pct": 95.56,
+    "avg_mapped_candidates_per_query": 38.023,
+    "avg_boosted_candidates_per_query": 5.681
+  },
+  "results": {
+    "baseline": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.6121181470053377,
+      "mean_first_hit_rank": 5.59830866807611,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.23361522198731502,
+      "ndcg@1": 0.46723044397463004,
+      "hit@1": 0.46723044397463004,
+      "recall@5": 0.5274841437632135,
+      "ndcg@5": 0.4747212612228394,
+      "hit@5": 0.7991543340380549,
+      "recall@10": 0.6194503171247357,
+      "ndcg@10": 0.5117516914083028,
+      "hit@10": 0.8731501057082452,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5733401499616316,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    },
+    "graph_static_prior": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.6019682385814857,
+      "mean_first_hit_rank": 5.579281183932347,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.22304439746300211,
+      "ndcg@1": 0.44608879492600423,
+      "hit@1": 0.44608879492600423,
+      "recall@5": 0.5274841437632135,
+      "ndcg@5": 0.47031789029384247,
+      "hit@5": 0.7991543340380549,
+      "recall@10": 0.6173361522198731,
+      "ndcg@10": 0.5066119392570627,
+      "hit@10": 0.8731501057082452,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5689455499489011,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    },
+    "graph_neighbor_prop": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.5498878783178508,
+      "mean_first_hit_rank": 5.797040169133193,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.18816067653276955,
+      "ndcg@1": 0.3763213530655391,
+      "hit@1": 0.3763213530655391,
+      "recall@5": 0.5105708245243129,
+      "ndcg@5": 0.4396992382042358,
+      "hit@5": 0.7822410147991543,
+      "recall@10": 0.6162790697674418,
+      "ndcg@10": 0.48232847186274935,
+      "hit@10": 0.8668076109936576,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5455590941650041,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    },
+    "graph_static_plus_neighbor": {
+      "num_queries_evaluated": 473.0,
+      "mrr": 0.5338606509097191,
+      "mean_first_hit_rank": 5.805496828752642,
+      "median_first_hit_rank": 2.0,
+      "recall@1": 0.17653276955602537,
+      "ndcg@1": 0.35306553911205074,
+      "hit@1": 0.35306553911205074,
+      "recall@5": 0.514799154334038,
+      "ndcg@5": 0.4328920348033416,
+      "hit@5": 0.7864693446088795,
+      "recall@10": 0.620507399577167,
+      "ndcg@10": 0.47509519460591554,
+      "hit@10": 0.8731501057082452,
+      "recall@100": 0.8636363636363636,
+      "ndcg@100": 0.5369523070994561,
+      "hit@100": 0.9830866807610994,
+      "num_queries_total": 473.0
+    }
+  }
+}
