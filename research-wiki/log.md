@@ -26,3 +26,24 @@
 - 2026-04-19T14:30:00Z: **R@10 project high 更新：0.6913**。来源：`rebuilt_20260417/graph_explicit_only_fixed + static_plus_neighbor`，473 queries，qrels = `M4query_v1/qrels.jsonl`（权威）。之前 C7 记录的 0.6522 使用的是 `augmented_v2/qrels_v1.jsonl`（旧本地副本），同配置、同 corpus，qrels 不同导致数值差异。**C7 需要更新**。两套 explicit_only 配置参数（graph_sources, static_weight, neighbor_decay）完全相同，确认是 qrels 文件差异。
 - 2026-04-19T14:36:00Z: Job 61647（36_combined_enrich_pairs）提交后发现三个 bug：① 无 coverage gate（enrich 全败也不 exit 1，形成假阳性）；② Step 7 按 pair_id 去重不可靠（pair_id 是 doc_id+顺序计数器，跨 run 不稳定）；③ Step 7 合并丢弃 adjacent_bridge_elements/adjacency 字段。已取消 61647。
 - 2026-04-19T14:43:00Z: 提交 **Job 61649（36b_combined_enrich_pairs）** — 三个修复：FIX-1 coverage gate（SC≥100/759，GAP≥500/4301，exit 1 否则）；FIX-2 dedup 改用 (doc_id, frozenset[element_a_id, element_b_id])；FIX-3 保留 adjacent_bridge_elements + adjacent_bridge_adjacency（两包合并，去重）。Gap227 的 467 个候选（hub_scores=0，不能用 top-ratio）单独提取后无 top-ratio 过滤，全量纳入。最终输出 `hub_candidates_v2_combined.json`。
+
+- 2026-04-21T00:00:00Z: **Chunk 革新与评估对齐讨论（含录音整理）**。要点：
+	- **Chunk 结构边**需要明确写入文档：当前只有 `chunk↔paragraph/section` 边，没有 `chunk↔element`，这是 mentor 质疑的核心缺陷。
+	- **enrich 覆盖范围**需在报告里写清：element enrich 只覆盖 hub 选中节点；section 有 section-level enrich；chunk 当前无 enrich。
+	- **负样本策略**：top-11~top-15 仅基于 embedding，相似度最高被排除但未验证“干净性”。
+	- **失败机制纠正**：v2 chunks 低分不只是“稀释”，更关键是 **qrels 不认 chunk ID**，chunk 命中不计分；同时 chunk 纯文本导致语义密度低，混合 corpus 时天然偏向 enriched element。
+	- **chunk passage 应注入 element 语义**：图像/表格/公式的 enriched_content 应进入 chunk；并补 `chunk↔element` contains 边，便于 graph rerank 传播。
+	- **评估方案**：
+		- 方案 A（推荐）：chunk 作为检索单元，qrels 走 `elem→chunk` 映射。
+		- 方案 B（兼容旧实验）：element 保留，qrels 同时认可 element+chunk。
+	- **精确对齐方案**：优先使用 LaTeX 侧的行号/段落定位字段重建 chunk 与 element 归属（比 `context_before` 模糊匹配更稳）。
+	- **执行顺序**：先完成 element enrich → 再建 chunk（注入 enriched 内容）→ 可选 chunk summary；评估指标增加 R@2 以匹配双证据任务。
+- 2026-04-21T00:20:00Z: 新增 `exp:20260421_api_logging_compliance`，把 `local_api_logger -> /projects/myyyx1/data-process-test/api_logs` 明确记为项目内部铁律；该约束只写入 wiki，不写入给领导看的汇报文档。
+- 2026-04-21T09:15:00Z: 提交修正后的 fair pipeline：`62476` graph-only fair eval、`62477` graph-only fair rerank、`62478` trial57 backfill、`62479` enriched fair eval、`62480` enriched fair rerank。随后定位 `62478` 失败原因为 `PYTHONPATH` 在 `set -u` 下未定义，并修复 `37b_trial57_backfill_enrich.sh`。
+- 2026-04-21T09:20:00Z: 重提 enriched fair chain：`62482` trial57 backfill enrich、`62483` enriched fair eval、`62484` enriched fair rerank。新增 `exp:20260421_trial57_fairness_repair`，记录本轮对话形成的 fairness 修复、负结论、可复用脚本和当前运行状态。
+- 2026-04-21T09:25:00Z: 运行中观察：`62476` build 阶段目前仅覆盖 `460/473` queries（n400/n500 均如此），说明旧的 `473/473` 口径不再可直接复用；`62482` 已进入 backfill API enrich，且 `api_logs/calls/gpt-5.4/2026-04/2026-04-21.jsonl` 与 `api_logs/stats/gpt-5.4/element_enrichment_2026-04.jsonl` 已出现，确认 company API 调用正通过 `local_api_logger -> api_logs` 记录。
+- 2026-04-21T10:45:00Z: fair graph-only lane 完成：`62476/62477` 均 exit 0。最终 dense 指标为 n400 `R@1=0.0902 / R@10=0.3348 / MRR=0.2587`，n500 `R@1=0.0967 / R@10=0.3609 / MRR=0.2855`；说明在 rebuilt trial57 口径下，chunk-only 仍明显弱于 element baseline。
+- 2026-04-21T11:00:00Z: fair enriched lane 被正式判阻塞：`62482` 虽 exit 0，但 company API endpoint `az.gptplus5.com` 持续 `401 Unauthorized`，backfill 新增 enrich 为 0；`62495` 因 coverage guard (`47.2% < 95%`) 失败，`62496` 被取消。
+- 2026-04-21T11:30:00Z: partial-overlay exploratory lane 完成：`62553/62554` 均 exit 0。dense 指标：n400 `R@1=0.1500 / R@10=0.5109 / MRR=0.3975`，n500 `R@1=0.1587 / R@10=0.5304 / MRR=0.4196`。n400 rerank 最佳 `seq+exp / static_prior` 达 `R@10=0.6598 / MRR=0.5168`，`seq+exp / static+neighbor` 达 `R@1=0.2261 / MRR=0.5297`。
+- 2026-04-21T12:00:00Z: 新增 `scripts/eval_bm25_retrieval.py` 与 `slurm_scripts/37e_chunk_bm25_eval_newchunk.sh`，并在本地对新 chunk 语料完成 BM25 评测。fair：n400 `R@10=0.3359 / MRR=0.2574`，n500 `R@10=0.3652 / MRR=0.2696`；partial overlay：n400 `R@10=0.5522 / MRR=0.4831`，n500 `R@10=0.5870 / MRR=0.5054`。结论：partial overlay 下 BM25 当前强于 dense，n500 consistently 优于 n400。
+- 2026-04-21T14:10:00Z: 提交 `exp:20260421_crossdoc_gold57_validation`（Job `62671`，62649 因 `sentence_transformers` 新版不再接受 `encode(..., max_length=)` kwarg 挂掉，已在 `build_crossdoc_gold57.py` 里改用 `model.max_seq_length`）。生成测仍走 element（M4query_v1 qrels 不认 chunk），chunk 仅参与检索图：`build_crossdoc_gold57.py --include-chunks` 在 gold-57 上生成 19619 条跨文档边（figure 7411 / formula 8864 / table 232 / chunk 3112），覆盖 84.7% BBL pair（72/85，13 对因 threshold=0.7 过滤）。`validate_and_project_crossdoc.py` 把 3112 条 chunk 边通过 `chunk_contains_element` 投影回 element 空间，得到 845 条 `chunk_mediated` 边（fanout mean=0.27 / p95=2 / max=20，保守）。9 个 rerank config 下 `explicit_only` 仍是本地 SOTA（neighbor `R@10=0.6892 / MRR=0.6006`；static `R@1=0.2431 / MRR=0.6372`）；所有 `crossdoc + explicit` 组合均净负，`w=0.2 < w=0.5`，cite-boost 0.05 量纲下无感。结论：跨法（BBL+embedding+chunk 投影）机制正确、数据无爆炸，但当前作为 rerank 信号对 M4query_v1 是净负；下一步若救 crossdoc 需缩到 sim>0.85 + top-3 + cite-only 的高置信子集。

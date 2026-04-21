@@ -17,12 +17,12 @@ Expected files in --data-dir:
 
 Dependencies (CPU or single GPU):
     pip install torch sentence-transformers>=3.0 numpy
-    # model download path 1: via modelscope (default on server)
-    pip install modelscope
+    # model download path 1: via huggingface_hub (default)
+    pip install huggingface_hub
     # model download path 2: pre-download and pass --model-path
 
 Usage:
-    # A. let modelscope fetch the weights at runtime
+    # A. let huggingface_hub fetch the weights at runtime
     python eval_dense_retrieval.py --data-dir ./M4query_v1
 
     # B. use a pre-downloaded model dir (offline)
@@ -128,11 +128,11 @@ def resolve_model_path(
         return str(p)
 
     try:
-        from modelscope import snapshot_download
+        from huggingface_hub import snapshot_download
     except ImportError:
         print(
-            "[fatal] modelscope not installed and no --model-path provided.\n"
-            "        pip install modelscope\n"
+            "[fatal] huggingface_hub not installed and no --model-path provided.\n"
+            "        pip install huggingface_hub\n"
             "        or pass --model-path /path/to/Qwen3-Embedding-0.6B",
             file=sys.stderr,
         )
@@ -141,7 +141,7 @@ def resolve_model_path(
     kwargs: Dict[str, Any] = {}
     if download_root:
         kwargs["cache_dir"] = download_root
-    print(f"[info] downloading {model_name} via modelscope ...", flush=True)
+    print(f"[info] downloading {model_name} via huggingface_hub ...", flush=True)
     return snapshot_download(model_name, **kwargs)
 
 
@@ -260,7 +260,7 @@ def main() -> None:
     ap.add_argument("--model-path", default=None,
                     help="Local pre-downloaded model dir (offline mode)")
     ap.add_argument("--download-root", default=None,
-                    help="ModelScope cache dir (if downloading)")
+                    help="HuggingFace cache dir (if downloading)")
     ap.add_argument("--output", default="eval_report.json")
     ap.add_argument("--save-ranking", default=None,
                     help="Optional path to write per-query top-K ranking as JSONL")
@@ -383,13 +383,11 @@ def main() -> None:
     top_k = int(min(args.top_k, scores.shape[1]))
     topk_idx = np.argpartition(-scores, top_k - 1, axis=1)[:, :top_k]
     ranking: Dict[str, List[str]] = {}
-    ranking_scores: Dict[str, List[float]] = {}
     for i, qid in enumerate(query_ids):
         row_scores = scores[i, topk_idx[i]]
         order = np.argsort(-row_scores)
         sorted_idx = topk_idx[i][order]
         ranking[qid] = [passage_ids[j] for j in sorted_idx]
-        ranking_scores[qid] = [float(row_scores[k]) for k in order]
     print(f"[info] retrieval done in {time.time() - t0:.1f}s")
 
     # ── Metrics ──
@@ -420,11 +418,7 @@ def main() -> None:
         rp.parent.mkdir(parents=True, exist_ok=True)
         with open(rp, "w", encoding="utf-8") as f:
             for qid, pids in ranking.items():
-                f.write(json.dumps({
-                    "query_id": qid,
-                    "top_k": pids,
-                    "scores": ranking_scores[qid],
-                }) + "\n")
+                f.write(json.dumps({"query_id": qid, "top_k": pids}) + "\n")
         print(f"[info] wrote ranking to {rp}")
 
     # ── Print summary ──
