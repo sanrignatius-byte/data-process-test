@@ -37,6 +37,10 @@ def add_llm_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
       --limit N                              处理前 N 条 candidate（调试用）
       --dry-run                              不调 API，只打 prompt
 
+    **凭据优先级**：CLI 参数 > 环境变量。**安全提醒**：CLI 传 key 会出现在
+    ``ps`` / shell history 里，生产环境优先用 ``.env`` + 环境变量（参考
+    CLAUDE.md 铁律 3）。
+
     返回同一个 parser 以支持链式。
     """
     parser.add_argument(
