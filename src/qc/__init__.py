@@ -18,7 +18,7 @@ from src.qc.reasoning import (
 from src.qc.llm_judge import (
     run_llm_qc,
     run_ablation_qc,
-    judge_evidence_necessity,
+    judge_single_element_batch,
     judge_answer_grounding,
 )
 
@@ -30,6 +30,6 @@ __all__ = [
     "classify_reasoning_structure",
     "run_llm_qc",
     "run_ablation_qc",
-    "judge_evidence_necessity",
+    "judge_single_element_batch",
     "judge_answer_grounding",
 ]
