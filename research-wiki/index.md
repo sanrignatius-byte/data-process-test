@@ -12,6 +12,7 @@ Latest requirement anchors:
 
 Latest discussion log:
 - 2026-04-21: Chunk 革新与评估对齐讨论（含录音要点）→ `research-wiki/log.md`
+- 2026-04-22: 基础设施解耦 Round 1（综合 Plan A + Plan B）→ `research-wiki/experiments/20260422_decoupling_round1.md`、`docs/DECOUPLING_PLAN_2026-04-22.md`
 
 ## Ideas
 
@@ -29,6 +30,7 @@ Latest discussion log:
 - [exp:20260421_trial57_fairness_repair](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260421_trial57_fairness_repair.md) — old-trial `57 gold docs` 与 `1040 production` 已分离，partial enrich fairness 问题已量化并加 guard，partial-overlay exploratory 结果已补齐。
 - [exp:20260421_api_logging_compliance](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260421_api_logging_compliance.md) — `local_api_logger -> api_logs` 为所有公司代理调用的合规铁律。
 - [exp:20260421_crossdoc_gold57_validation](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260421_crossdoc_gold57_validation.md) — gold-57 BBL+embedding 跨文档边生成+验证+chunk→element 投影。跨法机制正确（BBL 85 对覆盖 72 对），但作为 rerank 信号对 M4query_v1 净负；explicit_only 仍是本地 SOTA (neighbor `R@10=0.6892`)。
+- [exp:20260422_decoupling_round1](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260422_decoupling_round1.md) — 综合 Plan A / Plan B 的基础设施解耦 Round 1：`src/` 库 / `experiments/` 一次性 / `scripts/` 薄壳三层分层；拆 `src/api/llm.py` 和 `src/retrieval/{bm25,metrics}.py`；新增 `src/io/` + `src/cli/`；删 `endpoint_anchor.py` 575 行死代码；写入 SOT + R1–R6 硬规则；`pytest` 107 全绿，零行为变化。
 
 ## Claims
 
