@@ -161,6 +161,13 @@
   - **战略含义**：(i) 三轮 reranker 失败的真根因不是 modality bias 而是"graph 已摘完低垂果子"；(ii) formula 是真正瓶颈（dense/graph/qwen3 在 formula 上都卡 0.56），需 math-aware encoder（**F-formula** 推荐项）；(iii) 所有 reranker 路线（BGE/Qwen3/corpus enrich）已证伪，不再追。
   - **主计划文档**：[refine-logs/BCD_PHASED_PLAN_20260510.md](../refine-logs/BCD_PHASED_PLAN_20260510.md)。
 
+- 2026-05-10T15:30:00Z: **F-formula Phase 3 — Qwen2.5-Math-7B routing job 68269 submitted (RUNNING on gpu-a6000-1)**. C11 唯一未试杠杆：真换 math-aware encoder。Mode B (formula-only routing + RRF) isolates math-aware signal to formula bucket so figure/table regression can't mask gains.
+  - Implementation: `scripts/eval_formula_qwen25math_routing.py` — Qwen2.5-Math-7B as encoder via mean-pool last hidden state + L2 norm (hidden_size=3584). Encode 1253 formula passages + 473 queries with Math-7B; cosine sim → math formula ranking; RRF fuse with Qwen3-4B baseline ranking (sweep k ∈ {10, 20, 60}).
+  - Slurm: `slurm_scripts/52_f_formula_qwen25math_routing.sh`, A6000 / 2h / 24G mem (capped from requested 48G). First run downloads Qwen2.5-Math-7B (~14GB, ~10 min) before encoding.
+  - Decision rules pre-set: HD if `formula_bucket_smoke50.R@10` ≤ 0.56 (C11 fully validated); D2 (0.56, 0.62] partial; D1 > 0.62 first ceiling break → paper main result.
+  - User confirmed Mode B (vs A unified) explicitly to avoid math-7B-on-non-formula regression confound. Doc page: [exp:20260510_f_formula_qwen25math_routing](experiments/20260510_f_formula_qwen25math_routing.md).
+  - 同 session 还更正 wiki：D1 todo 已发（之前 wiki 错记为草稿压着 19 天）；A2 文档建图.md 5/10 07:38 已重写（之前 wiki 错记为 5/2 后未动）；并对 `文档建图.md` 第十节去重命名 + 第十一节 verdict 段加 modality-selective scope + cross-modal injection 负向 finding + encoder 候选具名清单。
+
 - 2026-05-10T14:54:00Z: **F-formula Phase 2 — LaTeX normalization (job 68131, ~4 min GPU) — HD FAIL, surface form hypothesis killed**。LaTeX symbol normalization (`\operatorname`->opt, `\leq`-><=, `\mathbb{E}`->E, `\frac{a}{b}`->(a)/(b)) has zero effect on Qwen3-Embedding-4B encoding. Formula R@10 stays at 0.5600 in both dense and graph configs (vs baseline 0.5600). Figure/table unaffected.
   - Method: `scripts/build_math_normalized_corpus.py` normalizes 1253 formula passages from raw LaTeX to readable text. Qwen3-Embedding-4B re-encodes -> dense retrieval -> graph rerank -> smoke50 slice.
   - Data: dense R@10 0.6237 (vs 0.6195, +0.4pp noise), graph R@10 0.6977 (vs 0.6913, +0.6pp noise). Formula bucket: dense 0.5600, graph 0.5600 — identical to baseline.

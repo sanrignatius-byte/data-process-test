@@ -1,13 +1,13 @@
 # Research Wiki Index
 
-Last updated: 2026-05-10T14:54:00Z
+Last updated: 2026-05-10T15:30:00Z
 
 ## Project Direction
 
 Build a document graph over multimodal academic papers and test whether graph signals improve evidence localization, QA support, and synthesis of high-quality SFT data.
 
 Latest requirement anchors:
-- `标准录音 60.mp3_20260502_134902_精转文稿.docx` (2026-05-02): 术语统一（paragraph=text element），chunk 公平性先验证再讨论，分离式检索优先，虚拟边暂缓。完整 18 条 todo 提取见 [exp:20260503_mentor_recording60_full_todo](experiments/20260503_mentor_recording60_full_todo.md)，5/10 BCD 分阶段执行后整体完成度 ~71%（+39pp from 32%）。详见 [refine-logs/BCD_PHASED_PLAN_20260510.md](../refine-logs/BCD_PHASED_PLAN_20260510.md)。
+- `标准录音 60.mp3_20260502_134902_精转文稿.docx` (2026-05-02): 术语统一（paragraph=text element），chunk 公平性先验证再讨论，分离式检索优先，虚拟边暂缓。完整 18 条 todo 提取见 [exp:20260503_mentor_recording60_full_todo](experiments/20260503_mentor_recording60_full_todo.md)，5/10 BCD 分阶段执行 + D1 todo 已发 + 文档建图.md 5/10 重写后整体完成度 ~82%（B1/B2/B3/C1/C2/C3/C4/C6/C7/D1 done，A2 partial pending mentor）。详见 [refine-logs/BCD_PHASED_PLAN_20260510.md](../refine-logs/BCD_PHASED_PLAN_20260510.md)。
 - `4.16.md` top-level plan: deliver SFT data first, patent or trade secret second, paper optional.
 - `标准录音 57.mp3_20260417_190739_精转文稿.docx` later section: prioritize retrieval uplift, QA uplift, and data synthesis value; keep `summary` as the only immediate virtual-node priority; simplify QC; do not widen the story around virtual edges yet.
 
@@ -51,6 +51,7 @@ Latest discussion log:
 - [exp:20260510_b1_phase2_lineno](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_b1_phase2_lineno.md) — **Completed 5/10**: B1 Phase 2 重建 chunk-element 边用 LaTeX 行号 + 6 graph rerank 配置消融。Topology 确实变了（kept=20/added=1130/removed=529），但 explicit-only ceiling 0.7100 不变，formula R@10 6 配置全 ≤ 0.5600。**新 [claim:C11](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C11_formula_ceiling_is_dense_encoder_bound.md)**: formula 瓶颈是 dense encoder bound, 不是 graph topology bound。
 - [exp:20260510_f_formula_caption](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_caption.md) — **Completed 5/10 (HD verdict)**: F-formula caption injection 把 mineru `context_before` 注入 formula passages，同 Qwen3-Embedding-4B encoder 重编码。Dense R@10 0.6195→0.5825 (−3.7pp)，graph R@10 0.6913→0.6691 (−2.2pp)，formula bucket 跌 16pp。8 configs 0 突破 0.5600（3 regressed）。**C11 强化**：text augmentation strictly cannot rescue LaTeX。F-formula Phase 2 必须真换 encoder。
 - [exp:20260510_f_formula_math_norm](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_math_norm.md) — **Completed 5/10 (HD FAIL)**: LaTeX surface normalization 对 formula R@10 0.5600 完全无提升；C11 升级为 10 configs，全未突破公式桶天花板。下一步只剩 math-aware encoder。
+- [exp:20260510_f_formula_qwen25math_routing](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_qwen25math_routing.md) — **Running (job 68269, 5/10)**: Qwen2.5-Math-7B encoder for formula passages, RRF-fused with Qwen3-Embedding-4B baseline. Mode B (formula-only routing) to isolate signal. C11 唯一未试杠杆——decision rules HD/D2/D1 已设；overall regress 风险隔离在 fig/table 桶之外。
 
 ## Claims
 

@@ -19,7 +19,7 @@ verdict: 5_10_BCD_phased_executed_C6_passed_S2_B1_phase1_done_B4_blocked
 | **C2** | chunk 是否为噪声重审 | ⚠️ | ✅ **claim:C9 入库** | [C9_chunk_dilutes_double_evidence_signal](../claims/C9_chunk_dilutes_double_evidence_signal.md) |
 | **C5** | 多粒度 enrich (DocResearcher) | ❌ | 🔴 **deferred (API + C8 双阻)** | [B4_C5_API_STATUS](../../refine-logs/B4_C5_API_STATUS_20260510.md) |
 | **C6** | 50 query 平衡测试集 | ❌ | ✅ **S2 verdict** | [SMOKE50_DECISION_20260510](../../refine-logs/SMOKE50_DECISION_20260510.md), [exp:20260505_smoke50_balanced_audit](20260505_smoke50_balanced_audit.md), [claim:C10](../claims/C10_graph_rerank_modality_selective.md) |
-| **D1** | mentor todo list with deadlines | ❌ | 🟡 **草稿就绪** | [MENTOR_TODO_DRAFT](../../refine-logs/MENTOR_TODO_DRAFT_20260510.md) — user 审后发 |
+| **D1** | mentor todo list with deadlines | ❌ | ✅ **已发** | [MENTOR_TODO_DRAFT](../../refine-logs/MENTOR_TODO_DRAFT_20260510.md) — user confirms sent (5/10) |
 
 ## 5/10 关键发现
 
@@ -60,8 +60,8 @@ verdict: 5_10_BCD_phased_executed_C6_passed_S2_B1_phase1_done_B4_blocked
 | # | TODO（mentor 原话） | 当前状态 |
 |---|--------------------|---------|
 | **A1** | paragraph 是 text element，与 figure/table/equation 平级；写文章只用 element / chunk 二元 | 文档半完成（wiki 用了 element），代码层未改 |
-| **A2** | 基于 mentor 上次发的 `文档建图.md` 修改，不要重新造文档/术语 | ❌ `文档建图.md` 最后修改 2026-04-21，5/2 后未动 |
-| **A3** | `fallback`、`static_plus_neighbor`、"算子"、"底部先验"等 AI 命名换成大白话（出入度 / 阅读顺序 / ref 关系 / 汇总） | ❌ 未改 |
+| **A2** | 基于 mentor 上次发的 `文档建图.md` 修改，不要重新造文档/术语 | 🟡 **5/10 07:38 已重写**（含 element/chunk 二元、出入度/阅读顺序/引用边/枢纽/投影边等大白话术语 + 5/10 verdict 段）；待 mentor 反馈 / 二轮校对 |
+| **A3** | `fallback`、`static_plus_neighbor`、"算子"、"底部先验"等 AI 命名换成大白话（出入度 / 阅读顺序 / ref 关系 / 汇总） | 🟡 文档层 5/10 已统一术语；代码 identifier 未动（mentor 原话允许） |
 
 → **A1/A2/A3 user 5/3 明确说交给别人处理，本 session 只记录不动手**
 
