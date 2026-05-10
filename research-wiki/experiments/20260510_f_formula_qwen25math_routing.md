@@ -3,8 +3,8 @@ type: experiment
 node_id: exp:20260510_f_formula_qwen25math_routing
 title: "F-formula Mode B — Qwen2.5-Math-7B routing + RRF fusion"
 date: 2026-05-10
-status: running
-job: 68269
+status: pending
+job: 68281
 ---
 
 # Hypothesis
@@ -57,7 +57,8 @@ Cleanest A/B isolation: math-aware signal is restricted to the formula bucket, s
 
 # Status
 
-- 2026-05-10T~15:30Z: job 68269 submitted, RUNNING on gpu-a6000-1. First-time download of Qwen2.5-Math-7B (~14GB) expected to cost ~10 min before encoding starts.
+- 2026-05-10T15:42Z: job 68269 started on gpu-a6000-1, died at HF model download because CephFS quota was already 4.6 GB over (300 GB cap, 304.6 GB used). Only config + tokenizer downloaded before failure.
+- 2026-05-10T16:30Z: freed 15 GB by removing unrelated `models--stabilityai--stable-diffusion-xl-base-1.0` from HF cache; re-submitted as **job 68281** (PENDING). Same script / args / inputs.
 
 # Refs
 
