@@ -1,6 +1,6 @@
 # Research Wiki Index
 
-Last updated: 2026-05-10T15:30:00Z
+Last updated: 2026-05-10T17:15:00Z
 
 ## Project Direction
 
@@ -51,7 +51,7 @@ Latest discussion log:
 - [exp:20260510_b1_phase2_lineno](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_b1_phase2_lineno.md) — **Completed 5/10**: B1 Phase 2 重建 chunk-element 边用 LaTeX 行号 + 6 graph rerank 配置消融。Topology 确实变了（kept=20/added=1130/removed=529），但 explicit-only ceiling 0.7100 不变，formula R@10 6 配置全 ≤ 0.5600。**新 [claim:C11](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C11_formula_ceiling_is_dense_encoder_bound.md)**: formula 瓶颈是 dense encoder bound, 不是 graph topology bound。
 - [exp:20260510_f_formula_caption](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_caption.md) — **Completed 5/10 (HD verdict)**: F-formula caption injection 把 mineru `context_before` 注入 formula passages，同 Qwen3-Embedding-4B encoder 重编码。Dense R@10 0.6195→0.5825 (−3.7pp)，graph R@10 0.6913→0.6691 (−2.2pp)，formula bucket 跌 16pp。8 configs 0 突破 0.5600（3 regressed）。**C11 强化**：text augmentation strictly cannot rescue LaTeX。F-formula Phase 2 必须真换 encoder。
 - [exp:20260510_f_formula_math_norm](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_math_norm.md) — **Completed 5/10 (HD FAIL)**: LaTeX surface normalization 对 formula R@10 0.5600 完全无提升；C11 升级为 10 configs，全未突破公式桶天花板。下一步只剩 math-aware encoder。
-- [exp:20260510_f_formula_qwen25math_routing](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_qwen25math_routing.md) — **Running (job 68269, 5/10)**: Qwen2.5-Math-7B encoder for formula passages, RRF-fused with Qwen3-Embedding-4B baseline. Mode B (formula-only routing) to isolate signal. C11 唯一未试杠杆——decision rules HD/D2/D1 已设；overall regress 风险隔离在 fig/table 桶之外。
+- [exp:20260510_f_formula_qwen25math_routing](/projects/_hdd/myyyx1/data-process-test/research-wiki/experiments/20260510_f_formula_qwen25math_routing.md) — **Completed 5/10 (D2 partial lift, FIRST POSITIVE SIGNAL)**: Qwen2.5-Math-7B encoder for formula passages, RRF-fused with Qwen3-Embedding-4B baseline (Mode B routing). At RRF k=60, formula bucket R@10 lifts smoke50 0.5600→**0.6000** (+4pp) and full-179 0.5600→**0.6313** (+7.3pp); R@100 also jumps +8pp. Cost: overall R@10 −9.7pp (RRF over-weights formula). **C11 partially falsified** — math-aware encoder is the first lever to break formula ceiling. Phase 2 candidates: query-conditional routing or two-stage cascade.
 
 ## Claims
 
@@ -65,7 +65,7 @@ Latest discussion log:
 - [claim:C8](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C8_modora_visual_enrichment_net_negative.md): **Supported (2026-05-03)** — MODORA-style visual enrichment is net-negative on text-style scientific QA retrieval; corpus replacement and additive both regress, while graph rerank only drops −0.5pp (corpus quality is not the ceiling).
 - [claim:C9](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C9_chunk_dilutes_double_evidence_signal.md): **Supported (2026-05-10)** — Chunk-as-retrieval-unit dilutes signal on double-evidence queries (15pp gap at R@10, 71% K=1 zero-recall). Mentor C2 todo closed via this claim.
 - [claim:C10](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C10_graph_rerank_modality_selective.md): **Supported (2026-05-10, strengthened by C11)** — Graph rerank effect is modality-selective: figure +10.3pp / table +8.3pp / formula 0.0pp. Paper claims C1/C5/C7 must add modality scope.
-- [claim:C11](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C11_formula_ceiling_is_dense_encoder_bound.md): **Supported & strengthened (2026-05-10)** — Formula retrieval R@10 ≈ 0.56 ceiling is dense-encoder bound. 10 configs (line_no fix + caption injection + LaTeX normalization + reranker families) all hit ≤ 0.56 on formula. Surface normalization and NL injection cannot rescue LaTeX; math-aware encoder swap is the only untested lever.
+- [claim:C11](/projects/_hdd/myyyx1/data-process-test/research-wiki/claims/C11_formula_ceiling_is_dense_encoder_bound.md): **Partially falsified (2026-05-10, exp 20260510_f_formula_qwen25math_routing)** — Math-aware encoder (Qwen2.5-Math-7B) + RRF routing lifts formula bucket R@10 from 0.56 ceiling to 0.6313 on full M4query (n=179, +7.3pp) and 0.6000 on smoke50 (n=25, +4pp). C11 needs softening: formula retrieval is dense-encoder LIMITED but not strictly bound; math-aware encoder + fusion partially escapes the ceiling, with modality-routing tradeoff (overall R@10 −9.7pp at k=60).
 
 ---
 

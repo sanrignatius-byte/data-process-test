@@ -161,6 +161,15 @@
   - **战略含义**：(i) 三轮 reranker 失败的真根因不是 modality bias 而是"graph 已摘完低垂果子"；(ii) formula 是真正瓶颈（dense/graph/qwen3 在 formula 上都卡 0.56），需 math-aware encoder（**F-formula** 推荐项）；(iii) 所有 reranker 路线（BGE/Qwen3/corpus enrich）已证伪，不再追。
   - **主计划文档**：[refine-logs/BCD_PHASED_PLAN_20260510.md](../refine-logs/BCD_PHASED_PLAN_20260510.md)。
 
+- 2026-05-10T17:15:00Z: **F-formula Phase 3 — Qwen2.5-Math-7B routing COMPLETED (job 68281), D2 partial lift = FIRST POSITIVE FORMULA SIGNAL in 10 configs**.
+  - smoke50 formula bucket R@10: 0.5600 → **0.6000** at RRF k=60 (+4pp, n=25)
+  - full M4query formula bucket R@10: 0.5600 → **0.6313** at k=60 (+7.3pp, n=179, more reliable)
+  - formula bucket R@100: 0.8636 → **0.9441** (+8pp recall ceiling lift)
+  - Cost: overall full R@10 0.6195 → 0.5222 at k=60 (−9.7pp), because RRF symmetric fusion over-weights formula relative to figure/table.
+  - **C11 partially falsified**: math-aware encoder is the first lever to break formula 0.56 ceiling. Claim needs softening from "ceiling bound" to "ceiling LIMITED with modality-routing tradeoff".
+  - Phase 2 candidates: (a) query-conditional routing (only fuse Math when query has formula-style anchors); (b) two-stage cascade (dense → math rerank only inside top-100). Both should preserve overall R@10 while keeping formula gain.
+  - Operational notes: job 68269 (first try, ~15:42Z) died at HF model download because CephFS quota was 4.6 GB over (304.6/300 GB). Freed 15 GB by removing unrelated SDXL from `~/.cache/huggingface/hub/` (user confirmed it was from another project but freely re-downloadable from HF). Re-submitted as 68281 which then succeeded. Subsequently also removed dead `data-process-test/Qwen3-VL-30B-A3B-Thinking/` (62 GB, last touched 2026-02-08, zero references in scripts/wiki, replaced by Claude API since 2026-02-22). Quota usage 304.6 → 232.2 GB, headroom restored to ~67 GB.
+
 - 2026-05-10T15:30:00Z: **F-formula Phase 3 — Qwen2.5-Math-7B routing job 68269 submitted (RUNNING on gpu-a6000-1)**. C11 唯一未试杠杆：真换 math-aware encoder。Mode B (formula-only routing + RRF) isolates math-aware signal to formula bucket so figure/table regression can't mask gains.
   - Implementation: `scripts/eval_formula_qwen25math_routing.py` — Qwen2.5-Math-7B as encoder via mean-pool last hidden state + L2 norm (hidden_size=3584). Encode 1253 formula passages + 473 queries with Math-7B; cosine sim → math formula ranking; RRF fuse with Qwen3-4B baseline ranking (sweep k ∈ {10, 20, 60}).
   - Slurm: `slurm_scripts/52_f_formula_qwen25math_routing.sh`, A6000 / 2h / 24G mem (capped from requested 48G). First run downloads Qwen2.5-Math-7B (~14GB, ~10 min) before encoding.
