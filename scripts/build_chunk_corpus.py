@@ -2,21 +2,20 @@
 """
 build_chunk_corpus.py
 =====================
-从 paragraph_chunks JSON + full multimodal_elements graph 构建检索 corpus。
+从 paragraph_chunks JSON + 完整 multimodal_elements graph 构建检索语料库。
 
 核心设计：
-  chunk passage = 段落文本
-                + 区间内所有 element 的原始可见文本（caption/content）
-                + 可选 enriched_content overlay
+  chunk passage = 文本元素（text element / paragraph）的原文
+                + 区间内所有图/表/公式元素的 caption 和原始文本
+                + 可选注入 LLM 多模态描述（enriched_content）
 
-这样做的目的有两个：
-  1. chunk 不再只看到 selective enrich 子集，避免漏掉大量 element；
-  2. retrieval 可以在统一 element 覆盖下，分别比较 raw graph text 和
-     enriched overlay 对结果的影响，减少实验口径污染；
-  3. 对闭集 retrieval eval，可以通过 enriched coverage guard 强制检查
-     “是否真的已经补齐 enrich”，避免把 partial enrich 当成公平实验。
+目的：
+  1. 切片不仅是文本窗口，也显式包含所覆盖元素的多模态语义；
+  2. 统一元素覆盖口径下比较 raw graph text vs enriched overlay 的效果；
+  3. 通过 enriched coverage guard 强制检查 enrich 覆盖率，避免把
+     partial enrich 当成公平实验。
 
-同时输出重映射后的 qrels：gold passage 从 element_id → parent_chunk_id。
+同时输出重映射后的 qrels：gold 标注从 element_id → parent_chunk_id。
 """
 
 from __future__ import annotations

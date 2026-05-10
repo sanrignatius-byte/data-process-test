@@ -62,9 +62,22 @@ DEFAULT_M4_DIR         = "data/03_queries/M4query_v1"
 DEFAULT_CHUNK_FILE     = "data/01_graphs/chunk_virtual_nodes.json"
 DEFAULT_SUMMARY_FILE   = "data/01_graphs/llm_summary_virtual_nodes.json"
 DEFAULT_ENRICHED_FILES = [
+    # Legacy hub-pair files (pairs format). Note: as of 2026-05-03 these files
+    # use flat element_a_id / element_b_id keys with no nested enrich payload,
+    # so load_enriched_index returns 0 entries from them. Kept for backward
+    # compatibility — adding richer enrichment sources is the responsibility
+    # of the caller via --enriched-files.
     "data/02_enriched/hub_candidates_enriched_v4_intra_doc.json",
     "data/02_enriched/hub_candidates_enriched_v3_intra_doc.json",
     "data/02_enriched/m2_diverse_candidates_intra_doc.json",
+    # NOTE on data/02_enriched/multimodal_elements_enriched.json (MODORA
+    # per-element visual enrichment, documents.elements format): the
+    # load_enriched_index branch added 2026-05-03 ingests this file correctly,
+    # but on M4query_v1 the visual descriptions cause a -3pp R@10 / -2pp R@100
+    # regression vs the rebuilt_20260417 baseline (see
+    # refine-logs/CORPUS_FIX_DECISION_20260503.md). DO NOT add by default.
+    # Pass it explicitly via --enriched-files only when you have evaluated the
+    # downstream impact for your benchmark.
 ]
 DEFAULT_OUTPUT_DIR = "data/05_eval/dense_retrieval/augmented"
 
@@ -97,7 +110,16 @@ def write_jsonl(rows: List[Dict[str, Any]], path: Path) -> None:
 # ── Build enriched-element text ───────────────────────────────────────────────
 
 def load_enriched_index(enriched_files: List[str]) -> Dict[str, Dict[str, str]]:
-    """Build element_id → {enriched_title, enriched_content} from all enriched files."""
+    """Build element_id → {enriched_title, enriched_content} from all enriched files.
+
+    Supports two on-disk layouts:
+      A. MODORA per-element format: ``{"documents": {doc_id: {"elements": {eid: {...}}}}}``
+         where each element may carry ``enriched_title`` / ``enriched_content`` directly.
+      B. Hub-candidate pairs format: ``{"pairs": [{"element_a": {"element_id", "enriched_*"}, ...}]}``
+         (legacy; some files instead use flat ``element_a_id`` keys with no nested enrich payload).
+
+    Earlier ``element_id`` wins (files are processed in caller-supplied order).
+    """
     index: Dict[str, Dict[str, str]] = {}
     for fname in enriched_files:
         p = PROJECT_ROOT / fname
@@ -109,7 +131,22 @@ def load_enriched_index(enriched_files: List[str]) -> Dict[str, Dict[str, str]]:
         except Exception as e:
             print(f"[warn] failed to load {p}: {e}")
             continue
-        pairs = d.get("pairs", d.get("candidates", []))
+        added = 0
+
+        # Layout A — MODORA documents.elements
+        if isinstance(d, dict) and "documents" in d:
+            for doc_id, doc in d.get("documents", {}).items():
+                for eid, el in doc.get("elements", {}).items():
+                    if not isinstance(el, dict):
+                        continue
+                    et = (el.get("enriched_title") or "").strip()
+                    ec = (el.get("enriched_content") or "").strip()
+                    if eid and (ec or et) and eid not in index:
+                        index[eid] = {"enriched_title": et, "enriched_content": ec}
+                        added += 1
+
+        # Layout B — pairs/candidates (legacy)
+        pairs = d.get("pairs", d.get("candidates", [])) if isinstance(d, dict) else []
         for pair in pairs:
             for key in ("element_a", "element_b"):
                 e = pair.get(key, {})
@@ -120,6 +157,8 @@ def load_enriched_index(enriched_files: List[str]) -> Dict[str, Dict[str, str]]:
                         "enriched_title":   (e.get("enriched_title") or "").strip(),
                         "enriched_content": ec,
                     }
+                    added += 1
+        print(f"[info]   +{added:5d} enriched entries from {fname}")
     print(f"[info] enriched index: {len(index)} elements")
     return index
 
@@ -146,10 +185,17 @@ def build_element_text(
 ) -> str:
     """Compose the richest possible text for a corpus element.
 
-    Priority stack (richest first):
-      1. enriched_title + enriched_content (from MODORA enrichment)
-      2. caption + content + context_before + context_after (from graph element)
-      3. original corpus text (last resort)
+    Layered (additive) priority — concatenate ALL available signals so that
+    domain context (caption, paragraph context) is preserved even when MODORA
+    enrichment provides a visual-only description on top:
+      1. enriched_title + enriched_content (visual / cross-modal description)
+      2. caption + content + context_before + context_after (paper-domain context)
+      3. original corpus text (last resort, only if 1 & 2 both empty)
+
+    Note: the prior implementation used 1 OR 2 (mutually exclusive). That hid
+    the paper-domain context for ~640 figures that had both signals, causing a
+    -10pp R@10 regression on M4query_v1 — see
+    refine-logs/CORPUS_FIX_DECISION_20260503.md.
     """
     parts: List[str] = []
 
@@ -161,7 +207,7 @@ def build_element_text(
         if content:
             parts.append(content)
 
-    if graph_elem and not parts:
+    if graph_elem:
         caption = (graph_elem.get("caption") or "").strip()
         content_raw = (graph_elem.get("content") or "").strip()
         ctx_before = (graph_elem.get("context_before") or "").strip()[:MAX_CONTEXT_CHARS]
@@ -209,8 +255,10 @@ def build_v1_enriched(
 
         # Map corpus passage_id → graph element_id by stripping duplicate doc prefix
         short_eid = pid[len(doc_id) + 1:] if pid.startswith(doc_id + "_") else pid
-        graph_elem = graph_elem_index.get(short_eid)
-        enrich_entry = enrich_index.get(short_eid)
+        graph_elem = graph_elem_index.get(short_eid) or graph_elem_index.get(pid)
+        # MODORA enrichment uses full element_id (== passage_id); legacy hub
+        # files use short_eid. Try both shapes — full pid first (richer source).
+        enrich_entry = enrich_index.get(pid) or enrich_index.get(short_eid)
 
         new_text = build_element_text(row, graph_elem, enrich_entry)
 

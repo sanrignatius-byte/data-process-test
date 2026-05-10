@@ -2,14 +2,15 @@
 """
 build_paragraph_chunks.py
 =========================
-Re-merge pre-parsed paragraph nodes from chunk_virtual_nodes_v2.json into
-fixed-size chunks using a proper word tokenizer (NLTK, spaCy, or regex
-fallback), and optionally inject element_ids from multimodal_elements.json
-so that each chunk knows which figure/table/formula nodes it contains.
+将 chunk_virtual_nodes_v2.json 中的文本元素（text element，即 paragraph）
+合并为固定长度的切片（chunk）。支持 NLTK / spaCy / regex 三种分词器。
+可选地从 multimodal_elements.json 注入 element_ids，使每个切片知道
+它包含哪些图/表/公式元素。
 
-element_ids mapping:  element.position_idx shares the same sequential
-namespace as paragraph.para_idx — so any element whose position_idx falls
-within a chunk's paragraph_indices set is assigned to that chunk.
+元素-切片对齐：element.position_idx 与 text element 的 para_idx 共享
+同一序号空间——position_idx 落在切片 paragraph_indices 范围内的元素
+即被分配给该切片。对齐优先使用 LaTeX 行号精确匹配，字符串模糊匹配仅
+作为后备（fallback）。
 
 Usage:
     python scripts/build_paragraph_chunks.py \\
