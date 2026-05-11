@@ -6,6 +6,19 @@
 
 ---
 
+## 零、对照上次给的 4 条 to-do 状态
+
+| # | To-do | 状态 | 一句话结论 |
+|---|---|---|---|
+| 1 | 修改 enrich 方式，模仿 summary+细节 格式参与找回 | ⚠️ Blocked | 公司 API 自 4/21 401 至今 19 天；同时 `claim:C8` 已证 MODORA 式视觉 enrich 对 text-style retrieval 净负，方案要重设计 |
+| 2 | 用 VL-Embedding 让图片参与 dense retrieval | ❌ 跑过两轮全负 + 发现 corpus 端 bug | 详见下方 #1，**表格图片在 corpus 构建时被吃掉了**，不是 VL 模型本身的问题 |
+| 3 | 统计 chunk 平均含几个 element、查 R@10 低的根因 | ✅ 完成并升级为 claim | 964 chunk 平均 1.94 element；75% 双证据 query 跨 chunk；K=1 zero rate 71%；已成 `claim:C9` |
+| 4 | 原有 md 文档更新，保证可读性 + 说人话 | ✅ 完成 | `文档建图.md` 5/10 重写：术语统一（element 四类平级）、图加权改大白话、第十节重名修复、第十一节 verdict 加 modality 选择性 |
+
+完成率 2/4，1 项被 API 卡住，1 项发现新 bug（见 #1）。
+
+---
+
 ## 一、本周做完的事（按重要度）
 
 ### 1. 公式检索瓶颈被推开了一道口子（这周最重要的事）
@@ -72,6 +85,26 @@
 - chunk 在双证据题上稀释信号这件事坐实了（claim:C9 入库）：双证据题里 75% 两个证据落在不同切片，K=1 时 71% query 一个证据都召不到
 - BCD 阶段执行整体完成度从 32% 推到 76%
 
+### 7. 新发现：VL embedding 在 table 上归零的真正根因不是模型
+
+本周复盘 to-do #2 时挖到的 bug，比之前归因更严重：
+
+| 层级 | figure 带图比例 | table 带图比例 |
+|---|---:|---:|
+| mineru 原始输出 | 100% | **100%**（163/163 抽样） |
+| `multimodal_elements.json` 图层 | 841/841 | 237/334（97 个是 inline HTML，本来就无图） |
+| `corpus_v1_enriched.jsonl` **检索 corpus** | 842/842 ✅ | **0/2 ❌** |
+
+也就是说 **mineru 给的 table crop 图片在 corpus 构建那一步几乎全被丢了**：1798 条 passage 里只剩 2 条 table 类型，且都不带 `image_path`。VL embedding 脚本里 `resolve_image_path(table)` 必然返回 None → 走文本编码 → table R@10 归零。
+
+之前我把"split_vl2b_t5 table R@10 = 0.0278"归因为"split allocation 不适合 table"，**这个归因错了**。修复方向：
+
+- 不是去改 VL 脚本
+- 而是改 corpus 构建：把 `multimodal_elements.json` 里 237 个 table-with-image 显式作为独立 passage 注入 corpus，带 `image_path` 字段
+- 修完之后再跑一次 VL split，table lane 才有公平对比的可能
+
+预计这个 corpus 修复 + 重跑 VL 大约 1 天 + 30 min A6000。下周可以排进去。
+
 ---
 
 ## 二、卡住的事
@@ -93,6 +126,7 @@ OpenAI 直连可以 fallback 但成本是公司 API 的约 10 倍。**等师兄�
 | 优先级 | 事 | 估时 |
 |---|---|---|
 | P0 | F-formula Phase 2a：query 感知路由（query 含数学符号才触发 Math 编码器） | 1-2 天 + ~30 min A6000 |
+| P0 | **corpus 端补 table-with-image passage**，重跑 VL split（对应 to-do #2 修复） | 1 天 + 30 min A6000 |
 | P0 备用 | F-formula Phase 2b：两阶段——dense 取 top-100 后只对公式候选重排 | 同上 |
 | P1 | 给 C1 / C5 / C7 论文 claim 加 modality scope（配合 C10） | 半天 |
 | P2 | 拿 jina-embeddings-v3 跑一次独立家族对照（排除"是不是 Qwen 系列偏置"的疑问） | 半天 + ~20 min A6000 |
@@ -101,9 +135,10 @@ OpenAI 直连可以 fallback 但成本是公司 API 的约 10 倍。**等师兄�
 
 ## 四、要你拍板的事
 
-1. **API 切不切 OpenAI 直连**？切了 B4 / C5 才能继续推。不切的话这两条线继续挂着。
+1. **API 切不切 OpenAI 直连**？切了 B4 / C5（to-do #1）才能继续推。不切的话这两条线继续挂着。
 2. **F-formula 整体 R@10 −9.7pp 的代价能不能接受**？我倾向 Phase 2a 把它修回去（保住整体的同时留住公式增益）。如果你觉得公式增益本身就够发论文，那 Phase 2 可以省掉直接收工。
-3. **下次跟你同步**：还按 mentor 录音 60 之前的节奏（每两周一次大讨论），还是改成每周？
+3. **VL split 还要不要继续推（to-do #2）**？现在已知 corpus 端有 bug 把 table 图丢了。修完 corpus 后值得再给 VL 一次机会，但 smoke50 上 figure VL 0.33 vs graph 0.82 这个 49pp 的差距摆在那，**就算 table 修好，VL 路线大概率还是输给 graph rerank**。我倾向"修一次 + 跑一次"作为收尾，结论清楚后归档，不再继续推。
+4. **下次跟你同步**：还按 mentor 录音 60 之前的节奏（每两周一次大讨论），还是改成每周？
 
 ---
 
