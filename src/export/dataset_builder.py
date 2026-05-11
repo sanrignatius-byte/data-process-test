@@ -68,8 +68,19 @@ def _build_element_index(elements_path: Path) -> Dict[str, Dict[str, Any]]:
         data = json.load(fh)
 
     idx: Dict[str, Dict[str, Any]] = {}
-    elements = data if isinstance(data, list) else data.get("elements", [])
-    for el in elements:
+    if isinstance(data, list):
+        iterable = data
+    elif isinstance(data, dict) and "documents" in data:
+        iterable = []
+        for doc in data["documents"].values():
+            els = doc.get("elements", {})
+            if isinstance(els, dict):
+                iterable.extend(els.values())
+            elif isinstance(els, list):
+                iterable.extend(els)
+    else:
+        iterable = data.get("elements", []) if isinstance(data, dict) else []
+    for el in iterable:
         eid = el.get("element_id", "")
         if eid:
             idx[eid] = el
