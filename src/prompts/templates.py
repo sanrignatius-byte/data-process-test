@@ -574,7 +574,7 @@ BAD (Rule 12 — answer copies a long verbatim bridge clause):
   Answer: "As the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient, confirming the 12% gap in Node 3."
   Why bad: 17-word verbatim copy from the bridge — the answer is not paraphrasing, it is extracting.
 
-GOOD (Rule 12 — paraphrase + short anchor phrase ≤7 words):
+GOOD (Rule 12 — paraphrase + short anchor phrase ≤5 words):
   "The smoothing coefficient dampens rare-feature gradients, so minority-group accuracy drops, which matches the 12% gap reported for the low-resource split."
 
 ### SPLIT-TEST SELF-CHECK (run BEFORE finalizing the query)
@@ -600,14 +600,14 @@ GOOD (Rule 12 — paraphrase + short anchor phrase ≤7 words):
    9c. This rule is hard-enforced by QC — there is no "and what/and which" exception for any query_type.
 10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. This explicitly INCLUDES dimensional patterns such as `6×384`, `512-d`, `k×k`, `1-bit`, `8-bit`, `n-dim`, `3-hop` and bit-width / channel-count / rank values. Use qualitative descriptors instead ("higher-rank", "aggressively quantized", "wider embedding", "deeper variant"). Year tokens (1900–2099) and the literals 0/1 are exempt only when they are clearly NOT a metric — e.g. allowed: "binary 0/1 labels", "the 2024 release"; forbidden: "an F1 of 0.95", "accuracy of 1.0", "the 1-bit quantized variant".
 11. NO unanchored "this", "that", or "here" in the query — in ANY syntactic role. This is enforced by the QC implementation, which does NOT distinguish demonstrative from complementizer "that". The query is rejected if it contains "this/that/here" AND does NOT contain at least one physical-anchor token (see the QC-ACCEPTED PHYSICAL-ANCHOR TOKENS list above). Safest patterns: (a) avoid "this/that/here" entirely and name the method/dataset/metric/component directly; (b) if you must use "that" (e.g. in a "Given that …" rescue clause), embed an anchor token in the same query — "the row that reports …", "the curve that drops …", "the axis that bounds …". Forbidden surface forms (no anchor token): "this metric", "that drop", "Given that X holds", "claim that Y matters".
-12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 8 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤7 consecutive words). Connect premise → bridge → conclusion in your own words.
+12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 6 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤5 consecutive words). Connect premise → bridge → conclusion in your own words. NOTE: this is enforced by the QC text_evidence_over_reliance check, whose threshold was tightened from 0.4 → 0.3 on 2026-05-12 because answer-bridge overlap is the #1 training-data false-positive pattern (answer that is just bridge paraphrase = degenerate retrieval pair).
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
       "query": "One serial causal 3-step question (max 30 words; no numerals or dimensional patterns like 6×384 / 1-bit; no and-what/and-which dual ask — fold second endpoint into a 'Given the … row/curve/axis …' premise with a physical-anchor token; no unanchored 'this/that/here' in any syntactic role)",
-      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link in your own words (no ≥8-word verbatim copy from the bridge), max 4 sentences",
+      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link in your own words (no ≥6-word verbatim copy from the bridge), max 4 sentences",
       "query_type": "causal_chain|mechanism_trace|conditional_prediction",
       "reasoning_steps": [
         {{

@@ -4,8 +4,11 @@
 让 qc/checks.py、qc/reasoning.py 和任何未来的 QC 消费者都能用。
 
 关键阈值（别乱改，这些都是实验调出来的）：
-  - ANCHOR_LEAK_THRESHOLD = 0.20：query 和 anchor 的 Jaccard 超 20% 就算泄漏
+  - ANCHOR_LEAK_THRESHOLD = 0.15：query 和 anchor 的 Jaccard 超 15% 就算泄漏
+    (2026-05-12: 从 0.20 收紧 → 防 query 抄 anchor token 退化为词面匹配训练 FP)
   - ANSWER_BALANCE_THRESHOLD = 0.20：答案不能只靠一个元素
+  - TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.3：answer 与 text_evidence 重叠 ≤30%
+    (2026-05-12: 从 0.4 收紧 → 直接抓训练 FP 头号杀手 text_evidence_over_reliance)
   - MAX_QUERY_WORDS = 40：query 超 40 词就太长了 (2026-04-11: 从 30 提升，多跳 query 需要更多空间)
 """
 
@@ -37,7 +40,7 @@ YES_NO_STARTERS = [
 
 # ── QC thresholds ─────────────────────────────────────────────────────────────
 
-ANCHOR_LEAK_THRESHOLD = 0.20
+ANCHOR_LEAK_THRESHOLD = 0.15  # 2026-05-12: tightened 0.20 → 0.15 (training-FP prevention)
 ANSWER_BALANCE_THRESHOLD = 0.20
 MIN_OVERLAP_BY_TYPE: Dict[str, int] = {
     "figure": 1,
@@ -48,7 +51,7 @@ SHORT_QUERY_MIN_WORDS = 8
 SHORT_QUERY_MAX_WORDS = 14
 LONG_QUERY_MIN_WORDS = 18
 MAX_QUERY_WORDS = 40  # Raised from 30: multi-hop queries need more words
-TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.4
+TEXT_EVIDENCE_OVERLAP_WARN_THRESHOLD = 0.3  # 2026-05-12: tightened 0.4 → 0.3 (training-FP prevention)
 
 # ── Template shortcut patterns ────────────────────────────────────────────────
 

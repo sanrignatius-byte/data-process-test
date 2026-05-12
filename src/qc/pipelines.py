@@ -93,7 +93,12 @@ def qc_multihop_query(
     if has_numeric_leakage(q):
         issues.append("numeric_leakage")
 
-    # 2c2. Bare deictic references (advisory, not hard fail)
+    # 2c2. Bare deictic references — DE FACTO HARD FAIL.
+    # The bare_deictic_warn flag in metrics is for diagnostics; appending to
+    # `issues` makes qc_pass=False because callers compute
+    # `qc_pass = len(issues)==0` (scripts/generate_multihop_l1_queries.py:1337).
+    # Empirical: 114/114 records with bare_deictic in the 2026-05-11 m2_m15
+    # batch were qc_pass=False. (Earlier "advisory" comment was incorrect.)
     if has_bare_deictic(q):
         issues.append("bare_deictic")
         metrics["bare_deictic_warn"] = True
