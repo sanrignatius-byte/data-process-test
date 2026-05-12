@@ -586,6 +586,19 @@ def build_graph_path_description(pair: Dict) -> str:
     return " ".join(parts)
 
 
+def synthesize_reasoning_chain_text(reasoning_steps: List[Dict[str, Any]]) -> str:
+    """Build legacy reasoning_chain text from structured L3 reasoning_steps."""
+    parts: List[str] = []
+    for step in reasoning_steps:
+        claim = str(step.get("produces_claim", "") or "").strip()
+        span = str(step.get("evidence_span", "") or "").strip()
+        if claim:
+            parts.append(claim)
+        elif span:
+            parts.append(span)
+    return " ".join(parts)
+
+
 
 # prompt 组装总入口——模板 + bridge + enriched + section + persona
 # 每层可选注入，缺失时自动降级
@@ -692,7 +705,7 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
         # P1: Build graph path description
         graph_path_desc = build_graph_path_description(pair)
 
-        return _with_enriched(PROMPT_3STEP_REASONING_CHAIN.format(
+        prompt = PROMPT_3STEP_REASONING_CHAIN.format(
             elem_a_type=elem_a.get("element_type", "element"),
             elem_a_id=elem_a["element_id"],
             elem_a_caption=(elem_a.get("caption", "") or "")[:400],
@@ -706,7 +719,19 @@ def build_prompt(pair: Dict, query_style: str = "academic", use_persona: bool = 
             elem_b_context=_context(elem_b),
             elem_b_image_note="[Image provided above]" if elem_b.get("image_path") else "",
             graph_path_description=graph_path_desc,
-        ))
+        )
+        if query_style == "real_user":
+            prompt = prompt.replace(
+                "## YOUR TASK\n\n",
+                (
+                    "## YOUR TASK\n\n"
+                    "STYLE VARIANT: Phrase the query like a natural reader's "
+                    "question, but keep the exact 3-step reasoning-path JSON "
+                    "schema and all grounding requirements below.\n\n"
+                ),
+                1,
+            )
+        return _with_enriched(prompt)
 
     if template_name == "figure_table_1hop":
         return _with_enriched(PROMPT_FIGURE_TABLE_1HOP.format(
@@ -1190,7 +1215,7 @@ def main() -> None:
 
             for q_obj in queries:
                 # Route to the appropriate QC function based on query style
-                is_real_user_style = effective_query_style == "real_user"
+                is_real_user_style = effective_query_style == "real_user" and not is_l3
                 _pair_id_str = str(pair.get("pair_id", ""))
                 effective_persona_id = resolve_persona_id(_pair_id_str) if args.use_persona else "none"
                 effective_persona_text = resolve_persona(_pair_id_str) if args.use_persona else ""
@@ -1269,11 +1294,16 @@ def main() -> None:
                     issues.extend(llm_issues)
                     metrics.update(llm_metrics)
 
+                reasoning_steps = q_obj.get("reasoning_steps", []) or []
+                reasoning_chain = str(q_obj.get("reasoning_chain", "") or "").strip()
+                if is_l3 and not reasoning_chain and reasoning_steps:
+                    reasoning_chain = synthesize_reasoning_chain_text(reasoning_steps)
+
                 entry = {
                     "query_id": f"l{'3' if is_l3 else '1'}_de_{doc_id}_{query_idx:04d}",
                     "difficulty_level": 3 if is_l3 else 2,
                     "difficulty_label": "reasoning_chain" if is_l3 else "dual_evidence",
-                    "reasoning_chain": q_obj.get("reasoning_chain", ""),
+                    "reasoning_chain": reasoning_chain,
                     "query": q_obj.get("query", ""),
                     "answer": q_obj.get("answer", ""),
                     "doc_id": doc_id,
@@ -1285,7 +1315,7 @@ def main() -> None:
                     "pair_type": pair_type,
                     "hop_distance": hop,
                     "path": pair.get("path", []),
-                    "reasoning_steps": q_obj.get("reasoning_steps", []),  # M4 Schema 1: explicit reasoning chain steps
+                    "reasoning_steps": reasoning_steps,  # M4 Schema 1: explicit reasoning chain steps
                     "reasoning_depth": metrics.get("m4_reasoning_depth", 2),
                     "reasoning_structure": metrics.get("m4_reasoning_structure", "parallel"),
                     "dual_evidence": True,   # v4: renamed from multi_hop (path_len always 2 for single-doc pairs)
