@@ -519,15 +519,31 @@ For each step, ask: "If I remove THIS step's evidence, can I still derive the an
 ### BRIDGE GROUNDING RULE
 Your answer MUST quote or paraphrase specific content from the bridge paragraph text above. If the bridge text says "X leads to Y", your answer must use that causal link. Do NOT invent connections not present in the bridge.
 
+### QC-ACCEPTED PHYSICAL-ANCHOR TOKENS (dependency for Rules 9 & 11)
+
+If the query contains "this", "that", or "here" in ANY syntactic role
+(demonstrative pronoun, demonstrative determiner, OR complementizer "that"),
+the query MUST also contain at least one of these tokens — QC checks for
+them literally and does not parse part-of-speech:
+
+  panel  subplot  row  column  col  cell  axis  region  left  right
+  top    bottom   upper  lower  bar  curve  cluster  histogram  scatter
+  frontier  quadrant  layer  branch  encoder  decoder  block  stage  step
+
+This list also constrains the Rule 9 rescue clauses ("Given the … row …",
+"When the … curve …", "For the … axis …"): they MUST embed an anchor token.
+If you cannot place an anchor naturally, rewrite to avoid "this/that/here"
+entirely (use the named method/metric/dataset/component instead).
+
 ### BAD vs GOOD examples (illustrating Rules 9–12)
 
 BAD (Rule 9 — parallel dual-ask via "and what"):
   "Which dataset most naturally supports the recurrent preference summary, and what bridge mechanism links the image-level failures to that strongest ablation outcome?"
   Why bad: two independent lookups stitched with "and what"; each half is a self-contained question; the bridge does no causal work between them.
 
-GOOD (Rule 9 — single serial target, second endpoint folded into a premise clause):
-  "Given the recurrent preference summary that the dataset supports, which bridge mechanism explains why the image-level failures drive the strongest ablation outcome?"
-  Why good: the second endpoint is introduced as a *premise* ("Given …"), and the question asks ONE thing — the bridge mechanism — that requires all three nodes.
+GOOD (Rule 9 — single serial target, second endpoint folded into a premise clause WITH a physical anchor):
+  "Given the cooking-video row of the dataset summary, which bridge mechanism explains why the histogram of user-engagement curves drives the strongest ablation outcome?"
+  Why good: (1) the second endpoint is introduced as a *premise* ("Given the … row …"); (2) the premise clause carries physical-anchor tokens ("row", "histogram", "curves") — REQUIRED whenever the rewrite contains "that" or other demonstratives, because QC's bare-demonstrative check (Rule 11) only accepts queries that mention at least one anchor token from the list below; (3) the question asks ONE thing.
 
 BAD (Rule 10 — numeric leakage including dimensions / bit-widths):
   "Why does the 6×384 embedding head outperform the 1-bit quantized variant on the low-resource split?"
@@ -543,14 +559,22 @@ BAD (Rule 11 — bare demonstrative "that" with no anchor):
 GOOD (Rule 11 — grounded reference):
   "Why does the minority-group accuracy drop under the smoothing regime?"
 
-NOTE on Rule 11: complementizer "that" inside a clause is fine and is NOT what Rule 11 forbids — e.g. "the curve shows that accuracy plateaus" or "Given that the constraint bounds X" are both allowed. Rule 11 only forbids *bare demonstrative* uses like "this", "that metric", "here" with no anchor in the query.
+NOTE on Rule 11 (READ CAREFULLY — implementation gap with QC):
+The current QC implementation does NOT distinguish complementizer "that" from
+demonstrative "that". It only checks: does the query contain "this/that/here"
+AND lack any physical-anchor token from the list below?
+  ✅ "the curve shows that accuracy plateaus"     — contains anchor "curve"
+  ❌ "the model claims that accuracy plateaus"    — NO anchor → QC rejects
+  ❌ "Given that the constraint bounds X"         — NO anchor → QC rejects
+  ✅ "Given that the bottom row of the constraint table holds X" — anchor "row"/"bottom"
+Therefore: whenever your query uses "this", "that" (in ANY syntactic role, including complementizer / "given that" / "shows that" / "claims that"), the query MUST also contain at least one physical-anchor token. Easiest path: avoid "this/that/here" entirely and name the method/dataset/metric directly.
 
 BAD (Rule 12 — answer copies a long verbatim bridge clause):
   Bridge says: "as the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient"
   Answer: "As the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient, confirming the 12% gap in Node 3."
   Why bad: 17-word verbatim copy from the bridge — the answer is not paraphrasing, it is extracting.
 
-GOOD (Rule 12 — paraphrase + short anchor phrase ≤5 words):
+GOOD (Rule 12 — paraphrase + short anchor phrase ≤7 words):
   "The smoothing coefficient dampens rare-feature gradients, so minority-group accuracy drops, which matches the 12% gap reported for the low-resource split."
 
 ### SPLIT-TEST SELF-CHECK (run BEFORE finalizing the query)
@@ -572,18 +596,18 @@ GOOD (Rule 12 — paraphrase + short anchor phrase ≤5 words):
 8. Visual anchors MUST specify physical location: row/column for tables, axis region/color/marker for figures, specific variable/term for formulas. Generic anchors like "the table" or "the figure" will be rejected.
 9. The query MUST ask ONE serial causal/comparative target.
    9a. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
-   9b. When you need to reference BOTH endpoints, fold one of them into a premise clause ("Given that …", "When …", "For the … that …") so only ONE interrogative target remains. Apply the SPLIT-TEST SELF-CHECK above before finalizing.
+   9b. When you need to reference BOTH endpoints, fold one of them into a premise clause ("Given the … row …", "When the … curve …", "For the … axis …") so only ONE interrogative target remains. The premise clause MUST embed at least one physical-anchor token from the list under "QC-ACCEPTED PHYSICAL-ANCHOR TOKENS" above — otherwise QC's bare-demonstrative check (Rule 11) will reject the query whenever the clause contains "that". Apply the SPLIT-TEST SELF-CHECK above before finalizing.
    9c. This rule is hard-enforced by QC — there is no "and what/and which" exception for any query_type.
 10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. This explicitly INCLUDES dimensional patterns such as `6×384`, `512-d`, `k×k`, `1-bit`, `8-bit`, `n-dim`, `3-hop` and bit-width / channel-count / rank values. Use qualitative descriptors instead ("higher-rank", "aggressively quantized", "wider embedding", "deeper variant"). Year tokens (1900–2099) and the literals 0/1 are exempt only when they are clearly NOT a metric — e.g. allowed: "binary 0/1 labels", "the 2024 release"; forbidden: "an F1 of 0.95", "accuracy of 1.0", "the 1-bit quantized variant".
-11. Do NOT use bare demonstrative "this", "that", or "here" in the query (e.g. "this metric", "that drop", "what happens here?"). Name the method/dataset/metric or use a grounded phrase such as "the low-resource curve" or "the final-stage row". Note: complementizer "that" inside a subordinate clause (where "that" functions as a conjunction) is allowed and is NOT what this rule forbids — e.g. "the curve shows that accuracy plateaus", "Given that the constraint bounds X". Quick test: if you can replace "that" with "which" (or delete it) and the sentence still works, it is probably a complementizer and is allowed; if "that" cannot be replaced or deleted without breaking the reference, it is a bare demonstrative and is rejected.
-12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 6 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤5 consecutive words). Connect premise → bridge → conclusion in your own words.
+11. NO unanchored "this", "that", or "here" in the query — in ANY syntactic role. This is enforced by the QC implementation, which does NOT distinguish demonstrative from complementizer "that". The query is rejected if it contains "this/that/here" AND does NOT contain at least one physical-anchor token (see the QC-ACCEPTED PHYSICAL-ANCHOR TOKENS list above). Safest patterns: (a) avoid "this/that/here" entirely and name the method/dataset/metric/component directly; (b) if you must use "that" (e.g. in a "Given that …" rescue clause), embed an anchor token in the same query — "the row that reports …", "the curve that drops …", "the axis that bounds …". Forbidden surface forms (no anchor token): "this metric", "that drop", "Given that X holds", "claim that Y matters".
+12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 8 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤7 consecutive words). Connect premise → bridge → conclusion in your own words.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
-      "query": "One serial causal 3-step question (max 30 words; no numerals or dimensional patterns like 6×384 / 1-bit; no and-what/and-which dual ask — fold second endpoint into a 'Given …' premise; no bare 'this/that/here')",
-      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link in your own words (no ≥6-word verbatim copy from the bridge), max 4 sentences",
+      "query": "One serial causal 3-step question (max 30 words; no numerals or dimensional patterns like 6×384 / 1-bit; no and-what/and-which dual ask — fold second endpoint into a 'Given the … row/curve/axis …' premise with a physical-anchor token; no unanchored 'this/that/here' in any syntactic role)",
+      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link in your own words (no ≥8-word verbatim copy from the bridge), max 4 sentences",
       "query_type": "causal_chain|mechanism_trace|conditional_prediction",
       "reasoning_steps": [
         {{
