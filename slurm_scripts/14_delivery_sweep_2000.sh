@@ -2,18 +2,28 @@
 #SBATCH -p cluster02
 #SBATCH --qos=msc
 #SBATCH --job-name=deliv2000
-#SBATCH --output=logs/deliv2000_%A_%a.out
-#SBATCH --error=logs/deliv2000_%A_%a.err
+#SBATCH --output=logs/deliv2000_%j.out
+#SBATCH --error=logs/deliv2000_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-#SBATCH --array=0-6
+#SBATCH --cpus-per-task=14
+#SBATCH --mem=64G
 
 # ============================================================
 # Delivery sweep 2026-05-12 → 2000 queries by Thu morning
 #
-# 7-cell array on 1077 unconsumed enriched intra-doc candidates.
+# HOTFIX (2026-05-12 vs initial PR #175):
+#   1. Removed --array=0-6. Now single sbatch job with 7-way bash & fork
+#      because the project data lives on /projects/_hdd/... which (per
+#      mentor) is not uniformly mountable across all compute nodes. A
+#      single job pins all 7 workers to one node = guaranteed HDD mount.
+#   2. Fixed REPO_ROOT to /projects/_hdd/myyyx1/data-process-test
+#      (matches slurm 53/55/56; original PR #175 used non-HDD prefix
+#      and would have failed to find data files).
+#   3. Bumped cpus 4→14 and mem 16G→64G to accommodate 7 parallel Python
+#      processes each loading multimodal_elements_v2 + reference_graph_v2.
+#
+# 7-cell concurrent on 1077 unconsumed enriched intra-doc candidates.
 # M2 (dual-evidence, 2 q/pair, 39-47% pass) is the workhorse;
 # L3 only on long-seed cell to harvest reasoning-chain diversity.
 #
@@ -32,9 +42,9 @@
 #   Gap to 2000 covered by slurm 15 (v2 enrich) + Round 2.
 #
 # Concurrency knobs (vs slurm 53):
-#   - DELAY=0.1 (was 0.5)         → 3× faster per cell
-#   - 7 cells × 1 API key         → 7× parallel fan-out
-#   - Each cell uses --skip-done  → safe to re-submit if interrupted
+#   - DELAY=0.1 (was 0.5)              → 3× faster per cell
+#   - 7 bash-forked cells × 1 API key  → 7× parallel fan-out (same node)
+#   - Each cell uses --skip-done       → safe to re-submit if interrupted
 #
 # Prerequisites:
 #   python3 scripts/prep_delivery_chunks.py   # creates 7 chunk files
@@ -42,16 +52,21 @@
 #
 # Usage:
 #   sbatch slurm_scripts/14_delivery_sweep_2000.sh
-#   sbatch --array=0,4 slurm_scripts/14_delivery_sweep_2000.sh   # subset
+#
+# Per-cell logs go to logs/deliv2000_cell${IDX}.log so the main
+# stdout/stderr stays as a roll-up; tail individual cells via:
+#   tail -50 logs/deliv2000_cell0.log
 #
 # Monitoring (DO NOT enter the running job's terminal):
-#   tail -50 logs/deliv2000_*.out
-#   wc -l data/03_queries/delivery_sweep_2000/cell_*_pass.jsonl
+#   tail -50 logs/deliv2000_cell*.log
+#   wc -l data/03_queries/delivery_sweep_2000/*_pass.jsonl
 # ============================================================
 
-set -euo pipefail
+set -uo pipefail
+# Note: NOT using -e because we want all 7 cells to run independently
+# even if one fails; we collect exit codes at the end instead.
 
-REPO_ROOT=${REPO_ROOT:-/projects/myyyx1/data-process-test}
+REPO_ROOT=${REPO_ROOT:-/projects/_hdd/myyyx1/data-process-test}
 CONDA_ENV=${CONDA_ENV:-/projects/myyyx1/envs/minerU}
 
 PROVIDER=${PROVIDER:-company}
@@ -89,90 +104,142 @@ if [[ ! -d "$CHUNK_DIR" || -z "$(ls -A "$CHUNK_DIR" 2>/dev/null)" ]]; then
     python3 scripts/prep_delivery_chunks.py
 fi
 
-# ── Config array ─────────────────────────────────────────────────────────────
-IDX=${SLURM_ARRAY_TASK_ID:-0}
-
-# (chunk_file, style, persona-flag, force-L3-flag, tag)
-case $IDX in
-    0) CAND_RAW="$CHUNK_DIR/cell_0_methodc_a.json"  STYLE="mixed"    PERSONA="--use-persona"   FORCE_L3=0 TAG="cell0_methodc_a_m2_mp" ;;
-    1) CAND_RAW="$CHUNK_DIR/cell_1_methodc_b.json"  STYLE="mixed"    PERSONA="--use-persona"   FORCE_L3=0 TAG="cell1_methodc_b_m2_mp" ;;
-    2) CAND_RAW="$CHUNK_DIR/cell_2_methodc_c.json"  STYLE="mixed"    PERSONA=""                FORCE_L3=0 TAG="cell2_methodc_c_m2_mixed" ;;
-    3) CAND_RAW="$CHUNK_DIR/cell_3_methodc_d.json"  STYLE="academic" PERSONA=""                FORCE_L3=0 TAG="cell3_methodc_d_m2_academic" ;;
-    4) CAND_RAW="$CHUNK_DIR/cell_4_hub_v4.json"     STYLE="mixed"    PERSONA="--use-persona"   FORCE_L3=0 TAG="cell4_hubv4_m2_mp" ;;
-    5) CAND_RAW="$CHUNK_DIR/cell_5_m2_diverse.json" STYLE="mixed"    PERSONA="--use-persona"   FORCE_L3=0 TAG="cell5_m2div_m2_mp" ;;
-    6) CAND_RAW="$CHUNK_DIR/cell_6_long_seed.json"  STYLE="mixed"    PERSONA=""                FORCE_L3=1 TAG="cell6_longseed_l3_mixed" ;;
-    *) echo "ERROR: unknown array index $IDX"; exit 1 ;;
-esac
-
-CAND_FILTERED="${CAND_RAW%.json}_filtered_${TAG}.json"
-OUTPUT="$OUT_DIR/${TAG}.jsonl"
-
-echo "=========================================="
-echo "Delivery sweep cell $IDX → $TAG"
-echo "Start:           $(date)"
-echo "Host:            $(hostname)"
-echo "Candidate raw:   $CAND_RAW"
-echo "Candidate filt:  $CAND_FILTERED"
-echo "Output:          $OUTPUT"
-echo "Style:           $STYLE"
-echo "Use persona:     ${PERSONA:-(off)}"
-echo "Force L3:        $FORCE_L3"
-echo "Delay:           $DELAY"
-echo "=========================================="
-
-# ── Filter (dedup against previously-consumed pair_ids) ──────────────────────
-FILTER_CMD=(
-    python scripts/filter_enriched_pair_candidates.py
-    --input "$CAND_RAW"
-    --output "$CAND_FILTERED"
-    --multimodal-counts 2,3
-    --require-both-endpoints
-    --require-all-multimodal-elements
-    --require-candidate-bridge-text
-    --shuffle
-    --exclude-query-jsonl data/03_queries/delivery_v1_2026-04-13_intra_doc.jsonl
-    --exclude-query-jsonl data/03_queries/m2_m15_reasoning_path_prod_20260511/m2_m15_reasoning_path_pass.jsonl
-    --exclude-query-jsonl data/03_queries/m2_diverse_v1_hub_kb.jsonl
-    --exclude-query-jsonl data/03_queries/long_chain_iterative_pass.jsonl
+# ── Cell config table ─────────────────────────────────────────────────────────
+# Indexed by cell number. Format: CAND_RAW|STYLE|PERSONA|FORCE_L3|TAG
+declare -a CELL_CONFIG=(
+    "$CHUNK_DIR/cell_0_methodc_a.json|mixed|--use-persona|0|cell0_methodc_a_m2_mp"
+    "$CHUNK_DIR/cell_1_methodc_b.json|mixed|--use-persona|0|cell1_methodc_b_m2_mp"
+    "$CHUNK_DIR/cell_2_methodc_c.json|mixed||0|cell2_methodc_c_m2_mixed"
+    "$CHUNK_DIR/cell_3_methodc_d.json|academic||0|cell3_methodc_d_m2_academic"
+    "$CHUNK_DIR/cell_4_hub_v4.json|mixed|--use-persona|0|cell4_hubv4_m2_mp"
+    "$CHUNK_DIR/cell_5_m2_diverse.json|mixed|--use-persona|0|cell5_m2div_m2_mp"
+    "$CHUNK_DIR/cell_6_long_seed.json|mixed||1|cell6_longseed_l3_mixed"
 )
 
-if [[ "$FORCE_L3" == "1" ]]; then
-    FILTER_CMD+=(--force-reasoning-chain-target)
-fi
+# ── Cell worker function ──────────────────────────────────────────────────────
+run_cell() {
+    local IDX=$1
+    IFS='|' read -r CAND_RAW STYLE PERSONA FORCE_L3 TAG <<< "${CELL_CONFIG[$IDX]}"
 
-echo "[$(date)] Filtering candidates..."
-"${FILTER_CMD[@]}"
+    local CAND_FILTERED="${CAND_RAW%.json}_filtered_${TAG}.json"
+    local OUTPUT="$OUT_DIR/${TAG}.jsonl"
+    local CELL_LOG="logs/deliv2000_cell${IDX}.log"
 
-# ── Generate ─────────────────────────────────────────────────────────────────
-GEN_CMD=(
-    python scripts/generate_multihop_l1_queries.py
-    --candidates "$CAND_FILTERED"
-    --output "$OUTPUT"
-    --pass-only
-    --provider "$PROVIDER"
-    --model "$MODEL"
-    --query-style "$STYLE"
-    --reference-graph "$REFERENCE_GRAPH"
-    --topology-candidates "$TOPOLOGY_CANDIDATES"
-    --skip-done "$OUTPUT"
-    --shuffle
-    --delay "$DELAY"
-)
-if [[ -n "$PERSONA" ]]; then
-    GEN_CMD+=($PERSONA)
-fi
+    {
+        echo "=========================================="
+        echo "Cell $IDX → $TAG"
+        echo "Start:           $(date)"
+        echo "Host:            $(hostname)"
+        echo "Pid:             $$"
+        echo "Candidate raw:   $CAND_RAW"
+        echo "Candidate filt:  $CAND_FILTERED"
+        echo "Output:          $OUTPUT"
+        echo "Style:           $STYLE"
+        echo "Use persona:     ${PERSONA:-(off)}"
+        echo "Force L3:        $FORCE_L3"
+        echo "Delay:           $DELAY"
+        echo "=========================================="
+    } > "$CELL_LOG" 2>&1
 
-echo "[$(date)] Generation start..."
-"${GEN_CMD[@]}"
+    # Filter
+    FILTER_CMD=(
+        python scripts/filter_enriched_pair_candidates.py
+        --input "$CAND_RAW"
+        --output "$CAND_FILTERED"
+        --multimodal-counts 2,3
+        --require-both-endpoints
+        --require-all-multimodal-elements
+        --require-candidate-bridge-text
+        --shuffle
+        --exclude-query-jsonl data/03_queries/delivery_v1_2026-04-13_intra_doc.jsonl
+        --exclude-query-jsonl data/03_queries/m2_m15_reasoning_path_prod_20260511/m2_m15_reasoning_path_pass.jsonl
+        --exclude-query-jsonl data/03_queries/m2_diverse_v1_hub_kb.jsonl
+        --exclude-query-jsonl data/03_queries/long_chain_iterative_pass.jsonl
+    )
+    if [[ "$FORCE_L3" == "1" ]]; then
+        FILTER_CMD+=(--force-reasoning-chain-target)
+    fi
 
-PASS_FILE="${OUTPUT%.jsonl}_pass.jsonl"
-TOTAL=$(wc -l < "$OUTPUT" 2>/dev/null || echo 0)
-PASS=$(wc -l < "$PASS_FILE" 2>/dev/null || echo 0)
+    echo "[$(date)] Cell $IDX: filtering candidates..." >> "$CELL_LOG" 2>&1
+    "${FILTER_CMD[@]}" >> "$CELL_LOG" 2>&1
+    local FILTER_RC=$?
+    if [[ $FILTER_RC -ne 0 ]]; then
+        echo "[$(date)] Cell $IDX: filter FAILED (rc=$FILTER_RC)" >> "$CELL_LOG" 2>&1
+        return $FILTER_RC
+    fi
 
+    # Generate
+    GEN_CMD=(
+        python scripts/generate_multihop_l1_queries.py
+        --candidates "$CAND_FILTERED"
+        --output "$OUTPUT"
+        --pass-only
+        --provider "$PROVIDER"
+        --model "$MODEL"
+        --query-style "$STYLE"
+        --reference-graph "$REFERENCE_GRAPH"
+        --topology-candidates "$TOPOLOGY_CANDIDATES"
+        --skip-done "$OUTPUT"
+        --shuffle
+        --delay "$DELAY"
+    )
+    if [[ -n "$PERSONA" ]]; then
+        GEN_CMD+=($PERSONA)
+    fi
+
+    echo "[$(date)] Cell $IDX: generation start..." >> "$CELL_LOG" 2>&1
+    "${GEN_CMD[@]}" >> "$CELL_LOG" 2>&1
+    local GEN_RC=$?
+
+    local PASS_FILE="${OUTPUT%.jsonl}_pass.jsonl"
+    local TOTAL=$(wc -l < "$OUTPUT" 2>/dev/null || echo 0)
+    local PASS=$(wc -l < "$PASS_FILE" 2>/dev/null || echo 0)
+    {
+        echo "=========================================="
+        echo "Cell $IDX ($TAG) complete: $(date)  rc=$GEN_RC"
+        echo "  Total written: $TOTAL"
+        echo "  QC pass:       $PASS"
+        echo "  Output:        $OUTPUT"
+        echo "  Pass file:     $PASS_FILE"
+        echo "=========================================="
+    } >> "$CELL_LOG" 2>&1
+
+    return $GEN_RC
+}
+
+# ── Launch 7 cells in parallel ────────────────────────────────────────────────
+echo "[$(date)] Launching 7-way concurrent on host $(hostname)"
+echo "[$(date)] Cell logs: logs/deliv2000_cell{0..6}.log"
+
+declare -a PIDS
+for IDX in 0 1 2 3 4 5 6; do
+    run_cell $IDX &
+    PIDS[$IDX]=$!
+    echo "  cell $IDX started, pid=${PIDS[$IDX]}"
+done
+
+# Wait for all cells; collect exit codes
+echo "[$(date)] All 7 cells running. Waiting for completion..."
+declare -a RCS
+for IDX in 0 1 2 3 4 5 6; do
+    wait ${PIDS[$IDX]}
+    RCS[$IDX]=$?
+    echo "[$(date)] cell $IDX finished, rc=${RCS[$IDX]}"
+done
+
+# ── Roll-up summary ───────────────────────────────────────────────────────────
+echo ""
 echo "=========================================="
-echo "Cell $IDX ($TAG) complete: $(date)"
-echo "  Total written: $TOTAL"
-echo "  QC pass:       $PASS"
-echo "  Output:        $OUTPUT"
-echo "  Pass file:     $PASS_FILE"
+echo "DELIVERY SWEEP ROLL-UP — $(date)"
+echo "=========================================="
+TOTAL_PASS=0
+for IDX in 0 1 2 3 4 5 6; do
+    IFS='|' read -r _ _ _ _ TAG <<< "${CELL_CONFIG[$IDX]}"
+    PASS_FILE="$OUT_DIR/${TAG}_pass.jsonl"
+    N=$(wc -l < "$PASS_FILE" 2>/dev/null || echo 0)
+    TOTAL_PASS=$((TOTAL_PASS + N))
+    printf "  cell %d  %-35s  rc=%d  pass=%d\n" "$IDX" "$TAG" "${RCS[$IDX]}" "$N"
+done
+echo "------------------------------------------"
+echo "  Total new pass this run: $TOTAL_PASS"
 echo "=========================================="

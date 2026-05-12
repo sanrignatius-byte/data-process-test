@@ -25,7 +25,7 @@
 
 set -euo pipefail
 
-REPO_ROOT=${REPO_ROOT:-/projects/myyyx1/data-process-test}
+REPO_ROOT=${REPO_ROOT:-/projects/_hdd/myyyx1/data-process-test}
 CONDA_ENV=${CONDA_ENV:-/projects/myyyx1/envs/minerU}
 
 LIMIT=${LIMIT:-800}
