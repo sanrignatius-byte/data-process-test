@@ -17,8 +17,12 @@ CONDA_ENV=${CONDA_ENV:-/projects/myyyx1/envs/minerU}
 
 PROVIDER=${PROVIDER:-company}
 MODEL=${MODEL:-gpt-5.4}
-STYLE=${STYLE:-academic}
-USE_PERSONA=${USE_PERSONA:-0}
+# Defaults changed 2026-05-12: mixed + persona shown to give +18~20pt pass rate
+# in the 2026-04-12 sweep (CLAUDE.md §"Phase A.1": l3_academic 26.1% →
+# l3_mixed 56.2% / l3_mixed_persona 44.6%; m2_academic 39.4% → m2_mixed_persona 46.7%).
+# Override with STYLE=academic USE_PERSONA=0 to reproduce the academic-only baseline.
+STYLE=${STYLE:-mixed}
+USE_PERSONA=${USE_PERSONA:-1}
 DELAY=${DELAY:-0.5}
 LIMIT=${LIMIT:-0}
 FORCE_REASONING=${FORCE_REASONING:-1}
