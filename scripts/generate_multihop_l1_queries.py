@@ -977,6 +977,15 @@ def main() -> None:
             "Useful when a previous run was interrupted mid-way."
         ),
     )
+    ap.add_argument(
+        "--checkpoint-every",
+        type=int,
+        default=1,
+        help=(
+            "Force fsync and write a checkpoint JSON every N generated rows. "
+            "Default 1 maximizes durability for long API jobs."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -1111,6 +1120,7 @@ def main() -> None:
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pass_path = out_path.with_name(out_path.stem + "_pass" + out_path.suffix) if args.pass_only else None
+    checkpoint_path = out_path.with_name(out_path.stem + "_checkpoint.json")
 
     total_input_tokens = 0
     total_output_tokens = 0
@@ -1122,6 +1132,35 @@ def main() -> None:
     # Stats
     type_stats = defaultdict(int)
     qc_issue_stats = defaultdict(int)
+
+    def _durable_checkpoint(reason: str, last_pair_id: str = "") -> None:
+        """Persist progress so API quota loss or preemption cannot lose rows."""
+        if args.dry_run:
+            return
+        try:
+            f.flush()
+            os.fsync(f.fileno())
+            if pass_path and fp and not fp.closed:
+                fp.flush()
+                os.fsync(fp.fileno())
+        except Exception as exc:
+            print(f"  [WARN] checkpoint fsync failed: {exc}")
+        checkpoint = {
+            "output": str(out_path),
+            "pass_output": str(pass_path) if pass_path else "",
+            "reason": reason,
+            "last_pair_id": last_pair_id,
+            "queries_written": query_idx,
+            "qc_pass": kept,
+            "qc_failed": qc_failed_count,
+            "parse_failed": parse_failed,
+            "input_tokens": total_input_tokens,
+            "output_tokens": total_output_tokens,
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        tmp_path = checkpoint_path.with_suffix(checkpoint_path.suffix + ".tmp")
+        tmp_path.write_text(json.dumps(checkpoint, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp_path.replace(checkpoint_path)
 
     # Dry-run should never mutate output files.
     _file_mode = "a" if args.skip_done else "w"
@@ -1345,6 +1384,8 @@ def main() -> None:
                     fp.write(json.dumps(entry, ensure_ascii=False) + "\n")
                     fp.flush()
                 query_idx += 1
+                if args.checkpoint_every > 0 and query_idx % args.checkpoint_every == 0:
+                    _durable_checkpoint("periodic", str(pair.get("pair_id", "")))
 
                 if entry["qc_pass"]:
                     pair_kept += 1
@@ -1361,6 +1402,8 @@ def main() -> None:
 
             if args.delay > 0 and i < len(pairs) - 1:
                 time.sleep(args.delay)
+
+        _durable_checkpoint("final")
 
     if args.dry_run:
         print(f"\nDry-run complete for {len(pairs)} pairs")
