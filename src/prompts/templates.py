@@ -520,13 +520,17 @@ Your answer MUST quote or paraphrase specific content from the bridge paragraph 
 6. Each reasoning_step MUST have a DIFFERENT evidence_type from: observation, attribution, explanation, verification, prediction.
 7. The role arc MUST follow: premise → intermediate → conclusion.
 8. Visual anchors MUST specify physical location: row/column for tables, axis region/color/marker for figures, specific variable/term for formulas. Generic anchors like "the table" or "the figure" will be rejected.
+9. The query MUST ask ONE serial causal/comparative target. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
+10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. Use qualitative descriptors instead.
+11. Do NOT use bare "this", "that", or "here" in the query. Name the method/dataset/metric or use a grounded phrase such as "the low-resource curve" or "the final-stage row".
+12. The answer MUST paraphrase the bridge's causal link. Do not copy long bridge clauses into the answer; keep any bridge wording to a short phrase and connect premise -> bridge -> conclusion.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
-      "query": "A question requiring serial 3-step reasoning (max 30 words)",
-      "answer": "Answer citing specific evidence from all 3 nodes, referencing bridge text explicitly, max 4 sentences",
+      "query": "One serial causal 3-step question (max 30 words; no numerals; no and-what/and-which dual ask)",
+      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link, max 4 sentences",
       "query_type": "causal_chain|mechanism_trace|conditional_prediction",
       "reasoning_steps": [
         {{
