@@ -74,7 +74,9 @@ describe context from one element, ask a question answerable only by the other.
   C. Conditional-pattern: "Given that the constraint bounds X independently, how does the Y curve diverge?"
   D. Mechanism-question: "How does the smoothing regime correspond to the steeper drop under low-resource conditions?"
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -175,7 +177,9 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 - LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
 - queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -301,7 +305,9 @@ If any answer is NO — rewrite.
 - LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
 - queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -409,7 +415,9 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 - LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
 - queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -511,6 +519,72 @@ For each step, ask: "If I remove THIS step's evidence, can I still derive the an
 ### BRIDGE GROUNDING RULE
 Your answer MUST quote or paraphrase specific content from the bridge paragraph text above. If the bridge text says "X leads to Y", your answer must use that causal link. Do NOT invent connections not present in the bridge.
 
+### QC-ACCEPTED PHYSICAL-ANCHOR TOKENS (dependency for Rules 9 & 11)
+
+If the query contains "this", "that", or "here" in ANY syntactic role
+(demonstrative pronoun, demonstrative determiner, OR complementizer "that"),
+the query MUST also contain at least one of these tokens — QC checks for
+them literally and does not parse part-of-speech:
+
+  panel  subplot  row  column  col  cell  axis  region  left  right
+  top    bottom   upper  lower  bar  curve  cluster  histogram  scatter
+  frontier  quadrant  layer  branch  encoder  decoder  block  stage  step
+
+This list also constrains the Rule 9 rescue clauses ("Given the … row …",
+"When the … curve …", "For the … axis …"): they MUST embed an anchor token.
+If you cannot place an anchor naturally, rewrite to avoid "this/that/here"
+entirely (use the named method/metric/dataset/component instead).
+
+### BAD vs GOOD examples (illustrating Rules 9–12)
+
+BAD (Rule 9 — parallel dual-ask via "and what"):
+  "Which dataset most naturally supports the recurrent preference summary, and what bridge mechanism links the image-level failures to that strongest ablation outcome?"
+  Why bad: two independent lookups stitched with "and what"; each half is a self-contained question; the bridge does no causal work between them.
+
+GOOD (Rule 9 — single serial target, second endpoint folded into a premise clause WITH a physical anchor):
+  "Given the cooking-video row of the dataset summary, which bridge mechanism explains why the histogram of user-engagement curves drives the strongest ablation outcome?"
+  Why good: (1) the second endpoint is introduced as a *premise* ("Given the … row …"); (2) the premise clause carries physical-anchor tokens ("row", "histogram", "curves") — REQUIRED whenever the rewrite contains "that" or other demonstratives, because QC's bare-demonstrative check (Rule 11) only accepts queries that mention at least one anchor token from the list below; (3) the question asks ONE thing.
+
+BAD (Rule 10 — numeric leakage including dimensions / bit-widths):
+  "Why does the 6×384 embedding head outperform the 1-bit quantized variant on the low-resource split?"
+  Why bad: `6×384` and `1-bit` are exact dimensional values; the QC step will reject this.
+
+GOOD (Rule 10 — qualitative descriptor only):
+  "Why does the higher-rank embedding head outperform the aggressively quantized variant on the low-resource split?"
+
+BAD (Rule 11 — bare demonstrative "that" with no anchor):
+  "Why does that metric drop under the smoothing regime?"
+  Why bad: "that metric" has no antecedent in the query.
+
+GOOD (Rule 11 — grounded reference):
+  "Why does the minority-group accuracy drop under the smoothing regime?"
+
+NOTE on Rule 11 (READ CAREFULLY — implementation gap with QC):
+The current QC implementation does NOT distinguish complementizer "that" from
+demonstrative "that". It only checks: does the query contain "this/that/here"
+AND lack any physical-anchor token from the list below?
+  ✅ "the curve shows that accuracy plateaus"     — contains anchor "curve"
+  ❌ "the model claims that accuracy plateaus"    — NO anchor → QC rejects
+  ❌ "Given that the constraint bounds X"         — NO anchor → QC rejects
+  ✅ "Given that the bottom row of the constraint table holds X" — anchor "row"/"bottom"
+Therefore: whenever your query uses "this", "that" (in ANY syntactic role, including complementizer / "given that" / "shows that" / "claims that"), the query MUST also contain at least one physical-anchor token. Easiest path: avoid "this/that/here" entirely and name the method/dataset/metric directly.
+
+BAD (Rule 12 — answer copies a long verbatim bridge clause):
+  Bridge says: "as the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient"
+  Answer: "As the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient, confirming the 12% gap in Node 3."
+  Why bad: 17-word verbatim copy from the bridge — the answer is not paraphrasing, it is extracting.
+
+GOOD (Rule 12 — paraphrase + short anchor phrase ≤7 words):
+  "The smoothing coefficient dampens rare-feature gradients, so minority-group accuracy drops, which matches the 12% gap reported for the low-resource split."
+
+### SPLIT-TEST SELF-CHECK (run BEFORE finalizing the query)
+
+1. Split your query at every occurrence of " and " (lowercase, space-padded).
+1b. Also split at every occurrence of ", and " (comma + and + space), since Rule 9 forbids the comma+and dual-ask pattern.
+2. For each half, ask: "Is this half a self-contained question that could be answered on its own?"
+3. If YES for any split → the query is a parallel dual-ask (Rule 9 violation). Rewrite by folding one endpoint into a "Given …" or "When …" premise clause, leaving exactly ONE interrogative target.
+4. If NO for all splits → the "and" is a within-clause conjunction (e.g. "premise and conclusion both depend on X") and is acceptable.
+
 ## STRICT RULES
 1. Query MUST require ALL 3 evidence nodes. Removing ANY node makes the answer underivable.
 2. NEVER start with Do/Does/Did/Is/Are/Can/Has/Will/Would; NO yes/no questions.
@@ -520,17 +594,20 @@ Your answer MUST quote or paraphrase specific content from the bridge paragraph 
 6. Each reasoning_step MUST have a DIFFERENT evidence_type from: observation, attribution, explanation, verification, prediction.
 7. The role arc MUST follow: premise → intermediate → conclusion.
 8. Visual anchors MUST specify physical location: row/column for tables, axis region/color/marker for figures, specific variable/term for formulas. Generic anchors like "the table" or "the figure" will be rejected.
-9. The query MUST ask ONE serial causal/comparative target. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
-10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. Use qualitative descriptors instead.
-11. Do NOT use bare "this", "that", or "here" in the query. Name the method/dataset/metric or use a grounded phrase such as "the low-resource curve" or "the final-stage row".
-12. The answer MUST paraphrase the bridge's causal link. Do not copy long bridge clauses into the answer; keep any bridge wording to a short phrase and connect premise -> bridge -> conclusion.
+9. The query MUST ask ONE serial causal/comparative target.
+   9a. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
+   9b. When you need to reference BOTH endpoints, fold one of them into a premise clause ("Given the … row …", "When the … curve …", "For the … axis …") so only ONE interrogative target remains. The premise clause MUST embed at least one physical-anchor token from the list under "QC-ACCEPTED PHYSICAL-ANCHOR TOKENS" above — otherwise QC's bare-demonstrative check (Rule 11) will reject the query whenever the clause contains "that". Apply the SPLIT-TEST SELF-CHECK above before finalizing.
+   9c. This rule is hard-enforced by QC — there is no "and what/and which" exception for any query_type.
+10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. This explicitly INCLUDES dimensional patterns such as `6×384`, `512-d`, `k×k`, `1-bit`, `8-bit`, `n-dim`, `3-hop` and bit-width / channel-count / rank values. Use qualitative descriptors instead ("higher-rank", "aggressively quantized", "wider embedding", "deeper variant"). Year tokens (1900–2099) and the literals 0/1 are exempt only when they are clearly NOT a metric — e.g. allowed: "binary 0/1 labels", "the 2024 release"; forbidden: "an F1 of 0.95", "accuracy of 1.0", "the 1-bit quantized variant".
+11. NO unanchored "this", "that", or "here" in the query — in ANY syntactic role. This is enforced by the QC implementation, which does NOT distinguish demonstrative from complementizer "that". The query is rejected if it contains "this/that/here" AND does NOT contain at least one physical-anchor token (see the QC-ACCEPTED PHYSICAL-ANCHOR TOKENS list above). Safest patterns: (a) avoid "this/that/here" entirely and name the method/dataset/metric/component directly; (b) if you must use "that" (e.g. in a "Given that …" rescue clause), embed an anchor token in the same query — "the row that reports …", "the curve that drops …", "the axis that bounds …". Forbidden surface forms (no anchor token): "this metric", "that drop", "Given that X holds", "claim that Y matters".
+12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 8 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤7 consecutive words). Connect premise → bridge → conclusion in your own words.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
-      "query": "One serial causal 3-step question (max 30 words; no numerals; no and-what/and-which dual ask)",
-      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link, max 4 sentences",
+      "query": "One serial causal 3-step question (max 30 words; no numerals or dimensional patterns like 6×384 / 1-bit; no and-what/and-which dual ask — fold second endpoint into a 'Given the … row/curve/axis …' premise with a physical-anchor token; no unanchored 'this/that/here' in any syntactic role)",
+      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link in your own words (no ≥8-word verbatim copy from the bridge), max 4 sentences",
       "query_type": "causal_chain|mechanism_trace|conditional_prediction",
       "reasoning_steps": [
         {{
