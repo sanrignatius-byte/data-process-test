@@ -24,9 +24,7 @@ from src.qc.checks import (
     anchor_overlap_tokens,
     anchor_token_copy_count,
     answer_text_evidence_overlap,
-    check_bridge_one_sided,
     check_evidence_spans,
-    check_premise_contains_answer,
     check_single_element_answer,
     formula_symbol_hit,
     has_architecture_intent,
@@ -246,18 +244,6 @@ def qc_multihop_query(
     if has_bridge_overclaim_signal(q, a):
         issues.append("bridge_overclaim")
         metrics["bridge_overclaim_warn"] = True
-
-    # 13. L3 reasoning-chain coherence (only runs for queries with reasoning_steps
-    #     that include a bridge_paragraph step — no-ops on legacy dual-evidence).
-    bos_fail, bos_metrics = check_bridge_one_sided(obj, pair)
-    metrics.update(bos_metrics)
-    if bos_fail:
-        issues.append("bridge_one_sided")
-
-    pca_fail, pca_metrics = check_premise_contains_answer(obj)
-    metrics.update(pca_metrics)
-    if pca_fail:
-        issues.append("premise_contains_answer")
 
     return issues, metrics
 

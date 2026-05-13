@@ -74,7 +74,9 @@ describe context from one element, ask a question answerable only by the other.
   C. Conditional-pattern: "Given that the constraint bounds X independently, how does the Y curve diverge?"
   D. Mechanism-question: "How does the smoothing regime correspond to the steeper drop under low-resource conditions?"
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -175,7 +177,9 @@ The intermediate element is the bridge — use it as a cognitive stepping stone.
 - LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
 - queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -301,7 +305,9 @@ If any answer is NO — rewrite.
 - LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
 - queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -409,7 +415,9 @@ The query must require BOTH the formula's theoretical structure AND the table's 
 - LENGTH MIX (STRUCTURAL, not just word count): queries[0] = SHORT compressed causal question (8-14 words); queries[1] = LONG observation-first + causal/mechanism question (18-30 words). Count words BEFORE finalizing.
 - queries[1] opening pattern — ROTATE among: observation-first / counterintuitive contrast / conditional-pattern / mechanism-question. Do NOT always use the same structure.
 - DO NOT use template shells: "Under what condition does..." or "Why is A different from B...".
-- Do NOT create parallel dual asks using "..., and which ...". Each query should ask one causal/comparative question.
+- Do NOT create parallel dual asks using "..., and which ..." or "..., and what ...". Each query should ask ONE causal/comparative target.
+  BAD: "How does the curve drop, and which row in the table explains it?" — splits into two self-contained asks.
+  GOOD: "Given the row that reports the regularizer setting, how does it explain the curve drop?" — second endpoint folded into a premise; one interrogative target.
 - Do NOT start with "I notice" — use concrete domain language instead.
 - Use natural research wording; explicit terms like "F1 score", "p-value", and "regularization strength" are allowed.
 
@@ -469,18 +477,18 @@ PROMPT_3STEP_REASONING_CHAIN = """You are building a benchmark that tests whethe
 
 ## Graph-Grounded Evidence Path
 
-The document graph connects these 3 nodes via explicit \\ref{{}} links in the LaTeX source. The middle paragraph is the ACTUAL text the authors wrote to connect the two endpoint elements.
+The document graph connects these 3 nodes via explicit \\ref{{}} links in the LaTeX source. The bridge paragraph is the ACTUAL text the authors wrote to connect the two endpoint elements.
 
-### Node 1 (Premise endpoint): {elem_a_type} ({elem_a_id})
+### Node 1 (Premise): {elem_a_type} ({elem_a_id})
 Caption: {elem_a_caption}
 Context: {elem_a_context}
 {elem_a_image_note}
 
-### Node 2 (Middle paragraph — author's own connecting prose)
+### Node 2 (Bridge): paragraph — author's own connecting text
 {bridge_text}
-Middle-paragraph quality: {bridge_quality_label}
+Bridge quality: {bridge_quality_label}
 
-### Node 3 (Conclusion endpoint): {elem_b_type} ({elem_b_id})
+### Node 3 (Conclusion): {elem_b_type} ({elem_b_id})
 Caption: {elem_b_caption}
 Context: {elem_b_context}
 {elem_b_image_note}
@@ -489,69 +497,93 @@ Context: {elem_b_context}
 
 ## YOUR TASK
 
-Generate 1 query that REQUIRES all 3 evidence nodes IN SEQUENCE. The middle paragraph is the key — it explains WHY the premise endpoint's observation leads to the conclusion endpoint's outcome.
+Generate 1 query that REQUIRES all 3 evidence nodes IN SEQUENCE. The bridge paragraph is the key — it explains WHY Node 1's observation leads to Node 3's conclusion.
 
 ### SERIAL CHAIN PATTERN (REQUIRED)
-Premise observation → mechanism from the middle paragraph → conclusion confirmation/outcome
+Node 1 observation → Bridge paragraph mechanism/explanation → Node 3 confirmation/outcome
 
 Example of VALID serial chain:
-  Premise: "accuracy drops for minority groups in the per-group performance plot"
-  Middle paragraph (author's own prose): "Reweighting the minority-group loss compensates for the imbalance and recovers most of the lost accuracy."
-  Conclusion: "per-group accuracy values show the gap narrows from 12% to 3%"
-  Query: "What loss adjustment explains the minority-group accuracy recovery visible in the per-group performance trend?"
+  "Node 1 shows accuracy drops for minority groups"
+  → Bridge: "As shown in [fig:3], the accuracy drops significantly for minority groups. The exact numbers are in [tab:2]."
+  → "Node 3 provides per-group accuracy values confirming the 12% gap"
+  Query: "What numerical precision confirms the minority group accuracy drop visible in the performance trend?"
 
 ### PARALLEL IS FORBIDDEN
-"Premise says A, conclusion says B, therefore A+B" — this is just two independent lookups. The middle paragraph MUST provide a causal/explanatory link, not just co-occurrence.
+"Node 1 says A, Node 3 says B, therefore A+B" — this is just two independent lookups. The bridge MUST provide a causal/explanatory link, not just co-occurrence.
 
 ### STEP-DELETION TEST (self-check before outputting)
 For each step, ask: "If I remove THIS step's evidence, can I still derive the answer?"
 - If YES for any step → your chain is too weak, rewrite it
 - If NO for all 3 steps → your chain is valid
 
-### MIDDLE-PARAGRAPH GROUNDING RULE
-Your answer MUST quote or paraphrase specific content from the middle paragraph above. If the middle paragraph says "X leads to Y", your answer must use that causal link — by NAMING the actual mechanism (X, Y), not by referring to "the middle paragraph" or "the connecting text". Do NOT invent connections that are not present in the middle paragraph.
+### BRIDGE GROUNDING RULE
+Your answer MUST quote or paraphrase specific content from the bridge paragraph text above. If the bridge text says "X leads to Y", your answer must use that causal link. Do NOT invent connections not present in the bridge.
 
-## ANTI-PATTERN EXAMPLES (auto-reject)
+### QC-ACCEPTED PHYSICAL-ANCHOR TOKENS (dependency for Rules 9 & 11)
 
-These are the most frequent failure modes from prior runs. Every BAD example below would be rejected; study the GOOD rewrite next to it.
+If the query contains "this", "that", or "here" in ANY syntactic role
+(demonstrative pronoun, demonstrative determiner, OR complementizer "that"),
+the query MUST also contain at least one of these tokens — QC checks for
+them literally and does not parse part-of-speech:
 
-  BAD  query:  "Which method achieves the strongest accuracy?"
-       (Rule 13: superlative + answer is the strongest entity → trivial lookup)
-  GOOD query:  "What design choice explains the late-stage convergence pattern that yields the leading accuracy?"
+  panel  subplot  row  column  col  cell  axis  region  left  right
+  top    bottom   upper  lower  bar  curve  cluster  histogram  scatter
+  frontier  quadrant  layer  branch  encoder  decoder  block  stage  step
 
-  BAD  query:  "This shows how X improves Y across the row."
-       (Rule 11: bare "This"; Rule 3: meta "the row")
-  GOOD query:  "What property of margin reweighting explains the X-to-Y improvement across low-resource languages?"
+This list also constrains the Rule 9 rescue clauses ("Given the … row …",
+"When the … curve …", "For the … axis …"): they MUST embed an anchor token.
+If you cannot place an anchor naturally, rewrite to avoid "this/that/here"
+entirely (use the named method/metric/dataset/component instead).
 
-  BAD  query:  "How does the middle paragraph relate Figure 4 to Table 2?"
-       (Rule 11+17: query points at the evidence container, not the content)
-  GOOD query:  "What component of margin reweighting links the minority-accuracy drop to the per-group recovery?"
+### BAD vs GOOD examples (illustrating Rules 9–12)
 
-  BAD  answer: "The middle paragraph explains why FairBoost overcorrects, and the conclusion shows..."
-       (Rule 17: narrating the evidence container instead of the mechanism)
-  GOOD answer: "FairBoost overcorrects minority gradients during reweighting, which inflates the loss term and produces the 12% drop in the per-group accuracy table."
+BAD (Rule 9 — parallel dual-ask via "and what"):
+  "Which dataset most naturally supports the recurrent preference summary, and what bridge mechanism links the image-level failures to that strongest ablation outcome?"
+  Why bad: two independent lookups stitched with "and what"; each half is a self-contained question; the bridge does no causal work between them.
 
-  BAD  middle-paragraph span: "We report results in Table 5 and conduct an ablation study."
-       (Rule 14: methodology pointer, no causal mechanism)
-  GOOD middle-paragraph span: "Reweighting the minority-group loss compensates for the imbalance and recovers most of the lost accuracy."
+GOOD (Rule 9 — single serial target, second endpoint folded into a premise clause WITH a physical anchor):
+  "Given the cooking-video row of the dataset summary, which bridge mechanism explains why the histogram of user-engagement curves drives the strongest ablation outcome?"
+  Why good: (1) the second endpoint is introduced as a *premise* ("Given the … row …"); (2) the premise clause carries physical-anchor tokens ("row", "histogram", "curves") — REQUIRED whenever the rewrite contains "that" or other demonstratives, because QC's bare-demonstrative check (Rule 11) only accepts queries that mention at least one anchor token from the list below; (3) the question asks ONE thing.
 
-## OPENER VARIETY (positive seeds — use any of these, do NOT default to "How does...")
+BAD (Rule 10 — numeric leakage including dimensions / bit-widths):
+  "Why does the 6×384 embedding head outperform the 1-bit quantized variant on the low-resource split?"
+  Why bad: `6×384` and `1-bit` are exact dimensional values; the QC step will reject this.
 
-Aim to vary openers across generations. Five examples of compliant openers:
-  - "Why does <observation> persist even after <design choice>?"
-  - "What enables <method> to recover <metric> in the <regime> regime?"
-  - "What mechanism links <observation> to <outcome> across <axis>?"
-  - "Under what condition does <design choice> resolve <observation>?"
-  - "After <step>, what causes <outcome> to track <metric>?"
+GOOD (Rule 10 — qualitative descriptor only):
+  "Why does the higher-rank embedding head outperform the aggressively quantized variant on the low-resource split?"
 
-## FORBIDDEN OPENERS (auto-reject patterns)
+BAD (Rule 11 — bare demonstrative "that" with no anchor):
+  "Why does that metric drop under the smoothing regime?"
+  Why bad: "that metric" has no antecedent in the query.
 
-The following query openers cause downstream QC fails. Do NOT use them.
-  - "How does X relate to Y" / "How does X correlate with Y"
-  - "Which X best matches Y" (template collapse — Rule 13)
-  - "How does the figure / table / plot ..." (meta-language — Rule 3)
-  - Bare deictic openings: "This shows ...", "That demonstrates ...", "These results ..." (Rule 11)
-  - "How does the middle paragraph / connecting text ..." (Rule 17 — query points at the container)
+GOOD (Rule 11 — grounded reference):
+  "Why does the minority-group accuracy drop under the smoothing regime?"
+
+NOTE on Rule 11 (READ CAREFULLY — implementation gap with QC):
+The current QC implementation does NOT distinguish complementizer "that" from
+demonstrative "that". It only checks: does the query contain "this/that/here"
+AND lack any physical-anchor token from the list below?
+  ✅ "the curve shows that accuracy plateaus"     — contains anchor "curve"
+  ❌ "the model claims that accuracy plateaus"    — NO anchor → QC rejects
+  ❌ "Given that the constraint bounds X"         — NO anchor → QC rejects
+  ✅ "Given that the bottom row of the constraint table holds X" — anchor "row"/"bottom"
+Therefore: whenever your query uses "this", "that" (in ANY syntactic role, including complementizer / "given that" / "shows that" / "claims that"), the query MUST also contain at least one physical-anchor token. Easiest path: avoid "this/that/here" entirely and name the method/dataset/metric directly.
+
+BAD (Rule 12 — answer copies a long verbatim bridge clause):
+  Bridge says: "as the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient"
+  Answer: "As the smoothing coefficient grows the minority-group accuracy drops sharply because the regularizer dampens the rare-feature gradient, confirming the 12% gap in Node 3."
+  Why bad: 17-word verbatim copy from the bridge — the answer is not paraphrasing, it is extracting.
+
+GOOD (Rule 12 — paraphrase + short anchor phrase ≤7 words):
+  "The smoothing coefficient dampens rare-feature gradients, so minority-group accuracy drops, which matches the 12% gap reported for the low-resource split."
+
+### SPLIT-TEST SELF-CHECK (run BEFORE finalizing the query)
+
+1. Split your query at every occurrence of " and " (lowercase, space-padded).
+1b. Also split at every occurrence of ", and " (comma + and + space), since Rule 9 forbids the comma+and dual-ask pattern.
+2. For each half, ask: "Is this half a self-contained question that could be answered on its own?"
+3. If YES for any split → the query is a parallel dual-ask (Rule 9 violation). Rewrite by folding one endpoint into a "Given …" or "When …" premise clause, leaving exactly ONE interrogative target.
+4. If NO for all splits → the "and" is a within-clause conjunction (e.g. "premise and conclusion both depend on X") and is acceptable.
 
 ## STRICT RULES
 1. Query MUST require ALL 3 evidence nodes. Removing ANY node makes the answer underivable.
@@ -562,71 +594,60 @@ The following query openers cause downstream QC fails. Do NOT use them.
 6. Each reasoning_step MUST have a DIFFERENT evidence_type from: observation, attribution, explanation, verification, prediction.
 7. The role arc MUST follow: premise → intermediate → conclusion.
 8. Visual anchors MUST specify physical location: row/column for tables, axis region/color/marker for figures, specific variable/term for formulas. Generic anchors like "the table" or "the figure" will be rejected.
-9. The query MUST ask ONE serial causal/comparative target. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
-10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. Use qualitative descriptors instead.
-11. Do NOT use bare "this", "that", or "here" in the query. Name the method/dataset/metric or use a grounded phrase such as "the low-resource curve" or "the final-stage row".
-12. The answer MUST paraphrase the middle paragraph's causal link by NAMING the actual mechanism (verbs, entities). Do not copy long clauses verbatim. Connect premise → mechanism → conclusion in natural prose, without pointing at the evidence container.
-13. NO SUPERLATIVE LEAKAGE. Do NOT put superlatives ("strongest", "best", "highest", "fastest", "most frequent", "leading", "top", "dominant", "weakest", "lowest", "largest", "smallest") into the query when the answer IS the entity that is "strongest/best/...". Such queries reduce to a trivial single-element lookup. Reformulate as a mechanism question instead — e.g. "Which design choice explains the late-stage convergence pattern?" not "Which method achieves the strongest accuracy?".
-14. MIDDLE PARAGRAPH MUST BE A MECHANISM, NOT METADATA. The intermediate evidence_span is REJECTED when it is a methodology pointer such as: "we report results in Table X", "we conducted an ablation study", "we evaluate the performance of Y", "results are detailed in Section Z", "we present comparisons in Figure W", "we collected/selected/used X". The span MUST contain a content verb that creates dependency between premise and conclusion — e.g. "lowers", "produces", "requires", "fails because", "is incorrect because", "compresses into", "relies on", "is invariant to". If the only available middle-paragraph text is a metadata pointer, you must rewrite it into a content-bearing sentence drawn from the paragraph; if no such sentence exists, emit `"queries": []` rather than generating a degenerate chain.
-15. MIDDLE PARAGRAPH MUST CONNECT TO BOTH ENDPOINTS. The intermediate evidence_span MUST mention at least one concrete content term (method name / mechanism / dataset / variable) that also appears in the premise endpoint's caption/context AND at least one that also appears in the conclusion endpoint's caption/context. Spans that repeat only the premise vocabulary (or only the conclusion vocabulary) describe a single side and will be rejected automatically.
-16. EVIDENCE SPANS MUST BE SELF-CONTAINED. Each reasoning_step's evidence_span must be a complete clause of at least 6 content words. NEVER use bare data-point spans like "DocVQA 37.3k", "12 steps 64.6", "(b) NCL strength λ", "Encoder-Decoder", or single labels — wrap them in the surrounding sentence that gives them meaning.
-17. ANSWER MUST NOT NARRATE ITS OWN STRUCTURE. The answer prose is FORBIDDEN from using container-pointing phrases such as: "the bridge", "the bridge explains/says/states", "the middle paragraph explains/says", "the connecting text", "the premise shows", "the conclusion shows", "Step 1/2/3", "Node 1/2/3". Express the reasoning as natural prose — name the actual mechanism (a verb plus the involved entities), not the evidence container.
-18. PREMISE AND CONCLUSION MUST NOT BE EQUIVALENT. The premise span and the conclusion span must not be near-paraphrases of one another. If the conclusion just restates the premise's key entities with the same wording, the chain is degenerate — pick a conclusion span that adds a new observation, value, or qualitative claim.
+9. The query MUST ask ONE serial causal/comparative target.
+   9a. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
+   9b. When you need to reference BOTH endpoints, fold one of them into a premise clause ("Given the … row …", "When the … curve …", "For the … axis …") so only ONE interrogative target remains. The premise clause MUST embed at least one physical-anchor token from the list under "QC-ACCEPTED PHYSICAL-ANCHOR TOKENS" above — otherwise QC's bare-demonstrative check (Rule 11) will reject the query whenever the clause contains "that". Apply the SPLIT-TEST SELF-CHECK above before finalizing.
+   9c. This rule is hard-enforced by QC — there is no "and what/and which" exception for any query_type.
+10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. This explicitly INCLUDES dimensional patterns such as `6×384`, `512-d`, `k×k`, `1-bit`, `8-bit`, `n-dim`, `3-hop` and bit-width / channel-count / rank values. Use qualitative descriptors instead ("higher-rank", "aggressively quantized", "wider embedding", "deeper variant"). Year tokens (1900–2099) and the literals 0/1 are exempt only when they are clearly NOT a metric — e.g. allowed: "binary 0/1 labels", "the 2024 release"; forbidden: "an F1 of 0.95", "accuracy of 1.0", "the 1-bit quantized variant".
+11. NO unanchored "this", "that", or "here" in the query — in ANY syntactic role. This is enforced by the QC implementation, which does NOT distinguish demonstrative from complementizer "that". The query is rejected if it contains "this/that/here" AND does NOT contain at least one physical-anchor token (see the QC-ACCEPTED PHYSICAL-ANCHOR TOKENS list above). Safest patterns: (a) avoid "this/that/here" entirely and name the method/dataset/metric/component directly; (b) if you must use "that" (e.g. in a "Given that …" rescue clause), embed an anchor token in the same query — "the row that reports …", "the curve that drops …", "the axis that bounds …". Forbidden surface forms (no anchor token): "this metric", "that drop", "Given that X holds", "claim that Y matters".
+12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 8 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤7 consecutive words). Connect premise → bridge → conclusion in your own words.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
-      "query": "One serial causal 3-step question (max 30 words; no numerals; no and-what/and-which dual ask; no forbidden opener)",
-      "answer": "Answer using all 3 nodes by naming the actual mechanism in natural prose, max 4 sentences. NEVER use 'the bridge', 'the middle paragraph', 'the premise', 'the conclusion', or 'Node/Step 1/2/3'.",
-      "query_type": "one of: causal_chain | mechanism_trace | conditional_prediction | contrastive_mechanism | prerequisite_chain | tradeoff_explanation",
-      "query_type_definitions": {{
-        "causal_chain": "premise causes intermediate causes conclusion",
-        "mechanism_trace": "premise → named mechanism (middle paragraph) → conclusion outcome",
-        "conditional_prediction": "premise + middle-paragraph condition jointly imply conclusion",
-        "contrastive_mechanism": "two design choices differ; middle paragraph explains why one wins",
-        "prerequisite_chain": "premise must hold before middle-paragraph step enables conclusion",
-        "tradeoff_explanation": "middle paragraph names a tradeoff that reconciles premise vs conclusion"
-      }},
+      "query": "One serial causal 3-step question (max 30 words; no numerals or dimensional patterns like 6×384 / 1-bit; no and-what/and-which dual ask — fold second endpoint into a 'Given the … row/curve/axis …' premise with a physical-anchor token; no unanchored 'this/that/here' in any syntactic role)",
+      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link in your own words (no ≥8-word verbatim copy from the bridge), max 4 sentences",
+      "query_type": "causal_chain|mechanism_trace|conditional_prediction",
       "reasoning_steps": [
         {{
           "step_id": 1,
           "evidence_element_id": "{elem_a_id}",
           "evidence_type": "observation",
-          "evidence_span": "extractive phrase from Node 1, complete clause, >=6 content words",
+          "evidence_span": "extractive phrase from Node 1",
           "reasoning_role": "premise",
           "depends_on_steps": [],
-          "produces_claim": "What this step establishes, named entities, 1 sentence"
+          "produces_claim": "What this step establishes (1 sentence)"
         }},
         {{
           "step_id": 2,
           "evidence_element_id": "bridge_paragraph",
           "evidence_type": "attribution",
-          "evidence_span": "extractive phrase copied from the middle paragraph above, complete clause with content verb, >=6 content words",
+          "evidence_span": "extractive phrase copied from the bridge paragraph text above",
           "reasoning_role": "intermediate",
           "depends_on_steps": [1],
-          "produces_claim": "How the named mechanism connects step 1's observation to step 3's outcome, 1 sentence"
+          "produces_claim": "How the bridge connects step 1's observation to a mechanism (1 sentence)"
         }},
         {{
           "step_id": 3,
           "evidence_element_id": "{elem_b_id}",
           "evidence_type": "explanation",
-          "evidence_span": "extractive phrase from Node 3, complete clause, >=6 content words, NOT a near-paraphrase of step 1",
+          "evidence_span": "extractive phrase from Node 3",
           "reasoning_role": "conclusion",
           "depends_on_steps": [1, 2],
-          "produces_claim": "What final conclusion requires both prior steps, 1 sentence"
+          "produces_claim": "What final conclusion requires both prior steps (1 sentence)"
         }}
       ],
       "required_evidence_spans": [
         {{"element_id": "{elem_a_id}", "span": "extractive phrase from Node 1", "evidence_type": "observation"}},
-        {{"element_id": "bridge_paragraph", "span": "extractive phrase from middle paragraph", "evidence_type": "attribution", "content": "verbatim or close-paraphrase from the middle paragraph above, min 40 chars"}},
+        {{"element_id": "bridge_paragraph", "span": "extractive phrase from bridge paragraph", "evidence_type": "attribution", "content": "verbatim or close-paraphrase from bridge text above, min 40 chars"}},
         {{"element_id": "{elem_b_id}", "span": "extractive phrase from Node 3", "evidence_type": "explanation"}}
       ],
       "visual_anchors": [
         {{"element_id": "{elem_a_id}", "anchor": "specific physical location: row X col Y / axis region / marker color / variable name"}},
         {{"element_id": "{elem_b_id}", "anchor": "specific physical location: row X col Y / axis region / marker color / variable name"}}
       ],
-      "text_evidence": "direct quote from the middle-paragraph context, min 40 chars"
+      "text_evidence": "direct quote from bridge paragraph context, min 40 chars"
     }}
   ]
 }}"""
