@@ -12,6 +12,7 @@ from src.qc.checks import (
     anchor_leak_jaccard,
     check_bridge_one_sided,
     check_evidence_spans,
+    check_premise_contains_answer,
     has_bridge_meta_leak_in_query,
     has_bridge_meta_pointer,
     has_bridge_narration_in_answer,
@@ -408,4 +409,53 @@ class TestBridgeOneSided:
             {"step_id": 2, "evidence_element_id": "e_b", "evidence_span": "bar"},
         ]}
         fail, _ = check_bridge_one_sided(obj, {})
+        assert fail is False
+
+
+# ── check_premise_contains_answer (ported from copilot work) ─────────────────
+
+class TestPremiseContainsAnswer:
+    def _obj(self, premise_span, conclusion_span, answer):
+        return {
+            "answer": answer,
+            "reasoning_steps": [
+                {"step_id": 1, "reasoning_role": "premise",
+                 "evidence_element_id": "e_a", "evidence_span": premise_span},
+                {"step_id": 2, "reasoning_role": "intermediate",
+                 "evidence_element_id": "bridge_paragraph",
+                 "evidence_span": "some intermediate mechanism"},
+                {"step_id": 3, "reasoning_role": "conclusion",
+                 "evidence_element_id": "e_b", "evidence_span": conclusion_span},
+            ]
+        }
+
+    def test_premise_overlaps_answer_more_than_conclusion(self):
+        obj = self._obj(
+            premise_span="lc photo and sd cupl achieve the best results overall",
+            conclusion_span="aggregate scoring uses a separate calibration formula",
+            answer="best name only results retained for tcl are lc photo and sd cupl strategies",
+        )
+        fail, metrics = check_premise_contains_answer(obj)
+        assert metrics["step1_answer_overlap"] >= 4
+        assert metrics["step1_answer_coverage"] > metrics["step3_answer_coverage"]
+        assert fail is True
+
+    def test_conclusion_drives_answer(self):
+        obj = self._obj(
+            premise_span="early observations show inconsistent fairness behavior",
+            conclusion_span="reweighting recovers the per group accuracy across cohorts",
+            answer="reweighting recovers per group accuracy across the smallest cohort",
+        )
+        fail, _ = check_premise_contains_answer(obj)
+        assert fail is False
+
+    def test_fewer_than_three_steps_is_skipped(self):
+        obj = {
+            "answer": "anything",
+            "reasoning_steps": [
+                {"step_id": 1, "evidence_element_id": "a", "evidence_span": "x"},
+                {"step_id": 2, "evidence_element_id": "b", "evidence_span": "y"},
+            ],
+        }
+        fail, _ = check_premise_contains_answer(obj)
         assert fail is False

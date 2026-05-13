@@ -745,6 +745,56 @@ def check_bridge_one_sided(
     return is_fail, metrics
 
 
+def check_premise_contains_answer(
+    obj: Dict[str, Any],
+    min_step1_coverage: float = 0.25,
+    min_overlap_count: int = 4,
+) -> Tuple[bool, Dict[str, Any]]:
+    """Detect L3 chains where step 1's evidence_span already contains the answer.
+
+    In a real 3-step chain, step 3 (conclusion) should contribute MORE answer
+    tokens than step 1 (premise). When step 1 covers the answer more than
+    step 3 does, the chain is degenerate — step 3 just restates step 1 and
+    the middle step adds nothing.
+
+    Fires when:
+      (a) step1 ∩ answer ≥ min_overlap_count distinct tokens, AND
+      (b) step1 covers ≥ min_step1_coverage of the answer, AND
+      (c) step1_coverage > step3_coverage.
+
+    No-op when reasoning_steps has fewer than 3 steps.
+    """
+    metrics: Dict[str, Any] = {}
+    reasoning_steps = obj.get("reasoning_steps") or []
+    if not reasoning_steps or len(reasoning_steps) < 3:
+        return False, metrics
+    by_role = _step_spans_by_role(reasoning_steps)
+    step1_span = by_role.get("premise", "")
+    step3_span = by_role.get("conclusion", "")
+    if not (step1_span and step3_span):
+        return False, metrics
+    answer = str(obj.get("answer", "") or "")
+    a_tokens = content_tokens(answer)
+    if not a_tokens:
+        return False, metrics
+    step1_tokens = content_tokens(step1_span)
+    step3_tokens = content_tokens(step3_span)
+    step1_ov = a_tokens & step1_tokens
+    step3_ov = a_tokens & step3_tokens
+    step1_cov = len(step1_ov) / max(len(a_tokens), 1)
+    step3_cov = len(step3_ov) / max(len(a_tokens), 1)
+    metrics["step1_answer_overlap"] = len(step1_ov)
+    metrics["step3_answer_overlap"] = len(step3_ov)
+    metrics["step1_answer_coverage"] = round(step1_cov, 4)
+    metrics["step3_answer_coverage"] = round(step3_cov, 4)
+    is_fail = (
+        len(step1_ov) >= min_overlap_count
+        and step1_cov >= min_step1_coverage
+        and step1_cov > step3_cov
+    )
+    return is_fail, metrics
+
+
 # Re-export helper for pipelines
 __all_extras__ = [
     "has_bridge_narration_in_answer",
@@ -754,4 +804,5 @@ __all_extras__ = [
     "has_bridge_meta_pointer",
     "premise_conclusion_paraphrase_score",
     "check_bridge_one_sided",
+    "check_premise_contains_answer",
 ]

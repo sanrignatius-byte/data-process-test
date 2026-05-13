@@ -469,18 +469,18 @@ PROMPT_3STEP_REASONING_CHAIN = """You are building a benchmark that tests whethe
 
 ## Graph-Grounded Evidence Path
 
-The document graph connects these 3 nodes via explicit \\ref{{}} links in the LaTeX source. The bridge paragraph is the ACTUAL text the authors wrote to connect the two endpoint elements.
+The document graph connects these 3 nodes via explicit \\ref{{}} links in the LaTeX source. The connecting paragraph is the ACTUAL text the authors wrote to connect the two endpoint elements.
 
-### Node 1 (Premise): {elem_a_type} ({elem_a_id})
+### Node 1 (Premise endpoint): {elem_a_type} ({elem_a_id})
 Caption: {elem_a_caption}
 Context: {elem_a_context}
 {elem_a_image_note}
 
-### Node 2 (Bridge): paragraph — author's own connecting text
+### Node 2 (Connecting paragraph — author's own connecting prose)
 {bridge_text}
-Bridge quality: {bridge_quality_label}
+Connecting-paragraph quality: {bridge_quality_label}
 
-### Node 3 (Conclusion): {elem_b_type} ({elem_b_id})
+### Node 3 (Conclusion endpoint): {elem_b_type} ({elem_b_id})
 Caption: {elem_b_caption}
 Context: {elem_b_context}
 {elem_b_image_note}
@@ -489,28 +489,69 @@ Context: {elem_b_context}
 
 ## YOUR TASK
 
-Generate 1 query that REQUIRES all 3 evidence nodes IN SEQUENCE. The bridge paragraph is the key — it explains WHY Node 1's observation leads to Node 3's conclusion.
+Generate 1 query that REQUIRES all 3 evidence nodes IN SEQUENCE. The connecting paragraph is the key — it explains WHY the premise endpoint's observation leads to the conclusion endpoint's outcome.
 
 ### SERIAL CHAIN PATTERN (REQUIRED)
-premise observation → connecting mechanism (drawn from the bridge paragraph) → conclusion outcome
+Premise observation → mechanism from the connecting paragraph → conclusion confirmation/outcome
 
-Example of a VALID serial chain (notice the answer names the actual mechanism, never the words "bridge", "premise", or "conclusion"):
-  premise span: "accuracy drops for minority groups under fixed-decision-boundary FairBoost"
-  middle span: "FairBoost's reweighting overcorrects majority margins, shrinking minority confidence"
-  conclusion span: "per-group accuracy values show a 12-point gap for the smallest cohort"
-  Query: "Why does FairBoost's reweighting amplify the minority confidence loss visible in the cohort-level results?"
-  Answer: "FairBoost reweights majority examples to enforce parity, which overcorrects margins on dominant cohorts. That margin shrinkage propagates into minority confidence, and the cohort-level results confirm a sharp gap on the smallest group."
+Example of VALID serial chain:
+  Premise: "accuracy drops for minority groups in the per-group performance plot"
+  Connecting paragraph (author's own prose): "Reweighting the minority-group loss compensates for the imbalance and recovers most of the lost accuracy."
+  Conclusion: "per-group accuracy values show the gap narrows from 12% to 3%"
+  Query: "What loss adjustment explains the minority-group accuracy recovery visible in the per-group performance trend?"
 
 ### PARALLEL IS FORBIDDEN
-"premise says A, conclusion says B, therefore A+B" — this is just two independent lookups. The intermediate step MUST supply a causal or mechanistic link, not just co-occurrence.
+"Premise says A, conclusion says B, therefore A+B" — this is just two independent lookups. The connecting paragraph MUST provide a causal/explanatory link, not just co-occurrence.
 
 ### STEP-DELETION TEST (self-check before outputting)
 For each step, ask: "If I remove THIS step's evidence, can I still derive the answer?"
 - If YES for any step → your chain is too weak, rewrite it
 - If NO for all 3 steps → your chain is valid
 
-### BRIDGE GROUNDING RULE
-Your answer MUST paraphrase specific MECHANISM content from the bridge paragraph above (the verb, the cause, the entity it acts on). Do NOT use the words "bridge", "the bridge", "premise", or "conclusion" anywhere in the answer or query — name the actual mechanism instead. Do NOT invent connections not present in the bridge paragraph.
+### CONNECTING-PARAGRAPH GROUNDING RULE
+Your answer MUST quote or paraphrase specific content from the connecting paragraph above. If the connecting paragraph says "X leads to Y", your answer must use that causal link — by NAMING the actual mechanism (X, Y), not by referring to "the connecting paragraph" or "the bridge" or "the connecting text". Do NOT invent connections that are not present in the connecting paragraph.
+
+## ANTI-PATTERN EXAMPLES (auto-reject)
+
+These are the most frequent failure modes from prior runs. Every BAD example below would be rejected; study the GOOD rewrite next to it.
+
+  BAD  query:  "Which method achieves the strongest accuracy?"
+       (Rule 13: superlative + answer is the strongest entity → trivial lookup)
+  GOOD query:  "What design choice explains the late-stage convergence pattern observed in the cohort-level accuracy curves?"
+
+  BAD  query:  "This shows how X improves Y across the row."
+       (Rule 11: bare "This"; Rule 3: meta "the row")
+  GOOD query:  "What property of margin reweighting explains the X-to-Y improvement across low-resource languages?"
+
+  BAD  query:  "How does the connecting paragraph relate Figure 4 to Table 2?"
+       (Rule 11+17: query points at the evidence container, not the content)
+  GOOD query:  "What component of margin reweighting links the minority-accuracy drop to the per-group recovery?"
+
+  BAD  answer: "The connecting paragraph explains why FairBoost overcorrects, and the conclusion shows..."
+       (Rule 17: narrating the evidence container instead of the mechanism)
+  GOOD answer: "FairBoost overcorrects minority gradients during reweighting, which inflates the loss term and produces the 12% drop in the per-group accuracy table."
+
+  BAD  intermediate span: "We report results in Table 5 and conduct an ablation study."
+       (Rule 14: methodology pointer, no causal mechanism)
+  GOOD intermediate span: "Reweighting the minority-group loss compensates for the imbalance and recovers most of the lost accuracy."
+
+## OPENER VARIETY (positive seeds — use any of these, do NOT default to "How does...")
+
+Aim to vary openers across generations. Five fully-formed compliant openers (do NOT copy these verbatim — adapt them with your actual paper's entities; bracketed phrases are slots you must replace with concrete content):
+  - "Why does the minority-accuracy gap persist even after the reweighting step kicks in?"
+  - "What enables FairBoost to recover per-group accuracy in the low-resource regime?"
+  - "What mechanism links the margin shrinkage to the convergence pattern across cohorts?"
+  - "Under what condition does score calibration resolve the long-tail under-prediction?"
+  - "After the warm-up phase, what causes the validation loss to track the training loss?"
+
+## FORBIDDEN OPENERS (auto-reject patterns)
+
+The following query openers cause downstream QC fails. Do NOT use them.
+  - "How does X relate to Y" / "How does X correlate with Y"
+  - "Which X best matches Y" (template collapse — Rule 13)
+  - "How does the figure / table / plot ..." (meta-language — Rule 3)
+  - Bare deictic openings: "This shows ...", "That demonstrates ...", "These results ..." (Rule 11)
+  - "How does the connecting paragraph / bridge text ..." (Rule 17 — query points at the container)
 
 ## STRICT RULES
 1. Query MUST require ALL 3 evidence nodes. Removing ANY node makes the answer underivable.
@@ -524,61 +565,68 @@ Your answer MUST paraphrase specific MECHANISM content from the bridge paragraph
 9. The query MUST ask ONE serial causal/comparative target. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
 10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. Use qualitative descriptors instead.
 11. Do NOT use bare "this", "that", or "here" in the query. Name the method/dataset/metric or use a grounded phrase such as "the low-resource curve" or "the final-stage row".
-12. The answer MUST paraphrase the bridge paragraph's causal mechanism by naming the actual entity and verb (e.g. "FairBoost reweights majority margins, which shrinks minority confidence"). Keep any verbatim bridge wording to a short phrase.
-13. NO STRUCTURAL META-VOCABULARY in query or answer. The strings "the bridge", "the premise", "the conclusion", "Node 1", "Node 2", "Node 3", "Step 1", "Step 2", "Step 3", "the bridge explains", "the bridge says", "the bridge links", "the bridge ties", "the bridge maps", "the bridge frames", "the bridge notes", "the bridge text", "the bridge paragraph" are FORBIDDEN. The query and answer must read as natural prose that names the actual mechanism — they will be rejected automatically if any of these strings appears.
-14. NO SUPERLATIVE LEAKAGE. The query MUST NOT contain "strongest", "stronger", "best", "highest", "fastest", "leading", "top", "dominant", "weakest", "lowest", "largest", "smallest", "maximum", "minimum", "most frequent", "most accurate", "most robust", "most effective", "most stable", "most consistent" — including their possessive forms (e.g. "method's strongest", "X's best"). When the answer is the entity that achieves the superlative, the question reduces to a trivial single-element lookup. Reformulate as a mechanism question: ask WHY a behavior occurs or WHAT mechanism produces it.
-15. BRIDGE MUST EXPRESS A MECHANISM, NOT A METADATA POINTER. The bridge evidence_span will be REJECTED if it matches any of: "we report results in Table/Figure/Section X", "we conducted an ablation study", "we evaluate the performance of X", "results are detailed in Section/Appendix Y", "we present comparisons in X", "we collect/select/use X", "in this section/figure/table". The bridge MUST contain a content verb that creates dependency between premise and conclusion — e.g. "lowers", "produces", "requires", "compresses into", "fails because", "is invariant to", "overcorrects", "reweights". If the only sentence in the bridge paragraph is a metadata pointer, emit `"queries": []` rather than fabricating a chain.
-16. BRIDGE MUST CONNECT TO BOTH ENDPOINTS LEXICALLY. The bridge evidence_span MUST mention at least one concrete content term (method / mechanism / dataset / variable) that also appears in the premise endpoint's caption/context AND at least one such term that also appears in the conclusion endpoint's caption/context. A bridge that only repeats premise vocabulary (or only conclusion vocabulary) describes a single side and will be rejected.
-17. PREMISE AND CONCLUSION SPANS MUST NOT BE NEAR-PARAPHRASES. If the conclusion span just restates the premise span's entities with the same wording, the chain is degenerate; pick a conclusion span that adds a new observation, value, or qualitative claim. Token overlap above 55% triggers automatic rejection.
-18. EVIDENCE SPANS MUST BE SELF-CONTAINED CLAUSES. Each reasoning_step's evidence_span must be a complete clause of at least 6 content words. NEVER use bare data-point spans like "DocVQA 37.3k", "12 steps 64.6", "(b) NCL strength λ", or single labels — wrap them in the surrounding sentence that gives them meaning.
-19. OPENING DIVERSITY. Do NOT begin the query with "How does the" or "How do the" — this opener already covers 22% of historic queries and is heavily over-represented. Choose from a variety: "Why does ...", "What enables ...", "What mechanism links ...", "Under what condition ...", "After ... , what explains ...", or other naturally varied phrasings. Avoid "Which X best ..." superlative templates (already covered by Rule 14).
+12. The answer MUST paraphrase the connecting paragraph's causal link by NAMING the actual mechanism (verbs, entities). Do not copy long clauses verbatim. Connect premise → mechanism → conclusion in natural prose, without pointing at the evidence container.
+13. NO SUPERLATIVE LEAKAGE. Do NOT put any of these superlative tokens into the query: "strongest", "stronger", "best", "highest", "fastest", "leading", "top", "dominant", "weakest", "lowest", "largest", "smallest", "maximum", "minimum", "most frequent", "most accurate", "most common", "most robust", "most effective", "most stable", "most consistent", "most preferred", "most favored". This ban INCLUDES possessive / apostrophe forms: "method's strongest", "X's stronger", "Y's best", etc. When the answer IS the entity that achieves the superlative, the question reduces to a trivial single-element lookup. Reformulate as a mechanism question instead — e.g. "Which design choice explains the late-stage convergence pattern?" not "Which method achieves the strongest accuracy?".
+14. CONNECTING PARAGRAPH MUST BE A MECHANISM, NOT METADATA. The intermediate evidence_span is REJECTED when it is a methodology pointer such as: "we report results in Table X", "we conducted an ablation study", "we evaluate the performance of Y", "results are detailed in Section Z", "we present comparisons in Figure W", "we collected/selected/used X". The span MUST contain a content verb that creates dependency between premise and conclusion — e.g. "lowers", "produces", "requires", "fails because", "is incorrect because", "compresses into", "relies on", "is invariant to". If the only available connecting-paragraph text is a metadata pointer, you must rewrite it into a content-bearing sentence drawn from the paragraph; if no such sentence exists, emit `"queries": []` rather than generating a degenerate chain.
+15. CONNECTING PARAGRAPH MUST CONNECT TO BOTH ENDPOINTS. The intermediate evidence_span MUST mention at least one concrete content term (method name / mechanism / dataset / variable) that also appears in the premise endpoint's caption/context AND at least one that also appears in the conclusion endpoint's caption/context. Spans that repeat only the premise vocabulary (or only the conclusion vocabulary) describe a single side and will be rejected automatically.
+16. EVIDENCE SPANS MUST BE SELF-CONTAINED. Each reasoning_step's evidence_span must be a complete clause of at least 6 content words. NEVER use bare data-point spans like "DocVQA 37.3k", "12 steps 64.6", "(b) NCL strength λ", "Encoder-Decoder", or single labels — wrap them in the surrounding sentence that gives them meaning.
+17. ANSWER MUST NOT NARRATE ITS OWN STRUCTURE. The answer prose is FORBIDDEN from using container-pointing phrases such as: "the bridge", "the bridge explains/says/states/links/ties/notes", "the connecting paragraph", "the middle paragraph", "the connecting text", "the premise shows", "the conclusion shows", "Step 1/2/3", "Node 1/2/3". Express the reasoning as natural prose — name the actual mechanism (a verb plus the involved entities), not the evidence container.
+18. PREMISE AND CONCLUSION MUST NOT BE EQUIVALENT. The premise span and the conclusion span must not be near-paraphrases of one another. If the conclusion just restates the premise's key entities with the same wording, the chain is degenerate — pick a conclusion span that adds a new observation, value, or qualitative claim.
 
 ## Output format (JSON only):
 {{
   "queries": [
     {{
-      "query": "One serial causal 3-step question (max 30 words; no numerals; no and-what/and-which dual ask)",
-      "answer": "Answer using all 3 nodes, paraphrasing the bridge causal link, max 4 sentences",
-      "query_type": "causal_chain|mechanism_trace|conditional_prediction",
+      "query": "One serial causal 3-step question (max 30 words; no numerals; no and-what/and-which dual ask; no forbidden opener)",
+      "answer": "Answer using all 3 nodes by naming the actual mechanism in natural prose, max 4 sentences. NEVER use 'the bridge', 'the connecting paragraph', 'the middle paragraph', 'the premise', 'the conclusion', or 'Node/Step 1/2/3'.",
+      "query_type": "one of: causal_chain | mechanism_trace | conditional_prediction | contrastive_mechanism | prerequisite_chain | tradeoff_explanation",
+      "query_type_definitions": {{
+        "causal_chain": "premise causes intermediate causes conclusion",
+        "mechanism_trace": "premise → named mechanism (connecting paragraph) → conclusion outcome",
+        "conditional_prediction": "premise + connecting-paragraph condition jointly imply conclusion",
+        "contrastive_mechanism": "two design choices differ; connecting paragraph explains why one wins",
+        "prerequisite_chain": "premise must hold before connecting-paragraph step enables conclusion",
+        "tradeoff_explanation": "connecting paragraph names a tradeoff that reconciles premise vs conclusion"
+      }},
       "reasoning_steps": [
         {{
           "step_id": 1,
           "evidence_element_id": "{elem_a_id}",
           "evidence_type": "observation",
-          "evidence_span": "extractive phrase from Node 1",
+          "evidence_span": "extractive phrase from Node 1, complete clause, >=6 content words",
           "reasoning_role": "premise",
           "depends_on_steps": [],
-          "produces_claim": "What this step establishes (1 sentence)"
+          "produces_claim": "What this step establishes, named entities, 1 sentence"
         }},
         {{
           "step_id": 2,
           "evidence_element_id": "bridge_paragraph",
           "evidence_type": "attribution",
-          "evidence_span": "extractive phrase copied from the bridge paragraph text above",
+          "evidence_span": "extractive phrase copied from the connecting paragraph above, complete clause with content verb, >=6 content words",
           "reasoning_role": "intermediate",
           "depends_on_steps": [1],
-          "produces_claim": "How the bridge connects step 1's observation to a mechanism (1 sentence)"
+          "produces_claim": "How the named mechanism connects step 1's observation to step 3's outcome, 1 sentence"
         }},
         {{
           "step_id": 3,
           "evidence_element_id": "{elem_b_id}",
           "evidence_type": "explanation",
-          "evidence_span": "extractive phrase from Node 3",
+          "evidence_span": "extractive phrase from Node 3, complete clause, >=6 content words, NOT a near-paraphrase of step 1",
           "reasoning_role": "conclusion",
           "depends_on_steps": [1, 2],
-          "produces_claim": "What final conclusion requires both prior steps (1 sentence)"
+          "produces_claim": "What final conclusion requires both prior steps, 1 sentence"
         }}
       ],
       "required_evidence_spans": [
         {{"element_id": "{elem_a_id}", "span": "extractive phrase from Node 1", "evidence_type": "observation"}},
-        {{"element_id": "bridge_paragraph", "span": "extractive phrase from bridge paragraph", "evidence_type": "attribution", "content": "verbatim or close-paraphrase from bridge text above, min 40 chars"}},
+        {{"element_id": "bridge_paragraph", "span": "extractive phrase from connecting paragraph", "evidence_type": "attribution", "content": "verbatim or close-paraphrase from the connecting paragraph above, min 40 chars"}},
         {{"element_id": "{elem_b_id}", "span": "extractive phrase from Node 3", "evidence_type": "explanation"}}
       ],
       "visual_anchors": [
         {{"element_id": "{elem_a_id}", "anchor": "specific physical location: row X col Y / axis region / marker color / variable name"}},
         {{"element_id": "{elem_b_id}", "anchor": "specific physical location: row X col Y / axis region / marker color / variable name"}}
       ],
-      "text_evidence": "direct quote from bridge paragraph context, min 40 chars"
+      "text_evidence": "direct quote from the connecting-paragraph context, min 40 chars"
     }}
   ]
 }}"""

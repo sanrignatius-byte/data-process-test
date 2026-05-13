@@ -26,6 +26,7 @@ from src.qc.checks import (
     answer_text_evidence_overlap,
     check_bridge_one_sided,
     check_evidence_spans,
+    check_premise_contains_answer,
     check_single_element_answer,
     formula_symbol_hit,
     has_architecture_intent,
@@ -287,6 +288,14 @@ def qc_multihop_query(
     if bos_fail:
         issues.append("bridge_one_sided")
 
+    # Premise-contains-answer: step 1 already supplies more answer tokens than
+    # step 3 → degenerate chain where conclusion is redundant. Only L3 with
+    # 3 reasoning_steps fires.
+    pca_fail, pca_metrics = check_premise_contains_answer(obj)
+    metrics.update(pca_metrics)
+    if pca_fail:
+        issues.append("premise_contains_answer")
+
     # 17. Premise vs conclusion paraphrase. If the conclusion's evidence_span
     #     just restates the premise's (Jaccard >= 0.55), the chain is
     #     degenerate — the conclusion adds no new claim.
@@ -458,6 +467,14 @@ def qc_real_user_query(
     metrics.update(bos_metrics)
     if bos_fail:
         issues.append("bridge_one_sided")
+
+    # Premise-contains-answer: step 1 already supplies more answer tokens than
+    # step 3 → degenerate chain where conclusion is redundant. Only L3 with
+    # 3 reasoning_steps fires.
+    pca_fail, pca_metrics = check_premise_contains_answer(obj)
+    metrics.update(pca_metrics)
+    if pca_fail:
+        issues.append("premise_contains_answer")
 
     # 15. Premise vs conclusion paraphrase + bridge meta pointer
     reasoning_steps = obj.get("reasoning_steps") or []
