@@ -10,15 +10,22 @@ import pytest
 
 from src.qc.checks import (
     anchor_leak_jaccard,
+    check_bridge_one_sided,
     check_evidence_spans,
+    has_bridge_meta_leak_in_query,
+    has_bridge_meta_pointer,
+    has_bridge_narration_in_answer,
     has_min_reasoning_chain,
     has_no_cross_modal_operator,
     has_numeric_leakage,
+    has_premise_conclusion_meta_in_answer,
     has_relationship_connector,
     has_shortcut_template,
+    has_superlative_answer_spoiler,
     has_templated_opening,
     is_noisy_enrichment,
     is_yes_no_question,
+    premise_conclusion_paraphrase_score,
     query_length_bucket,
     query_word_count,
 )
@@ -205,3 +212,200 @@ class TestNoisyEnrichment:
 
     def test_glyph_noise(self):
         assert is_noisy_enrichment("⊕ ⊗ ▲ ● □ ◆ ◇") is True
+
+
+# ── has_bridge_narration_in_answer ───────────────────────────────────────────
+
+class TestBridgeNarrationInAnswer:
+    def test_bridge_explains(self):
+        assert has_bridge_narration_in_answer(
+            "FairBoost reweights margins. The bridge explains why."
+        ) is True
+
+    def test_bridge_says(self):
+        assert has_bridge_narration_in_answer(
+            "The bridge says reweighting overcorrects."
+        ) is True
+
+    def test_bridge_links(self):
+        assert has_bridge_narration_in_answer(
+            "Then the bridge links the figure observation to the table."
+        ) is True
+
+    def test_bare_the_bridge(self):
+        assert has_bridge_narration_in_answer(
+            "The training loss drops. And then the bridge."
+        ) is True
+
+    def test_clean_mechanism_answer(self):
+        # Names the actual mechanism, no "bridge" reference at all
+        assert has_bridge_narration_in_answer(
+            "FairBoost reweights majority margins, which shrinks minority confidence."
+        ) is False
+
+    def test_empty_answer_does_not_fail(self):
+        assert has_bridge_narration_in_answer("") is False
+
+
+# ── has_premise_conclusion_meta_in_answer ────────────────────────────────────
+
+class TestPremiseConclusionMetaInAnswer:
+    def test_the_premise(self):
+        assert has_premise_conclusion_meta_in_answer(
+            "FairBoost reweights margins. The premise establishes this."
+        ) is True
+
+    def test_the_conclusion(self):
+        assert has_premise_conclusion_meta_in_answer(
+            "Margins shrink. The conclusion shows the gap."
+        ) is True
+
+    def test_clean(self):
+        assert has_premise_conclusion_meta_in_answer(
+            "FairBoost reweights majority margins, producing a minority confidence gap."
+        ) is False
+
+
+# ── has_bridge_meta_leak_in_query ────────────────────────────────────────────
+
+class TestBridgeMetaLeakInQuery:
+    def test_after_the_bridge_notes(self):
+        assert has_bridge_meta_leak_in_query(
+            "Which method aligns with X after the bridge notes Y?"
+        ) is True
+
+    def test_the_bridges_claim(self):
+        assert has_bridge_meta_leak_in_query(
+            "Which choice matches the bridge's claim about Z?"
+        ) is True
+
+    def test_clean_mechanism_query(self):
+        assert has_bridge_meta_leak_in_query(
+            "Why does FairBoost reweighting shrink minority confidence?"
+        ) is False
+
+
+# ── has_superlative_answer_spoiler ───────────────────────────────────────────
+
+class TestSuperlativeAnswerSpoiler:
+    def test_strongest_with_achieves(self):
+        assert has_superlative_answer_spoiler(
+            "Which method achieves the strongest accuracy on COCO?",
+            "Mask2Former achieves the highest accuracy on COCO."
+        ) is True
+
+    def test_apostrophe_form(self):
+        assert has_superlative_answer_spoiler(
+            "Which method's stronger result emerges from late fusion?",
+            "X outperforms all baselines."
+        ) is True
+
+    def test_no_resolver_in_answer(self):
+        # Query has superlative but answer doesn't claim "X achieves/outperforms"
+        assert has_superlative_answer_spoiler(
+            "Which method's strongest behavior follows from X?",
+            "The behavior arises from reweighting, which compresses minority margins."
+        ) is False
+
+    def test_no_superlative_in_query(self):
+        assert has_superlative_answer_spoiler(
+            "Why does FairBoost overcorrect minority margins?",
+            "It achieves the lowest variance under reweighting."
+        ) is False
+
+
+# ── has_bridge_meta_pointer ──────────────────────────────────────────────────
+
+class TestBridgeMetaPointer:
+    def test_we_report_results(self):
+        assert has_bridge_meta_pointer(
+            "We report results in Table 5 for the ablation."
+        ) is True
+
+    def test_detailed_in_section(self):
+        assert has_bridge_meta_pointer(
+            "The full numbers are detailed in Section 4.2."
+        ) is True
+
+    def test_we_conducted_ablation(self):
+        assert has_bridge_meta_pointer(
+            "We conducted an ablation study on the embedding dimension."
+        ) is True
+
+    def test_mechanism_bridge(self):
+        # Real mechanism sentence — not a pointer
+        assert has_bridge_meta_pointer(
+            "FairBoost reweights majority margins, which overcorrects minority confidence."
+        ) is False
+
+
+# ── premise_conclusion_paraphrase_score ──────────────────────────────────────
+
+class TestPremiseConclusionParaphrase:
+    def test_identical_returns_high(self):
+        s = premise_conclusion_paraphrase_score(
+            "fairboost reweights majority margins",
+            "fairboost reweights majority margins",
+        )
+        assert s == 1.0
+
+    def test_disjoint_returns_zero(self):
+        s = premise_conclusion_paraphrase_score(
+            "fairboost reweights majority margins",
+            "the encoder uses sinusoidal position embedding",
+        )
+        assert s == 0.0
+
+    def test_partial_overlap_below_threshold(self):
+        s = premise_conclusion_paraphrase_score(
+            "fairboost reweights majority margins on COCO splits",
+            "training stability drops on the minority cohort",
+        )
+        assert s < 0.55
+
+    def test_empty_returns_zero(self):
+        assert premise_conclusion_paraphrase_score("", "anything") == 0.0
+
+
+# ── check_bridge_one_sided ───────────────────────────────────────────────────
+
+class TestBridgeOneSided:
+    def _obj(self, premise_span, bridge_span, conclusion_span):
+        return {
+            "reasoning_steps": [
+                {"step_id": 1, "reasoning_role": "premise",
+                 "evidence_element_id": "e_a", "evidence_span": premise_span},
+                {"step_id": 2, "reasoning_role": "intermediate",
+                 "evidence_element_id": "bridge_paragraph", "evidence_span": bridge_span},
+                {"step_id": 3, "reasoning_role": "conclusion",
+                 "evidence_element_id": "e_b", "evidence_span": conclusion_span},
+            ]
+        }
+
+    def test_bridge_connects_both(self):
+        obj = self._obj(
+            premise_span="fairboost reweights majority cohort margins",
+            bridge_span="reweights overcorrect majority margins which shrinks minority confidence",
+            conclusion_span="minority cohort confidence drops sharply on the test split",
+        )
+        fail, _ = check_bridge_one_sided(obj, {})
+        # bridge shares "reweights/majority/margins" with premise and
+        # "minority/confidence" with conclusion → connects both sides
+        assert fail is False
+
+    def test_bridge_only_premise_side(self):
+        obj = self._obj(
+            premise_span="fairboost reweights majority cohort margins",
+            bridge_span="fairboost reweights majority cohort under different lambda values",
+            conclusion_span="memory consumption decreases by quantization",  # zero overlap with bridge
+        )
+        fail, _ = check_bridge_one_sided(obj, {})
+        assert fail is True
+
+    def test_no_bridge_step_is_skipped(self):
+        obj = {"reasoning_steps": [
+            {"step_id": 1, "evidence_element_id": "e_a", "evidence_span": "foo"},
+            {"step_id": 2, "evidence_element_id": "e_b", "evidence_span": "bar"},
+        ]}
+        fail, _ = check_bridge_one_sided(obj, {})
+        assert fail is False

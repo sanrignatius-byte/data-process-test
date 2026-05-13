@@ -504,3 +504,254 @@ def has_bridge_overclaim_signal(query: str, answer: str) -> bool:
     a_hedge = len(_WEAK_HEDGE_RE.findall(answer or ""))
     # If answer has more hedges than causal assertions, the bridge is overclaimed
     return a_hedge > a_causal and a_hedge >= 2
+
+
+# ── Structural-vocabulary leakage (L3 specific) ──────────────────────────────
+#
+# Empirical audit of 6111 graph_max20k snapshot rows showed:
+#   • 83.3% of PASS answers contained "the bridge X" — model narrates its own
+#     scaffolding ("the bridge explains/says/states/notes/links/...") instead
+#     of naming the actual mechanism.
+#   • 2.9% of PASS queries contained "the bridge" — meta-leak into question.
+# Both are structural-prompt vocabulary that does not belong in the user-facing
+# query or answer. Regex hard-fail catches them deterministically.
+
+_BRIDGE_NARRATION_VERB_RE = re.compile(
+    r"\bthe bridge\s+(explains?|says?|notes?|states?|frames?|attributes?|ties?"
+    r"|links?|connects?|motivates?|maps?|reframes?|describes?|adds?|narrows?"
+    r"|invokes?|identifies?|introduces?|makes?|claims?|then\b|text\b|paragraph\b"
+    r"|explicitly\b|claim\b)",
+    re.IGNORECASE,
+)
+_BRIDGE_BARE_RE = re.compile(r"\bthe bridge('s|s')?\b", re.IGNORECASE)
+_PREMISE_CONCLUSION_META_RE = re.compile(
+    r"\b(the (premise|conclusion)('s)?)\b",
+    re.IGNORECASE,
+)
+
+
+def has_bridge_narration_in_answer(answer: str) -> bool:
+    """Answer must not narrate its own scaffolding via 'the bridge X'.
+
+    Hard fail when the answer prose contains 'the bridge' followed by a
+    narration verb (explains, says, states, links, ties, ...) OR the bare
+    structural phrase 'the bridge' / 'the bridges' anywhere. The model should
+    name the actual mechanism, not point at its own evidence container.
+
+    See audit: 83.3% of existing PASS answers exhibit this pattern.
+    """
+    if not answer:
+        return False
+    if _BRIDGE_NARRATION_VERB_RE.search(answer):
+        return True
+    # Bare "the bridge" (no specific verb) is also forbidden — it always reads
+    # as meta-narration regardless of what follows.
+    return bool(_BRIDGE_BARE_RE.search(answer))
+
+
+def has_premise_conclusion_meta_in_answer(answer: str) -> bool:
+    """Answer must not reference 'the premise' / 'the conclusion' as objects.
+
+    These are prompt-internal labels for the reasoning chain — they leak into
+    user-facing prose the same way 'the bridge' does. Hard fail when present.
+    """
+    if not answer:
+        return False
+    return bool(_PREMISE_CONCLUSION_META_RE.search(answer))
+
+
+def has_bridge_meta_leak_in_query(query: str) -> bool:
+    """Query must not reference 'the bridge' at all.
+
+    This is the worst form of structural leak: the user receiving such a
+    query sees a dangling pointer ('after the bridge notes ...') that has no
+    referent at inference time. Hard fail on any 'the bridge' occurrence.
+    """
+    if not query:
+        return False
+    return bool(_BRIDGE_BARE_RE.search(query))
+
+
+# ── Superlative-answer-spoiler detection ──────────────────────────────────────
+#
+# When a query uses a superlative ('strongest', 'best', 'highest', ...) and
+# the answer is the entity that 'is the X-est', the query reduces to a
+# single-element lookup ('Which method has the highest accuracy?' → trivial).
+# We hard-fail when the query superlative is unambiguous AND the answer
+# contains a comparison verb that resolves the superlative.
+#
+# 32.6% of the existing PASS set has a plain superlative; 5.7% has the
+# apostrophe form ("method's stronger"). The combined regex catches both.
+
+_SUPERLATIVE_RE = re.compile(
+    r"\b(?:\w+['’]s\s+)?"  # optional possessive prefix: "method's"
+    r"(strongest|stronger|best|highest|fastest|leading|top|dominant|weakest|"
+    r"lowest|largest|smallest|maximum|minimum|most\s+(?:frequent|accurate|"
+    r"common|robust|effective|stable|consistent|preferred|favored))\b",
+    re.IGNORECASE,
+)
+_SUPERLATIVE_RESOLVER_RE = re.compile(
+    r"\b(achiev(es?|ed|ing)|attain(s|ed|ing)|reach(es|ed|ing)|"
+    r"outperforms?|outperforming|deliver(s|ed|ing)|"
+    r"score(s|d|ing)|rank(s|ed|ing)\s+(first|highest|top)|"
+    r"is\s+the\s+(strongest|best|highest|top|fastest|largest|smallest|"
+    r"weakest|lowest|dominant|leading|most))",
+    re.IGNORECASE,
+)
+
+
+def has_superlative_answer_spoiler(query: str, answer: str) -> bool:
+    """Detect superlative leakage that reduces multi-hop to single-element lookup.
+
+    Hard fail when:
+      (a) the query contains a superlative ("strongest"/"best"/"method's
+          stronger"/...), AND
+      (b) the answer contains a resolver verb ("achieves the highest",
+          "outperforms", "scores best", "is the strongest", ...).
+
+    Either signal alone is permissible (a question can ask "which is best
+    *despite* X" with a nuanced answer); the joint pattern is the giveaway.
+    """
+    if not query or not answer:
+        return False
+    if not _SUPERLATIVE_RE.search(query):
+        return False
+    return bool(_SUPERLATIVE_RESOLVER_RE.search(answer))
+
+
+# ── Bridge as metadata pointer ────────────────────────────────────────────────
+
+_BRIDGE_META_POINTER_RE = re.compile(
+    r"\b("
+    r"we\s+(report|conduct(ed)?|evaluate(d)?|present(ed)?|introduce(d)?|"
+    r"propose(d)?|provide|collect(ed)?|select(ed)?|use(d)?|describe(d)?)"
+    r"|results?\s+(are|is|in)\s+(detailed|reported|shown|presented|summarized)"
+    r"|(detailed|reported|shown|presented|summarized)\s+in\s+(table|figure|"
+    r"section|appendix)"
+    r"|results?\s+(of|for)\s+the\s+(ablation|experiment|comparison)"
+    r"|in\s+this\s+(section|table|figure|paper|work)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def has_bridge_meta_pointer(bridge_span: str) -> bool:
+    """Bridge evidence_span must express a mechanism, not a metadata pointer.
+
+    Hard fail when the bridge span is purely procedural ("we report results
+    in Table X", "results are detailed in Section Y"). Such bridges add no
+    causal content — they only describe what the paper does, leaving the
+    chain reduced to two independent endpoints.
+    """
+    if not bridge_span:
+        return False
+    return bool(_BRIDGE_META_POINTER_RE.search(bridge_span))
+
+
+# ── Premise vs conclusion paraphrase ──────────────────────────────────────────
+
+def premise_conclusion_paraphrase_score(
+    premise_span: str,
+    conclusion_span: str,
+) -> float:
+    """Jaccard over content tokens between premise and conclusion spans.
+
+    Returns 0.0 when either span is empty. >= 0.55 indicates the conclusion
+    is just restating the premise (degenerate chain with no new claim).
+    """
+    p = content_tokens(premise_span)
+    c = content_tokens(conclusion_span)
+    if not p or not c:
+        return 0.0
+    inter = p & c
+    union = p | c
+    return len(inter) / len(union) if union else 0.0
+
+
+# ── Bridge one-sided (ported from copilot work) ───────────────────────────────
+
+def _elem_full_tokens(elem: Dict[str, Any]) -> Set[str]:
+    """Aggregate all text fields of an element into a content-token set."""
+    if not isinstance(elem, dict):
+        return set()
+    parts: List[str] = []
+    for field in (
+        "caption", "content", "enriched_content", "enriched_title",
+        "context_before", "context_after",
+    ):
+        v = elem.get(field, "") or ""
+        if isinstance(v, str):
+            parts.append(v)
+    return content_tokens(" ".join(parts))
+
+
+def _step_spans_by_role(reasoning_steps: List[Dict[str, Any]]) -> Dict[str, str]:
+    """Index reasoning_steps by reasoning_role, with step_id fallback."""
+    by_role: Dict[str, str] = {}
+    if not isinstance(reasoning_steps, list):
+        return by_role
+    for step in reasoning_steps:
+        if not isinstance(step, dict):
+            continue
+        role = str(step.get("reasoning_role", "")).strip().lower()
+        span = str(step.get("evidence_span", "") or "")
+        if role and span:
+            by_role.setdefault(role, span)
+    if "premise" not in by_role or "conclusion" not in by_role:
+        ordered = sorted(
+            (s for s in reasoning_steps if isinstance(s, dict)),
+            key=lambda s: s.get("step_id", 99),
+        )
+        if len(ordered) >= 3:
+            by_role.setdefault("premise", str(ordered[0].get("evidence_span", "") or ""))
+            by_role.setdefault("intermediate", str(ordered[1].get("evidence_span", "") or ""))
+            by_role.setdefault("conclusion", str(ordered[2].get("evidence_span", "") or ""))
+    return by_role
+
+
+def check_bridge_one_sided(
+    obj: Dict[str, Any],
+    pair: Dict[str, Any],
+) -> Tuple[bool, Dict[str, Any]]:
+    """Bridge must lexically connect to BOTH premise and conclusion endpoints.
+
+    Hard fail when the bridge evidence_span shares zero content tokens with
+    one side's full element text + step span. Catches concatenation-style L3
+    chains where two unrelated elements are glued by an unrelated bridge.
+    """
+    metrics: Dict[str, Any] = {}
+    reasoning_steps = obj.get("reasoning_steps") or []
+    bridge_span = ""
+    for step in reasoning_steps:
+        if isinstance(step, dict) and str(step.get("evidence_element_id", "")) == "bridge_paragraph":
+            bridge_span = str(step.get("evidence_span", "") or "")
+            break
+    if not bridge_span:
+        return False, metrics
+    bridge_tokens = content_tokens(bridge_span)
+    if not bridge_tokens:
+        return False, metrics
+    elem_a_tokens = _elem_full_tokens(pair.get("element_a", {}))
+    elem_b_tokens = _elem_full_tokens(pair.get("element_b", {}))
+    by_role = _step_spans_by_role(reasoning_steps)
+    elem_a_tokens |= content_tokens(by_role.get("premise", ""))
+    elem_b_tokens |= content_tokens(by_role.get("conclusion", ""))
+    ov_a = bridge_tokens & elem_a_tokens
+    ov_b = bridge_tokens & elem_b_tokens
+    metrics["bridge_overlap_a"] = len(ov_a)
+    metrics["bridge_overlap_b"] = len(ov_b)
+    metrics["bridge_token_count"] = len(bridge_tokens)
+    is_fail = len(ov_a) == 0 or len(ov_b) == 0
+    return is_fail, metrics
+
+
+# Re-export helper for pipelines
+__all_extras__ = [
+    "has_bridge_narration_in_answer",
+    "has_premise_conclusion_meta_in_answer",
+    "has_bridge_meta_leak_in_query",
+    "has_superlative_answer_spoiler",
+    "has_bridge_meta_pointer",
+    "premise_conclusion_paraphrase_score",
+    "check_bridge_one_sided",
+]

@@ -492,16 +492,17 @@ Context: {elem_b_context}
 Generate 1 query that REQUIRES all 3 evidence nodes IN SEQUENCE. The bridge paragraph is the key — it explains WHY Node 1's observation leads to Node 3's conclusion.
 
 ### SERIAL CHAIN PATTERN (REQUIRED)
-Node 1 observation → Bridge paragraph mechanism/explanation → Node 3 confirmation/outcome
+premise observation → connecting mechanism (drawn from the bridge paragraph) → conclusion outcome
 
-Example of VALID serial chain:
-  "Node 1 shows accuracy drops for minority groups"
-  → Bridge: "As shown in [fig:3], the accuracy drops significantly for minority groups. The exact numbers are in [tab:2]."
-  → "Node 3 provides per-group accuracy values confirming the 12% gap"
-  Query: "What numerical precision confirms the minority group accuracy drop visible in the performance trend?"
+Example of a VALID serial chain (notice the answer names the actual mechanism, never the words "bridge", "premise", or "conclusion"):
+  premise span: "accuracy drops for minority groups under fixed-decision-boundary FairBoost"
+  middle span: "FairBoost's reweighting overcorrects majority margins, shrinking minority confidence"
+  conclusion span: "per-group accuracy values show a 12-point gap for the smallest cohort"
+  Query: "Why does FairBoost's reweighting amplify the minority confidence loss visible in the cohort-level results?"
+  Answer: "FairBoost reweights majority examples to enforce parity, which overcorrects margins on dominant cohorts. That margin shrinkage propagates into minority confidence, and the cohort-level results confirm a sharp gap on the smallest group."
 
 ### PARALLEL IS FORBIDDEN
-"Node 1 says A, Node 3 says B, therefore A+B" — this is just two independent lookups. The bridge MUST provide a causal/explanatory link, not just co-occurrence.
+"premise says A, conclusion says B, therefore A+B" — this is just two independent lookups. The intermediate step MUST supply a causal or mechanistic link, not just co-occurrence.
 
 ### STEP-DELETION TEST (self-check before outputting)
 For each step, ask: "If I remove THIS step's evidence, can I still derive the answer?"
@@ -509,7 +510,7 @@ For each step, ask: "If I remove THIS step's evidence, can I still derive the an
 - If NO for all 3 steps → your chain is valid
 
 ### BRIDGE GROUNDING RULE
-Your answer MUST quote or paraphrase specific content from the bridge paragraph text above. If the bridge text says "X leads to Y", your answer must use that causal link. Do NOT invent connections not present in the bridge.
+Your answer MUST paraphrase specific MECHANISM content from the bridge paragraph above (the verb, the cause, the entity it acts on). Do NOT use the words "bridge", "the bridge", "premise", or "conclusion" anywhere in the answer or query — name the actual mechanism instead. Do NOT invent connections not present in the bridge paragraph.
 
 ## STRICT RULES
 1. Query MUST require ALL 3 evidence nodes. Removing ANY node makes the answer underivable.
@@ -523,7 +524,14 @@ Your answer MUST quote or paraphrase specific content from the bridge paragraph 
 9. The query MUST ask ONE serial causal/comparative target. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
 10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. Use qualitative descriptors instead.
 11. Do NOT use bare "this", "that", or "here" in the query. Name the method/dataset/metric or use a grounded phrase such as "the low-resource curve" or "the final-stage row".
-12. The answer MUST paraphrase the bridge's causal link. Do not copy long bridge clauses into the answer; keep any bridge wording to a short phrase and connect premise -> bridge -> conclusion.
+12. The answer MUST paraphrase the bridge paragraph's causal mechanism by naming the actual entity and verb (e.g. "FairBoost reweights majority margins, which shrinks minority confidence"). Keep any verbatim bridge wording to a short phrase.
+13. NO STRUCTURAL META-VOCABULARY in query or answer. The strings "the bridge", "the premise", "the conclusion", "Node 1", "Node 2", "Node 3", "Step 1", "Step 2", "Step 3", "the bridge explains", "the bridge says", "the bridge links", "the bridge ties", "the bridge maps", "the bridge frames", "the bridge notes", "the bridge text", "the bridge paragraph" are FORBIDDEN. The query and answer must read as natural prose that names the actual mechanism — they will be rejected automatically if any of these strings appears.
+14. NO SUPERLATIVE LEAKAGE. The query MUST NOT contain "strongest", "stronger", "best", "highest", "fastest", "leading", "top", "dominant", "weakest", "lowest", "largest", "smallest", "maximum", "minimum", "most frequent", "most accurate", "most robust", "most effective", "most stable", "most consistent" — including their possessive forms (e.g. "method's strongest", "X's best"). When the answer is the entity that achieves the superlative, the question reduces to a trivial single-element lookup. Reformulate as a mechanism question: ask WHY a behavior occurs or WHAT mechanism produces it.
+15. BRIDGE MUST EXPRESS A MECHANISM, NOT A METADATA POINTER. The bridge evidence_span will be REJECTED if it matches any of: "we report results in Table/Figure/Section X", "we conducted an ablation study", "we evaluate the performance of X", "results are detailed in Section/Appendix Y", "we present comparisons in X", "we collect/select/use X", "in this section/figure/table". The bridge MUST contain a content verb that creates dependency between premise and conclusion — e.g. "lowers", "produces", "requires", "compresses into", "fails because", "is invariant to", "overcorrects", "reweights". If the only sentence in the bridge paragraph is a metadata pointer, emit `"queries": []` rather than fabricating a chain.
+16. BRIDGE MUST CONNECT TO BOTH ENDPOINTS LEXICALLY. The bridge evidence_span MUST mention at least one concrete content term (method / mechanism / dataset / variable) that also appears in the premise endpoint's caption/context AND at least one such term that also appears in the conclusion endpoint's caption/context. A bridge that only repeats premise vocabulary (or only conclusion vocabulary) describes a single side and will be rejected.
+17. PREMISE AND CONCLUSION SPANS MUST NOT BE NEAR-PARAPHRASES. If the conclusion span just restates the premise span's entities with the same wording, the chain is degenerate; pick a conclusion span that adds a new observation, value, or qualitative claim. Token overlap above 55% triggers automatic rejection.
+18. EVIDENCE SPANS MUST BE SELF-CONTAINED CLAUSES. Each reasoning_step's evidence_span must be a complete clause of at least 6 content words. NEVER use bare data-point spans like "DocVQA 37.3k", "12 steps 64.6", "(b) NCL strength λ", or single labels — wrap them in the surrounding sentence that gives them meaning.
+19. OPENING DIVERSITY. Do NOT begin the query with "How does the" or "How do the" — this opener already covers 22% of historic queries and is heavily over-represented. Choose from a variety: "Why does ...", "What enables ...", "What mechanism links ...", "Under what condition ...", "After ... , what explains ...", or other naturally varied phrasings. Avoid "Which X best ..." superlative templates (already covered by Rule 14).
 
 ## Output format (JSON only):
 {{

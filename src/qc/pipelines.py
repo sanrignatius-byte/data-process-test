@@ -24,11 +24,15 @@ from src.qc.checks import (
     anchor_overlap_tokens,
     anchor_token_copy_count,
     answer_text_evidence_overlap,
+    check_bridge_one_sided,
     check_evidence_spans,
     check_single_element_answer,
     formula_symbol_hit,
     has_architecture_intent,
     has_bare_deictic,
+    has_bridge_meta_leak_in_query,
+    has_bridge_meta_pointer,
+    has_bridge_narration_in_answer,
     has_bridge_overclaim_signal,
     has_conditional_hedge_overload,
     has_min_reasoning_chain,
@@ -36,14 +40,17 @@ from src.qc.checks import (
     has_numeric_leakage,
     has_parallel_dual_ask,
     has_premise_answer_contradiction,
+    has_premise_conclusion_meta_in_answer,
     has_relationship_connector,
     has_semantic_category_mismatch,
     has_shortcut_template,
+    has_superlative_answer_spoiler,
     has_template_collapse,
     has_templated_opening,
     is_architecture_pair,
     is_yes_no_answer,
     is_yes_no_question,
+    premise_conclusion_paraphrase_score,
     query_length_bucket,
     query_word_count,
 )
@@ -245,6 +252,69 @@ def qc_multihop_query(
         issues.append("bridge_overclaim")
         metrics["bridge_overclaim_warn"] = True
 
+    # 13. Structural-vocabulary leakage (audit-driven hard fails)
+    #     Audit on 3251 PASS rows showed 83.3% of answers narrated their own
+    #     scaffolding via "the bridge X" and 2.9% of queries embedded the
+    #     literal "the bridge" reference. Both are pure prompt-vocabulary
+    #     leaks with no domain meaning — regex hard fail.
+    if has_bridge_meta_leak_in_query(q):
+        issues.append("bridge_meta_leak_in_query")
+    if has_bridge_narration_in_answer(a):
+        issues.append("bridge_narration_in_answer")
+    if has_premise_conclusion_meta_in_answer(a):
+        issues.append("premise_conclusion_meta_in_answer")
+
+    # 14. Superlative answer-spoiler (32% of pass set has superlative; this
+    #     fires only when both the query superlative AND the answer's
+    #     resolver verb co-occur — i.e. unambiguous single-element lookup).
+    if has_superlative_answer_spoiler(q, a):
+        issues.append("superlative_answer_spoiler")
+
+    # 15. Bridge quality floor — 3.4% of current pass set had bridge_quality
+    #     == 0.00 with no QC enforcement. Hard floor at 0.20 (any bridge
+    #     scoring below this means the bridge_paragraph has near-zero
+    #     mechanism content per score_bridge_quality()).
+    bq = obj.get("bridge_quality")
+    if isinstance(bq, (int, float)) and bq < 0.20:
+        issues.append("bridge_quality_too_low")
+        metrics["bridge_quality_warn"] = bq
+
+    # 16. L3 reasoning-chain coherence: bridge must connect to BOTH endpoints
+    #     lexically. No-ops on legacy dual-evidence queries without
+    #     reasoning_steps.
+    bos_fail, bos_metrics = check_bridge_one_sided(obj, pair)
+    metrics.update(bos_metrics)
+    if bos_fail:
+        issues.append("bridge_one_sided")
+
+    # 17. Premise vs conclusion paraphrase. If the conclusion's evidence_span
+    #     just restates the premise's (Jaccard >= 0.55), the chain is
+    #     degenerate — the conclusion adds no new claim.
+    reasoning_steps = obj.get("reasoning_steps") or []
+    if isinstance(reasoning_steps, list) and len(reasoning_steps) >= 3:
+        ordered = sorted(
+            (s for s in reasoning_steps if isinstance(s, dict)),
+            key=lambda s: s.get("step_id", 99),
+        )
+        if len(ordered) >= 3:
+            p_span = str(ordered[0].get("evidence_span", "") or "")
+            c_span = str(ordered[-1].get("evidence_span", "") or "")
+            pc_jacc = premise_conclusion_paraphrase_score(p_span, c_span)
+            metrics["premise_conclusion_jaccard"] = round(pc_jacc, 4)
+            if pc_jacc >= 0.55:
+                issues.append("premise_conclusion_paraphrase")
+
+            # 18. Bridge as metadata pointer. The middle step (bridge_paragraph)
+            #     must not be purely procedural ("we report results in Table X").
+            bridge_step = next(
+                (s for s in ordered if str(s.get("evidence_element_id", "")) == "bridge_paragraph"),
+                None,
+            )
+            if bridge_step is not None:
+                bridge_span_text = str(bridge_step.get("evidence_span", "") or "")
+                if has_bridge_meta_pointer(bridge_span_text):
+                    issues.append("bridge_meta_pointer")
+
     return issues, metrics
 
 
@@ -364,5 +434,52 @@ def qc_real_user_query(
     if has_bridge_overclaim_signal(q, a):
         issues.append("bridge_overclaim")
         metrics["bridge_overclaim_warn"] = True
+
+    # 11. Structural-vocabulary leakage (shared with academic pipeline)
+    if has_bridge_meta_leak_in_query(q):
+        issues.append("bridge_meta_leak_in_query")
+    if has_bridge_narration_in_answer(a):
+        issues.append("bridge_narration_in_answer")
+    if has_premise_conclusion_meta_in_answer(a):
+        issues.append("premise_conclusion_meta_in_answer")
+
+    # 12. Superlative answer-spoiler
+    if has_superlative_answer_spoiler(q, a):
+        issues.append("superlative_answer_spoiler")
+
+    # 13. Bridge quality floor
+    bq = obj.get("bridge_quality")
+    if isinstance(bq, (int, float)) and bq < 0.20:
+        issues.append("bridge_quality_too_low")
+        metrics["bridge_quality_warn"] = bq
+
+    # 14. L3 reasoning-chain coherence (only when reasoning_steps present)
+    bos_fail, bos_metrics = check_bridge_one_sided(obj, pair)
+    metrics.update(bos_metrics)
+    if bos_fail:
+        issues.append("bridge_one_sided")
+
+    # 15. Premise vs conclusion paraphrase + bridge meta pointer
+    reasoning_steps = obj.get("reasoning_steps") or []
+    if isinstance(reasoning_steps, list) and len(reasoning_steps) >= 3:
+        ordered = sorted(
+            (s for s in reasoning_steps if isinstance(s, dict)),
+            key=lambda s: s.get("step_id", 99),
+        )
+        if len(ordered) >= 3:
+            p_span = str(ordered[0].get("evidence_span", "") or "")
+            c_span = str(ordered[-1].get("evidence_span", "") or "")
+            pc_jacc = premise_conclusion_paraphrase_score(p_span, c_span)
+            metrics["premise_conclusion_jaccard"] = round(pc_jacc, 4)
+            if pc_jacc >= 0.55:
+                issues.append("premise_conclusion_paraphrase")
+            bridge_step = next(
+                (s for s in ordered if str(s.get("evidence_element_id", "")) == "bridge_paragraph"),
+                None,
+            )
+            if bridge_step is not None:
+                bridge_span_text = str(bridge_step.get("evidence_span", "") or "")
+                if has_bridge_meta_pointer(bridge_span_text):
+                    issues.append("bridge_meta_pointer")
 
     return issues, metrics
