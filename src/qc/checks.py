@@ -504,3 +504,170 @@ def has_bridge_overclaim_signal(query: str, answer: str) -> bool:
     a_hedge = len(_WEAK_HEDGE_RE.findall(answer or ""))
     # If answer has more hedges than causal assertions, the bridge is overclaimed
     return a_hedge > a_causal and a_hedge >= 2
+
+
+# ── L3 reasoning-chain coherence checks ──────────────────────────────────────
+
+def _elem_full_tokens(elem: Dict[str, Any]) -> Set[str]:
+    """Aggregate all available text fields of an element into a content-token set.
+
+    Used by bridge_one_sided to test whether a bridge paragraph lexically
+    connects to an endpoint element. Includes caption, content, enriched
+    content, and surrounding context.
+    """
+    if not isinstance(elem, dict):
+        return set()
+    parts: List[str] = []
+    for field in (
+        "caption",
+        "content",
+        "enriched_content",
+        "enriched_title",
+        "context_before",
+        "context_after",
+    ):
+        v = elem.get(field, "") or ""
+        if isinstance(v, str):
+            parts.append(v)
+    return content_tokens(" ".join(parts))
+
+
+def _step_spans_by_role(reasoning_steps: List[Dict[str, Any]]) -> Dict[str, str]:
+    """Index reasoning_steps by reasoning_role for quick lookup.
+
+    Returns a dict with keys 'premise' / 'intermediate' / 'conclusion'.
+    Falls back to step_id ordering when role is missing.
+    """
+    by_role: Dict[str, str] = {}
+    if not isinstance(reasoning_steps, list):
+        return by_role
+    for step in reasoning_steps:
+        if not isinstance(step, dict):
+            continue
+        role = str(step.get("reasoning_role", "")).strip().lower()
+        span = str(step.get("evidence_span", "") or "")
+        if role and span:
+            by_role.setdefault(role, span)
+    # Fallback by step_id when role labels are missing/inconsistent
+    if "premise" not in by_role or "intermediate" not in by_role or "conclusion" not in by_role:
+        ordered = sorted(
+            (s for s in reasoning_steps if isinstance(s, dict)),
+            key=lambda s: s.get("step_id", 99),
+        )
+        if len(ordered) >= 3:
+            by_role.setdefault("premise", str(ordered[0].get("evidence_span", "") or ""))
+            by_role.setdefault("intermediate", str(ordered[1].get("evidence_span", "") or ""))
+            by_role.setdefault("conclusion", str(ordered[2].get("evidence_span", "") or ""))
+    return by_role
+
+
+def check_bridge_one_sided(
+    obj: Dict[str, Any],
+    pair: Dict[str, Any],
+) -> Tuple[bool, Dict[str, Any]]:
+    """Detect "concatenation" L3 chains where the bridge connects to only ONE endpoint.
+
+    True multi-hop chains require the bridge paragraph to lexically connect to
+    BOTH endpoints (it has to explain *why* the premise leads to the conclusion).
+    When the bridge has zero content-token overlap with either endpoint's full
+    text, the two endpoints are being glued together by topic only — a hallmark
+    of pseudo-multihop pairs like "Qwen latency table + meta-action frequency
+    figure" or "speaker t-SNE figure + phone-classification step ablation".
+
+    Only runs for L3 queries with a bridge_paragraph step. Returns (is_fail,
+    metric_dict) where metric_dict reports per-side overlap counts.
+    """
+    metrics: Dict[str, Any] = {}
+    reasoning_steps = obj.get("reasoning_steps") or []
+    bridge_span = ""
+    for step in reasoning_steps:
+        if not isinstance(step, dict):
+            continue
+        if str(step.get("evidence_element_id", "")) == "bridge_paragraph":
+            bridge_span = str(step.get("evidence_span", "") or "")
+            break
+    if not bridge_span:
+        # Not an L3 reasoning-chain query — skip silently
+        return False, metrics
+
+    bridge_tokens = content_tokens(bridge_span)
+    if not bridge_tokens:
+        return False, metrics
+
+    elem_a_tokens = _elem_full_tokens(pair.get("element_a", {}))
+    elem_b_tokens = _elem_full_tokens(pair.get("element_b", {}))
+
+    # Also pull in the premise/conclusion step spans (sometimes only spans, not
+    # full element text, capture the entity that the bridge should reference).
+    by_role = _step_spans_by_role(reasoning_steps)
+    elem_a_tokens |= content_tokens(by_role.get("premise", ""))
+    elem_b_tokens |= content_tokens(by_role.get("conclusion", ""))
+
+    ov_a = bridge_tokens & elem_a_tokens
+    ov_b = bridge_tokens & elem_b_tokens
+    metrics["bridge_overlap_a"] = len(ov_a)
+    metrics["bridge_overlap_b"] = len(ov_b)
+    metrics["bridge_token_count"] = len(bridge_tokens)
+
+    # Hard fail when bridge has ZERO connection to one side. This is the most
+    # conservative threshold — it only kills outright concatenation cases and
+    # tolerates bridges that use different vocabulary on one side.
+    is_fail = len(ov_a) == 0 or len(ov_b) == 0
+    return is_fail, metrics
+
+
+def check_premise_contains_answer(
+    obj: Dict[str, Any],
+    min_step1_coverage: float = 0.25,
+    min_overlap_count: int = 4,
+) -> Tuple[bool, Dict[str, Any]]:
+    """Detect L3 chains where step 1's evidence_span already lexically contains the answer.
+
+    In a real 3-step chain, the answer requires synthesis across steps 1, 2 and 3,
+    with step 3 (the conclusion) providing the largest share of answer-bearing
+    tokens. When step 1 contributes MORE answer tokens than step 3 does, the
+    chain is degenerate — the conclusion is redundant. Observed in e.g. the
+    SuS-X case where step 1 already says "our best name-only results are
+    achieved with LC-Photo and SD-CuPL" and step 3 just restates the same pair.
+
+    Fires when step 1's content-token overlap with the answer is:
+      (a) at least `min_overlap_count` distinct tokens, AND
+      (b) at least `min_step1_coverage` of the answer, AND
+      (c) GREATER than step 3's coverage of the answer.
+
+    Only runs for L3 queries with 3 reasoning_steps. Returns (is_fail, metrics).
+    """
+    metrics: Dict[str, Any] = {}
+    reasoning_steps = obj.get("reasoning_steps") or []
+    if not reasoning_steps or len(reasoning_steps) < 3:
+        return False, metrics
+
+    by_role = _step_spans_by_role(reasoning_steps)
+    step1_span = by_role.get("premise", "")
+    step3_span = by_role.get("conclusion", "")
+    if not (step1_span and step3_span):
+        return False, metrics
+
+    answer = str(obj.get("answer", "") or "")
+    a_tokens = content_tokens(answer)
+    if not a_tokens:
+        return False, metrics
+
+    step1_tokens = content_tokens(step1_span)
+    step3_tokens = content_tokens(step3_span)
+
+    step1_ov = a_tokens & step1_tokens
+    step3_ov = a_tokens & step3_tokens
+    step1_coverage = len(step1_ov) / max(len(a_tokens), 1)
+    step3_coverage = len(step3_ov) / max(len(a_tokens), 1)
+    metrics["step1_answer_overlap"] = len(step1_ov)
+    metrics["step3_answer_overlap"] = len(step3_ov)
+    metrics["step1_answer_coverage"] = round(step1_coverage, 4)
+    metrics["step3_answer_coverage"] = round(step3_coverage, 4)
+
+    is_fail = (
+        len(step1_ov) >= min_overlap_count
+        and step1_coverage >= min_step1_coverage
+        and step1_coverage > step3_coverage
+    )
+    return is_fail, metrics

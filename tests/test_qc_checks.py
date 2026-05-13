@@ -10,7 +10,9 @@ import pytest
 
 from src.qc.checks import (
     anchor_leak_jaccard,
+    check_bridge_one_sided,
     check_evidence_spans,
+    check_premise_contains_answer,
     has_min_reasoning_chain,
     has_no_cross_modal_operator,
     has_numeric_leakage,
@@ -205,3 +207,115 @@ class TestNoisyEnrichment:
 
     def test_glyph_noise(self):
         assert is_noisy_enrichment("⊕ ⊗ ▲ ● □ ◆ ◇") is True
+
+
+# ── check_bridge_one_sided (L3 reasoning chain coherence) ────────────────────
+
+class TestBridgeOneSided:
+    def _make_obj(self, premise_span, bridge_span, conclusion_span):
+        return {
+            "reasoning_steps": [
+                {
+                    "step_id": 1,
+                    "evidence_element_id": "doc_table_1",
+                    "evidence_span": premise_span,
+                    "reasoning_role": "premise",
+                },
+                {
+                    "step_id": 2,
+                    "evidence_element_id": "bridge_paragraph",
+                    "evidence_span": bridge_span,
+                    "reasoning_role": "intermediate",
+                },
+                {
+                    "step_id": 3,
+                    "evidence_element_id": "doc_figure_5",
+                    "evidence_span": conclusion_span,
+                    "reasoning_role": "conclusion",
+                },
+            ]
+        }
+
+    def test_bridge_connects_to_both_sides_passes(self):
+        # Bridge mentions both "accuracy" (premise side) and "ablation" (conclusion side)
+        obj = self._make_obj(
+            premise_span="overall accuracy improves with the new method",
+            bridge_span="the accuracy gain is attributed to the ablation study findings",
+            conclusion_span="ablation table confirms the contribution of each module",
+        )
+        pair = {
+            "element_a": {"caption": "Performance accuracy table", "content": "method accuracy"},
+            "element_b": {"caption": "Ablation results", "content": "ablation rows"},
+        }
+        fail, metrics = check_bridge_one_sided(obj, pair)
+        assert fail is False
+        assert metrics["bridge_overlap_a"] >= 1
+        assert metrics["bridge_overlap_b"] >= 1
+
+    def test_bridge_only_connects_to_conclusion_fails(self):
+        # Bridge talks only about meta-actions; premise is about latency
+        obj = self._make_obj(
+            premise_span="Qwen prefill latency benchmark deployment",
+            bridge_span="meta action sequence formally represents driving strategy categories",
+            conclusion_span="distribution of meta action being first second third place sequence",
+        )
+        pair = {
+            "element_a": {"caption": "Latency benchmark table", "content": "qwen prefill decode"},
+            "element_b": {"caption": "Meta action distribution figure", "content": "meta action"},
+        }
+        fail, metrics = check_bridge_one_sided(obj, pair)
+        assert fail is True  # bridge_overlap_a should be 0
+        assert metrics["bridge_overlap_a"] == 0
+
+    def test_no_bridge_step_is_skipped(self):
+        # Plain dual-evidence without a bridge_paragraph step — should not fail
+        obj = {"reasoning_steps": [{"evidence_element_id": "doc_fig_1", "evidence_span": "x"}]}
+        pair = {"element_a": {}, "element_b": {}}
+        fail, metrics = check_bridge_one_sided(obj, pair)
+        assert fail is False
+
+
+# ── check_premise_contains_answer ────────────────────────────────────────────
+
+class TestPremiseContainsAnswer:
+    def _make_obj(self, premise_span, bridge_span, conclusion_span, answer):
+        return {
+            "answer": answer,
+            "reasoning_steps": [
+                {"step_id": 1, "evidence_element_id": "x_a", "evidence_span": premise_span,
+                 "reasoning_role": "premise"},
+                {"step_id": 2, "evidence_element_id": "bridge_paragraph", "evidence_span": bridge_span,
+                 "reasoning_role": "intermediate"},
+                {"step_id": 3, "evidence_element_id": "x_b", "evidence_span": conclusion_span,
+                 "reasoning_role": "conclusion"},
+            ],
+        }
+
+    def test_premise_does_not_leak_passes(self):
+        obj = self._make_obj(
+            premise_span="generally improving accuracy across demonstrations",
+            bridge_span="object centric representations struggle with cluttered scenes",
+            conclusion_span="affordance predictions pick place from cliport multi task model",
+            answer="The model achieves the best multi-task performance because dense affordance maps replace pose-based detection on cluttered chessboard scenes.",
+        )
+        fail, metrics = check_premise_contains_answer(obj)
+        assert fail is False
+
+    def test_premise_leaks_distinctive_terms_fails(self):
+        # Step 1 already says "LC-Photo and SD-CuPL are best"; answer just restates
+        obj = self._make_obj(
+            premise_span="best name only results achieved with the lc photo and sd cupl sus construction strategies",
+            bridge_span="full results report tcl accuracies for sus x variants from previous experiment",
+            conclusion_span="two best configurations sus x sd cupl strategy sus x lc photo strategy",
+            answer="The best name only results retained for tcl are lc photo and sd cupl sus construction strategies.",
+        )
+        fail, metrics = check_premise_contains_answer(obj)
+        # Step 1 contributes more answer tokens than step 3 → degenerate chain
+        assert metrics["step1_answer_overlap"] >= 4
+        assert metrics["step1_answer_coverage"] > metrics["step3_answer_coverage"]
+        assert fail is True
+
+    def test_no_reasoning_steps_is_skipped(self):
+        obj = {"answer": "some answer"}
+        fail, metrics = check_premise_contains_answer(obj)
+        assert fail is False
