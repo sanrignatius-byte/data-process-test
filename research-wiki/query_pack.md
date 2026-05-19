@@ -1,36 +1,45 @@
-# Query Pack
+# Research Wiki Query Pack
 
-Project direction:
-Use multimodal document graphs to improve evidence localization, support QA, and synthesize high-quality SFT data. Current priority is delivery and validated retrieval gains, not graph complexity for its own sake.
+_Auto-generated. Do not edit._
 
-Top gaps:
-- G1: Dense retrieval still misses early evidence positions on multimodal documents.
-- G2: Cross-document graph connectivity is weak; intra-doc virtual edges alone are not enough.
-- G3: Delivery data needs positives, negatives, and lighter QC.
-- G4: QA-side evidence for graph value is missing.
-- G5: Repo structure is crowded and raises maintenance overhead.
+## Open Gaps
+# Gap Map
 
-Top ideas:
-- idea:001 explicit bridge-edge rerank with hub-aware static prior. This is the dominant contribution and the current best-supported method.
-- idea:002 cross-doc section-summary similarity edges with citation boost. This is the next validation gate, not the main story yet.
-- idea:003 Method C long-chain query synthesis. Useful for data generation, but currently a supporting branch rather than the main paper story.
+- `gap:G1` **[Track A]**
+  Summary: Dense retrieval on multimodal academic documents still struggles to surface the right evidence early enough. Root cause: 899/1798 passages are raw LaTeX formulas, 842/1798 are image-only passages — both have weak embedding representations. R@100 ceiling is ~20% without VLM captions.
+  Priority: high
+  Status: partially addressed (graph rerank improves top-k precision/recall; split-modality retrieval experiment running (Job 66036) to test per-modality indexes)
 
-Failed or downgraded ideas:
-- Treating intra-doc virtual edges as the default graph enhancement is currently a bad default for precision-oriented rerank.
-- Using pass rate or multihop coverage alone as the proof of project value is not acceptable.
-- Letting graph experiments silently run on the wrong layer is no longer allowed; `--graph-sources` must be explicit.
+- `gap:G2` **[Track A]**
+  Summary: Virtual edges are mostly intra-document. Typed cross-doc element edges (C5) partially solve cross-doc retrieval (R@10 +1.5pp), but only at element granularity; section-level and paragraph-level cross-doc connectivity is still weak.
+  Priority: high
+  Status: partially addressed (C5 validated; para merge + bbl expansion in R104–R108 pending)
 
-Top claims:
-- C1 supported: explicit-only plus static prior improves rerank over dense baseline on the corrected rebuilt set.
-- C2 supported: adding all intra-doc virtual edges dilutes precision metrics relative to explicit-only.
-- C3 pending: cross-doc summary edges with citation boost may improve corrected explicit-only rerank.
-- C4 framing: graph value must be proven on retrieval, QA, and data synthesis.
+- `gap:G3` **[Track B]**
+  Summary: Need 500+ deliverable SFT queries with qrels, positives, negatives, and corpus entries packaged for training use.
+  Priority: high
+  Status: active — 556 pass queries in inventory; delivery packaging (P001) pending
 
-Active chain:
-Wrong graph default -> old graph conclusions become provisional -> corrected explicit-only rerank becomes the new baseline -> cross-doc summary edges are tested only against that baseline.
-
-Open unknowns:
-- Will cross-doc summary edges improve R@1 and MRR without reintroducing noise?
-- How should graph signals be injected into QA evaluation?
-- What is the minimal QC needed for reliable delivery data?
-
+- `gap:G4` **[Track A]**
+  Summary: Graph value still la
+## Recent Relationships (26 total)
+  exp:20260417_explicit_rerank_fixed --supports--> claim:C2
+  exp:20260418_graph_source_audit --supports--> claim:C4
+  exp:20260417_explicit_rerank_fixed --supports--> idea:001
+  idea:001 --supports--> claim:C1
+  idea:002 --supports--> claim:C3
+  idea:003 --supports--> claim:C4
+  exp:20260417_dense_baseline_rebuilt --supports--> claim:C1
+  claim:C3 --tested_by--> exp:20260418_cross_doc_summary_pending
+  idea:005 --addresses_gap--> gap:G8
+  idea:006 --addresses_gap--> gap:G9
+  idea:007 --extends--> idea:005
+  idea:007 --extends--> idea:006
+  idea:005 --extends--> idea:004
+  idea:005 --supports--> claim:C5
+  claim:C12 --tested_by--> exp:20260519_xdoc_pairing_module
+  claim:C13 --tested_by--> exp:20260519_chain_to_session
+  idea:005 --supports--> claim:C12
+  idea:006 --supports--> claim:C13
+  idea:007 --supports--> claim:C14
+  idea:005 --addresses_gap--> gap:G2
