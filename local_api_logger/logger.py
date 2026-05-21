@@ -11,15 +11,18 @@ from typing import Dict, Any, Optional
 import threading
 
 
+DEFAULT_LOG_DIR = "api_logs_cannt_delete"
+
+
 class APILogger:
     """轻量级 API 调用日志记录器"""
 
-    def __init__(self, log_dir: str = "api_logs"):
+    def __init__(self, log_dir: str = DEFAULT_LOG_DIR):
         """
         初始化日志记录器
 
         Args:
-            log_dir: 日志存储目录，默认为当前目录下的 api_logs
+            log_dir: 日志存储目录，默认为当前目录下的 api_logs_cannt_delete
         """
         self.log_dir = Path(log_dir)
         self._lock = threading.Lock()  # 线程安全

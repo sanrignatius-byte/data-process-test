@@ -986,6 +986,14 @@ def main() -> None:
             "Default 1 maximizes durability for long API jobs."
         ),
     )
+    ap.add_argument(
+        "--allow-cross-doc-candidates",
+        action="store_true",
+        help=(
+            "Experimental Track A only: bypass the strict intra-doc candidate "
+            "filter so paragraph-mediated cross-doc pairs can be dry-run or judged."
+        ),
+    )
     args = ap.parse_args()
 
     # Resolve model default per provider
@@ -1004,15 +1012,19 @@ def main() -> None:
         sys.exit(1)
     cand_data = json.loads(cand_path.read_text(encoding="utf-8"))
     raw_pairs = cand_data.get("pairs", [])
-    pairs, intra_stats = filter_intra_doc_pairs(raw_pairs)
-    if len(pairs) != len(raw_pairs):
-        print(
-            "  strict intra-doc filter:"
-            f" removed {len(raw_pairs) - len(pairs)} pairs"
-            f" (flag={intra_stats.get('drop_cross_doc_flag', 0)},"
-            f" mixed={intra_stats.get('drop_mixed_doc_ids', 0)},"
-            f" missing_doc={intra_stats.get('drop_missing_doc_ids', 0)})"
-        )
+    if args.allow_cross_doc_candidates:
+        pairs = list(raw_pairs)
+        print("  strict intra-doc filter: bypassed by --allow-cross-doc-candidates")
+    else:
+        pairs, intra_stats = filter_intra_doc_pairs(raw_pairs)
+        if len(pairs) != len(raw_pairs):
+            print(
+                "  strict intra-doc filter:"
+                f" removed {len(raw_pairs) - len(pairs)} pairs"
+                f" (flag={intra_stats.get('drop_cross_doc_flag', 0)},"
+                f" mixed={intra_stats.get('drop_mixed_doc_ids', 0)},"
+                f" missing_doc={intra_stats.get('drop_missing_doc_ids', 0)})"
+            )
     if args.shuffle:
         random.seed(42)  # deterministic shuffle for reproducibility
         random.shuffle(pairs)

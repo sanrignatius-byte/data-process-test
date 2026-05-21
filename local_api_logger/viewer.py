@@ -10,10 +10,13 @@ from datetime import datetime
 from collections import defaultdict
 
 
+DEFAULT_LOG_DIR = "api_logs_cannt_delete"
+
+
 class LogViewer:
     """日志查看器"""
 
-    def __init__(self, log_dir: str = "api_logs"):
+    def __init__(self, log_dir: str = DEFAULT_LOG_DIR):
         """
         初始化日志查看器
 
