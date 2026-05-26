@@ -378,6 +378,7 @@ def main():
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--api-url", default=os.environ.get("COMPANY_API_URL", ""))
     parser.add_argument("--api-key", default=os.environ.get("COMPANY_API_KEY", ""))
+    parser.add_argument("--retries", type=int, default=1)
     args = parser.parse_args()
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -394,19 +395,47 @@ def main():
         for line in f:
             if line.strip():
                 records.append(json.loads(line))
-    selected = records[:args.limit]
-    print(f"Loaded {len(records)} triplets, QCing {len(selected)}")
+    valid_records = [r for r in records if not r.get("parse_failed") and r.get("generated")]
+    selected = valid_records[:args.limit]
+    skipped = len(records) - len(valid_records)
+    print(f"Loaded {len(records)} triplets, valid {len(valid_records)}, skipped {skipped}, QCing {len(selected)}")
     print(f"Output: {out_dir}\n")
 
-    qc_results = []
     stats = Counter()
     total_in, total_out = 0, 0
+    qc_results_path = out_dir / "qc_results.jsonl"
+
+    def append_record(record: dict) -> None:
+        with qc_results_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            f.flush()
 
     for i, rec in enumerate(selected):
         mid = rec.get("triplet_id", rec.get("material_id", f"t{i}"))
         print(f"[{i+1}/{len(selected)}] {mid} ", end="", flush=True)
 
-        qc = run_multiturn_qc(rec, args.model)
+        qc = None
+        last_error = ""
+        for attempt in range(args.retries + 1):
+            try:
+                qc = run_multiturn_qc(rec, args.model)
+                break
+            except Exception as exc:  # noqa: BLE001 - keep QC batch alive on API/network failures
+                last_error = repr(exc)
+                if attempt < args.retries:
+                    print(f"RETRY{attempt + 1} ", end="", flush=True)
+                    continue
+                qc = {
+                    "s1_turn_dependency": None,
+                    "s2_element_necessity": None,
+                    "s3_grounding": None,
+                    "s4_surface": None,
+                    "overall_pass": False,
+                    "overall_breakdown": {"s1": False, "s2": False, "s3": False, "s4": False},
+                    "tokens": {"in": 0, "out": 0},
+                    "api_error": last_error,
+                }
+                stats["api_errors"] += 1
         total_in += qc["tokens"]["in"]
         total_out += qc["tokens"]["out"]
 
@@ -434,12 +463,7 @@ def main():
             "triplet_id": mid,
             "qc_result": qc,
         }
-        qc_results.append(qc_record)
-
-    # Write results
-    with open(out_dir / "qc_results.jsonl", "w") as f:
-        for r in qc_results:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        append_record(qc_record)
 
     n_pass = stats.get("qc_pass", 0)
     n_fail = stats.get("qc_fail", 0)
@@ -457,6 +481,8 @@ def main():
         "total": n_total,
         "qc_pass": n_pass,
         "qc_fail": n_fail,
+        "skipped_input_records": skipped,
+        "api_errors": stats.get("api_errors", 0),
         "pass_rate": round(n_pass / max(1, n_total), 3),
         "per_dimension_breakdown": breakdown,
         "tokens": {"in": total_in, "out": total_out},

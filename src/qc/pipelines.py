@@ -24,7 +24,10 @@ from src.qc.checks import (
     anchor_overlap_tokens,
     anchor_token_copy_count,
     answer_text_evidence_overlap,
+    check_causal_chain_direction,
     check_evidence_spans,
+    check_fact_distribution,
+    check_no_shortcut,
     check_single_element_answer,
     formula_symbol_hit,
     has_architecture_intent,
@@ -116,6 +119,23 @@ def qc_multihop_query(
     if has_parallel_dual_ask(q):
         issues.append("pseudo_multihop_parallel")
         metrics["parallel_dual_ask_warn"] = True
+
+    # 2f2. HopWeaver: Fact Distribution — each hop must use different documents
+    if not check_fact_distribution(obj, pair):
+        issues.append("fact_distribution_violation")
+        metrics["fact_distribution_pass"] = False
+
+    # 2f3. HopWeaver: No-Shortcut — no single doc can have all evidence
+    if not check_no_shortcut(obj, pair):
+        issues.append("no_shortcut_violation")
+        metrics["no_shortcut_pass"] = False
+
+    # 2f4. Causal chain direction — premise→intermediate→conclusion
+    causal_pass, causal_metrics = check_causal_chain_direction(obj)
+    metrics.update({f"causal_{k}": v for k, v in causal_metrics.items()})
+    if not causal_pass:
+        issues.append("non_causal_chain")
+        metrics["causal_chain_pass"] = False
 
     # 2g. Cross-category mismatch
     if has_semantic_category_mismatch(q):

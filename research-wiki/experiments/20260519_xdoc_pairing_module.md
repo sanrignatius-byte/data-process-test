@@ -116,6 +116,19 @@ Update 2026-05-21T03:45Z:
 - **Prompt gate**: 20/20 dry-run renders pass with no LLM calls. **Tests**: 81 passed.
 - **Red lines preserved**: no LLM judge run; no promotion to `src/pairing/cross_doc_pairs.py`. G3 hard explicit precision may only be claimed for stratum A after judging; B/C remain exploratory.
 
+## Final closure 2026-05-24
+
+**Route formally closed.** On 2026-05-24, the 120-item stratified judge pack (`judge_pack_120.jsonl`) was fully judged via LLM-as-judge:
+- **0/120 strong (0.0%)**
+- 96/120 wrong_target (80%)
+- Stratum A (hard-title, the highest-precision tier): 18/19 wrong_target
+
+Citation-based cross-document element resolution is infeasible. Even when an explicit "Figure 6" reference exists in the source paper's text, the VLM judge determines the resolved target element does not match in ≥95% of cases.
+
+The closure is recorded in the wiki log at `2026-05-24T05:15:00Z` and in `docs/CROSS_DOC_LONG_CHAIN_REPORT_20260522.md`.
+
+**Do not re-open this route** unless (a) a fundamentally different resolution mechanism is proposed (not citation-text matching), or (b) a new corpus with dense cross-document figure/table numbering conventions becomes available.
+
 ## Connections
 
 [AUTO-GENERATED from graph/edges.jsonl — do not edit manually]
