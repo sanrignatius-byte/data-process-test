@@ -221,6 +221,20 @@ noncs2000 产出 23,940 个 enriched section。Query 生成时，section 摘要�
 
 `scripts/enrich_hub_candidates.py`：对拓扑分析出的 hub 多跳候选 pair，填充 bridge 文本、edge context、quality_score 等字段。这是 query 生成的直接输入。noncs2000 从 14,638 条拓扑候选中产出 6,521 条 L3 enriched pair。
 
+### 第 3.5 步：Chunk 聚合
+
+Paragraph 是论文正文的自然段落，粒度太细（几十到几百词不等），直接在检索里用容易把排名打散。Chunk 的设计就是把相邻的 paragraph 按 section 边界聚合成更大的语义单元，作为检索的"降级兜底"信号。
+
+`scripts/build_hierarchical_chunks.py`：
+
+1. **按 section 边界分桶**：同一个 section 下的 paragraph 归到一个桶里，section 变了就切新桶。不跨 section，不滑窗，不重叠
+2. **~400 词软上限**：每个桶内的 paragraph 依次拼起来，超过 400 词就封口成一个 chunk，继续拼下一个
+3. **注入 element 语义**：每个 chunk 记录它包含了哪些 figure / table / formula（通过 chunk→element 归属关系），并把对应的 enriched_content 注入 chunk 的 `enriched_description` 字段
+
+**为什么这么做**：检索评测显示，只用 paragraph 做检索单元时 visual 元素（figure/table/formula）在训练中被欠采样。Chunk 作为一个更大的文本粒度，能跟 visual 元素平衡分布（corpus 里 chunk 占 ~17%）。而且从训练角度看，即使模型没把具体的 figure 召回，只要召回了它所在的 chunk，也给了检索一个合理的降级信号。
+
+noncs2000 产出了 46,991 个 chunk，M4query_v2 产出了 29,237 个。最终 corpus 是五粒度共存：figure + table + formula + section + chunk。
+
 ### 第 4 步：Query 生成
 
 核心脚本 `generate_multihop_l1_queries.py`：把 enriched candidate pair + 图上 3-hop 路径的桥文本 + section 摘要 喂给 LLM，让它写出一个"需要同时看两个元素才能回答"的推理型 query + answer + reasoning chain。
