@@ -1,14 +1,21 @@
 # 当前技术方案
 
-_整理时间: 2026-05-25 · 状态快照_
+_整理时间: 2026-05-26 · 状态快照（含 noncs2000 新增产线）_
 
 ## 这个项目到底在干什么
 
-输入: 一堆 PDF 论文（多模态 ML 论文为主，1147 篇规模；公平性/偏见 53 篇子集用来做跨文档实体桥探索）。
+项目有**两条并行的生产线**，共享同一个图+生成+QC+打包架构，但论文来源和领域不同：
+
+| 产线 | 论文 | 交付包 | 规模 |
+|------|------|--------|------|
+| **M4query_v2**（CS） | 1,147 篇多模态 ML 论文 | `M4query_v2_clean_chunk_aug` | 8,104 triplets |
+| **noncs2000**（非CS） | 2,103 篇 math/astro-ph/cond-mat/hep | `M4query_noncs2000_final` | 8,204 triplets |
+
+输入: arXiv PDF + LaTeX 源码。
 
 输出: 一批 M4 风格的多模态检索三元组 —— 每个 query 需要从一篇论文里同时召回**图 + 表 + 公式 + 段落 + chunk** 多个粒度的证据，并能跟该论文的其他干扰元素以及跨论文的噪声区分开。
 
-为什么不简单: 这些 PDF 没有 LaTeX 源码，只能靠 MinerU 解析。解析出来的 caption 87% 跟邻居 caption 一个词都对不上，所以单靠 CLIP 跨文档连边都是噪声。整个方案的核心问题就是: **没有 LaTeX 的时候，怎么把图、表、公式跨文档地正确串起来。**
+为什么不简单: 非 CS 论文的图、表、公式形态和 ML 论文完全不同（天文图像 vs 模型架构图，物理公式 vs ML loss 函数），导致 embedding 对齐和跨文档连接都更难。整个方案的核心问题就是: **没有 LaTeX 的时候，怎么把图、表、公式跨文档地正确串起来。**
 
 ---
 
@@ -114,7 +121,7 @@ _整理时间: 2026-05-25 · 状态快照_
 
 ---
 
-## 主力生产管线（已交付到 M4query_v2_clean_chunk_aug）
+## 主力生产管线 A: CS 论文（已交付到 M4query_v2_clean_chunk_aug）
 
 **两个关键事实**:
 1. 当前交付的 query 全部是**单文档内**多模态检索（chunk_aug 扩到 8,104 条 triplet）。跨文档能力虽有验证（见下一节），但**从未进入主力生产**。
@@ -207,7 +214,7 @@ QC 在生成器进程里同步跑，只有两层都过的 query 才写进 `*_pas
 - **`judge_answer_grounding()`**: 多模态调用（evidence 文本 + figure/table 图片），判断 answer 的每个声明是否能从 evidence 推出。直接矛盾的 numeric/name claim → 幻觉，作废
 - 4/19 修了 ablation bug（`src/qc/llm_judge.py`），修前的早期 pass 文件需要重新 LLM QC
 
-**通过率**: 整体 25-30%（pair → pass），是后端 LLM judge 决定的，规则 QC 大约劝退 50% 入口。
+**通过率**: v2 CS 论文上 25-30%（pair → pass），noncs2000 非 CS 论文上 47-52%（候选池的 enrichment 覆盖更全、pair 质量更高导致）
 
 ### E. Pass 文件聚合 + delivery v2 打包
 
@@ -264,6 +271,65 @@ QC 在生成器进程里同步跑，只有两层都过的 query 才写进 `*_pas
 ### I. 横切：API 调用全程留痕
 
 所有 LLM 调用（query 生成的 vision call + judge 的两次 call）都走 `src.utils.token_logger.log_run`，写到 `api_logs_cannt_delete/calls/<model>/<month>/<date>.jsonl`，含 prompt / response / token 数 / latency。这是合规要求的审计链路。
+
+---
+
+---
+
+## NonCS 生产管线（2026-05-25 交付，`M4query_noncs2000_final`）
+
+### 背景
+
+M4query_v2 的 1,147 篇论文全部是 CS/ML 领域。为了拓展领域覆盖、增加数据多样性，2026-05 启动了 noncs2000 产线：从 arXiv 的非 CS 类别（math / astro-ph / cond-mat / hep / quant-ph / stat / nucl / q-bio / nlin / econ）采集论文，用同样的图+生成+QC 管线生产 L3 推理链 query。
+
+### 论文采集
+
+`scripts/collect_noncs_arxiv_review_refs.py`：survey-seed → 引用扩展策略。从 36 个非 CS 学科各搜 review/survey 论文作为种子 → 下载种子 LaTeX 源码 → 提取参考文献中的 arXiv ID → 过滤非 CS 类别 → 下载 PDF+LaTeX。最终拿到 **2,103 篇论文**（PDF + LaTeX 双全）。
+
+### 图骨架
+
+`scripts/build_latex_reference_graph.py` + `scripts/build_citation_graph.py` + `scripts/analyze_latex_graph_topology.py` 在 2,103 篇上重跑：
+- `noncs2000_latex_reference_graph_2111.json`：LaTeX 引用 DAG
+- `noncs2000_latex_hub_multihop_candidates_2111.json`：14,638 条 hub 多跳候选（2-hop 7,424 + 3-hop 7,214）
+
+### Enrichment
+
+`scripts/enrich_hub_candidates.py`：从 7,214 条 3-hop 拓扑候选中生成 6,521 条 L3 enriched pair（hop≥3, quality_score≥0.5）。与 v2 不同，noncs2000 **跳过了 `filter_enriched_pair_candidates.py`** —— 因为非 CS 论文的 element enrichment 覆盖率（99%+）远高于 v2 的 CS 论文，不需要二次过滤。
+
+### Query 生成
+
+分三轮，共用同一批 6,521 个 L3 candidate pair，用不同配置生成风格互补的 query：
+
+| 轮次 | 配置 | jobs | Pass 数 | Pass Rate |
+|------|------|------|---------|-----------|
+| **sweep** | acad / acad_persona / mixed_persona | 3 config × 4 shards | 2,797 | ~52% |
+| **retry** | 同上，处理 sweep 未覆盖 candidate | 3 config × 2 splits | 4,546 | ~47% |
+| **real_user** | real_user style（5种真用户模板轮换） | 6 shards | 1,691 | ~50% |
+
+**关键发现**：retry 的 pass rate（47%）略低于 sweep（52%），根因是 gpt-5.4 的 anchor_leakage Jaccard 分数从均值 0.158 上升到 0.180（+14%），导致超过 0.20 阈值的比例从 28% 升至 36%。不是 candidate 质量下降，是模型行为变化（生成更多 "blue curve" / "upper panel" 类视觉描述词）。**模板已更新 Rule 13 来压制此问题**（见 git diff `templates.py`）。
+
+### 打包
+
+`scripts/package_noncs2000_final.py`：
+1. 合并 sweep + retry + real_user 去重 → **8,204 条 unique pass query**
+2. Corpus：figure / table / formula / section / chunk 五粒度，共 148,691 passage
+3. Image：21,838 张图从 MinerU 输出拷贝到 `images/{doc_id}/{hash}.jpg`，corpus 内 image_path 重写
+4. Triplet：每条 query 配 3-4 positive + 5 hard_neg + 5 random_neg
+5. 与 v2 的关键差异：**不用 bridge 节点**，positive 直接从 element_ids + elem→chunk 索引构建，无 source 匹配步骤
+
+### 交付产物
+
+```
+M4query_noncs2000_final/
+├── corpus.jsonl.gz      58 MB  (148,691 passages)
+├── train_triplets.jsonl   5 MB  (8,204 triplets)
+├── images/              1.1 GB  (21,838 jpg)
+└── README.md
+```
+
+### 华为域论文采集（同步进行中）
+
+为进一步聚焦华为业务领域（无线通信 / 光通信 / AI / 计算 / 终端 / 数字能源 / 智能汽车 / 芯片 / 新材料），新增 `scripts/collect_huawei_domain_papers.py`：83 个 topic query → 200 seed → 引用扩展，目标 3,000 篇华为域论文。当前已下载 ~2,000 篇，MinerU 解析进行中。
 
 ---
 
@@ -421,4 +487,4 @@ QC 在生成器进程里同步跑，只有两层都过的 query 才写进 `*_pas
 
 ## 一句话总结
 
-**当前主力交付（M4query_v2_clean_chunk_aug，8,104 条 query）是 LaTeX 引用图 + 严格 intra-doc 过滤跑出来的单文档多粒度检索。MinerU 替代 LaTeX、跨文档引用预测、公式 encoder、跨文档视觉召回这四件事都已经验过单点能力，但没参与过这一版交付。下一版的两个独立目标: 把拓扑骨架从 LaTeX 切到 MinerU（解锁任意 PDF），把跨文档真正做进 query 生成（解锁多文档推理）。**
+**当前有两个主力交付：M4query_v2_clean_chunk_aug（8,104 条，CS/ML 论文）和 M4query_noncs2000_final（8,204 条，非 CS 论文），合计 16,308 条 triplet。两条线共享 LaTeX 引用图 + L3 推理链生成 + 双层 QC（规则+LLM judge）+ 多粒度 chunk aug 打包架构。MinerU 替代 LaTeX、跨文档引用预测、公式 encoder、跨文档视觉召回四件事已验过单点能力但未进交付。下一版的独立目标: 把拓扑骨架从 LaTeX 切到 MinerU（解锁任意 PDF），把跨文档真正做进 query 生成（解锁多文档推理），把华为域论文（3,000 篇）接进产线。**
