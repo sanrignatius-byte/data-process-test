@@ -140,6 +140,13 @@ def qc_reasoning_depth(
         metrics["has_dependency_chain"] = has_dependency_chain
         if not has_dependency_chain:
             issues.append("reasoning_steps_no_dependencies")
+            metrics["reasoning_structure"] = "parallel"  # no deps = not serial
+        else:
+            # Structural evidence trumps heuristic word-count classifier
+            metrics["reasoning_structure"] = "serial"
+            # Count how many steps have deps as signal strength
+            steps_with_deps = sum(1 for s in reasoning_steps[1:] if s.get("depends_on_steps"))
+            metrics["steps_with_dependencies"] = steps_with_deps
 
         step_elements = [s.get("evidence_element_id", "") for s in reasoning_steps]
         unique_step_elements = set(e for e in step_elements if e)

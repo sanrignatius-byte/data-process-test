@@ -202,9 +202,13 @@ def call_llm(
         max_tokens=max_tokens,
         temperature=temperature,
         messages=[{"role": "user", "content": content_aa}],
+        thinking={"type": "disabled"},
     )
+    # Filter out thinking blocks (Claude 4.x extended thinking)
+    text_blocks = [b for b in r.content if getattr(b, "type", None) == "text"]
+    text = text_blocks[0].text if text_blocks else ""
     return (
-        r.content[0].text,
+        text,
         r.usage.input_tokens,
         r.usage.output_tokens,
     )

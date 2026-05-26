@@ -92,6 +92,55 @@ set -a && source .env && set +a
 
 **战略定位（2026-03-12 Mentor 确认）**：图是核心贡献，query 是副产物；图应具备泛化到非 LaTeX 文档的能力；计划 4 月申请专利（公司），之后开放论文投稿。
 
+## 当前状态（2026-05-24 更新｜语言学跨文档验证 ⚠️ EXPLORATORY，未通过 fair baseline）
+
+> ⚠️ **方法论 caveat（2026-05-24 复盘）**：先前版本写为"突破：0 → 2007 chains"，但那个 0-baseline 是 `build_enhanced_graph([], …)` 注空集，并非"现有图 + 原始 CLIP 边"。补做 fair baseline 后，结论需重新表述——**chain 数量不是有效对比指标**，是否真正改善需要 chain-quality 判官（见下方"未解决问题"）。
+
+### 已完成（事实陈述）
+
+1. **语言学验证 100 条 cross-doc section edges**（gpt-5.4，$0.78）
+   - 数据来源：`data/01_graphs/cross_doc_sim_edges.json`（共 2467 条 raw CLIP section-level edges，从中取前 100 条做 pilot）
+   - 输出：`data/05_eval/linguistic_xdoc_20260524T124648Z/`
+   - Genette 类型分布：transformation 33 / architextual 27 / paratextual 23 / commentary 10 / direct_quotation 5 / unknown 2
+   - 质量分层：gold 3 / strong 25 / weak 18 / topical 50 / noise 4 → "usable" (gold+strong+weak) = 46%
+
+2. **Graph + Linguistics fair-baseline 对比**（`experiments/build_graph_linguistic_fusion_fair.py`，chain cap = 5000）
+
+   | 变体 | 输入 section edges | 去重后 element pairs | chains（BFS） | 唯一 endpoint pairs | 唯一 doc pairs |
+   |------|-------------------|---------------------|--------------|--------------------|--------------|
+   | A 空 cross-doc baseline | 0 | 0 | 0 | 0 | 0 |
+   | B raw CLIP 同 100 条（不过滤） | 100 | 8332 | 5092（顶 cap） | 5012 | **270** |
+   | C 语言学 strong+weak（43） | 43 | 2615 | 5081（顶 cap） | 4855 | **78** |
+   | D raw CLIP 全量 2467 | 2467 | 130663 | 5016（顶 cap） | 4981 | **423** |
+
+   - chains 数全部顶到 cap，说明 BFS chain 计数已饱和，不能区分变体
+   - **真实差异在 doc-pair 覆盖**：B 270 / C 78 / D 423；语言学过滤把 raw CLIP 同源 100 条的 doc-pair 数从 270 砍到 78（−71%）
+   - 节省的 doc pair 是不是更高质量？未判定。
+   - 旧脚本 `experiments/build_graph_linguistic_fusion.py` 的 6056 元素边数因未去重而虚高，去重后是 2615
+
+### 未解决问题（让别人验证之前必须先解决）
+
+- ⚠️ **Chain quality 未判**：2007 / 5000 chains 都只是 BFS 拓扑可达路径，未经 chain-level 判官。下一步应在 chains_*.json 上跑 `chunk-bridge judge`（现有 300/300 数据：60% usable / 8% strong）以做 head-to-head。
+- ⚠️ **Cartesian 元素投影未消解**：43 条 section-level validated edges → 2615 条 element pairs 是 src_doc × tgt_doc 笛卡尔积；同一条 section edge 衍生的所有 element pairs 共享 confidence/asymmetry。声明只到 section 级。
+- ⚠️ **新 Genette+RST 验证器 vs 旧 chunk-bridge judge 未对比**：旧 judge 60% usable / 8% strong，新方法 46% usable / 25% strong。strong 提升 3 倍但 usable 下降——是判定 prompt 更严，还是 Genette 理论真有效？需 head-to-head。
+
+### 新增脚本（与原 broken baseline 共存，原脚本不删除以备复现）
+
+```
+experiments/build_linguistic_xdoc_bridges.py       — Genette+RST 语言学跨文档验证（pilot 100 条已跑）
+experiments/build_graph_linguistic_fusion.py       — 原 fusion 脚本（baseline 不公平，结果仅供历史参考）
+experiments/build_graph_linguistic_fusion_fair.py  — fair baseline 版（A/B/C/D 四变体，去重 element pairs）
+```
+
+### 参考文献（理论框架，不构成"已验证"承诺）
+
+- Genette (1982). *Palimpsests*. — transtextuality 五种类型
+- McManus & Lau (2024). arXiv:2410.15145 — asymmetric intertextuality mining
+- Chen et al. (2025). IP&M 62(4) — RST discourse coherence for cross-doc coreference
+- Gao et al. (2024). LREC-COLING 2024 — RST trees + lexical chains for cross-doc
+
+---
+
 ## 当前状态（2026-04-12 更新｜生产 Sweep 启动 + Method C 实验定论 + Intra-doc 过滤落地）
 
 ### 本轮完成（相对 2026-04-09）

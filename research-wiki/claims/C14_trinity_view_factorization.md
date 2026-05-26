@@ -1,9 +1,9 @@
 ---
 type: claim
 node_id: claim:C14
-status: reported
+status: reported_phase0_required
 created_at: 2026-05-19T00:00:00Z
-updated_at: 2026-05-19T00:00:00Z
+updated_at: 2026-05-19T02:40:00Z
 ---
 
 # Claim
@@ -14,6 +14,7 @@ Holding the underlying multi-hop chain constant and varying only the **view** (a
 
 - Reported only — no experiment run yet.
 - Will be validated by `exp:trinity_benchmark` (planned, per `idea:007`).
+- Phase 0 dependency: `idea:006` must first validate a 2-turn endpoint-session projection or upstream generation must emit structured `reasoning_steps[]`. Otherwise the session view is not a controlled projection of the same chain.
 
 ## Scope
 

@@ -474,6 +474,115 @@ def has_conditional_hedge_overload(answer: str, threshold: int = 3) -> bool:
     return len(hedges) >= threshold
 
 
+# ── HopWeaver-style multi-hop integrity checks ──────────────────────────────
+
+def _extract_doc_id(element_id: str) -> str:
+    """Extract arXiv doc ID from element_id like '1904.03310::el::fig:3'."""
+    return element_id.split("::")[0] if "::" in element_id else element_id
+
+
+def check_fact_distribution(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
+    """HopWeaver Fact Distribution: each hop must use evidence from different docs.
+
+    A true multi-hop chain cannot have all reasoning steps from the same document.
+    Returns True (pass) if at least 2 unique documents are involved.
+    """
+    doc_ids: Set[str] = set()
+
+    # Collect doc_ids from reasoning_steps
+    steps = obj.get("reasoning_steps", []) or []
+    for step in steps:
+        eid = step.get("evidence_element_id", "")
+        if eid:
+            doc_ids.add(_extract_doc_id(eid))
+
+    # Also check element_a / element_b from the pair
+    for key in ("element_a_id", "element_b_id"):
+        eid = pair.get(key, "")
+        if eid:
+            doc_ids.add(_extract_doc_id(eid))
+
+    # Also check element_ids list
+    for eid in obj.get("element_ids", []) or []:
+        doc_ids.add(_extract_doc_id(eid))
+
+    return len(doc_ids) >= 2
+
+
+def check_no_shortcut(obj: Dict[str, Any], pair: Dict[str, Any]) -> bool:
+    """HopWeaver No-Shortcut: no single document can bridge non-adjacent hops.
+
+    If one document contains ALL evidence elements needed for the reasoning chain,
+    the chain has a shortcut — a reader could answer the query from one document.
+    Returns True (pass) if no single document monopolizes the evidence.
+    """
+    doc_counts: Dict[str, int] = {}
+
+    steps = obj.get("reasoning_steps", []) or []
+    for step in steps:
+        eid = step.get("evidence_element_id", "")
+        if eid:
+            doc_id = _extract_doc_id(eid)
+            doc_counts[doc_id] = doc_counts.get(doc_id, 0) + 1
+
+    total_steps = len(steps)
+    if total_steps < 2:
+        return True  # Can't have a shortcut with < 2 steps
+
+    for doc_id, count in doc_counts.items():
+        if count >= total_steps:
+            return False  # One doc has all evidence — shortcut exists
+
+    return True
+
+
+def check_causal_chain_direction(
+    obj: Dict[str, Any],
+) -> Tuple[bool, Dict[str, Any]]:
+    """Verify reasoning_steps form a causal chain (not parallel evidence).
+
+    Checks that reasoning_role sequence goes premise → intermediate → conclusion,
+    and that depends_on_steps form a connected DAG.
+    Returns (pass, metrics).
+    """
+    metrics: Dict[str, Any] = {}
+    steps = obj.get("reasoning_steps", []) or []
+
+    if not steps:
+        metrics["causal_chain_skip"] = "no_steps"
+        return True, metrics
+
+    # Check role progression
+    roles = [s.get("reasoning_role", "") for s in steps]
+    metrics["role_sequence"] = roles
+
+    has_premise = "premise" in roles
+    has_conclusion = "conclusion" in roles
+    metrics["has_premise"] = has_premise
+    metrics["has_conclusion"] = has_conclusion
+
+    if not has_premise or not has_conclusion:
+        metrics["causal_chain_fail"] = "missing_premise_or_conclusion"
+        return False, metrics
+
+    # Check that conclusion is the last step
+    if roles[-1] != "conclusion":
+        metrics["causal_chain_fail"] = "conclusion_not_last"
+        return False, metrics
+
+    # Check dependency connectivity
+    has_independent = any(not s.get("depends_on_steps") for s in steps)
+    has_dependent = any(s.get("depends_on_steps") for s in steps)
+    metrics["has_independent_root"] = has_independent
+    metrics["has_dependent_steps"] = has_dependent
+
+    if not has_dependent:
+        metrics["causal_chain_fail"] = "all_independent_parallel"
+        return False, metrics
+
+    return True, metrics
+
+
 # ── Bridge overclaim detection ───────────────────────────────────────────────
 
 _STRONG_CAUSAL_RE = re.compile(

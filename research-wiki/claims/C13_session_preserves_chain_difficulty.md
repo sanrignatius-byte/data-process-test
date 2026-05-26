@@ -1,20 +1,21 @@
 ---
 type: claim
 node_id: claim:C13
-status: reported
+status: reported_phase0_required
 created_at: 2026-05-19T00:00:00Z
-updated_at: 2026-05-19T00:00:00Z
+updated_at: 2026-05-19T02:40:00Z
 ---
 
 # Claim
 
-A multi-turn session derived from a multi-hop chain (per `idea:006` projection rule) **preserves** retrieval difficulty (R@10 within 5pp of the chain-QA view on the same evidence set) **and adds** turn-dependency as an additional measurable difficulty axis. The session view is not strictly easier or strictly harder than chain-QA view — it tests a different skill.
+A multi-turn session derived from a multi-hop chain (per revised `idea:006` projection rule) **preserves** retrieval difficulty within a practical tolerance (initial gate: within 10pp or CI-overlapping with chain-QA view on the same evidence set) **and adds** turn-dependency as an additional measurable difficulty axis. The session view is not strictly easier or strictly harder than chain-QA view — it tests a different skill.
 
 ## Evidence
 
 - Reported only — no experiment run yet.
 - Will be validated by `exp:20260519_chain_to_session` (planned) and `exp:trinity_benchmark` (planned).
 - Negative-evidence prior: nothing yet specifically refutes; existing multi-turn generator (`generate_multiturn_sessions.py` v2) has not been evaluated against same-chain chain-QA controls.
+- Red/blue-team correction: existing L3 pass rows have `reasoning_steps=[]` for all rows and support v1 2-turn endpoint projection only. Retrieval thresholds must acknowledge G7/C8/C11 style mismatch: text-style turns retrieving visual/formula passages can regress for retrieval reasons independent of session quality.
 
 ## Scope
 
