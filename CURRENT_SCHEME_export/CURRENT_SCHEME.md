@@ -35,7 +35,7 @@ _整理时间: 2026-05-26 · 状态快照_
 | **table** | MinerU（表格截图 + HTML body） | markdown 表格文本 + caption + VLM 描述 |
 | **formula** | LaTeX 源码 `\begin{equation}` | LaTeX 公式文本 + VLM 语义描述 |
 | **paragraph** | LaTeX 源码正文段落 | 纯文本 |
-| **section** | LaTeX section 标题 | 章节标题 + LLM enriched 摘要 |
+| **section** | LaTeX section 标题 + 正文 | 章节标题 + 正文 + LLM enriched 摘要（含 section_type 和 keywords） |
 
 一个典型的 paper 有 30-80 个节点。
 
@@ -195,9 +195,31 @@ _整理时间: 2026-05-26 · 状态快照_
 2. **LaTeX 建引用图**（`build_latex_reference_graph.py`）→ 从 `.tex` 源码解析 `\ref` / `\cite` / `\label`，建 DAG
 3. **拓扑分析**（`analyze_latex_graph_topology.py`）→ 在图里找 hub（度数高于均值 2σ 的节点），以 hub 为中心提取 2-hop 和 3-hop 路径，输出 hub 多跳候选池
 
-### 第 3 步：Enrichment
+### 第 3 步：Enrichment（三层）
 
-对候选池里的每个 element pair，给 figure / table / formula 节点加上 LLM 生成的语义描述（VLM 描述图的内容，LLM 解释公式的含义）。这一步让后续 query 生成时 LLM 能"看懂"图、表、公式在讲什么。
+候选池里的节点需要语义信息才能让 LLM 生成有意义的 query。Enrichment 分三层：
+
+**层 1: Element 级（figure / table / formula）**
+
+`scripts/enrich_elements_modora.py`：用 VLM 读懂图/表的内容，用 LLM 解释公式的含义。输出 `enriched_content` 字段（图的视觉描述、公式的语义解释）。
+
+- v2（CS 论文）：1,316 个 element，1,285 个 enriched（97.6%）
+- noncs2000：196,748 个 element，174,049 个 enriched（88.5%）
+
+支持 `--num-shards --shard-index` 多进程并行加速。
+
+**层 2: Section 级**
+
+`scripts/enrich_section_nodes.py`：对每篇论文的 section / subsection / subsubsection 节点，用 LLM 生成三样东西：
+- `enriched_title`：把 "Introduction" 这种通用标题改写成具体内容描述（如 "Motivation and aims of two-field inflation perturbation study"）
+- `enriched_content`：section 的 1-2 句摘要
+- `enriched_metadata`：section_type（introduction / methods / results 等）+ keywords
+
+noncs2000 产出 23,940 个 enriched section。Query 生成时，section 摘要是 prompt 的重要背景信息，帮助 LLM 理解论文的主题和方法。
+
+**层 3: Hub candidate 级**
+
+`scripts/enrich_hub_candidates.py`：对拓扑分析出的 hub 多跳候选 pair，填充 bridge 文本、edge context、quality_score 等字段。这是 query 生成的直接输入。noncs2000 从 14,638 条拓扑候选中产出 6,521 条 L3 enriched pair。
 
 ### 第 4 步：Query 生成
 
@@ -214,7 +236,7 @@ _整理时间: 2026-05-26 · 状态快照_
 
 每轮跑完后，统计哪些 candidate 还没产出 pass query（`--skip-done`），下一轮接着处理（retry）。两批论文共用这套策略。
 
-**通过率**：CS 论文上 25-30%，非 CS 论文上 47-52%。差距的原因是非 CS 论文的 enrichment 覆盖率更高（99%+ vs ~40%），candidate pair 的质量更好。retry 轮（第二遍处理未通过 candidate）pass rate 略低于 sweep 轮（47% vs 52%），根因是 gpt-5.4 输出中 anchor_leakage 增多——生成更多 "blue curve" / "upper panel" 类视觉描述词，和 anchor 文本的 Jaccard 重叠超过 0.20 阈值。**已在 prompt 模板加 Rule 13 压制**。
+**通过率**：CS 论文上 25-30%，非 CS 论文上 47-52%。差距的原因是非 CS 论文的 hub candidate 质量更稳定（hop≥3 的路径中 bridge 文本更完整），不是 enrichment 覆盖率的问题——v2 的 element enrichment 现在也是 97.6%。retry 轮 pass rate 略低于 sweep 轮（47% vs 52%），根因是 gpt-5.4 输出中 anchor_leakage 增多——生成更多 "blue curve" / "upper panel" 类视觉描述词，和 anchor 文本的 Jaccard 重叠超过 0.20 阈值。**已在 prompt 模板加 Rule 13 压制**。
 
 ### 第 5 步：QC 双层闸门
 
@@ -303,7 +325,15 @@ triplet 格式：`{query_id, query, positive_passages[], hard_negative_passages[
 
 ### 路线 1: 实体桥接链
 
-**做法**: 两篇论文如果共享 ≥2 个高 IDF 实体（如 "winobias" + "coreference resolution"），就建实体桥；BFS 找 3-paper 2-bridge 的元素链。
+**做法**: 两篇论文如果共享 ≥2 个有区分度的实体，就建实体桥；BFS 找 3-paper 2-bridge 的元素链。
+
+**实体从哪来**：`scripts/build_entity_skeleton_xdoc.py`，纯规则，零 LLM 成本。用四组正则从论文的 caption + content + enriched_content 文本里抽：
+- **方法名**：CNN / BERT / Transformer / fine-tuning / pre-trained 等
+- **数据集名**：ImageNet / COCO / SQuAD / CelebA 等
+- **指标名**：accuracy / F1 / BLEU / RMSE / demographic parity 等
+- **公式变量**：`\theta` / `\lambda` / loss function / regularization 等
+
+抽出来后过滤掉通用停用词（"model" / "method" / "result" / "data"），只保留 IDF ≥ 2.5 的有区分度实体。每个元素建好实体集合后，跨文档 pair 的实体重叠数 + Jaccard 相似度融合成 entity skeleton score，用于 rerank 跨文档候选边。
 
 **当前数据**（53 篇公平性子集）:
 - 83 对 entity-bridge pair 经 LLM judge，**25.3% 端到端 strong**（21/83）—— 这是目前最强的跨文档精度信号
