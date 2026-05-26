@@ -268,6 +268,8 @@ def process_elements(
     output_path: Optional[Path] = None,
     flush_every: int = 0,
     max_retries: int = 0,
+    num_shards: int = 1,
+    shard_index: int = 0,
 ) -> Dict[str, Dict[str, Any]]:
     """Process all elements and return enrichment results.
 
@@ -301,6 +303,11 @@ def process_elements(
         else:
             for el in elements:
                 all_elements.append(el)
+
+    # Shard 过滤：按元素序号取模，N 个进程各跑一片（顺序对所有进程一致）
+    if num_shards > 1:
+        all_elements = [e for i, e in enumerate(all_elements) if i % num_shards == shard_index]
+        print(f"  Shard {shard_index}/{num_shards}: {len(all_elements)} elements")
 
     if limit > 0:
         all_elements = all_elements[:limit]
@@ -472,6 +479,10 @@ def main():
                     help="Retry failed API calls N times with exponential backoff (default: 0)")
     ap.add_argument("--company-api-key", default=None)
     ap.add_argument("--company-api-url", default=None)
+    ap.add_argument("--num-shards", type=int, default=1,
+                    help="把元素分成 N 片，配合 --shard-index 多进程并行")
+    ap.add_argument("--shard-index", type=int, default=0,
+                    help="本进程负责的分片号 (0..num_shards-1)")
 
     args = ap.parse_args()
 
@@ -561,6 +572,8 @@ def main():
         output_path=out_path,
         flush_every=args.flush_every,
         max_retries=args.max_retries,
+        num_shards=args.num_shards,
+        shard_index=args.shard_index,
     )
 
     # Merge and write

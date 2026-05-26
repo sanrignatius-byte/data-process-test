@@ -72,6 +72,27 @@ NONCS_TOPIC_QUERIES = [
     ("epidemiology", "all:review AND all:epidemiology AND (cat:q-bio.PE OR cat:stat.AP)"),
     ("finance", "all:review AND all:finance AND (cat:q-fin.GN OR cat:q-fin.ST OR cat:econ.GN)"),
     ("earth_planetary", "all:review AND all:planetary AND (cat:physics.geo-ph OR cat:astro-ph.EP)"),
+    # --- 2026-05-21 扩展: 新增 survey 种子领域(增多领域) ---
+    ("materials_science", "all:survey AND all:materials AND (cat:cond-mat.mtrl-sci OR cat:cond-mat.mes-hall)"),
+    ("superconductivity", "all:review AND all:superconductivity AND (cat:cond-mat.supr-con OR cat:cond-mat.str-el)"),
+    ("statistical_mechanics", "all:review AND all:statistical AND all:mechanics AND cat:cond-mat.stat-mech"),
+    ("optics_photonics", "all:survey AND all:photonics AND cat:physics.optics"),
+    ("fluid_dynamics", "all:review AND all:turbulence AND cat:physics.flu-dyn"),
+    ("atomic_molecular", "all:review AND all:atomic AND cat:physics.atom-ph"),
+    ("chemical_physics", "all:review AND all:molecular AND cat:physics.chem-ph"),
+    ("nonlinear_dynamics", "all:review AND all:nonlinear AND (cat:nlin.PS OR cat:nlin.SI)"),
+    ("hep_theory", "all:review AND all:supersymmetry AND cat:hep-th"),
+    ("hep_lattice", "all:review AND all:lattice AND cat:hep-lat"),
+    ("math_probability", "all:survey AND all:probability AND cat:math.PR"),
+    ("math_pde", "all:survey AND all:equations AND cat:math.AP"),
+    ("math_combinatorics", "all:survey AND all:combinatorics AND cat:math.CO"),
+    ("math_topology", "all:survey AND all:topology AND (cat:math.GT OR cat:math.AT)"),
+    ("math_representation", "all:survey AND all:representation AND cat:math.RT"),
+    ("statistics_methodology", "all:review AND all:inference AND (cat:stat.ME OR cat:math.ST)"),
+    ("neuroscience", "all:review AND all:neural AND cat:q-bio.NC"),
+    ("ecology_evolution", "all:review AND all:evolution AND cat:q-bio.PE"),
+    ("economics_theory", "all:review AND all:economic AND (cat:econ.TH OR cat:econ.GN)"),
+    ("atmospheric_climate", "all:review AND all:climate AND cat:physics.ao-ph"),
 ]
 
 
@@ -157,6 +178,7 @@ def search_review_seeds(args: argparse.Namespace) -> List[Dict[str, Any]]:
 
     for label, query in NONCS_TOPIC_QUERIES:
         print(f"[seed-search] {label}: {query}", flush=True)
+        topic_added = 0
         xml_text = request_arxiv(
             session,
             {
@@ -187,6 +209,12 @@ def search_review_seeds(args: argparse.Namespace) -> List[Dict[str, Any]]:
             row["_review_score"] = score_seed(row)
             seen.add(aid)
             candidates.append(row)
+            topic_added += 1
+            if len(candidates) >= args.max_seeds:
+                candidates.sort(key=lambda r: (r.get("_review_score", 0), r.get("year") or 0), reverse=True)
+                return candidates
+            if args.max_seeds_per_topic > 0 and topic_added >= args.max_seeds_per_topic:
+                break
 
     candidates.sort(key=lambda r: (r.get("_review_score", 0), r.get("year") or 0), reverse=True)
     return candidates
@@ -290,8 +318,12 @@ def choose_target_candidates(
                 all_ref_ids.append(aid)
 
     print(f"[refs] unique refs before metadata/category filter: {len(all_ref_ids)}", flush=True)
-    metadata = fetch_metadata_for_ids(all_ref_ids, args)
-    print(f"[refs] metadata rows fetched: {len(metadata)}", flush=True)
+    if args.allow_unverified_refs:
+        print("[refs] --allow-unverified-refs set; skipping arXiv metadata/category filter", flush=True)
+        metadata = {}
+    else:
+        metadata = fetch_metadata_for_ids(all_ref_ids, args)
+        print(f"[refs] metadata rows fetched: {len(metadata)}", flush=True)
 
     existing_ids: Set[str] = set()
     for d in (PROJECT_ROOT / "data" / "00_raw" / "mineru_output").glob("*"):
@@ -448,6 +480,12 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--target", type=int, default=400)
     ap.add_argument("--refs-per-seed", type=int, default=20)
     ap.add_argument("--max-seeds", type=int, default=35)
+    ap.add_argument(
+        "--max-seeds-per-topic",
+        type=int,
+        default=0,
+        help="Cap accepted review seeds per topic query. 0 means no per-topic cap.",
+    )
     ap.add_argument("--candidate-limit", type=int, default=900)
     ap.add_argument("--search-results-per-topic", type=int, default=40)
     ap.add_argument("--api-delay", type=float, default=4.0)

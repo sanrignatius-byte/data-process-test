@@ -541,9 +541,13 @@ BAD (Rule 9 — parallel dual-ask via "and what"):
   "Which dataset most naturally supports the recurrent preference summary, and what bridge mechanism links the image-level failures to that strongest ablation outcome?"
   Why bad: two independent lookups stitched with "and what"; each half is a self-contained question; the bridge does no causal work between them.
 
-GOOD (Rule 9 — single serial target, second endpoint folded into a premise clause WITH a physical anchor):
-  "Given the cooking-video row of the dataset summary, which bridge mechanism explains why the histogram of user-engagement curves drives the strongest ablation outcome?"
-  Why good: (1) the second endpoint is introduced as a *premise* ("Given the … row …"); (2) the premise clause carries physical-anchor tokens ("row", "histogram", "curves") — REQUIRED whenever the rewrite contains "that" or other demonstratives, because QC's bare-demonstrative check (Rule 11) only accepts queries that mention at least one anchor token from the list below; (3) the question asks ONE thing.
+GOOD (Rule 9 — single serial target, second endpoint folded into a SHORT verb-less premise clause WITH a physical anchor). Five equally-valid rescue frames — VARY across queries:
+  (i)   "Given the cooking-video row, which bridge mechanism drives the strongest ablation outcome?"
+  (ii)  "When the upper-panel green curve, why does the summary row report a sharper drop?"
+  (iii) "For the rightmost precision cluster, why do the lower-row recall entries shift downward?"
+  (iv)  "In the bottom-row failure mode, which scatter-cluster property explains the boundary shift?"
+  (v)   "Across the regularizer column, why does the higher-rank head outperform the low-rank variant?"
+  Why good (all five): (1) the second endpoint is introduced as a *premise* in a non-"Given the" frame; (2) each premise clause is SHORT (≤8 words) and contains a physical-anchor token ("row", "curve", "cluster", "column"); (3) the premise carries NO verb (verbs are deferred to the interrogative half) — this is the key to keeping Rule-13 anchor-leakage Jaccard under 0.20; (4) the question asks ONE thing.
 
 BAD (Rule 10 — numeric leakage including dimensions / bit-widths):
   "Why does the 6×384 embedding head outperform the 1-bit quantized variant on the low-resource split?"
@@ -596,11 +600,31 @@ GOOD (Rule 12 — paraphrase + short anchor phrase ≤7 words):
 8. Visual anchors MUST specify physical location: row/column for tables, axis region/color/marker for figures, specific variable/term for formulas. Generic anchors like "the table" or "the figure" will be rejected.
 9. The query MUST ask ONE serial causal/comparative target.
    9a. Do NOT use "and what", "and which", "and under what", or comma+and to ask two parallel questions.
-   9b. When you need to reference BOTH endpoints, fold one of them into a premise clause ("Given the … row …", "When the … curve …", "For the … axis …") so only ONE interrogative target remains. The premise clause MUST embed at least one physical-anchor token from the list under "QC-ACCEPTED PHYSICAL-ANCHOR TOKENS" above — otherwise QC's bare-demonstrative check (Rule 11) will reject the query whenever the clause contains "that". Apply the SPLIT-TEST SELF-CHECK above before finalizing.
+   9b. When you need to reference BOTH endpoints, fold one of them into a premise clause so only ONE interrogative target remains. The premise clause MUST embed at least one physical-anchor token from the list under "QC-ACCEPTED PHYSICAL-ANCHOR TOKENS" above — otherwise QC's bare-demonstrative check (Rule 11) will reject the query whenever the clause contains "that". Apply the SPLIT-TEST SELF-CHECK above before finalizing.
+        FRAME VARIETY (anti-monoculture, REQUIRED): pick whichever of the following 5 rescue frames best fits your query's logic — DO NOT default to "Given the …" every time. All five are equally valid and equally accepted by QC. They share one structural property: the premise is a SHORT noun phrase ending right after the anchor token, with NO verb in the premise clause — that minimises Rule-13 anchor leakage. Any verbs belong to the interrogative half AFTER the comma.
+          (i)   "Given the … <anchor> …, which/what/why …"      ← premise
+          (ii)  "When the … <anchor> …, which/what/why …"       ← temporal/conditional
+          (iii) "For the … <anchor> …, which/what/why …"        ← scope/restriction
+          (iv)  "In the … <anchor> …, which/what/why …"         ← spatial/contextual
+          (v)   "Across the … <anchor> …, why/how/which …"      ← comparison over a region
+        VARIETY EXPECTATION: across multiple queries you generate for different pairs, the rescue-frame opener should NOT all be "Given the". If your previous draft started with "Given the", strongly prefer one of (ii)–(v) for the next. The persona/voice may also nudge frame selection. Keep the premise clause SHORT (≤8 words including the anchor token) — long premise clauses with verbs tend to copy anchor wording and fail Rule 13.
    9c. This rule is hard-enforced by QC — there is no "and what/and which" exception for any query_type.
 10. The query MUST contain no numerals, percentages, exact ranges, dimensions, or exact metric values. This explicitly INCLUDES dimensional patterns such as `6×384`, `512-d`, `k×k`, `1-bit`, `8-bit`, `n-dim`, `3-hop` and bit-width / channel-count / rank values. Use qualitative descriptors instead ("higher-rank", "aggressively quantized", "wider embedding", "deeper variant"). Year tokens (1900–2099) and the literals 0/1 are exempt only when they are clearly NOT a metric — e.g. allowed: "binary 0/1 labels", "the 2024 release"; forbidden: "an F1 of 0.95", "accuracy of 1.0", "the 1-bit quantized variant".
 11. NO unanchored "this", "that", or "here" in the query — in ANY syntactic role. This is enforced by the QC implementation, which does NOT distinguish demonstrative from complementizer "that". The query is rejected if it contains "this/that/here" AND does NOT contain at least one physical-anchor token (see the QC-ACCEPTED PHYSICAL-ANCHOR TOKENS list above). Safest patterns: (a) avoid "this/that/here" entirely and name the method/dataset/metric/component directly; (b) if you must use "that" (e.g. in a "Given that …" rescue clause), embed an anchor token in the same query — "the row that reports …", "the curve that drops …", "the axis that bounds …". Forbidden surface forms (no anchor token): "this metric", "that drop", "Given that X holds", "claim that Y matters".
 12. The answer MUST paraphrase the bridge's causal link. Do NOT copy any span of 8 or more consecutive words verbatim from the bridge paragraph; if you must reuse bridge wording, keep it to a short phrase (≤7 consecutive words). Connect premise → bridge → conclusion in your own words.
+13. ANCHOR-VERBATIM-BAN (anti-leak, HARD-ENFORCED by QC `anchor_leak_jaccard >= 0.20`):
+    The query and the `visual_anchors[].anchor` strings MUST NOT share long token spans. Concretely:
+      (a) NO phrase of 3 or more consecutive content words from ANY anchor field may appear in the query. Stopwords (the/of/in/and/a) don't count.
+      (b) From each endpoint anchor, the query may borrow AT MOST ONE physical-anchor token (e.g. "row", "curve", "panel", "axis", "column", "cluster", "plateau", "marker" — see Rule 11 list); all other words around it MUST be paraphrased into different wording.
+      (c) The combined Jaccard token overlap between the query and the concatenation of all anchor strings MUST stay below 0.20. If you write a rescue clause "Given the … row/curve/axis …", the words filling the ellipsis MUST NOT be copied from the anchor — they should re-express the same physical region in your own words.
+    Concrete BAD vs GOOD (from real failure samples):
+      anchor A: "black cross markers descending along the energy axis"
+      anchor B: "Parameter row entries summarizing the fitted visible inelasticity parametrization"
+      BAD  query: "Given the black cross markers descending along the energy axis, which fitted parametrization row is justified by linking measured values to the visible inelasticity distribution?"
+        Why bad: copies 7 consecutive anchor-A words ("black cross markers descending along the energy"), 4 consecutive anchor-B words ("fitted parametrization row … visible inelasticity") → Jaccard ≈ 0.39 → rejected.
+      GOOD query: "Given the descending energy-trend curve, which fitted-parameter row explains why the measured trend matches the visible-inelasticity model?"
+        Why good: borrows ONE token from A ("curve") and ONE from B ("row"); surrounding words paraphrase the anchor in new wording; Jaccard < 0.20.
+    Implementation tip: after drafting the query, list each anchor's content words; if any 3-word run from an anchor reappears in the query, rewrite.
 
 ## Output format (JSON only):
 {{

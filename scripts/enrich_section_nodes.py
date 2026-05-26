@@ -183,6 +183,8 @@ def main() -> None:
     ap.add_argument("--company-api-url", default=os.environ.get("COMPANY_API_URL", ""))
     ap.add_argument("--company-api-key", default=os.environ.get("COMPANY_API_KEY", ""))
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--num-shards", type=int, default=1)
+    ap.add_argument("--shard-index", type=int, default=0)
     ap.add_argument("--delay", type=float, default=0.5)
     ap.add_argument("--max-chars", type=int, default=4000)
     ap.add_argument("--levels", default="section,subsection,subsubsection")
@@ -227,6 +229,9 @@ def main() -> None:
     if not ref_graph_path.is_absolute():
         ref_graph_path = PROJECT_ROOT / ref_graph_path
     rows = load_sections(ref_graph_path, levels=levels, max_chars=args.max_chars)
+    if args.num_shards > 1:
+        rows = [r for i, r in enumerate(rows) if i % args.num_shards == args.shard_index]
+        print(f"  Shard {args.shard_index}/{args.num_shards}: {len(rows)} sections")
     if args.limit > 0:
         rows = rows[:args.limit]
 

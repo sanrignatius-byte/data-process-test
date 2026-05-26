@@ -402,6 +402,14 @@ def main() -> None:
         "--offset", type=int, default=0,
         help="Start from this index (for resume/splitting)"
     )
+    parser.add_argument(
+        "--id-list-output", type=Path, default=ID_LIST_PATH,
+        help="Where to save extracted arXiv IDs when --save-ids or --dry-run is set",
+    )
+    parser.add_argument(
+        "--manifest-output", type=Path, default=MANIFEST_PATH,
+        help="Where to write the download manifest",
+    )
 
     args = parser.parse_args()
 
@@ -429,11 +437,11 @@ def main() -> None:
 
     # Save ID list
     if args.save_ids or args.dry_run:
-        ID_LIST_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(ID_LIST_PATH, "w") as f:
+        args.id_list_output.parent.mkdir(parents=True, exist_ok=True)
+        with open(args.id_list_output, "w") as f:
             for aid in all_ids:
                 f.write(f"{aid}\n")
-        print(f"ID list saved: {ID_LIST_PATH} ({len(all_ids)} IDs)")
+        print(f"ID list saved: {args.id_list_output} ({len(all_ids)} IDs)")
 
     if args.dry_run:
         # Show sample
@@ -470,15 +478,15 @@ def main() -> None:
         "results": results,
     }
 
-    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(MANIFEST_PATH, "w") as f:
+    args.manifest_output.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.manifest_output, "w") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
 
     print(f"\n{'='*60}")
     print(f"Done!")
     print(f"  PDFs:  {pdf_ok}/{len(results)} downloaded")
     print(f"  LaTeX: {latex_ok}/{len(results)} downloaded")
-    print(f"  Manifest: {MANIFEST_PATH}")
+    print(f"  Manifest: {args.manifest_output}")
     print(f"{'='*60}")
 
 
