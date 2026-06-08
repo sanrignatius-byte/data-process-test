@@ -17,14 +17,16 @@ DEFAULT_LOG_DIR = "api_logs_cannt_delete"
 class APILogger:
     """轻量级 API 调用日志记录器"""
 
-    def __init__(self, log_dir: str = DEFAULT_LOG_DIR):
+    def __init__(self, log_dir: Optional[str] = None):
         """
         初始化日志记录器
 
+        优先级：显式传入 > API_LOG_DIR 环境变量 > 默认 "api_logs_cannt_delete"
         Args:
-            log_dir: 日志存储目录，默认为当前目录下的 api_logs_cannt_delete
+            log_dir: 日志存储目录。None 时读 API_LOG_DIR 环境变量；都缺省时回退到默认目录
         """
-        self.log_dir = Path(log_dir or os.environ.get("API_LOG_DIR", "api_logs"))
+        resolved = log_dir or os.environ.get("API_LOG_DIR") or DEFAULT_LOG_DIR
+        self.log_dir = Path(resolved)
         self._lock = threading.Lock()  # 线程安全
 
     def log_call(
