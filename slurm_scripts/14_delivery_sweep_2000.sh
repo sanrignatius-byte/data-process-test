@@ -116,6 +116,12 @@ declare -a CELL_CONFIG=(
     "$CHUNK_DIR/cell_6_long_seed.json|mixed||1|cell6_longseed_l3_mixed"
 )
 
+# Optional: run a subset of cells, e.g. CELL_IDS="0" for canary
+# or CELL_IDS="0,1,4" for partial retry. Default: all 0..6.
+CELL_IDS=${CELL_IDS:-0,1,2,3,4,5,6}
+IFS=',' read -r -a TARGET_CELLS <<< "$CELL_IDS"
+
+
 # ── Cell worker function ──────────────────────────────────────────────────────
 run_cell() {
     local IDX=$1
@@ -212,8 +218,8 @@ echo "[$(date)] Launching 7-way concurrent on host $(hostname)"
 echo "[$(date)] Cell logs: logs/deliv2000_cell{0..6}.log"
 
 declare -a PIDS
-for IDX in 0 1 2 3 4 5 6; do
-    run_cell $IDX &
+for IDX in "${TARGET_CELLS[@]}"; do
+    run_cell "$IDX" &
     PIDS[$IDX]=$!
     echo "  cell $IDX started, pid=${PIDS[$IDX]}"
 done
@@ -221,7 +227,7 @@ done
 # Wait for all cells; collect exit codes
 echo "[$(date)] All 7 cells running. Waiting for completion..."
 declare -a RCS
-for IDX in 0 1 2 3 4 5 6; do
+for IDX in "${TARGET_CELLS[@]}"; do
     wait ${PIDS[$IDX]}
     RCS[$IDX]=$?
     echo "[$(date)] cell $IDX finished, rc=${RCS[$IDX]}"
@@ -233,7 +239,7 @@ echo "=========================================="
 echo "DELIVERY SWEEP ROLL-UP — $(date)"
 echo "=========================================="
 TOTAL_PASS=0
-for IDX in 0 1 2 3 4 5 6; do
+for IDX in "${TARGET_CELLS[@]}"; do
     IFS='|' read -r _ _ _ _ TAG <<< "${CELL_CONFIG[$IDX]}"
     PASS_FILE="$OUT_DIR/${TAG}_pass.jsonl"
     N=$(wc -l < "$PASS_FILE" 2>/dev/null || echo 0)
